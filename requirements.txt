@@ -1,4 +1,7 @@
-absl
 tensorflow
 jax
 namex
+black>=22
+flake8
+isort
+pytest
