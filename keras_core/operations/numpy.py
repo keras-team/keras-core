@@ -156,6 +156,9 @@ from keras_core.operations.symbolic_arguments import SymbolicArguments
 
 def broadcast_shapes(shape1, shape2):
     # Broadcast input shapes to a unified shape.
+    # Convert to list for mutability.
+    shape1 = list(shape1)
+    shape2 = list(shape2)
     origin_shape1 = shape1
     origin_shape2 = shape2
 
@@ -183,6 +186,7 @@ def broadcast_shapes(shape1, shape2):
 
 
 def reduce_shape(shape, axis=None, keepdims=False):
+    shape = list(shape)
     if axis is None:
         if keepdims:
             output_shape = [1 for _ in range(shape)]
