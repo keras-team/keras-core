@@ -224,7 +224,9 @@ class Absolute(Operation):
 
 
 def absolute(x):
-    return Absolute()(x)
+    if any_symbolic_tensors((x,)):
+        return Absolute().symbolic_call(x)
+    return backend.execute("absolute", x)
 
 
 class Abs(Absolute):
@@ -241,11 +243,13 @@ class Add(Operation):
 
     def compute_output_spec(self, x1, x2):
         output_shape = broadcast_shapes(x1.shape, x2.shape)
-        return KerasTensor(output_shape, dtype=x1.dtype)
+        return KerasTensor(output_shape)
 
 
 def add(x1, x2):
-    return Add()(x1, x2)
+    if any_symbolic_tensors((x1, x2)):
+        return Add().symbolic_call(x1, x2)
+    return backend.execute("add", x1, x2)
 
 
 class All(Operation):
@@ -261,13 +265,14 @@ class All(Operation):
 
     def compute_output_spec(self, x):
         return KerasTensor(
-            reduce_shape(x.shape, axis=self.axis, keepdims=self.keepdims),
-            dtype=x.dtype,
+            reduce_shape(x.shape, axis=self.axis, keepdims=self.keepdims)
         )
 
 
 def all(x, axis=None, keepdims=False):
-    return All(axis=axis, keepdims=keepdims)(x)
+    if any_symbolic_tensors((x,)):
+        return All(axis=axis, keepdims=keepdims).symbolic_call(x)
+    return backend.execute("all", x, axis=axis, keepdims=keepdims)
 
 
 class Amax(Operation):
@@ -283,13 +288,14 @@ class Amax(Operation):
 
     def compute_output_spec(self, x):
         return KerasTensor(
-            reduce_shape(x.shape, axis=self.axis, keepdims=self.keepdims),
-            dtype=x.dtype,
+            reduce_shape(x.shape, axis=self.axis, keepdims=self.keepdims)
         )
 
 
 def amax(x, axis=None, keepdims=False):
-    return All(axis=axis, keepdims=keepdims)(x)
+    if any_symbolic_tensors((x,)):
+        return All(axis=axis, keepdims=keepdims).symbolic_call(x)
+    return backend.execute("amax", x, axis=axis, keepdims=keepdims)
 
 
 class Amin(Operation):
@@ -305,13 +311,14 @@ class Amin(Operation):
 
     def compute_output_spec(self, x):
         return KerasTensor(
-            reduce_shape(x.shape, axis=self.axis, keepdims=self.keepdims),
-            dtype=x.dtype,
+            reduce_shape(x.shape, axis=self.axis, keepdims=self.keepdims)
         )
 
 
 def amin(x, axis=None, keepdims=False):
-    return All(axis=axis, keepdims=keepdims)(x)
+    if any_symbolic_tensors((x,)):
+        return All(axis=axis, keepdims=keepdims).symbolic_call(x)
+    return backend.execute("amin", x, axis=axis, keepdims=keepdims)
 
 
 class Append(Operation):
@@ -319,7 +326,7 @@ class Append(Operation):
         self.axis = axis
 
     def call(self, x1, x2):
-        return backend.numpy.append(x1, x2, axis=self.axis)
+        return backend.numpy.all(x)
 
     def compute_output_spec(self, x1, x2):
         x1_shape = x1.shape
@@ -328,10 +335,8 @@ class Append(Operation):
             if None in x1_shape or None in x2_shape:
                 output_shape = [None]
             else:
-                output_shape = backend.numpy.prod(
-                    x1_shape
-                ) + backend.numpy.prod(x2_shape)
-            return KerasTensor(output_shape, dtype=x1.dtype)
+                output_shape = np.prod(x1_shape) + np.prod(x2_shape)
+            return KerasTensor(output_shape)
 
         if not shape_equal(x1_shape, x2_shape, [self.axis]):
             raise ValueError(
@@ -342,7 +347,7 @@ class Append(Operation):
 
         output_shape = list(x1_shape)
         output_shape[self.axis] = x1_shape[self.axis] + x2_shape[self.axis]
-        return KerasTensor(output_shape, dtype=x1.dtype)
+        return KerasTensor(output_shape)
 
 
 def append(
@@ -350,7 +355,9 @@ def append(
     x2,
     axis=None,
 ):
-    return Append(axis=axis)(x1, x2)
+    if any_symbolic_tensors((x1, x2)):
+        return Append(axis=axis).symbolic_call(x1, x2)
+    return backend.execute("append", x1, x2, axis=axis)
 
 
 class Matmul(Operation):
@@ -382,11 +389,13 @@ class Matmul(Operation):
             del output_shape[-2]
         if len(x2.shape) == 1:
             del output_shape[-1]
-        return KerasTensor(output_shape, dtype=x1.dtype)
+        return KerasTensor(output_shape)
 
 
 def matmul(x1, x2):
-    return Matmul()(x1, x2)
+    if any_symbolic_tensors((x1, x2)):
+        return Matmul().symbolic_call(x1, x2)
+    return backend.numpy.execute("matmul", x1, x2)
 
 
 class Subtract(Operation):
@@ -395,11 +404,13 @@ class Subtract(Operation):
 
     def compute_output_spec(self, x1, x2):
         output_shape = broadcast_shapes(x1.shape, x2.shape)
-        return KerasTensor(output_shape, dtype=x1.dtype)
+        return KerasTensor(output_shape)
 
 
 def subtract(x1, x2):
-    return Subtract()(x1, x2)
+    if any_symbolic_tensors((x1, x2)):
+        return Subtract().symbolic_call(x1, x2)
+    return backend.execute("subtract", x1, x2)
 
 
 class Multiply(Operation):
@@ -408,11 +419,13 @@ class Multiply(Operation):
 
     def compute_output_spec(self, x1, x2):
         output_shape = broadcast_shapes(x1.shape, x2.shape)
-        return KerasTensor(output_shape, dtype=x1.dtype)
+        return KerasTensor(output_shape)
 
 
 def multiply(x1, x2):
-    return Multiply()(x1, x2)
+    if any_symbolic_tensors((x1, x2)):
+        return Multiply().symbolic_call(x1, x2)
+    return backend.execute("multiply", x1, x2)
 
 
 class Divide(Operation):
@@ -421,11 +434,13 @@ class Divide(Operation):
 
     def compute_output_spec(self, x1, x2):
         output_shape = broadcast_shapes(x1.shape, x2.shape)
-        return KerasTensor(output_shape, dtype=x1.dtype)
+        return KerasTensor(output_shape)
 
 
 def divide(x1, x2):
-    return Divide()(x1, x2)
+    if any_symbolic_tensors((x1, x2)):
+        return Divide().symbolic_call(x1, x2)
+    return backend.execute("divide", x1, x2)
 
 
 class TrueDivide(Operation):
@@ -434,11 +449,13 @@ class TrueDivide(Operation):
 
     def compute_output_spec(self, x1, x2):
         output_shape = broadcast_shapes(x1.shape, x2.shape)
-        return KerasTensor(output_shape, dtype=x1.dtype)
+        return KerasTensor(output_shape)
 
 
 def true_divide(x1, x2):
-    return TrueDivide()(x1, x2)
+    if any_symbolic_tensors((x1, x2)):
+        return TrueDivide().symbolic_call(x1, x2)
+    return backend.execute("true_divide", x1, x2)
 
 
 class Power(Operation):
@@ -447,11 +464,13 @@ class Power(Operation):
 
     def compute_output_spec(self, x1, x2):
         output_shape = broadcast_shapes(x1.shape, x2.shape)
-        return KerasTensor(output_shape, dtype=x1.dtype)
+        return KerasTensor(output_shape)
 
 
 def power(x1, x2):
-    return Power()(x1, x2)
+    if any_symbolic_tensors((x1, x2)):
+        return Power().symbolic_call(x1, x2)
+    return backend.execute("power", x1, x2)
 
 
 class Negative(Operation):
@@ -463,7 +482,23 @@ class Negative(Operation):
 
 
 def negative(x):
-    return Negative()(x)
+    if any_symbolic_tensors((x,)):
+        return Negative().symbolic_call(x)
+    return backend.execute("negative", x)
+
+
+class Absolute(Operation):
+    def call(self, x):
+        return backend.execute("absolute", x)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape, dtype=x.dtype)
+
+
+def absolute(x):
+    if any_symbolic_tensors((x,)):
+        return Absolute().symbolic_call(x)
+    return backend.execute("absolute", x)
 
 
 class Square(Operation):
@@ -475,41 +510,45 @@ class Square(Operation):
 
 
 def square(x):
-    return Square()(x)
+    if any_symbolic_tensors((x,)):
+        return Square().symbolic_call(x)
+    return backend.execute("square", x)
 
 
 class Squeeze(Operation):
     def __init__(self, axis=None):
         self.axis = axis
 
-    def call(self, x):
-        return backend.execute("squeeze", x, axis=self.axis)
+    def call(self, a):
+        return backend.execute("squeeze", a, axis=self.axis)
 
-    def compute_output_spec(self, x):
-        input_shape = x.shape
-        if self.axis is None:
+    def compute_output_spec(self, a, axis=None):
+        input_shape = a.shape
+        if axis is None:
             output_shape = list(filter((1).__ne__, input_shape))
-            return KerasTensor(output_shape, dtype=x.dtype)
+            return KerasTensor(output_shape)
         else:
-            if input_shape[self.axis] != 1:
+            if input_shape[axis] != 1:
                 raise ValueError(
-                    f"Cannot squeeze axis {self.axis}, because the dimension "
-                    "is not 1."
+                    f"Cannot squeeze axis {axis}, because the dimension is not "
+                    "1."
                 )
-            del input_shape[self.axis]
-            return KerasTensor(input_shape, dtype=x.dtype)
+            del input_shape[axis]
+            return KerasTensor(input_shape, dtype=a.dtype)
 
 
 def squeeze(a, axis=None):
-    return Squeeze(axis=axis)(a)
+    if any_symbolic_tensors((a,)):
+        return Squeeze().symbolic_call(a, axis=axis)
+    return backend.execute("squeeze", a, axis=axis)
 
 
 class Transpose(Operation):
     def __init__(self, axes=None):
         self.axes = axes
 
-    def call(self, x):
-        return backend.execute("transpose", x, axes=self.axes)
+    def call(self, a):
+        return backend.execute("transpose", a, axes=self.axes)
 
     def compute_output_spec(self, x):
         x_shape = x.shape
@@ -524,11 +563,13 @@ class Transpose(Operation):
         output_shape = []
         for ax in self.axis:
             output_shape.append(x_shape[ax])
-        return KerasTensor(output_shape, dtype=x.dtype)
+        return KerasTensor(output_shape)
 
 
 def transpose(a, axes=None):
-    return Transpose()(a, axes=axes)
+    if any_symbolic_tensors((a,)):
+        return Transpose().symbolic_call(a, axes=axes)
+    return backend.execute("transpose", a, axes=axes)
 
 
 class Mean(Operation):
@@ -543,13 +584,14 @@ class Mean(Operation):
 
     def compute_output_spec(self, x):
         return KerasTensor(
-            reduce_shape(x.shape, axis=self.axis, keepdims=self.keepdims),
-            dtype=x.dtype,
+            reduce_shape(x.shape, axis=self.axis, keepdims=self.keepdims)
         )
 
 
 def mean(x, axis=None, keepdims=False):
-    return Mean(axis=axis, keepdims=keepdims)(x)
+    if any_symbolic_tensors((x,)):
+        return Mean(axis=axis, keepdims=keepdims).symbolic_call(x)
+    return backend.execute("mean", x, axis=axis, keepdims=keepdims)
 
 
 class Var(Operation):
@@ -562,13 +604,14 @@ class Var(Operation):
 
     def compute_output_spec(self, x):
         return KerasTensor(
-            reduce_shape(x.shape, axis=self.axis, keepdims=self.keepdims),
-            dtype=x.dtype,
+            reduce_shape(x.shape, axis=self.axis, keepdims=self.keepdims)
         )
 
 
 def var(x, axis=None, keepdims=False):
-    return Var(axis=axis, keepdims=keepdims)(x)
+    if any_symbolic_tensors((x,)):
+        return Var(axis=axis, keepdims=keepdims).symbolic_call(x)
+    return backend.execute("var", x, axis=axis, keepdims=keepdims)
 
 
 class Sum(Operation):
@@ -581,13 +624,14 @@ class Sum(Operation):
 
     def compute_output_spec(self, x):
         return KerasTensor(
-            reduce_shape(x.shape, axis=self.axis, keepdims=self.keepdims),
-            dtype=x.dtype,
+            reduce_shape(x.shape, axis=self.axis, keepdims=self.keepdims)
         )
 
 
 def sum(x, axis=None, keepdims=False):
-    return Sum(axis=axis, keepdims=keepdims)(x)
+    if any_symbolic_tensors((x,)):
+        return Sum(axis=axis, keepdims=keepdims).symbolic_call(x)
+    return backend.execute("sum", x, axis=axis, keepdims=keepdims)
 
 
 class Zeros(Operation):
@@ -599,7 +643,7 @@ class Zeros(Operation):
 
 
 def zeros(shape, dtype="float32"):
-    return Zeros()(shape)
+    return backend.execute("zeros", shape, dtype)
 
 
 class Ones(Operation):
@@ -611,7 +655,7 @@ class Ones(Operation):
 
 
 def ones(shape, dtype="float32"):
-    return Ones()(shape)
+    return backend.execute("ones", shape, dtype)
 
 
 class Eye(Operation):
@@ -625,4 +669,4 @@ class Eye(Operation):
 
 
 def eye(N, M=None, k=0, dtype="float32"):
-    return Eye()(N, M=M, k=k, dtype=dtype)
+    return backend.execute("eye", N, M=M, k=k, dtype=dtype)
