@@ -6,17 +6,15 @@ from setuptools import find_packages
 from setuptools import setup
 
 HERE = pathlib.Path(__file__).parent
-README = (HERE / "README.md").read_text()
 
 setup(
     name="keras-core",
-    description=("Multi-backend Keras."),
-    long_description=README,
+    description="Multi-backend Keras.",
     long_description_content_type="text/markdown",
     version="0.1.0",
     url="https://github.com/keras-team/keras-core",
     author="Keras team",
-    author_email="keras-team@google.com",
+    author_email="keras@google.com",
     license="Apache License 2.0",
     install_requires=[
         "absl-py",
