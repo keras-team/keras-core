@@ -55,6 +55,9 @@ class Layer(Operation):
         self._non_trainable_variables = []
         self._supports_masking = not utils.is_default(self.compute_mask)
         self._build_shapes_dict = None
+        self._call_signature_parameters = [
+            p.name for p in inspect.signature(self.call).parameters.values()
+        ]
 
         self._tracker = Tracker(
             {
@@ -68,7 +71,7 @@ class Layer(Operation):
                     and not isinstance(x, Metric),
                     self._layers,
                 ),
-                # TODO: RandomSeedGenerator tracking
+                # TODO: SeedGenerator tracking
             }
         )
 
@@ -136,7 +139,6 @@ class Layer(Operation):
             raise ValueError(f"Invalid initializer: {initializer}")
         variable = backend.Variable(
             value=value,
-            shape=shape,
             dtype=dtype,
             trainable=trainable,
             name=name,
@@ -148,6 +150,9 @@ class Layer(Operation):
         # Prevent double-tracking
         self._tracker.stored_ids["variables"].add(id(variable))
         return variable
+
+    def add_weight(self, *args, **kwargs):
+        return self.add_variable(*args, **kwargs)
 
     @property
     def trainable(self):
@@ -171,7 +176,7 @@ class Layer(Operation):
 
     @property
     def variables(self):
-        # TODO: include not just weights by any variables (also from metrics, optimizers, RandomSeedGenerators)
+        # TODO: include not just weights by any variables (also from metrics, optimizers, SeedGenerators)
         variables = self.weights[:]
         return variables
 
@@ -252,13 +257,7 @@ class Layer(Operation):
 
         ######################################
         # Argument validation and conversion. #
-        # 1. Convert first positional argument to tensor of correct dtype.
-        if args and not isinstance(args[0], KerasTensor):
-            args = (
-                nest.map_structure(backend.convert_to_tensor, args[0]),
-            ) + args[1:]
-
-        # 2. Convert any other array arguments to tensors of correct dtype.
+        # 1. Convert any array arguments to tensors of correct dtype.
         def maybe_convert(x):
             if isinstance(x, np.ndarray) or backend.is_tensor(x):
                 return backend.convert_to_tensor(x, dtype=self.compute_dtype)
@@ -277,8 +276,9 @@ class Layer(Operation):
                     f"should be passed as a keyword argument: {arg}"
                 )
 
-        # 4. Check input spec.
-        self._assert_input_compatibility(*args, **kwargs)
+        # 4. Check input spec for 1st positional arg.
+        # TODO: consider extending this to all args and kwargs.
+        self._assert_input_compatibility(*args)
         ######################################
 
         ###############
@@ -475,7 +475,7 @@ class Layer(Operation):
 
             # Check input spec again (after build, since self.input_spec
             # may have been updated
-            self._assert_input_compatibility(*args, **kwargs)
+            self._assert_input_compatibility(*args)
 
     def __repr__(self):
         # TODO: improve
@@ -483,8 +483,7 @@ class Layer(Operation):
 
     def __str__(self):
         # TODO: improve
-        args = ",".join(f"{k}={v}" for k, v in self.get_config().items())
-        return f"{self.__class__.__name__}({args})"
+        return f"<{self.__class__.__name__} name={self.name}>"
 
     def __setattr__(self, name, value):
         # Track Variables, Layers, Metrics
@@ -500,16 +499,17 @@ class Layer(Operation):
                 "Go add it!"
             )
 
-    def _assert_input_compatibility(self, *args, **kwargs):
+    def _assert_input_compatibility(self, *args):
         if args and self.input_spec:
             input_spec.assert_input_compatibility(
                 self.input_spec, args[0], layer_name=self.name
             )
 
     def _call_has_training_arg(self):
-        return "training" in [
-            p.name for p in inspect.signature(self.call).parameters.values()
-        ]
+        return "training" in self._call_signature_parameters
+
+    def _call_has_mask_arg(self):
+        return "mask" in self._call_signature_parameters
 
     def _get_call_context(self):
         """Returns currently active `CallContext`."""

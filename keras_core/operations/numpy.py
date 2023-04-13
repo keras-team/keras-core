@@ -863,6 +863,9 @@ class Matmul(Operation):
 def matmul(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Matmul().symbolic_call(x1, x2)
+    # The below conversion works around an outstanding JAX bug.
+    x1 = backend.convert_to_tensor(x1)
+    x2 = backend.convert_to_tensor(x2)
     return backend.execute("matmul", x1, x2)
 
 
@@ -991,6 +994,20 @@ def square(x):
     if any_symbolic_tensors((x,)):
         return Square().symbolic_call(x)
     return backend.execute("square", x)
+
+
+class Sqrt(Operation):
+    def call(self, x):
+        return backend.execute("sqrt", x)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape, dtype=x.dtype)
+
+
+def sqrt(x):
+    if any_symbolic_tensors((x,)):
+        return Sqrt().symbolic_call(x)
+    return backend.execute("sqrt", x)
 
 
 class Squeeze(Operation):
