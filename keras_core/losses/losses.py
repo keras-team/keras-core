@@ -30,6 +30,21 @@ def mean_squared_error(y_true, y_pred):
     return (y_true - y_pred) ** 2
 
 
+def mean_absolute_error(y_true, y_pred):
+    ndim = len(y_pred.shape)
+    y_pred = ops.convert_to_tensor(y_pred)
+    y_true = ops.convert_to_tensor(y_true, dtype=y_pred.dtype)
+    y_true, y_pred = squeeze_to_same_rank(y_true, y_pred)
+    return ops.mean(ops.abs(y_true - y_pred), axis=list(range(1, ndim)))
+
+
+class MeanAbsoluteError(LossFunctionWrapper):
+    def __init__(
+        self, reduction="sum_over_batch_size", name="mean_absolute_error"
+    ):
+        super().__init__(mean_absolute_error, reduction=reduction, name=name)
+
+
 class MeanSquaredError(LossFunctionWrapper):
     def __init__(
         self, reduction="sum_over_batch_size", name="mean_squared_error"
