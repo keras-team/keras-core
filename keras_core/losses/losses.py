@@ -29,9 +29,9 @@ class MeanSquaredError(LossFunctionWrapper):
     `loss = mean(square(y_true - y_pred))`
 
     Args:
-      reduction: Type of reduction to apply to loss. For almost all cases
-        this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
-        `"sum_over_batch_size"` or None.
+        reduction: Type of reduction to apply to loss. For almost all cases
+            this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
+            `"sum_over_batch_size"` or None.
       name: Optional name for the instance.
     """
 
@@ -48,8 +48,8 @@ class MeanAbsoluteError(LossFunctionWrapper):
 
     Args:
         reduction: Type of reduction to apply to loss. For almost all cases
-          this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
-          `"sum_over_batch_size"` or None.
+            this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
+            `"sum_over_batch_size"` or None.
         name: Optional name for the instance.
     """
 
@@ -74,11 +74,11 @@ def mean_squared_error(y_true, y_pred):
     >>> loss = keras.losses.mean_squared_error(y_true, y_pred)
 
     Args:
-      y_true: Ground truth values. shape = `[batch_size, d0, .. dN]`.
-      y_pred: The predicted values. shape = `[batch_size, d0, .. dN]`.
+        y_true: Ground truth values with shape = `[batch_size, d0, .. dN]`.
+        y_pred: The predicted values with shape = `[batch_size, d0, .. dN]`.
 
     Returns:
-      Mean squared error values. shape = `[batch_size, d0, .. dN-1]`.
+        Mean squared error values with shape = `[batch_size, d0, .. dN-1]`.
     """
     y_pred = ops.convert_to_tensor(y_pred)
     y_true = ops.convert_to_tensor(y_true, dtype=y_pred.dtype)
@@ -101,11 +101,11 @@ def mean_absolute_error(y_true, y_pred):
     >>> loss = keras.losses.mean_absolute_error(y_true, y_pred)
 
     Args:
-      y_true: Ground truth values. shape = `[batch_size, d0, .. dN]`.
-      y_pred: The predicted values. shape = `[batch_size, d0, .. dN]`.
+        y_true: Ground truth values with shape = `[batch_size, d0, .. dN]`.
+        y_pred: The predicted values with shape = `[batch_size, d0, .. dN]`.
 
     Returns:
-      Mean absolute error values. shape = `[batch_size, d0, .. dN-1]`.
+        Mean absolute error values with shape = `[batch_size, d0, .. dN-1]`.
     """
     y_pred = ops.convert_to_tensor(y_pred)
     y_true = ops.convert_to_tensor(y_true, dtype=y_pred.dtype)
