@@ -37,17 +37,51 @@ class Functional(Function, Model):
             for k, v in inputs.items():
                 if not isinstance(v, backend.KerasTensor):
                     raise ValueError(
-                        "When providing an input dict, all values in the dict "
+                        "When providing `inputs` as a dict, all values in the dict "
                         f"must be KerasTensors. Received: inputs={inputs} including "
                         f"invalid value {v} of type {type(v)}"
                     )
                 if k != v.name:
+                    # TODO: maybe make this a warning
                     raise ValueError(
-                        "When providing an input dict, all keys in the dict "
+                        "When providing `inputs` as a dict, all keys in the dict "
                         "must match the names of the corresponding tensors. "
                         f"Received key '{k}' mapping to value {v} which has name '{v.name}'. "
                         f"Change the tensor name to '{k}' (via `Input(..., name='{k}')`)"
                     )
+        elif isinstance(inputs, (list, tuple)):
+            for x in inputs:
+                if not isinstance(x, backend.KerasTensor):
+                    raise ValueError(
+                        "When providing `inputs` as a list/tuple, all values in the list/tuple "
+                        f"must be KerasTensors. Received: inputs={inputs} including "
+                        f"invalid value {x} of type {type(x)}"
+                    )
+        elif not isinstance(inputs, backend.KerasTensor):
+            raise ValueError(
+                f"Unrecognized type for `inputs`: {inputs} (of type {type(inputs)})"
+            )
+        if isinstance(outputs, dict):
+            for k, v in outputs.items():
+                if not isinstance(v, backend.KerasTensor):
+                    raise ValueError(
+                        "When providing `outputs` as a dict, all values in the dict "
+                        f"must be KerasTensors. Received: outputs={outputs} including "
+                        f"invalid value {v} of type {type(v)}"
+                    )
+        elif isinstance(outputs, (list, tuple)):
+            for x in outputs:
+                if not isinstance(x, backend.KerasTensor):
+                    raise ValueError(
+                        "When providing `outputs` as a list/tuple, all values in the list/tuple "
+                        f"must be KerasTensors. Received: outputs={outputs} including "
+                        f"invalid value {x} of type {type(x)}"
+                    )
+        elif not isinstance(outputs, backend.KerasTensor):
+            raise ValueError(
+                f"Unrecognized type for `outputs`: {outputs} (of type {type(outputs)})"
+            )
+
         super().__init__(inputs, outputs, name=name, **kwargs)
         self._layers = self.layers
         self.built = True
@@ -80,7 +114,7 @@ class Functional(Function, Model):
     def _assert_input_compatibility(self, *args):
         return super(Model, self)._assert_input_compatibility(*args)
 
-    def _flatten_to_reference_inputs(self, inputs):
+    def _flatten_to_reference_inputs(self, inputs, allow_extra_keys=True):
         if isinstance(inputs, dict):
             ref_inputs = self._inputs_struct
             if not nest.is_nested(ref_inputs):
@@ -98,7 +132,7 @@ class Functional(Function, Model):
                 ]
             # Raise an warning if there are more input data comparing to input
             # tensor
-            if len(inputs) > len(ref_input_names):
+            if allow_extra_keys and len(inputs) > len(ref_input_names):
                 warnings.warn(
                     "Input dict contained keys {} which did not match any "
                     "model input. They will be ignored by the model.".format(
@@ -109,7 +143,7 @@ class Functional(Function, Model):
             # Flatten in the order `Input`s were passed during Model
             # construction.
             return [inputs[n] for n in ref_input_names]
-        # Otherwise both self.inputs and tensors will already be in same order.
+        # Otherwise both ref inputs and inputs will already be in same order.
         return nest.flatten(inputs)
 
     def _adjust_input_rank(self, flat_inputs):

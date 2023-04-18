@@ -111,6 +111,11 @@ class KerasTensor:
 
         return operations.Power().symbolic_call(other, self)
 
+    def __getitem__(self, key):
+        from keras_core import operations
+
+        return operations.GetItem().symbolic_call(self, key)
+
     #   "__floordiv__",
     #   "__rfloordiv__",
     #   "__mod__",
@@ -127,7 +132,6 @@ class KerasTensor:
     #   "__ror__",
     #   "__xor__",
     #   "__rxor__",
-    #   "__getitem__",
     #   "__invert__",
 
 

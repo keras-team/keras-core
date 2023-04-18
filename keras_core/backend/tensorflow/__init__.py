@@ -2,11 +2,10 @@ import tensorflow as tf
 from tensorflow.experimental import numpy as tfnp
 
 from keras_core.backend.common import KerasVariable
-from keras_core.backend.common import get_stateless_scope
-from keras_core.backend.common import in_stateless_scope
 from keras_core.backend.common import standardize_dtype
+from keras_core.backend.stateless_scope import get_stateless_scope
+from keras_core.backend.stateless_scope import in_stateless_scope
 from keras_core.backend.keras_tensor import KerasTensor
-from keras_core.backend.tensorflow.trainer import Trainer
 from keras_core.utils.naming import auto_name
 
 DYNAMIC_SHAPES_OK = True
@@ -17,8 +16,7 @@ class Variable(KerasVariable):
         self.name = name or auto_name(self.__class__.__name__)
         dtype = standardize_dtype(dtype)
         self.trainable = trainable
-        with tf.init_scope():
-            self._value = tf.Variable(value, dtype=dtype)
+        self._value = tf.Variable(value, dtype=dtype)
 
     def assign(self, value):
         value = convert_to_tensor(value, dtype=self.dtype)
