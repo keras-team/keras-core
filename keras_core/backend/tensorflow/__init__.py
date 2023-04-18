@@ -7,6 +7,7 @@ from keras_core.backend.keras_tensor import KerasTensor
 from keras_core.backend.stateless_scope import get_stateless_scope
 from keras_core.backend.stateless_scope import in_stateless_scope
 from keras_core.backend.tensorflow import numpy
+from keras_core.backend.tensorflow import random
 from keras_core.utils.naming import auto_name
 
 DYNAMIC_SHAPES_OK = True
@@ -56,7 +57,7 @@ class Variable(KerasVariable):
     def ndim(self):
         return self.value.ndim
 
-    def numpy(self):
+    def numpy(self):  # noqa: F811
         return self.value.numpy()
 
     # Overload native accessor.

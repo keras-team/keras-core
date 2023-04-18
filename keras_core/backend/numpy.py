@@ -1,4 +1,4 @@
-from keras_core.backend import backend
+from keras_core.backend.config import backend
 
 if backend() == "jax":
     from keras_core.backend.jax.numpy import *
