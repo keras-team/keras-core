@@ -71,7 +71,7 @@ def mean_squared_error(y_true, y_pred):
 
     >>> y_true = np.random.randint(0, 2, size=(2, 3))
     >>> y_pred = np.random.random(size=(2, 3))
-    >>> loss = keras.losses.mean_squared_error(y_true, y_pred)
+    >>> loss = keras_core.losses.mean_squared_error(y_true, y_pred)
 
     Args:
         y_true: Ground truth values with shape = `[batch_size, d0, .. dN]`.
@@ -98,7 +98,7 @@ def mean_absolute_error(y_true, y_pred):
 
     >>> y_true = np.random.randint(0, 2, size=(2, 3))
     >>> y_pred = np.random.random(size=(2, 3))
-    >>> loss = keras.losses.mean_absolute_error(y_true, y_pred)
+    >>> loss = keras_core.losses.mean_absolute_error(y_true, y_pred)
 
     Args:
         y_true: Ground truth values with shape = `[batch_size, d0, .. dN]`.
