@@ -5,6 +5,7 @@ from tensorflow import nest
 
 from keras_core.backend.common import KerasVariable
 from keras_core.backend.common import standardize_dtype
+from keras_core.backend.jax import nn
 from keras_core.backend.jax import numpy
 from keras_core.backend.jax import random
 from keras_core.backend.keras_tensor import KerasTensor
