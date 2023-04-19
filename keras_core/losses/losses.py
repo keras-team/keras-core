@@ -165,7 +165,8 @@ def mean_absolute_percentage_error(y_true, y_pred):
 
     `loss = 100 * mean(abs((y_true - y_pred) / y_true), axis=-1)`
 
-    Division by zero is prevented by dividing by `max(y_true, epsilon)` where
+    Division by zero is prevented by dividing by `maximum(y_true, epsilon)`
+    where epsilon defaults to `1e-7` and is equal to:
 
     >>> epsilon = keras_core.backend.epsilon()
 
@@ -196,10 +197,9 @@ def mean_squared_logarithmic_error(y_true, y_pred):
 
     `loss = mean(square(log(y_true + 1) - log(y_pred + 1)), axis=-1)`
 
-    Note that `y_pred` and `y_true` cannot be less or equal to 0 and will be
-    replaced with `epsilon` where
-
-    >>> epsilon = keras_core.backend.epsilon()
+    Note that `y_pred` and `y_true` cannot be less or equal to 0. Negative
+    values and 0 values will be replaced with `keras_core.backend.epsilon()`
+    (default to `1e-7`).
 
     Standalone usage:
 
@@ -208,8 +208,8 @@ def mean_squared_logarithmic_error(y_true, y_pred):
     >>> loss = tf.keras.losses.mean_squared_logarithmic_error(y_true, y_pred)
 
     Args:
-        y_true: Ground truth values. shape = `[batch_size, d0, .. dN]`.
-        y_pred: The predicted values. shape = `[batch_size, d0, .. dN]`.
+        y_true: Ground truth values with shape = `[batch_size, d0, .. dN]`.
+        y_pred: The predicted values with shape = `[batch_size, d0, .. dN]`.
 
     Returns:
         Mean squared logarithmic error values. shape = `[batch_size, d0, ..
