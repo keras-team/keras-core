@@ -1,7 +1,8 @@
 import warnings
+
 from keras_core import backend
-from keras_core import operations as ops
 from keras_core import metrics as metrics_module
+from keras_core import operations as ops
 from keras_core.trainers.compile_utils import CompileLoss
 from keras_core.trainers.compile_utils import CompileMetrics
 
