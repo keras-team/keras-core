@@ -1,17 +1,16 @@
 import random as python_random
 
-from keras_core.backend import backend
-
 
 class SeedGenerator:
     def __init__(self, seed):
         from keras_core.backend import Variable
 
+        if seed is None:
+            seed = make_default_seed()
         if not isinstance(seed, int):
             raise ValueError(
                 "Argument `seed` must be an integer. " f"Received: seed={seed}"
             )
-        seed = seed or make_default_seed()
         self.state = Variable([seed, 0], dtype="uint32", trainable=False)
 
 
@@ -37,9 +36,3 @@ def draw_seed(seed):
         "or an instance of `SeedGenerator`. "
         f"Received: seed={seed} (of type {type(seed)})"
     )
-
-
-if backend() == "jax":
-    from keras_core.backend.jax.random import *
-else:
-    from keras_core.backend.tensorflow.random import *

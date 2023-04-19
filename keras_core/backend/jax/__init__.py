@@ -5,6 +5,11 @@ from tensorflow import nest
 
 from keras_core.backend.common import KerasVariable
 from keras_core.backend.common import standardize_dtype
+<<<<<<< HEAD
+=======
+from keras_core.backend.jax import numpy
+from keras_core.backend.jax import random
+>>>>>>> main
 from keras_core.backend.keras_tensor import KerasTensor
 from keras_core.backend.stateless_scope import StatelessScope
 from keras_core.backend.stateless_scope import get_stateless_scope
@@ -52,11 +57,14 @@ class Variable(KerasVariable):
         self.name = name or auto_name(self.__class__.__name__)
         dtype = standardize_dtype(dtype)
         self._value = jnp.array(value, dtype=dtype)
+        self._dtype = dtype
+        self._shape = tuple(self._value.shape)
+        self._ndim = len(self._shape)
         self.trainable = trainable
 
     def assign(self, value):
         value = convert_to_tensor(value, dtype=self.dtype)
-        if value.shape != self.value.shape:
+        if value.shape != self.shape:
             raise ValueError(
                 "The shape of the target variable and "
                 "the shape of the target value in "
@@ -68,8 +76,11 @@ class Variable(KerasVariable):
             scope = get_stateless_scope()
             scope.add_update((self, value))
         else:
-            # TODO: optimize by avoiding memory copies
-            self._value = jnp.array(value, dtype=self.dtype)
+            if isinstance(value, jnp.ndarray) and value.dtype == self.dtype:
+                # Avoid a memory copy
+                self._value = value
+            else:
+                self._value = jnp.array(value, dtype=self.dtype)
 
     @property
     def value(self):
@@ -82,15 +93,15 @@ class Variable(KerasVariable):
 
     @property
     def dtype(self):
-        return self.value.dtype.name
+        return self._dtype
 
     @property
     def shape(self):
-        return self.value.shape
+        return self._shape
 
     @property
     def ndim(self):
-        return self.value.ndim
+        return self._ndim
 
     def numpy(self):
         return np.array(self.value)

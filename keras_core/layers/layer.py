@@ -49,6 +49,7 @@ class Layer(Operation):
 
         self._layers = []
         self._metrics = []
+        self._seed_generators = []
         self._losses = []
         self._variables = []
         self._trainable_variables = []
@@ -71,7 +72,10 @@ class Layer(Operation):
                     and not isinstance(x, Metric),
                     self._layers,
                 ),
-                # TODO: SeedGenerator tracking
+                "seed_generators": (
+                    lambda x: isinstance(x, backend.random.SeedGenerator),
+                    self._seed_generators,
+                ),
             }
         )
 
@@ -176,8 +180,12 @@ class Layer(Operation):
 
     @property
     def variables(self):
-        # TODO: include not just weights by any variables (also from metrics, optimizers, SeedGenerators)
+        # Includes weights, seed generator state, and metric variables.
         variables = self.weights[:]
+        for m in self._metrics:
+            variables.extend(m.variables)
+        for sg in self._seed_generators:
+            variables.append(sg.state)
         return variables
 
     @property
@@ -273,7 +281,8 @@ class Layer(Operation):
                 raise ValueError(
                     "Only input tensors may be passed as "
                     "positional arguments. The following argument value "
-                    f"should be passed as a keyword argument: {arg}"
+                    f"should be passed as a keyword argument: {arg} "
+                    f"(of type {type(arg)})"
                 )
 
         # 4. Check input spec for 1st positional arg.
@@ -420,7 +429,7 @@ class Layer(Operation):
             losses.extend(layer._losses)
         weight_regularization_losses = []
         for v in self.trainable_weights:
-            regularizer = getattr(v, "regularizer")
+            regularizer = getattr(v, "regularizer", None)
             if regularizer:
                 weight_regularization_losses.append(regularizer(v))
         losses.extend(weight_regularization_losses)
@@ -552,9 +561,11 @@ class Layer(Operation):
             if id(layer) in seen_object_ids:
                 continue
             seen_object_ids.add(id(layer))
+            layers.append(layer)
             # Introspect recursively through sublayers.
             if recursive:
                 deque.extendleft(layer._layers)
+        return layers
 
 
 def get_arguments_dict(fn, *args, **kwargs):

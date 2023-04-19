@@ -243,7 +243,7 @@ def abs(x):
 
 class Add(Operation):
     def call(self, x1, x2):
-        return backend.execute("add", x1, x2)
+        return backend.numpy.add(x1, x2)
 
     def compute_output_spec(self, x1, x2):
         x1_shape = getattr(x1, "shape", [])
@@ -255,7 +255,7 @@ class Add(Operation):
 def add(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Add().symbolic_call(x1, x2)
-    return backend.execute("add", x1, x2)
+    return backend.numpy.add(x1, x2)
 
 
 class All(Operation):
@@ -746,16 +746,12 @@ class CountNonzero(Operation):
     def __init__(self, axis=None):
         super().__init__()
         if isinstance(axis, int):
-            self.axis = [axis]
+            self.axis = (axis,)
         else:
             self.axis = axis
 
     def call(self, x):
-        return backend.execute(
-            "count_nonzero",
-            x,
-            axis=self.axis,
-        )
+        return backend.execute("count_nonzero", x, axis=self.axis)
 
     def compute_output_spec(self, x):
         return KerasTensor(
@@ -1634,7 +1630,7 @@ def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
 
 class Matmul(Operation):
     def call(self, x1, x2):
-        return backend.execute("matmul", x1, x2)
+        return backend.numpy.matmul(x1, x2)
 
     def compute_output_spec(self, x1, x2):
         x1_shape = getattr(x1, "shape", [])
@@ -1670,7 +1666,7 @@ def matmul(x1, x2):
     # The below conversion works around an outstanding JAX bug.
     x1 = backend.convert_to_tensor(x1)
     x2 = backend.convert_to_tensor(x2)
-    return backend.execute("matmul", x1, x2)
+    return backend.numpy.matmul(x1, x2)
 
 
 class Max(Operation):
@@ -1683,7 +1679,7 @@ class Max(Operation):
         self.keepdims = keepdims
 
     def call(self, x):
-        return backend.execute("max", x, axis=self.axis, keepdims=self.keepdims)
+        return backend.numpy.max(x, axis=self.axis, keepdims=self.keepdims)
 
     def compute_output_spec(self, x):
         return KerasTensor(
@@ -1695,7 +1691,7 @@ class Max(Operation):
 def max(x, axis=None, keepdims=False):
     if any_symbolic_tensors((x,)):
         return Max(axis=axis, keepdims=keepdims).symbolic_call(x)
-    return backend.execute("max", x, axis=axis, keepdims=keepdims)
+    return backend.numpy.max(x, axis=axis, keepdims=keepdims)
 
 
 class Maximum(Operation):
@@ -1883,16 +1879,8 @@ class Nonzero(Operation):
     def call(self, x):
         return backend.execute("nonzero", x)
 
-    def compute_output_spec(self, x):
-        output = []
-        for _ in range(len(x.shape)):
-            output.append(KerasTensor([None]))
-        return tuple(output)
-
 
 def nonzero(x):
-    if any_symbolic_tensors((x,)):
-        return Nonzero().symbolic_call(x)
     return backend.execute("nonzero", x)
 
 
@@ -2677,7 +2665,7 @@ def where(condition, x1, x2):
 
 class Subtract(Operation):
     def call(self, x1, x2):
-        return backend.execute("subtract", x1, x2)
+        return backend.numpy.subtract(x1, x2)
 
     def compute_output_spec(self, x1, x2):
         x1_shape = getattr(x1, "shape", [])
@@ -2689,12 +2677,12 @@ class Subtract(Operation):
 def subtract(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Subtract().symbolic_call(x1, x2)
-    return backend.execute("subtract", x1, x2)
+    return backend.numpy.subtract(x1, x2)
 
 
 class Multiply(Operation):
     def call(self, x1, x2):
-        return backend.execute("multiply", x1, x2)
+        return backend.numpy.multiply(x1, x2)
 
     def compute_output_spec(self, x1, x2):
         x1_shape = getattr(x1, "shape", [])
@@ -2706,7 +2694,7 @@ class Multiply(Operation):
 def multiply(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Multiply().symbolic_call(x1, x2)
-    return backend.execute("multiply", x1, x2)
+    return backend.numpy.multiply(x1, x2)
 
 
 class Divide(Operation):
@@ -2870,9 +2858,7 @@ class Mean(Operation):
         self.keepdims = keepdims
 
     def call(self, x):
-        return backend.execute(
-            "mean", x, axis=self.axis, keepdims=self.keepdims
-        )
+        return backend.numpy.mean(x, axis=self.axis, keepdims=self.keepdims)
 
     def compute_output_spec(self, x):
         return KerasTensor(
@@ -2884,7 +2870,7 @@ class Mean(Operation):
 def mean(x, axis=None, keepdims=False):
     if any_symbolic_tensors((x,)):
         return Mean(axis=axis, keepdims=keepdims).symbolic_call(x)
-    return backend.execute("mean", x, axis=axis, keepdims=keepdims)
+    return backend.numpy.mean(x, axis=axis, keepdims=keepdims)
 
 
 class Var(Operation):
