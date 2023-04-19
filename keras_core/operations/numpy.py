@@ -1879,6 +1879,7 @@ class Nonzero(Operation):
     def call(self, x):
         return backend.execute("nonzero", x)
 
+
 def nonzero(x):
     return backend.execute("nonzero", x)
 
