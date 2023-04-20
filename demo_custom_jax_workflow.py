@@ -36,26 +36,30 @@ class MyModel(Model):
         self.dense3 = MyDense(output_dim)
 
     def call(self, x):
-        x = self.dense1(x)
-        x = self.dense2(x)
+        x = jax.nn.relu(self.dense1(x))
+        x = jax.nn.relu(self.dense2(x))
         return self.dense3(x)
 
 
 def Dataset():
     for _ in range(20):
-        yield (np.random.random((32, 128)), np.random.random((32, 16)))
+        yield (np.random.random((32, 128)), np.random.random((32, 4)))
 
 
 def loss_fn(y_true, y_pred):
     return ops.sum((y_true - y_pred) ** 2)
 
 
-model = MyModel(hidden_dim=256, output_dim=16)
+model = MyModel(hidden_dim=256, output_dim=4)
 
 optimizer = optimizers.SGD(learning_rate=0.0001)
 dataset = Dataset()
 
-# # Build model
+
+######### Custom JAX workflow ###############
+
+
+# Build model
 x = ops.convert_to_tensor(np.random.random((1, 128)))
 model(x)
 # Build optimizer
@@ -68,7 +72,6 @@ def compute_loss_and_updates(
     y_pred, non_trainable_variables = model.stateless_call(
         trainable_variables, non_trainable_variables, x
     )
-
     loss = loss_fn(y, y_pred)
     return loss, non_trainable_variables
 

@@ -5,6 +5,7 @@ from keras_core import metrics as metrics_module
 from keras_core import operations as ops
 from keras_core.trainers.compile_utils import CompileLoss
 from keras_core.trainers.compile_utils import CompileMetrics
+from keras_core.utils import tracking
 
 
 class Trainer:
@@ -12,10 +13,8 @@ class Trainer:
         self._run_eagerly = False
         self._jit_compile = True
         self.compiled = False
-        self.train_function = None
-        self.test_function = None
-        self.predict_function = None
 
+    @tracking.no_automatic_dependency_tracking
     def compile(
         self,
         optimizer,
@@ -149,7 +148,6 @@ class Trainer:
             total_loss = losses[0]
         else:
             total_loss = ops.sum(losses)
-        self._loss_tracker.update_state(total_loss)
         return total_loss
 
     def compute_metrics(self, x, y, y_pred, sample_weight=None):
@@ -210,24 +208,6 @@ class Trainer:
                 return_metrics[metric.name] = result
         return return_metrics
 
-    def train_step(self, data):
-        raise NotImplementedError
-
-    def test_step(self, data):
-        raise NotImplementedError
-
-    def predict_step(self, data):
-        raise NotImplementedError
-
-    def make_train_function(self):
-        raise NotImplementedError
-
-    def make_test_function(self):
-        raise NotImplementedError
-
-    def make_predict_function(self):
-        raise NotImplementedError
-
     def fit(
         self,
         x=None,
@@ -268,6 +248,14 @@ class Trainer:
     ):
         raise NotImplementedError
 
+    def get_compile_config(self):
+        # TODO
+        raise NotImplementedError
+
+    def compile_from_config(self):
+        # TODO
+        raise NotImplementedError
+
     def _should_eval(self, epoch, validation_freq):
         epoch = epoch + 1  # one-index the user-facing epoch.
         if isinstance(validation_freq, int):
@@ -281,10 +269,26 @@ class Trainer:
                 f"type {type(validation_freq)}."
             )
 
-    def get_compile_config(self):
-        # TODO
-        raise NotImplementedError
+    def _pythonify_logs(self, logs):
+        result = {}
+        for key, value in logs.items():
+            try:
+                value = float(value)
+            except:
+                pass
+            result[key] = value
+        return result
 
-    def compile_from_config(self):
-        # TODO
-        raise NotImplementedError
+    def _flatten_metrics_in_order(self, logs):
+        """Turns the `logs` dict into a list as per key order of `metrics_names`."""
+        metric_names = [m.name for m in self.metrics]
+        results = []
+        for name in metric_names:
+            if name in logs:
+                results.append(logs[name])
+        for key in sorted(logs.keys()):
+            if key not in metric_names:
+                results.append(logs[key])
+        if len(results) == 1:
+            return results[0]
+        return results
