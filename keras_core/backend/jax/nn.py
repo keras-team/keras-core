@@ -61,39 +61,3 @@ def softmax(x):
 
 def log_softmax(x, axis=-1):
     return jnn.log_softmax(x, axis=axis)
-
-
-def max_pool(x, window_shape, strides, padding):
-    # TODO: Implement `max_pool` with JAX ops.
-    raise NotImplementedError
-
-
-def average_pool(x, window_shape, strides, padding):
-    # TODO: Implement `average_pool` with JAX ops.
-    raise NotImplementedError
-
-
-def conv(x, filter, strides, padding, dilations=None):
-    return jax.lax.conv_general_dilated(
-        x, filter, strides, padding, rhs_dilation=dilations
-    )
-
-
-def depthwise_conv(x, filter, strides, padding):
-    # TODO: Implement `depthwise_conv` with `conv_general_dilated`.
-    raise NotImplementedError
-
-
-def separable_conv(x, depthwise_filter, pointwise_filter, strides, padding):
-    # TODO: Implement `separable_conv` with `conv_general_dilated`.
-    raise NotImplementedError
-
-
-def conv_transpose(x, filter, output_shape, padding, dilations=None):
-    return jax.lax.conv_transpose(
-        x,
-        filter,
-        output_shape,
-        padding,
-        rhs_dilation=dilations,
-    )
