@@ -63,18 +63,18 @@ def log_softmax(x, axis=None):
     return tfnn.log_softmax(x, axis=axis)
 
 
-def max_pool(x, window_shape, strides, padding):
-    return tfnn.max_pool(x, window_shape, strides, padding)
+def max_pool(x, pool_size, strides, padding):
+    return tfnn.max_pool(x, pool_size, strides, padding)
 
 
-def average_pool(x, window_shape, strides, padding):
-    return tfnn.avg_pool(x, window_shape, strides, padding)
+def average_pool(x, pool_size, strides, padding):
+    return tfnn.avg_pool(x, pool_size, strides, padding)
 
 
-def conv(x, filter, strides, padding, data_format=None, dilations=None):
+def conv(inputs, kernel, strides, padding, data_format="channel_last", dilations=None):
     return tfnn.convolution(
-        x,
-        filter,
+        inputs,
+        kernel,
         strides,
         padding,
         data_format=data_format,
@@ -83,34 +83,32 @@ def conv(x, filter, strides, padding, data_format=None, dilations=None):
 
 
 def depthwise_conv(
-    x,
-    filter,
+    inputs,
+    kernel,
     strides,
     padding,
-    data_format=None,
+    data_format="channels_last",
     dilations=None,
 ):
-    if len(x.shape) > 4:
+    if len(inputs.shape) > 4:
         raise ValueError(
             "`depthwise_conv` does not support {len(x.shape)-2}D inputs yet."
         )
-    if len(x.shape) == 3:
+    if len(inputs.shape) == 3:
         # 1D depthwise conv.
-        if data_format is None or data_format == "NWC":
+        if data_format == "channels_last":
             strides = (1,) + strides * 2 + (1,)
             spatial_start_dim = 1
-            data_format = "NHWC"
         else:
             strides = (1, 1) + strides * 2
             spatial_start_dim = 2
-            data_format = "NCHW"
-        x = tf.expand_dims(x, spatial_start_dim)
-        filter = tf.expand_dims(filter, axis=0)
+        inputs = tf.expand_dims(inputs, spatial_start_dim)
+        kernel = tf.expand_dims(kernel, axis=0)
         dilations = None if dilations is None else (1,) + dilations
 
         outputs = tf.nn.depthwise_conv2d(
-            x,
-            filter,
+            inputs,
+            kernel,
             strides=strides,
             padding=padding,
             data_format=data_format,
@@ -119,8 +117,8 @@ def depthwise_conv(
         return tf.squeeze(outputs, [spatial_start_dim])
 
     return tfnn.depthwise_conv2d(
-        x,
-        filter,
+        inputs,
+        kernel,
         strides,
         padding,
         data_format=data_format,
@@ -129,9 +127,9 @@ def depthwise_conv(
 
 
 def separable_conv(
-    x,
-    depthwise_filter,
-    pointwise_filter,
+    inputs,
+    depthwise_kernel,
+    pointwise_kernel,
     strides,
     padding,
     data_format=None,
@@ -151,15 +149,15 @@ def separable_conv(
             strides = (1, 1) + strides * 2
             spatial_start_dim = 2
             data_format = "NCHW"
-        x = tf.expand_dims(x, spatial_start_dim)
-        depthwise_filter = tf.expand_dims(depthwise_filter, axis=0)
-        pointwise_filter = tf.expand_dims(pointwise_filter, axis=0)
+        inputs = tf.expand_dims(inputs, spatial_start_dim)
+        depthwise_kernel = tf.expand_dims(depthwise_kernel, axis=0)
+        pointwise_kernel = tf.expand_dims(pointwise_kernel, axis=0)
         dilations = None if dilations is None else (1,) + dilations
 
         outputs = tf.nn.separable_conv2d(
-            x,
-            depthwise_filter,
-            pointwise_filter,
+            inputs,
+            depthwise_kernel,
+            pointwise_kernel,
             strides,
             padding,
             data_format=data_format,
@@ -168,9 +166,9 @@ def separable_conv(
         return tf.squeeze(outputs, [spatial_start_dim])
 
     return tfnn.separable_conv2d(
-        x,
-        depthwise_filter,
-        pointwise_filter,
+        inputs,
+        depthwise_kernel,
+        pointwise_kernel,
         strides,
         padding,
         data_format=data_format,
@@ -179,8 +177,8 @@ def separable_conv(
 
 
 def conv_transpose(
-    x,
-    filter,
+    inputs,
+    kernel,
     output_shape,
     strides,
     padding,
@@ -188,8 +186,8 @@ def conv_transpose(
     dilations=None,
 ):
     return tfnn.conv_transpose(
-        x,
-        filter,
+        inputs,
+        kernel,
         output_shape,
         strides,
         padding=padding,
