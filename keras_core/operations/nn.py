@@ -102,12 +102,156 @@ def softsign(x):
 
 
 class Silu(Operation):
-    def __init__(self, beta=1.0):
-        super().__init__()
-        self.beta = beta
-
     def call(self, x):
-        return backend.nn.silu(x, beta=self.beta)
+        return backend.nn.silu(x)
 
     def compute_output_spec(self, x):
         return KerasTensor(x.shape)
+
+
+def silu(x):
+    if any_symbolic_tensors((x,)):
+        return Silu().symbolic_call(x)
+    return backend.nn.silu(x)
+
+
+class Swish(Operation):
+    def call(self, x):
+        return backend.nn.swish(x)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape)
+
+
+def swish(x):
+    if any_symbolic_tensors((x,)):
+        return Swish().symbolic_call(x)
+    return backend.nn.swish(x)
+
+
+class LogSigmoid(Operation):
+    def call(self, x):
+        return backend.nn.log_sigmoid(x)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape)
+
+
+def log_sigmoid(x):
+    if any_symbolic_tensors((x,)):
+        return LogSigmoid().symbolic_call(x)
+    return backend.nn.log_sigmoid(x)
+
+
+class LeakyRelu(Operation):
+    def __init__(self, negative_slope=0.2):
+        super().__init__()
+        self.negative_slope = negative_slope
+
+    def call(self, x):
+        return backend.nn.leaky_relu(x, self.negative_slope)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape)
+
+
+def leaky_relu(x, negative_slope=0.2):
+    if any_symbolic_tensors((x,)):
+        return LeakyRelu(negative_slope).symbolic_call(x)
+    return backend.nn.leaky_relu(x, negative_slope=negative_slope)
+
+
+class HardSigmoid(Operation):
+    def call(self, x):
+        return backend.nn.hard_sigmoid(x)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape)
+
+
+def hard_sigmoid(x):
+    if any_symbolic_tensors((x,)):
+        return HardSigmoid().symbolic_call(x)
+    return backend.nn.hard_sigmoid(x)
+
+
+class Elu(Operation):
+    def call(self, x):
+        return backend.nn.elu(x)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape)
+
+
+def elu(x):
+    if any_symbolic_tensors((x,)):
+        return Elu().symbolic_call(x)
+    return backend.nn.elu(x)
+
+
+class Selu(Operation):
+    def call(self, x):
+        return backend.nn.selu(x)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape)
+
+
+def selu(x):
+    if any_symbolic_tensors((x,)):
+        return Selu().symbolic_call(x)
+    return backend.nn.selu(x)
+
+
+class Gelu(Operation):
+    def __init__(self, approximate=True):
+        super().__init__()
+        self.approximate = approximate
+
+    def call(self, x):
+        return backend.nn.gelu(x, self.approximate)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape)
+
+
+def gelu(x, approximate=True):
+    if any_symbolic_tensors((x,)):
+        return Gelu(approximate).symbolic_call(x)
+    return backend.nn.gelu(x, approximate)
+
+
+class Softmax(Operation):
+    def __init__(self, axis=None):
+        super().__init__()
+        self.axis = axis if axis is not None else -1
+
+    def call(self, x):
+        return backend.nn.softmax(x, axis=self.axis)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape)
+
+
+def softmax(x, axis=None):
+    if any_symbolic_tensors((x,)):
+        return Softmax(axis).symbolic_call(x)
+    return backend.nn.softmax(x)
+
+
+class LogSoftmax(Operation):
+    def __init__(self, axis=None):
+        super().__init__()
+        self.axis = axis if axis is not None else -1
+
+    def call(self, x):
+        return backend.nn.log_softmax(x, axis=self.axis)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape)
+
+
+def log_softmax(x, axis=None):
+    if any_symbolic_tensors((x,)):
+        return LogSoftmax(axis).symbolic_call(x)
+    return backend.nn.log_softmax(x, axis=axis)

@@ -1,5 +1,5 @@
-from tensorflow import nn as tfnn
 import tensorflow as tf
+from tensorflow import nn as tfnn
 
 
 def relu(x):
@@ -27,19 +27,20 @@ def silu(x, beta=1.0):
 
 
 def swish(x):
-    return tfnn.swish(x)
+    return x * sigmoid(x)
 
 
 def log_sigmoid(x):
-    return tfnn.log_sigmoid(x)
+    return tf.math.log_sigmoid(x)
 
 
-def leaky_relu(x):
-    return tfnn.leaky_relu(x)
+def leaky_relu(x, negative_slope=0.2):
+    return tfnn.leaky_relu(x, alpha=negative_slope)
 
 
 def hard_sigmoid(x):
-    return tfnn.hard_sigmoid(x)
+    x = x / 6.0 + 0.5
+    return tf.clip_by_value(x, 0.0, 1.0)
 
 
 def elu(x):
@@ -50,16 +51,16 @@ def selu(x):
     return tfnn.selu(x)
 
 
-def gelu(x):
-    return tfnn.gelu(x)
+def gelu(x, approximate=True):
+    return tfnn.gelu(x, approximate)
 
 
-def softmax(x):
-    return tfnn.softmax(x)
+def softmax(x, axis=None):
+    return tfnn.softmax(x, axis=axis)
 
 
-def log_softmax(x):
-    return tfnn.log_softmax(x)
+def log_softmax(x, axis=None):
+    return tfnn.log_softmax(x, axis=axis)
 
 
 def max_pool(x, window_shape, strides, padding):
@@ -68,38 +69,6 @@ def max_pool(x, window_shape, strides, padding):
 
 def average_pool(x, window_shape, strides, padding):
     return tfnn.avg_pool(x, window_shape, strides, padding)
-
-
-def convert_data_format(data_format, ndim):
-    if data_format == "channels_last":
-        if ndim == 3:
-            return "NWC"
-        elif ndim == 4:
-            return "NHWC"
-        elif ndim == 5:
-            return "NDHWC"
-        else:
-            raise ValueError(
-                f"Input rank not supported: {ndim}. "
-                "Expected values are [3, 4, 5]"
-            )
-    elif data_format == "channels_first":
-        if ndim == 3:
-            return "NCW"
-        elif ndim == 4:
-            return "NCHW"
-        elif ndim == 5:
-            return "NCDHW"
-        else:
-            raise ValueError(
-                f"Input rank not supported: {ndim}. "
-                "Expected values are [3, 4, 5]"
-            )
-    else:
-        raise ValueError(
-            f"Invalid data_format: {data_format}. "
-            'Expected values are ["channels_first", "channels_last"]'
-        )
 
 
 def conv(x, filter, strides, padding, data_format=None, dilations=None):
@@ -136,12 +105,12 @@ def depthwise_conv(
             spatial_start_dim = 2
             data_format = "NCHW"
         x = tf.expand_dims(x, spatial_start_dim)
-        depthwise_filter = tf.expand_dims(depthwise_filter, axis=0)
+        filter = tf.expand_dims(filter, axis=0)
         dilations = None if dilations is None else (1,) + dilations
 
         outputs = tf.nn.depthwise_conv2d(
             x,
-            depthwise_filter,
+            filter,
             strides=strides,
             padding=padding,
             data_format=data_format,

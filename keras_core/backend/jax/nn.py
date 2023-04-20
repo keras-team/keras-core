@@ -1,8 +1,6 @@
+import jax
 from jax import nn as jnn
 from jax import numpy as jnp
-
-import flax
-import jax
 
 
 def relu(x):
@@ -22,11 +20,11 @@ def softplus(x):
 
 
 def softsign(x):
-    return jnn.softsign(x)
+    return jnn.soft_sign(x)
 
 
-def silu(x, beta=1.0):
-    return jnn.silu(x, beta=beta)
+def silu(x):
+    return jnn.silu(x)
 
 
 def swish(x):
@@ -37,8 +35,8 @@ def log_sigmoid(x):
     return jnn.log_sigmoid(x)
 
 
-def leaky_relu(x):
-    return jnn.leaky_relu(x)
+def leaky_relu(x, negative_slope=0.2):
+    return jnn.leaky_relu(x, negative_slope=negative_slope)
 
 
 def hard_sigmoid(x):
@@ -53,16 +51,16 @@ def selu(x):
     return jnn.selu(x)
 
 
-def gelu(x):
-    return jnn.gelu(x)
+def gelu(x, approximate=True):
+    return jnn.gelu(x, approximate)
 
 
 def softmax(x):
     return jnn.softmax(x)
 
 
-def log_softmax(x):
-    return jnn.log_softmax(x)
+def log_softmax(x, axis=-1):
+    return jnn.log_softmax(x, axis=axis)
 
 
 def max_pool(x, window_shape, strides, padding):
@@ -81,36 +79,14 @@ def conv(x, filter, strides, padding, dilations=None):
     )
 
 
-def depthwise_conv2d(x, filter, strides, padding):
-    filter_shape = filter.shape
-    feature_group_count = filter_shape[2]
-    new_filter_shape = [
-        filter_shape[0],
-        filter_shape[1],
-        1,
-        filter_shape[2] * filter_shape[3],
-    ]
-    conv_filter = jnp.reshape(filter, new_filter_shape)
-    return jnn.depthwise_conv2d(
-        x,
-        conv_filter,
-        strides,
-        padding,
-        feature_group_count=feature_group_count,
-    )
+def depthwise_conv(x, filter, strides, padding):
+    # TODO: Implement `depthwise_conv` with `conv_general_dilated`.
+    raise NotImplementedError
 
 
-def separable_conv2d(
-    x, depthwise_filter, pointwise_filter, strides, padding, dilations=None
-):
-    depthwise_conv_output = depthwise_conv2d(
-        x,
-        depthwise_filter,
-        strides,
-        padding,
-        dilations=dilations,
-    )
-    return conv(depthwise_conv_output, pointwise_filter, [1, 1, 1, 1], padding)
+def separable_conv(x, depthwise_filter, pointwise_filter, strides, padding):
+    # TODO: Implement `separable_conv` with `conv_general_dilated`.
+    raise NotImplementedError
 
 
 def conv_transpose(x, filter, output_shape, padding, dilations=None):
