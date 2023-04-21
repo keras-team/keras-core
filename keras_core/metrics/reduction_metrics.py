@@ -28,7 +28,7 @@ def reduce_to_samplewise_values(values, sample_weight, reduce_fn, dtype):
 
     values_ndim = len(values.shape)
     if values_ndim > 1:
-        return reduce_fn(values, axis=list(range(1, values_ndim)))
+        return reduce_fn(values, axis=list(range(1, values_ndim))), sample_weight
     return values, sample_weight
 
 
@@ -100,7 +100,7 @@ class Mean(Metric):
     ```
     """
 
-    def __init__(self, name="sum", dtype=None):
+    def __init__(self, name="mean", dtype=None):
         super().__init__(name=name, dtype=dtype)
         self.total = self.add_variable(
             shape=(), initializer=initializers.Zeros(), dtype=self.dtype
