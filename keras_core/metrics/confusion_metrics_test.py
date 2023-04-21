@@ -1,5 +1,8 @@
 import tensorflow as tf
 
+from keras_core import metrics
+from keras_core import testing
+
 
 class FalsePositivesTest(testing.TestCase):
     def test_config(self):
@@ -16,7 +19,6 @@ class FalsePositivesTest(testing.TestCase):
 
     def test_unweighted(self):
         fp_obj = metrics.FalsePositives()
-        self.evaluate(tf.compat.v1.variables_initializer(fp_obj.variables))
 
         y_true = tf.constant(
             ((0, 1, 0, 1, 0), (0, 0, 1, 1, 1), (1, 1, 1, 1, 0), (0, 0, 0, 0, 1))
@@ -25,14 +27,12 @@ class FalsePositivesTest(testing.TestCase):
             ((0, 0, 1, 1, 0), (1, 1, 1, 1, 1), (0, 1, 0, 1, 0), (1, 1, 1, 1, 1))
         )
 
-        update_op = fp_obj.update_state(y_true, y_pred)
-        self.evaluate(update_op)
+        fp_obj.update_state(y_true, y_pred)
         result = fp_obj.result()
         self.assertAllClose(7.0, result)
 
     def test_weighted(self):
         fp_obj = metrics.FalsePositives()
-        self.evaluate(tf.compat.v1.variables_initializer(fp_obj.variables))
         y_true = tf.constant(
             ((0, 1, 0, 1, 0), (0, 0, 1, 1, 1), (1, 1, 1, 1, 0), (0, 0, 0, 0, 1))
         )
@@ -41,11 +41,10 @@ class FalsePositivesTest(testing.TestCase):
         )
         sample_weight = tf.constant((1.0, 1.5, 2.0, 2.5))
         result = fp_obj(y_true, y_pred, sample_weight=sample_weight)
-        self.assertAllClose(14.0, self.evaluate(result))
+        self.assertAllClose(14.0, result)
 
     def test_unweighted_with_thresholds(self):
         fp_obj = metrics.FalsePositives(thresholds=[0.15, 0.5, 0.85])
-        self.evaluate(tf.compat.v1.variables_initializer(fp_obj.variables))
 
         y_pred = tf.constant(
             (
@@ -59,14 +58,12 @@ class FalsePositivesTest(testing.TestCase):
             ((0, 1, 1, 0), (1, 0, 0, 0), (0, 0, 0, 0), (1, 1, 1, 1))
         )
 
-        update_op = fp_obj.update_state(y_true, y_pred)
-        self.evaluate(update_op)
+        fp_obj.update_state(y_true, y_pred)
         result = fp_obj.result()
         self.assertAllClose([7.0, 4.0, 2.0], result)
 
     def test_weighted_with_thresholds(self):
         fp_obj = metrics.FalsePositives(thresholds=[0.15, 0.5, 0.85])
-        self.evaluate(tf.compat.v1.variables_initializer(fp_obj.variables))
 
         y_pred = tf.constant(
             (
@@ -87,7 +84,7 @@ class FalsePositivesTest(testing.TestCase):
         )
 
         result = fp_obj(y_true, y_pred, sample_weight=sample_weight)
-        self.assertAllClose([125.0, 42.0, 12.0], self.evaluate(result))
+        self.assertAllClose([125.0, 42.0, 12.0], result)
 
     def test_threshold_limit(self):
         with self.assertRaisesRegex(

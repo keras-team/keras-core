@@ -15,10 +15,17 @@
 
 """Utils related to keras metrics."""
 
-import tensorflow as tf
+from enum import Enum
+
 import numpy as np
-from keras_core.utils.generic_utils import to_list
+import tensorflow as tf
+
 from keras_core import backend
+from keras_core.utils import losses_utils
+from keras_core.utils.generic_utils import to_list
+
+NEG_INF = -1e10
+
 
 def assert_thresholds_range(thresholds):
     if thresholds is not None:
@@ -31,6 +38,7 @@ def assert_thresholds_range(thresholds):
                 f"Received: {invalid_thresholds}"
             )
 
+
 def parse_init_thresholds(thresholds, default_threshold=0.5):
     if thresholds is not None:
         assert_thresholds_range(to_list(thresholds))
@@ -39,11 +47,13 @@ def parse_init_thresholds(thresholds, default_threshold=0.5):
     )
     return thresholds
 
+
 class ConfusionMatrix(Enum):
     TRUE_POSITIVES = "tp"
     FALSE_POSITIVES = "fp"
     TRUE_NEGATIVES = "tn"
     FALSE_NEGATIVES = "fn"
+
 
 def _update_confusion_matrix_variables_optimized(
     variables_to_update,
@@ -252,18 +262,18 @@ def _update_confusion_matrix_variables_optimized(
     update_ops = []
     if ConfusionMatrix.TRUE_POSITIVES in variables_to_update:
         variable = variables_to_update[ConfusionMatrix.TRUE_POSITIVES]
-        update_ops.append(variable.assign_add(tp))
+        update_ops.append(variable.assign(variable + tp))
     if ConfusionMatrix.FALSE_POSITIVES in variables_to_update:
         variable = variables_to_update[ConfusionMatrix.FALSE_POSITIVES]
-        update_ops.append(variable.assign_add(fp))
+        update_ops.append(variable.assign(variable + fp))
     if ConfusionMatrix.TRUE_NEGATIVES in variables_to_update:
         variable = variables_to_update[ConfusionMatrix.TRUE_NEGATIVES]
         tn = total_false_labels - fp
-        update_ops.append(variable.assign_add(tn))
+        update_ops.append(variable.assign(variable + tn))
     if ConfusionMatrix.FALSE_NEGATIVES in variables_to_update:
         variable = variables_to_update[ConfusionMatrix.FALSE_NEGATIVES]
         fn = total_true_labels - tp
-        update_ops.append(variable.assign_add(fn))
+        update_ops.append(variable.assign(variable + fn))
     return tf.group(update_ops)
 
 
@@ -289,6 +299,7 @@ def is_evenly_distributed_thresholds(thresholds):
         num_thresholds - 1
     )
     return np.allclose(thresholds, even_thresholds, atol=backend.epsilon())
+
 
 def update_confusion_matrix_variables(
     variables_to_update,
@@ -517,7 +528,7 @@ def update_confusion_matrix_variables(
         label_and_pred = tf.cast(tf.logical_and(label, pred), dtype=var.dtype)
         if weights is not None:
             label_and_pred *= tf.cast(weights, dtype=var.dtype)
-        return var.assign_add(tf.reduce_sum(label_and_pred, 1))
+        return var.assign(var + tf.reduce_sum(label_and_pred, 1))
 
     loop_vars = {
         ConfusionMatrix.TRUE_POSITIVES: (label_is_pos, pred_is_pos),
@@ -540,7 +551,6 @@ def update_confusion_matrix_variables(
             )
 
     for matrix_cond, (label, pred) in loop_vars.items():
-
         if matrix_cond in variables_to_update:
             update_ops.append(
                 weighted_assign_add(
@@ -549,6 +559,7 @@ def update_confusion_matrix_variables(
             )
 
     return tf.group(update_ops)
+
 
 def _filter_top_k(x, k):
     """Filters top-k values in the last dim of x and set the rest to NEG_INF.

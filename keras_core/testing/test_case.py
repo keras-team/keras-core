@@ -13,8 +13,12 @@ class TestCase(unittest.TestCase):
     def assertEqual(self, x1, x2):
         np.testing.assert_equal(x1, x2)
 
-    def assertLen(iterable, expected_len):
+    def assertLen(self, iterable, expected_len):
         np.testing.assert_equal(len(iterable), expected_len)
 
-    def assertRaisesRegex(self, exception_class, expected_regexp, *args, **kwargs):
-        return np.testing.assert_raises_regex(exception_class, expected_regexp, *args, **kwargs)
+    def assertRaisesRegex(
+        self, exception_class, expected_regexp, *args, **kwargs
+    ):
+        return np.testing.assert_raises_regex(
+            exception_class, expected_regexp, *args, **kwargs
+        )

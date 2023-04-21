@@ -1,9 +1,10 @@
 from keras_core import backend
-from keras_core.utils import metrics_utils
-
+from keras_core import initializers
 from keras_core import operations as ops
 from keras_core.api_export import keras_core_export
 from keras_core.metrics.metric import Metric
+from keras_core.utils import metrics_utils
+
 
 class _ConfusionMatrixConditionCount(Metric):
     """Calculates the number of the given confusion matrix condition.
@@ -31,8 +32,10 @@ class _ConfusionMatrixConditionCount(Metric):
         self._thresholds_distributed_evenly = (
             metrics_utils.is_evenly_distributed_thresholds(self.thresholds)
         )
-        self.accumulator = self.add_weight(
-            "accumulator", shape=(len(self.thresholds),), initializer="zeros"
+        self.accumulator = self.add_variable(
+            shape=(len(self.thresholds),),
+            initializer=initializers.Zeros(),
+            name="accumulator",
         )
 
     def update_state(self, y_true, y_pred, sample_weight=None):
@@ -62,7 +65,7 @@ class _ConfusionMatrixConditionCount(Metric):
             result = self.accumulator[0]
         else:
             result = self.accumulator
-        return ops.identity(result)
+        return backend.convert_to_tensor(result)
 
     def get_config(self):
         config = {"thresholds": self.init_thresholds}

@@ -1,5 +1,7 @@
 import tensorflow as tf
+
 from keras_core import backend
+
 
 def remove_squeezable_dimensions(
     labels, predictions, expected_rank_diff=0, name=None
@@ -66,6 +68,7 @@ def remove_squeezable_dimensions(
             )
         return labels, predictions
 
+
 def squeeze_or_expand_dimensions(y_pred, y_true=None, sample_weight=None):
     """Squeeze or expand last dimension if needed.
 
@@ -93,7 +96,6 @@ def squeeze_or_expand_dimensions(y_pred, y_true=None, sample_weight=None):
     y_pred_shape = y_pred.shape
     y_pred_rank = y_pred_shape.ndims
     if y_true is not None:
-
         # If sparse matrix is provided as `y_true`, the last dimension in
         # `y_pred` may be > 1. Eg: y_true = [0, 1, 2] (shape=(3,)), y_pred =
         # [[.9, .05, .05], [.5, .89, .6], [.05, .01, .94]] (shape=(3, 3)) In
@@ -107,11 +109,17 @@ def squeeze_or_expand_dimensions(y_pred, y_true=None, sample_weight=None):
         else:
             # Use dynamic rank.
             rank_diff = tf.rank(y_pred) - tf.rank(y_true)
-            squeeze_dims = lambda: remove_squeezable_dimensions(y_true, y_pred)
+
+            def squeeze_dims():
+                return remove_squeezable_dimensions(y_true, y_pred)
+
             is_last_dim_1 = tf.equal(1, tf.shape(y_pred)[-1])
-            maybe_squeeze_dims = lambda: tf.cond(
-                is_last_dim_1, squeeze_dims, lambda: (y_true, y_pred)
-            )
+
+            def maybe_squeeze_dims():
+                return tf.cond(
+                    is_last_dim_1, squeeze_dims, lambda: (y_true, y_pred)
+                )
+
             y_true, y_pred = tf.cond(
                 tf.equal(1, rank_diff), maybe_squeeze_dims, squeeze_dims
             )
@@ -135,10 +143,14 @@ def squeeze_or_expand_dimensions(y_pred, y_true=None, sample_weight=None):
     # Use dynamic rank.
     weights_rank_tensor = tf.rank(sample_weight)
     rank_diff = weights_rank_tensor - tf.rank(y_pred)
-    maybe_squeeze_weights = lambda: tf.squeeze(sample_weight, [-1])
+
+    def maybe_squeeze_weights():
+        return tf.squeeze(sample_weight, [-1])
 
     def _maybe_expand_weights():
-        expand_weights = lambda: tf.expand_dims(sample_weight, [-1])
+        def expand_weights():
+            return tf.expand_dims(sample_weight, [-1])
+
         return tf.cond(
             tf.equal(rank_diff, -1), expand_weights, lambda: sample_weight
         )
