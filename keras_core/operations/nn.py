@@ -288,31 +288,31 @@ class MaxPool(Operation):
         strides = pool_size if self.strides is None else self.strides
         input_shape = np.array(inputs.shape)
         if self.data_format == "channels_last":
-            spacial_shape = input_shape[1:-1]
+            spatial_shape = input_shape[1:-1]
         else:
-            spacial_shape = input_shape[2:]
+            spatial_shape = input_shape[2:]
         pool_size = np.array(self.pool_size)
         if self.padding == "valid":
-            output_spacial_shape = (
-                np.floor((spacial_shape - self.pool_size) / strides) + 1
+            output_spatial_shape = (
+                np.floor((spatial_shape - self.pool_size) / strides) + 1
             )
-            negative_in_shape = np.all(output_spacial_shape < 0)
+            negative_in_shape = np.all(output_spatial_shape < 0)
             if negative_in_shape:
                 raise ValueError(
                     "Computed output size would be negative. Received "
                     f"`inputs.shape={input_shape}` and `pool_size={pool_size}`."
                 )
         elif self.padding == "same":
-            output_spacial_shape = np.floor((spacial_shape - 1) / strides) + 1
-        output_spacial_shape = [int(i) for i in output_spacial_shape]
+            output_spatial_shape = np.floor((spatial_shape - 1) / strides) + 1
+        output_spatial_shape = [int(i) for i in output_spatial_shape]
         if self.data_format == "channels_last":
             output_shape = (
                 [inputs.shape[0]]
-                + list(output_spacial_shape)
+                + list(output_spatial_shape)
                 + [inputs.shape[-1]]
             )
         else:
-            output_shape = inputs.shape[:2] + list(output_spacial_shape)
+            output_shape = inputs.shape[:2] + list(output_spatial_shape)
         return KerasTensor(output_shape, dtype=inputs.dtype)
 
 
@@ -334,12 +334,12 @@ def max_pool(
             dimensions only.
         pool_size: int or tuple/list of integers of size
             `len(inputs_spatial_shape)`, specifying the size of the pooling
-            window for each spacial dimension of the input tensor. If `pool_size`
-            is int, then every spacial dimension shares the same `pool_size`.
+            window for each spatial dimension of the input tensor. If `pool_size`
+            is int, then every spatial dimension shares the same `pool_size`.
         strides: int or tuple/list of integers of size
             `len(inputs_spatial_shape)`. The stride of the sliding window for
-            each spacial dimension of the input tensor. If `strides` is int,
-            then every spacial dimension shares the same `strides`.
+            each spatial dimension of the input tensor. If `strides` is int,
+            then every spatial dimension shares the same `strides`.
         padding: string, either `"valid"` or `"same"`. `"valid"` means no
             padding is applied, and "same" results in padding evenly to the
             left/right or up/down of the input such that output has the
@@ -391,29 +391,29 @@ class AveragePool(Operation):
         strides = pool_size if self.strides is None else self.strides
         input_shape = np.array(inputs.shape)
         if self.data_format == "channels_last":
-            spacial_shape = input_shape[1:-1]
+            spatial_shape = input_shape[1:-1]
         else:
-            spacial_shape = input_shape[2:]
+            spatial_shape = input_shape[2:]
         pool_size = np.array(self.pool_size)
         if self.padding == "valid":
-            output_spacial_shape = (
-                np.floor((spacial_shape - self.pool_size) / strides) + 1
+            output_spatial_shape = (
+                np.floor((spatial_shape - self.pool_size) / strides) + 1
             )
-            negative_in_shape = np.all(output_spacial_shape < 0)
+            negative_in_shape = np.all(output_spatial_shape < 0)
             if negative_in_shape:
                 raise ValueError(
                     "Computed output size would be negative. Received "
                     f"`inputs.shape={input_shape}` and `pool_size={pool_size}`."
                 )
         elif self.padding == "same":
-            output_spacial_shape = np.floor((spacial_shape - 1) / strides) + 1
-        output_spacial_shape = [int(i) for i in output_spacial_shape]
+            output_spatial_shape = np.floor((spatial_shape - 1) / strides) + 1
+        output_spatial_shape = [int(i) for i in output_spatial_shape]
         if self.data_format == "channels_last":
             output_shape = (
-                [inputs.shape[0]] + output_spacial_shape + [inputs.shape[-1]]
+                [inputs.shape[0]] + output_spatial_shape + [inputs.shape[-1]]
             )
         else:
-            output_shape = inputs.shape[:2] + output_spacial_shape
+            output_shape = inputs.shape[:2] + output_spatial_shape
         return KerasTensor(output_shape, dtype=inputs.dtype)
 
 
@@ -435,12 +435,12 @@ def average_pool(
             dimensions only.
         pool_size: int or tuple/list of integers of size
             `len(inputs_spatial_shape)`, specifying the size of the pooling
-            window for each spacial dimension of the input tensor. If `pool_size`
-            is int, then every spacial dimension shares the same `pool_size`.
+            window for each spatial dimension of the input tensor. If `pool_size`
+            is int, then every spatial dimension shares the same `pool_size`.
         strides: int or tuple/list of integers of size
             `len(inputs_spatial_shape)`. The stride of the sliding window for
-            each spacial dimension of the input tensor. If `strides` is int,
-            then every spacial dimension shares the same `strides`.
+            each spatial dimension of the input tensor. If `strides` is int,
+            then every spatial dimension shares the same `strides`.
         padding: string, either `"valid"` or `"same"`. `"valid"` means no
             padding is applied, and "same" results in padding evenly to the
             left/right or up/down of the input such that output has the
@@ -492,9 +492,9 @@ class Conv(Operation):
     def compute_output_spec(self, inputs, kernel):
         input_shape = inputs.shape
         if self.data_format == "channels_last":
-            spacial_shape = input_shape[1:-1]
+            spatial_shape = input_shape[1:-1]
         else:
-            spacial_shape = input_shape[2:]
+            spatial_shape = input_shape[2:]
         if len(kernel.shape) != len(input_shape):
             raise ValueError(
                 "Kernel shape must have the same length as input, but received "
@@ -502,50 +502,50 @@ class Conv(Operation):
                 f"input of shape {input_shape}."
             )
         if isinstance(self.dilation_rate, int):
-            dilation_rate = (self.dilation_rate,) * len(spacial_shape)
-        if len(dilation_rate) != len(spacial_shape):
+            dilation_rate = (self.dilation_rate,) * len(spatial_shape)
+        if len(dilation_rate) != len(spatial_shape):
             raise ValueError(
                 "Dilation must be None, scalar or tuple/list of length of "
-                "inputs' spacial shape, but received "
+                "inputs' spatial shape, but received "
                 f"`dilation_rate={self.dilation_rate}` and input of shape {input_shape}."
             )
-        spacial_shape = np.array(spacial_shape)
-        kernel_spacial_shape = np.array(kernel.shape[:-2])
+        spatial_shape = np.array(spatial_shape)
+        kernel_spatial_shape = np.array(kernel.shape[:-2])
         dilation_rate = np.array(dilation_rate)
         if self.padding == "valid":
-            output_spacial_shape = (
+            output_spatial_shape = (
                 np.floor(
                     (
-                        spacial_shape
-                        - dilation_rate * (kernel_spacial_shape - 1)
+                        spatial_shape
+                        - dilation_rate * (kernel_spatial_shape - 1)
                         - 1
                     )
                     / self.strides
                 )
                 + 1
             )
-            negative_in_shape = np.all(output_spacial_shape < 0)
+            negative_in_shape = np.all(output_spatial_shape < 0)
             if negative_in_shape:
                 raise ValueError(
                     "Computed output size would be negative. Received "
                     f"`inputs shape={inputs.shape}`, "
-                    f"`kernel spacial size={kernel.size}`, "
+                    f"`kernel spatial size={kernel.size}`, "
                     f"`dilation_rate={self.dilation_rate}`."
                 )
         elif self.padding == "same":
-            output_spacial_shape = (
-                np.floor((spacial_shape - 1) / self.strides) + 1
+            output_spatial_shape = (
+                np.floor((spatial_shape - 1) / self.strides) + 1
             )
-        output_spacial_shape = [int(i) for i in output_spacial_shape]
+        output_spatial_shape = [int(i) for i in output_spatial_shape]
         if self.data_format == "channels_last":
             output_shape = (
-                [inputs.shape[0]] + output_spacial_shape + [kernel.shape[-1]]
+                [inputs.shape[0]] + output_spatial_shape + [kernel.shape[-1]]
             )
         else:
             output_shape = [
                 inputs.shape[0],
                 kernel.shape[-1],
-            ] + output_spacial_shape
+            ] + output_spatial_shape
         return KerasTensor(output_shape, dtype=inputs.dtype)
 
 
@@ -574,7 +574,7 @@ def conv(
             `inputs`.
         strides: int or int tuple/list of `len(inputs_spatial_shape)`,
             specifying the strides of the convolution along each spatial
-            dimension. If `strides` is int, then every spacial dimension shares
+            dimension. If `strides` is int, then every spatial dimension shares
             the same `strides`.
         padding: string, either `"valid"` or `"same"`. `"valid"` means no
             padding is applied, and "same" results in padding evenly to the
@@ -588,7 +588,7 @@ def conv(
             (batch_size, channels, spatial_shape).
         dilation_rate: int or int tuple/list of `len(inputs_spatial_shape)`,
             specifying the dilation rate to use for dilated convolution. If
-            `dilation_rate` is int, then every spacial dimension shares
+            `dilation_rate` is int, then every spatial dimension shares
             the same `dilation_rate`.
 
     Returns:
@@ -630,9 +630,9 @@ class DepthwiseConv(Operation):
     def compute_output_spec(self, inputs, kernel):
         input_shape = inputs.shape
         if self.data_format == "channels_last":
-            spacial_shape = input_shape[1:-1]
+            spatial_shape = input_shape[1:-1]
         else:
-            spacial_shape = input_shape[2:]
+            spatial_shape = input_shape[2:]
         if len(kernel.shape) != len(inputs.shape):
             raise ValueError(
                 "Kernel shape must have the same length as input, but received "
@@ -640,52 +640,52 @@ class DepthwiseConv(Operation):
                 f"input of shape {input_shape}."
             )
         if isinstance(self.dilation_rate, int):
-            dilation_rate = (self.dilation_rate,) * len(spacial_shape)
-        if len(dilation_rate) != len(spacial_shape):
+            dilation_rate = (self.dilation_rate,) * len(spatial_shape)
+        if len(dilation_rate) != len(spatial_shape):
             raise ValueError(
                 "Dilation must be None, scalar or tuple/list of length of "
-                "inputs' spacial shape, but received "
+                "inputs' spatial shape, but received "
                 f"`dilation_rate={self.dilation_rate}` and input of shape {input_shape}."
             )
-        spacial_shape = np.array(spacial_shape)
-        kernel_spacial_shape = np.array(kernel.shape[:-2])
+        spatial_shape = np.array(spatial_shape)
+        kernel_spatial_shape = np.array(kernel.shape[:-2])
         dilation_rate = np.array(self.dilation_rate)
         if self.padding == "valid":
-            output_spacial_shape = (
+            output_spatial_shape = (
                 np.floor(
                     (
-                        spacial_shape
-                        - dilation_rate * (kernel_spacial_shape - 1)
+                        spatial_shape
+                        - dilation_rate * (kernel_spatial_shape - 1)
                         - 1
                     )
                     / self.strides
                 )
                 + 1
             )
-            negative_in_shape = np.all(output_spacial_shape < 0)
+            negative_in_shape = np.all(output_spatial_shape < 0)
             if negative_in_shape:
                 raise ValueError(
                     "Computed output size would be negative. Received "
                     f"`inputs shape={inputs.shape}`, "
-                    f"`kernel spacial size={kernel.size}`, "
+                    f"`kernel spatial size={kernel.size}`, "
                     f"`dilation_rate={self.dilation_rate}`."
                 )
         elif self.padding == "same":
-            output_spacial_shape = (
-                np.floor((spacial_shape - 1) / self.strides) + 1
+            output_spatial_shape = (
+                np.floor((spatial_shape - 1) / self.strides) + 1
             )
 
-        output_spacial_shape = [int(i) for i in output_spacial_shape]
+        output_spatial_shape = [int(i) for i in output_spatial_shape]
         output_channels = kernel.shape[-1] * kernel.shape[-2]
         if self.data_format == "channels_last":
             output_shape = (
-                [input_shape[0]] + output_spacial_shape + [output_channels]
+                [input_shape[0]] + output_spatial_shape + [output_channels]
             )
         else:
             output_shape = [
                 input_shape[0],
                 output_channels,
-            ] + output_spacial_shape
+            ] + output_spatial_shape
         return KerasTensor(output_shape, dtype=inputs.dtype)
 
 
@@ -714,7 +714,7 @@ def depthwise_conv(
             `inputs`.
         strides: int or int tuple/list of `len(inputs_spatial_shape)`,
             specifying the strides of the convolution along each spatial
-            dimension. If `strides` is int, then every spacial dimension shares
+            dimension. If `strides` is int, then every spatial dimension shares
             the same `strides`.
         padding: string, either `"valid"` or `"same"`. `"valid"` means no
             padding is applied, and "same" results in padding evenly to the
@@ -728,7 +728,7 @@ def depthwise_conv(
             (batch_size, channels, spatial_shape).
         dilation_rate: int or int tuple/list of `len(inputs_spatial_shape)`,
             specifying the dilation rate to use for dilated convolution. If
-            `dilation_rate` is int, then every spacial dimension shares
+            `dilation_rate` is int, then every spatial dimension shares
             the same `dilation_rate`.
 
     Returns:
@@ -821,7 +821,7 @@ def separable_conv(
             num_input_channels * num_channels_multiplier, num_output_channels].
         strides: int or int tuple/list of `len(inputs_spatial_shape)`,
             specifying the strides of the convolution along each spatial
-            dimension. If `strides` is int, then every spacial dimension shares
+            dimension. If `strides` is int, then every spatial dimension shares
             the same `strides`.
         padding: string, either `"valid"` or `"same"`. `"valid"` means no
             padding is applied, and "same" results in padding evenly to the
@@ -835,7 +835,7 @@ def separable_conv(
             (batch_size, channels, spatial_shape).
         dilation_rate: int or int tuple/list of `len(inputs_spatial_shape)`,
             specifying the dilation rate to use for dilated convolution. If
-            `dilation_rate` is int, then every spacial dimension shares
+            `dilation_rate` is int, then every spatial dimension shares
             the same `dilation_rate`.
 
     Returns:
@@ -929,7 +929,7 @@ def conv_transpose(
             `inputs`.
         strides: int or int tuple/list of `len(inputs_spatial_shape)`,
             specifying the strides of the convolution along each spatial
-            dimension. If `strides` is int, then every spacial dimension shares
+            dimension. If `strides` is int, then every spatial dimension shares
             the same `strides`.
         padding: string, either `"valid"` or `"same"`. `"valid"` means no
             padding is applied, and "same" results in padding evenly to the
@@ -950,7 +950,7 @@ def conv_transpose(
             (batch_size, channels, spatial_shape).
         dilation_rate: int or int tuple/list of `len(inputs_spatial_shape)`,
             specifying the dilation rate to use for dilated convolution. If
-            `dilation_rate` is int, then every spacial dimension shares
+            `dilation_rate` is int, then every spatial dimension shares
             the same `dilation_rate`.
 
     Returns:

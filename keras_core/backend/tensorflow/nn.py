@@ -157,8 +157,8 @@ def depthwise_conv(
     num_spatial_dims = len(inputs.shape) - 2
     if num_spatial_dims > 2:
         raise ValueError(
-            "`num_spatial_dims` must be 1 or 2. Received: "
-            "num_spatial_dims={num_spatial_dims}."
+            "`inputs` rank must be 3 (1D conv) or 4 (2D conv). Received: "
+            "{inputs.ndim}."
         )
     tf_data_format = _convert_data_format(data_format, len(inputs.shape))
     padding = padding.upper()
@@ -276,6 +276,7 @@ def _deconv_output_length(
     dilation=1,
 ):
     """Determines output length of a transposed convolution given input length.
+    
     Args:
         input_length: Integer.
         kernel_size: Integer.
@@ -284,6 +285,7 @@ def _deconv_output_length(
           Can be set to `None` in which case the output length is inferred.
         stride: Integer.
         dilation: Integer.
+
     Returns:
         The output length (integer).
     """
@@ -317,9 +319,9 @@ def compute_output_shape_conv_transpose(
     kernel,
     strides,
     padding,
-    output_padding,
-    data_format,
-    dilation_rate,
+    output_padding=None,
+    data_format="channels_last",
+    dilation_rate=1,
 ):
     num_spatial_dims = len(inputs.shape) - 2
     kernel_spatial_shape = kernel.shape[:-2]
