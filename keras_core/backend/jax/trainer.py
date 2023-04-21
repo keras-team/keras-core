@@ -214,7 +214,8 @@ class JAXTrainer(base_trainer.Trainer):
                     break
 
             # Update variable values
-            # NOTE: doing this after each step would be a big performance bottleneck.
+            # NOTE: doing this after each step would be a big performance
+            # bottleneck.
             for ref_v, v in zip(self.trainable_variables, trainable_variables):
                 ref_v.assign(v)
             for ref_v, v in zip(
@@ -399,7 +400,8 @@ class JAXTrainer(base_trainer.Trainer):
                 metrics_variables,
             )
             logs, state = test_step(state, data)
-            # Note that trainable variables are not returned since they're immutable here.
+            # Note that trainable variables are not returned since they're
+            # immutable here.
             non_trainable_variables, metrics_variables = state
 
             callbacks.on_test_batch_end(step, logs)
