@@ -8,8 +8,13 @@ on:
     types: [created]
 jobs:
   build:
+    strategy:
+      matrix:
+        backend: [tf, jax]
     name: Run tests
     runs-on: ubuntu-latest
+    env:
+      KERAS_HOME: shell/${{ matrix.backend }}_backend
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.10
@@ -32,7 +37,7 @@ jobs:
           pip install -e "." --progress-bar off --upgrade
       - name: Test with pytest
         run: |
-          pytest
+          pytest keras_core
 
   format:
     name: Check the code format
