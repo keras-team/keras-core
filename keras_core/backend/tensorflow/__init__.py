@@ -233,7 +233,7 @@ def cast(x, dtype):
 
 
 def cond(pred, true_fun, false_fun):
-    return tf.cond(pred, true_fn=true_fun, false_fun=false_fun)
+    return tf.cond(pred, true_fn=true_fun, false_fn=false_fun)
 
 
 def name_scope(name):
