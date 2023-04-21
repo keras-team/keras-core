@@ -1,13 +1,12 @@
 import numpy as np
 import pytest
+import tensorflow as tf
 from tensorflow.python.ops.numpy_ops import np_config
 
 from keras_core import testing
 from keras_core.backend import backend
 from keras_core.backend.keras_tensor import KerasTensor
 from keras_core.operations import nn as knn
-
-import tensorflow as tf
 
 
 @pytest.mark.skipif(
@@ -79,6 +78,153 @@ class NNOpsDynamicShapeTest(testing.TestCase):
         self.assertEqual(knn.log_softmax(x, axis=1).shape, (None, 2, 3))
         self.assertEqual(knn.log_softmax(x, axis=-1).shape, (None, 2, 3))
 
+    def test_max_pool(self):
+        x = KerasTensor([None, 8, 3])
+        self.assertEqual(knn.max_pool(x, 2, 1).shape, (None, 7, 3))
+        self.assertEqual(
+            knn.max_pool(x, 2, 2, padding="same").shape, (None, 4, 3)
+        )
+
+        x = KerasTensor([None, 8, 8, 3])
+        self.assertEqual(knn.max_pool(x, 2, 1).shape, (None, 7, 7, 3))
+        self.assertEqual(
+            knn.max_pool(x, 2, 2, padding="same").shape, (None, 4, 4, 3)
+        )
+
+    def test_average_pool(self):
+        x = KerasTensor([None, 8, 3])
+        self.assertEqual(knn.average_pool(x, 2, 1).shape, (None, 7, 3))
+        self.assertEqual(
+            knn.average_pool(x, 2, 2, padding="same").shape, (None, 4, 3)
+        )
+
+        x = KerasTensor([None, 8, 8, 3])
+        self.assertEqual(knn.average_pool(x, 2, 1).shape, (None, 7, 7, 3))
+        self.assertEqual(
+            knn.average_pool(x, 2, 2, padding="same").shape, (None, 4, 4, 3)
+        )
+
+    def test_conv(self):
+        # Test 1D conv.
+        inputs_1d = KerasTensor([None, 20, 3])
+        kernel = KerasTensor([4, 3, 2])
+        self.assertEqual(
+            knn.conv(inputs_1d, kernel, 1, padding="valid").shape, (None, 17, 2)
+        )
+        self.assertEqual(
+            knn.conv(inputs_1d, kernel, 1, padding="same").shape, (None, 20, 2)
+        )
+        self.assertEqual(
+            knn.conv(inputs_1d, kernel, 2, dilations=2).shape, (None, 7, 2)
+        )
+
+        # Test 2D conv.
+        inputs_2d = KerasTensor([None, 10, 10, 3])
+        kernel = KerasTensor([2, 2, 3, 2])
+        self.assertEqual(
+            knn.conv(inputs_2d, kernel, 1, padding="valid").shape,
+            (None, 9, 9, 2),
+        )
+        self.assertEqual(
+            knn.conv(inputs_2d, kernel, 1, padding="same").shape,
+            (None, 10, 10, 2),
+        )
+        self.assertEqual(
+            knn.conv(inputs_2d, kernel, 2, dilations=2).shape, (None, 4, 4, 2)
+        )
+
+        # Test 3D conv.
+        inputs_3d = KerasTensor([None, 8, 8, 8, 3])
+        kernel = KerasTensor([3, 3, 3, 3, 2])
+        self.assertEqual(
+            knn.conv(inputs_3d, kernel, 1, padding="valid").shape,
+            (None, 6, 6, 6, 2),
+        )
+        self.assertEqual(
+            knn.conv(inputs_3d, kernel, 2, padding="same").shape,
+            (None, 4, 4, 4, 2),
+        )
+
+    def test_depthwise_conv(self):
+        # Test 1D depthwise conv.
+        inputs_1d = KerasTensor([None, 20, 3])
+        kernel = KerasTensor([4, 3, 1])
+        self.assertEqual(
+            knn.depthwise_conv(inputs_1d, kernel, 1, padding="valid").shape,
+            (None, 17, 3),
+        )
+        self.assertEqual(
+            knn.depthwise_conv(inputs_1d, kernel, 1, padding="same").shape,
+            (None, 20, 3),
+        )
+        self.assertEqual(
+            knn.depthwise_conv(inputs_1d, kernel, 2, dilations=2).shape,
+            (None, 7, 3),
+        )
+
+        # Test 2D depthwise conv.
+        inputs_2d = KerasTensor([None, 10, 10, 3])
+        kernel = KerasTensor([2, 2, 3, 1])
+        self.assertEqual(
+            knn.depthwise_conv(inputs_2d, kernel, 1, padding="valid").shape,
+            (None, 9, 9, 3),
+        )
+        self.assertEqual(
+            knn.depthwise_conv(inputs_2d, kernel, 1, padding="same").shape,
+            (None, 10, 10, 3),
+        )
+        self.assertEqual(
+            knn.depthwise_conv(inputs_2d, kernel, 2, dilations=2).shape,
+            (None, 4, 4, 3),
+        )
+
+    def test_separable_conv(self):
+        # Test 1D separable conv.
+        inputs_1d = KerasTensor([None, 20, 3])
+        kernel = KerasTensor([4, 3, 2])
+        pointwise_kernel = KerasTensor([1, 6, 5])
+        self.assertEqual(
+            knn.separable_conv(
+                inputs_1d, kernel, pointwise_kernel, 1, padding="valid"
+            ).shape,
+            (None, 17, 5),
+        )
+        self.assertEqual(
+            knn.separable_conv(
+                inputs_1d, kernel, pointwise_kernel, 1, padding="same"
+            ).shape,
+            (None, 20, 5),
+        )
+        self.assertEqual(
+            knn.separable_conv(
+                inputs_1d, kernel, pointwise_kernel, 2, dilations=2
+            ).shape,
+            (None, 7, 5),
+        )
+
+        # Test 2D separable conv.
+        inputs_2d = KerasTensor([None, 10, 10, 3])
+        kernel = KerasTensor([2, 2, 3, 2])
+        pointwise_kernel = KerasTensor([1, 1, 6, 5])
+        self.assertEqual(
+            knn.separable_conv(
+                inputs_2d, kernel, pointwise_kernel, 1, padding="valid"
+            ).shape,
+            (None, 9, 9, 5),
+        )
+        self.assertEqual(
+            knn.separable_conv(
+                inputs_2d, kernel, pointwise_kernel, 1, padding="same"
+            ).shape,
+            (None, 10, 10, 5),
+        )
+        self.assertEqual(
+            knn.separable_conv(
+                inputs_2d, kernel, pointwise_kernel, 2, dilations=2
+            ).shape,
+            (None, 4, 4, 5),
+        )
+
 
 class NNOpsStaticShapeTest(testing.TestCase):
     def test_relu(self):
@@ -144,6 +290,149 @@ class NNOpsStaticShapeTest(testing.TestCase):
         self.assertEqual(knn.log_softmax(x).shape, (1, 2, 3))
         self.assertEqual(knn.log_softmax(x, axis=1).shape, (1, 2, 3))
         self.assertEqual(knn.log_softmax(x, axis=-1).shape, (1, 2, 3))
+
+    def test_max_pool(self):
+        x = KerasTensor([1, 8, 3])
+        self.assertEqual(knn.max_pool(x, 2, 1).shape, (1, 7, 3))
+        self.assertEqual(knn.max_pool(x, 2, 2, padding="same").shape, (1, 4, 3))
+
+        x = KerasTensor([1, 8, 8, 3])
+        self.assertEqual(knn.max_pool(x, 2, 1).shape, (1, 7, 7, 3))
+        self.assertEqual(
+            knn.max_pool(x, 2, 2, padding="same").shape, (1, 4, 4, 3)
+        )
+
+    def test_average_pool(self):
+        x = KerasTensor([1, 8, 3])
+        self.assertEqual(knn.average_pool(x, 2, 1).shape, (1, 7, 3))
+        self.assertEqual(
+            knn.average_pool(x, 2, 2, padding="same").shape, (1, 4, 3)
+        )
+
+        x = KerasTensor([1, 8, 8, 3])
+        self.assertEqual(knn.average_pool(x, 2, 1).shape, (1, 7, 7, 3))
+        self.assertEqual(
+            knn.average_pool(x, 2, 2, padding="same").shape, (1, 4, 4, 3)
+        )
+
+    def test_conv(self):
+        # Test 1D conv.
+        inputs_1d = KerasTensor([2, 20, 3])
+        kernel = KerasTensor([4, 3, 2])
+        self.assertEqual(
+            knn.conv(inputs_1d, kernel, 1, padding="valid").shape, (2, 17, 2)
+        )
+        self.assertEqual(
+            knn.conv(inputs_1d, kernel, 1, padding="same").shape, (2, 20, 2)
+        )
+        self.assertEqual(
+            knn.conv(inputs_1d, kernel, 2, dilations=2).shape, (2, 7, 2)
+        )
+
+        # Test 2D conv.
+        inputs_2d = KerasTensor([2, 10, 10, 3])
+        kernel = KerasTensor([2, 2, 3, 2])
+        self.assertEqual(
+            knn.conv(inputs_2d, kernel, 1, padding="valid").shape, (2, 9, 9, 2)
+        )
+        self.assertEqual(
+            knn.conv(inputs_2d, kernel, 1, padding="same").shape, (2, 10, 10, 2)
+        )
+        self.assertEqual(
+            knn.conv(inputs_2d, kernel, 2, dilations=2).shape, (2, 4, 4, 2)
+        )
+
+        # Test 3D conv.
+        inputs_3d = KerasTensor([2, 8, 8, 8, 3])
+        kernel = KerasTensor([3, 3, 3, 3, 2])
+        self.assertEqual(
+            knn.conv(inputs_3d, kernel, 1, padding="valid").shape,
+            (2, 6, 6, 6, 2),
+        )
+        self.assertEqual(
+            knn.conv(inputs_3d, kernel, 2, padding="same").shape,
+            (2, 4, 4, 4, 2),
+        )
+
+    def test_depthwise_conv(self):
+        # Test 1D depthwise conv.
+        inputs_1d = KerasTensor([2, 20, 3])
+        kernel = KerasTensor([4, 3, 1])
+        self.assertEqual(
+            knn.depthwise_conv(inputs_1d, kernel, 1, padding="valid").shape,
+            (2, 17, 3),
+        )
+        self.assertEqual(
+            knn.depthwise_conv(inputs_1d, kernel, 1, padding="same").shape,
+            (2, 20, 3),
+        )
+        self.assertEqual(
+            knn.depthwise_conv(inputs_1d, kernel, 2, dilations=2).shape,
+            (2, 7, 3),
+        )
+
+        # Test 2D depthwise conv.
+        inputs_2d = KerasTensor([2, 10, 10, 3])
+        kernel = KerasTensor([2, 2, 3, 1])
+        self.assertEqual(
+            knn.depthwise_conv(inputs_2d, kernel, 1, padding="valid").shape,
+            (2, 9, 9, 3),
+        )
+        self.assertEqual(
+            knn.depthwise_conv(inputs_2d, kernel, 1, padding="same").shape,
+            (2, 10, 10, 3),
+        )
+        self.assertEqual(
+            knn.depthwise_conv(inputs_2d, kernel, 2, dilations=2).shape,
+            (2, 4, 4, 3),
+        )
+
+    def test_separable_conv(self):
+        # Test 1D separable conv.
+        inputs_1d = KerasTensor([2, 20, 3])
+        kernel = KerasTensor([4, 3, 2])
+        pointwise_kernel = KerasTensor([1, 6, 5])
+        self.assertEqual(
+            knn.separable_conv(
+                inputs_1d, kernel, pointwise_kernel, 1, padding="valid"
+            ).shape,
+            (2, 17, 5),
+        )
+        self.assertEqual(
+            knn.separable_conv(
+                inputs_1d, kernel, pointwise_kernel, 1, padding="same"
+            ).shape,
+            (2, 20, 5),
+        )
+        self.assertEqual(
+            knn.separable_conv(
+                inputs_1d, kernel, pointwise_kernel, 2, dilations=2
+            ).shape,
+            (2, 7, 5),
+        )
+
+        # Test 2D separable conv.
+        inputs_2d = KerasTensor([2, 10, 10, 3])
+        kernel = KerasTensor([2, 2, 3, 2])
+        pointwise_kernel = KerasTensor([1, 1, 6, 5])
+        self.assertEqual(
+            knn.separable_conv(
+                inputs_2d, kernel, pointwise_kernel, 1, padding="valid"
+            ).shape,
+            (2, 9, 9, 5),
+        )
+        self.assertEqual(
+            knn.separable_conv(
+                inputs_2d, kernel, pointwise_kernel, 1, padding="same"
+            ).shape,
+            (2, 10, 10, 5),
+        )
+        self.assertEqual(
+            knn.separable_conv(
+                inputs_2d, kernel, pointwise_kernel, 2, dilations=2
+            ).shape,
+            (2, 4, 4, 5),
+        )
 
 
 class NNOpsCorrectnessTest(testing.TestCase):
@@ -255,6 +544,52 @@ class NNOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(
             knn.log_softmax(x, axis=-1),
             [-2.407606, -1.4076059, -0.4076059],
+        )
+
+    def test_max_pool(self):
+        # Test 1D max pooling.
+        x = np.arange(120, dtype=float).reshape([2, 20, 3])
+        self.assertAllClose(
+            knn.max_pool(x, 2, 1, padding="valid"),
+            tf.nn.max_pool1d(x, 2, 1, padding="VALID"),
+        )
+        self.assertAllClose(
+            knn.max_pool(x, 2, 2, padding="same"),
+            tf.nn.max_pool1d(x, 2, 2, padding="SAME"),
+        )
+
+        # Test 2D max pooling.
+        x = np.arange(540, dtype=float).reshape([2, 10, 9, 3])
+        self.assertAllClose(
+            knn.max_pool(x, 2, 1, padding="valid"),
+            tf.nn.max_pool2d(x, 2, 1, padding="VALID"),
+        )
+        self.assertAllClose(
+            knn.max_pool(x, 2, (2, 1), padding="same"),
+            tf.nn.max_pool2d(x, 2, (2, 1), padding="SAME"),
+        )
+
+    def test_average_pool(self):
+        # Test 1D max pooling.
+        x = np.arange(120, dtype=float).reshape([2, 20, 3])
+        self.assertAllClose(
+            knn.average_pool(x, 2, 1, padding="valid"),
+            tf.nn.avg_pool1d(x, 2, 1, padding="VALID"),
+        )
+        self.assertAllClose(
+            knn.average_pool(x, 2, 2, padding="same"),
+            tf.nn.avg_pool1d(x, 2, 2, padding="SAME"),
+        )
+
+        # Test 2D max pooling.
+        x = np.arange(540, dtype=float).reshape([2, 10, 9, 3])
+        self.assertAllClose(
+            knn.average_pool(x, 2, 1, padding="valid"),
+            tf.nn.avg_pool2d(x, 2, 1, padding="VALID"),
+        )
+        self.assertAllClose(
+            knn.average_pool(x, 2, (2, 1), padding="same"),
+            tf.nn.avg_pool2d(x, 2, (2, 1), padding="SAME"),
         )
 
     def test_conv(self):
@@ -424,69 +759,46 @@ class NNOpsCorrectnessTest(testing.TestCase):
         # Test 1D conv.
         inputs_1d = np.arange(24, dtype=float).reshape([2, 4, 3])
         kernel = np.arange(30, dtype=float).reshape([2, 5, 3])
-
-        outputs = knn.conv_transpose(inputs_1d, kernel, 2)
-        expected = tf.nn.conv_transpose(inputs_1d, kernel, [2, 8, 5], 2)
-        import pdb
-
-        pdb.set_trace()
+        outputs = knn.conv_transpose(inputs_1d, kernel, 2, padding="valid")
+        expected = tf.nn.conv_transpose(
+            inputs_1d, kernel, [2, 8, 5], 2, padding="VALID"
+        )
         self.assertAllClose(outputs, expected)
 
-        outputs = knn.conv(inputs_1d, kernel, 2, padding="same")
-        expected = tf.nn.conv1d(inputs_1d, kernel, 2, padding="SAME")
+        outputs = knn.conv_transpose(inputs_1d, kernel, 2, padding="same")
+        expected = tf.nn.conv_transpose(
+            inputs_1d, kernel, [2, 8, 5], 2, padding="SAME"
+        )
         self.assertAllClose(outputs, expected)
 
-        outputs = knn.conv(inputs_1d, kernel, 1, padding="same", dilations=2)
-        expected = tf.nn.conv1d(
-            inputs_1d, kernel, 1, padding="SAME", dilations=2
+        outputs = knn.conv_transpose(
+            inputs_1d, kernel, 5, output_padding=4, padding="valid"
+        )
+        expected = tf.nn.conv_transpose(
+            inputs_1d, kernel, [2, 21, 5], 5, padding="VALID"
         )
         self.assertAllClose(outputs, expected)
 
         # Test 2D conv.
-        inputs_2d = np.arange(600, dtype=float).reshape([2, 10, 10, 3])
-        kernel = np.arange(24, dtype=float).reshape([2, 2, 3, 2])
+        inputs_2d = np.arange(96, dtype=float).reshape([2, 4, 4, 3])
+        kernel = np.arange(60, dtype=float).reshape([2, 2, 5, 3])
 
-        outputs = knn.conv(inputs_2d, kernel, 1, padding="valid")
-        expected = tf.nn.conv2d(inputs_2d, kernel, 1, padding="VALID")
-        self.assertAllClose(outputs, expected)
-
-        outputs = knn.conv(inputs_2d, kernel, (1, 2), padding="valid")
-        expected = tf.nn.conv2d(inputs_2d, kernel, (1, 2), padding="VALID")
-        self.assertAllClose(outputs, expected)
-
-        outputs = knn.conv(inputs_2d, kernel, 2, padding="same")
-        expected = tf.nn.conv2d(inputs_2d, kernel, 2, padding="SAME")
-        self.assertAllClose(outputs, expected)
-
-        outputs = knn.conv(inputs_2d, kernel, 1, padding="same", dilations=2)
-        expected = tf.nn.conv2d(
-            inputs_2d, kernel, 1, padding="SAME", dilations=2
+        outputs = knn.conv_transpose(inputs_2d, kernel, 2, padding="valid")
+        expected = tf.nn.conv_transpose(
+            inputs_2d, kernel, [2, 8, 8, 5], 2, padding="VALID"
         )
         self.assertAllClose(outputs, expected)
 
-        # Test 3D conv.
-        inputs_3d = np.arange(3072, dtype=float).reshape([2, 8, 8, 8, 3])
-        kernel = np.arange(162, dtype=float).reshape([3, 3, 3, 3, 2])
-
-        outputs = knn.conv(inputs_3d, kernel, 1, padding="valid")
-        expected = tf.nn.conv3d(
-            inputs_3d, kernel, (1, 1, 1, 1, 1), padding="VALID"
+        outputs = knn.conv_transpose(inputs_2d, kernel, 2, padding="same")
+        expected = tf.nn.conv_transpose(
+            inputs_2d, kernel, [2, 8, 8, 5], 2, padding="SAME"
         )
         self.assertAllClose(outputs, expected)
 
-        outputs = knn.conv(
-            inputs_3d,
-            kernel,
-            (1, 2, 1),
-            padding="valid",
+        outputs = knn.conv_transpose(
+            inputs_2d, kernel, 5, output_padding=4, padding="valid"
         )
-        expected = tf.nn.conv3d(
-            inputs_3d, kernel, (1, 1, 2, 1, 1), padding="VALID"
-        )
-        self.assertAllClose(outputs, expected)
-
-        outputs = knn.conv(inputs_3d, kernel, 2, padding="same")
-        expected = tf.nn.conv3d(
-            inputs_3d, kernel, (1, 2, 2, 2, 1), padding="SAME"
+        expected = tf.nn.conv_transpose(
+            inputs_2d, kernel, [2, 21, 21, 5], 5, padding="VALID"
         )
         self.assertAllClose(outputs, expected)

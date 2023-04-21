@@ -67,7 +67,7 @@ def max_pool(
     inputs, pool_size, strides, padding="valid", data_format="channels_last"
 ):
     padding = padding.upper()
-    data_format = convert_data_format(data_format, len(inputs.shape) - 2)
+    data_format = convert_data_format(data_format, len(inputs.shape))
     return tfnn.max_pool(inputs, pool_size, strides, padding, data_format)
 
 
@@ -75,7 +75,7 @@ def average_pool(
     inputs, pool_size, strides, padding="valid", data_format="channels_last"
 ):
     padding = padding.upper()
-    data_format = convert_data_format(data_format, len(inputs.shape) - 2)
+    data_format = convert_data_format(data_format, len(inputs.shape))
     return tfnn.avg_pool(inputs, pool_size, strides, padding, data_format)
 
 
@@ -117,7 +117,7 @@ def conv(
     strides,
     padding="valid",
     data_format="channel_last",
-    dilations=None,
+    dilations=1,
 ):
     """General N-D convolution function.
 
@@ -143,7 +143,7 @@ def depthwise_conv(
     strides,
     padding="valid",
     data_format="channels_last",
-    dilations=None,
+    dilations=1,
 ):
     num_spatial_dims = len(inputs.shape) - 2
     if num_spatial_dims > 2:
@@ -203,7 +203,7 @@ def separable_conv(
     strides,
     padding="valid",
     data_format="channels_last",
-    dilations=None,
+    dilations=1,
 ):
     num_spatial_dims = len(inputs.shape) - 2
     if num_spatial_dims > 2:
@@ -308,7 +308,7 @@ def conv_transpose(
     kernel,
     strides,
     output_padding,
-    padding="same",
+    padding="valid",
     data_format="channels_last",
     dilations=1,
 ):
@@ -318,8 +318,6 @@ def conv_transpose(
 
     if isinstance(output_padding, int):
         output_padding = (output_padding,) * len(kernel_spatial_shape)
-    elif output_padding is None:
-        output_padding = (0,) * len(kernel_spatial_shape)
     if isinstance(strides, int):
         strides = (strides,) * num_spatial_dims
     if isinstance(dilations, int):
@@ -332,12 +330,15 @@ def conv_transpose(
 
     output_shape = []
     for i in range(num_spatial_dims):
+        current_output_padding = (
+            None if output_padding is None else output_padding[i]
+        )
         output_shape.append(
             deconv_output_length(
                 inputs_spatial_shape[i],
                 kernel_spatial_shape[i],
                 padding=padding,
-                output_padding=output_padding[i],
+                output_padding=current_output_padding,
                 stride=strides[i],
                 dilation=dilations[0],
             )
@@ -348,9 +349,6 @@ def conv_transpose(
     else:
         output_shape = [inputs.shape[0], kernel.shape[-1]] + output_shape
 
-    import pdb
-
-    pdb.set_trace()
     return tfnn.conv_transpose(
         inputs,
         kernel,

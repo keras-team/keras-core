@@ -25,13 +25,14 @@ conv_transpose
 ctc ??
 """
 
+import math
+
+import numpy as np
+
 from keras_core import backend
 from keras_core.backend import KerasTensor
 from keras_core.backend import any_symbolic_tensors
 from keras_core.operations.operation import Operation
-
-import math
-import numpy as np
 
 
 class Relu(Operation):
@@ -304,31 +305,33 @@ class MaxPool(Operation):
             output_spacial_shape = (
                 np.floor((spacial_shape - 1) / self.strides) + 1
             )
-
+        output_spacial_shape = [int(i) for i in output_spacial_shape]
         if self.data_format == "channels_last":
             output_shape = (
-                input_shape[0] + output_spacial_shape + input_shape[-1]
+                [inputs.shape[0]]
+                + list(output_spacial_shape)
+                + [inputs.shape[-1]]
             )
         else:
-            output_shape = input_shape[:2] + output_spacial_shape
+            output_shape = inputs.shape[:2] + list(output_spacial_shape)
         return KerasTensor(output_shape, dtype=inputs.dtype)
 
 
 def max_pool(
-    x,
+    inputs,
     pool_size,
     strides,
     padding="valid",
     data_format="channels_last",
 ):
-    if any_symbolic_tensors((x,)):
+    if any_symbolic_tensors((inputs,)):
         return MaxPool(
             pool_size,
             strides,
             padding,
             data_format,
-        ).symbolic_call(x)
-    return backend.nn.max_pool(x, pool_size, strides, padding, data_format)
+        ).symbolic_call(inputs)
+    return backend.nn.max_pool(inputs, pool_size, strides, padding, data_format)
 
 
 class AveragePool(Operation):
@@ -375,13 +378,13 @@ class AveragePool(Operation):
             output_spacial_shape = (
                 np.floor((spacial_shape - 1) / self.strides) + 1
             )
-
+        output_spacial_shape = [int(i) for i in output_spacial_shape]
         if self.data_format == "channels_last":
             output_shape = (
-                [input_shape[0]] + output_spacial_shape + [input_shape[-1]]
+                [inputs.shape[0]] + output_spacial_shape + [inputs.shape[-1]]
             )
         else:
-            output_shape = input_shape[:2] + output_spacial_shape
+            output_shape = inputs.shape[:2] + output_spacial_shape
         return KerasTensor(output_shape, dtype=inputs.dtype)
 
 
@@ -409,7 +412,7 @@ class Conv(Operation):
         strides,
         padding="valid",
         data_format="channel_last",
-        dilations=None,
+        dilations=1,
     ):
         super().__init__()
         self.kernel = kernel
@@ -440,19 +443,17 @@ class Conv(Operation):
                 f"kernel of shape {self.kernel.shape} and "
                 f"input of shape {input_shape}."
             )
-        if (
-            self.dilations is not None
-            and len(self.dilations) != 1
-            and len(self.dilations) != len(spacial_shape)
-        ):
+        if isinstance(self.dilations, int):
+            dilations = (self.dilations,) * len(spacial_shape)
+        if len(dilations) != len(spacial_shape):
             raise ValueError(
                 "Dilation must be None, scalar or tuple/list of length of "
                 "inputs' spacial shape, but received "
                 f"`dilations={self.dilations}` and input of shape {input_shape}."
             )
         spacial_shape = np.array(spacial_shape)
-        kernel_spacial_shape = np.array(self.kernel.shape[:2])
-        dilations = np.array(self.dilations)
+        kernel_spacial_shape = np.array(self.kernel.shape[:-2])
+        dilations = np.array(dilations)
         if self.padding == "valid":
             output_spacial_shape = (
                 np.floor(
@@ -473,16 +474,16 @@ class Conv(Operation):
             output_spacial_shape = (
                 np.floor((spacial_shape - 1) / self.strides) + 1
             )
-
+        output_spacial_shape = [int(i) for i in output_spacial_shape]
         if self.data_format == "channels_last":
             output_shape = (
-                [input_shape[0]]
+                [inputs.shape[0]]
                 + output_spacial_shape
                 + [self.kernel.shape[-1]]
             )
         else:
             output_shape = [
-                input_shape[0],
+                inputs.shape[0],
                 self.kernel.shape[-1],
             ] + output_spacial_shape
         return KerasTensor(output_shape, dtype=inputs.dtype)
@@ -494,7 +495,7 @@ def conv(
     strides,
     padding="valid",
     data_format="channels_last",
-    dilations=None,
+    dilations=1,
 ):
     if any_symbolic_tensors((x,)):
         return Conv(
@@ -510,7 +511,7 @@ class DepthwiseConv(Operation):
         strides,
         padding="valid",
         data_format="channels_last",
-        dilations=None,
+        dilations=1,
     ):
         super().__init__()
         self.kernel = kernel
@@ -535,24 +536,22 @@ class DepthwiseConv(Operation):
             spacial_shape = input_shape[1:-1]
         else:
             spacial_shape = input_shape[2:]
-        if len(self.kernel.shape) != len(spacial_shape):
+        if len(self.kernel.shape) != len(inputs.shape):
             raise ValueError(
                 "Kernel shape must have the same length as input, but received "
                 f"kernel of shape {self.kernel.shape} and "
                 f"input of shape {input_shape}."
             )
-        if (
-            self.dilations is not None
-            and len(self.dilations) != 1
-            and len(self.dilations) != len(spacial_shape)
-        ):
+        if isinstance(self.dilations, int):
+            dilations = (self.dilations,) * len(spacial_shape)
+        if len(dilations) != len(spacial_shape):
             raise ValueError(
                 "Dilation must be None, scalar or tuple/list of length of "
                 "inputs' spacial shape, but received "
                 f"`dilations={self.dilations}` and input of shape {input_shape}."
             )
         spacial_shape = np.array(spacial_shape)
-        kernel_spacial_shape = np.array(self.kernel.shape[:2])
+        kernel_spacial_shape = np.array(self.kernel.shape[:-2])
         dilations = np.array(self.dilations)
         if self.padding == "valid":
             output_spacial_shape = (
@@ -575,6 +574,7 @@ class DepthwiseConv(Operation):
                 np.floor((spacial_shape - 1) / self.strides) + 1
             )
 
+        output_spacial_shape = [int(i) for i in output_spacial_shape]
         output_channels = self.kernel.shape[-1] * self.kernel.shape[-2]
         if self.data_format == "channels_last":
             output_shape = (
@@ -594,7 +594,7 @@ def depthwise_conv(
     strides,
     padding="valid",
     data_format="channels_last",
-    dilations=None,
+    dilations=1,
 ):
     if any_symbolic_tensors((x,)):
         return DepthwiseConv(
@@ -618,7 +618,7 @@ class SeparableConv(Operation):
         strides,
         padding="valid",
         data_format="channels_last",
-        dilations=None,
+        dilations=1,
     ):
         super().__init__()
         self.depthwise_kernel = depthwise_kernel
@@ -640,14 +640,16 @@ class SeparableConv(Operation):
         )
 
     def compute_output_spec(self, inputs):
-        output_shape = depthwise_conv(
-            inputs,
-            self.depthwise_kernel,
-            self.strides,
-            self.padding,
-            self.data_format,
-            self.dilations,
-        ).shape
+        output_shape = list(
+            depthwise_conv(
+                inputs,
+                self.depthwise_kernel,
+                self.strides,
+                self.padding,
+                self.data_format,
+                self.dilations,
+            ).shape
+        )
         if self.data_format == "channels_last":
             output_shape[-1] = self.pointwise_kernel.shape[-1]
         else:
@@ -662,7 +664,7 @@ def separable_conv(
     strides,
     padding="valid",
     data_format="channels_last",
-    dilations=None,
+    dilations=1,
 ):
     if any_symbolic_tensors((x,)):
         return SeparableConv(
@@ -690,7 +692,7 @@ class ConvTranspose(Operation):
         kernel,
         strides,
         output_padding=None,
-        padding="same",
+        padding="valid",
         data_format="channels_last",
         dilations=1,
     ):
@@ -722,7 +724,7 @@ def conv_transpose(
     kernel,
     strides,
     output_padding=None,
-    padding="same",
+    padding="valid",
     data_format="channels_last",
     dilations=1,
 ):
