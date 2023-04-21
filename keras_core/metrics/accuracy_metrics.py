@@ -1,10 +1,11 @@
 from keras_core import operations as ops
 from keras_core.metrics import reduction_metrics
 from keras_core.api_export import keras_core_export
+from keras_core.backend import floatx
 
 
 def accuracy(y_true, y_pred):
-    return ops.cast(ops.equal(y_true, y_pred), dtype="float32")
+    return ops.cast(ops.equal(y_true, y_pred), dtype=floatx())
 
 
 @keras_core_export("keras_core.metrics.Accuracy")
@@ -20,20 +21,20 @@ class Accuracy(reduction_metrics.MeanMetricWrapper):
     Use `sample_weight` of 0 to mask values.
 
     Args:
-      name: (Optional) string name of the metric instance.
-      dtype: (Optional) data type of the metric result.
+        name: (Optional) string name of the metric instance.
+        dtype: (Optional) data type of the metric result.
 
     Standalone usage:
 
     >>> m = keras_core.metrics.Accuracy()
     >>> m.update_state([[1], [2], [3], [4]], [[0], [2], [3], [4]])
-    >>> m.result().numpy()
+    >>> m.result()
     0.75
 
     >>> m.reset_state()
     >>> m.update_state([[1], [2], [3], [4]], [[0], [2], [3], [4]],
     ...                sample_weight=[1, 1, 0, 0])
-    >>> m.result().numpy()
+    >>> m.result()
     0.5
 
     Usage with `compile()` API:
