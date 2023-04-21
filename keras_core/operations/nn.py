@@ -285,7 +285,7 @@ class MaxPool(Operation):
         )
 
     def compute_output_spec(self, inputs):
-        strides = pool_size if self.strides is None else self.strides
+        strides = self.pool_size if self.strides is None else self.strides
         input_shape = np.array(inputs.shape)
         if self.data_format == "channels_last":
             spatial_shape = input_shape[1:-1]
@@ -388,7 +388,7 @@ class AveragePool(Operation):
         )
 
     def compute_output_spec(self, inputs):
-        strides = pool_size if self.strides is None else self.strides
+        strides = self.pool_size if self.strides is None else self.strides
         input_shape = np.array(inputs.shape)
         if self.data_format == "channels_last":
             spatial_shape = input_shape[1:-1]
@@ -418,7 +418,7 @@ class AveragePool(Operation):
 
 
 def average_pool(
-    x,
+    inputs,
     pool_size,
     strides=None,
     padding="valid",
@@ -455,14 +455,16 @@ def average_pool(
     Returns:
         A tensor of rank N+2, the result of the average pooling operation.
     """
-    if any_symbolic_tensors((x,)):
+    if any_symbolic_tensors((inputs,)):
         return AveragePool(
             pool_size,
             strides,
             padding,
             data_format,
-        ).symbolic_call(x)
-    return backend.nn.average_pool(x, pool_size, strides, padding, data_format)
+        ).symbolic_call(inputs)
+    return backend.nn.average_pool(
+        inputs, pool_size, strides, padding, data_format
+    )
 
 
 class Conv(Operation):
@@ -503,6 +505,8 @@ class Conv(Operation):
             )
         if isinstance(self.dilation_rate, int):
             dilation_rate = (self.dilation_rate,) * len(spatial_shape)
+        else:
+            dilation_rate = self.dilation_rate
         if len(dilation_rate) != len(spatial_shape):
             raise ValueError(
                 "Dilation must be None, scalar or tuple/list of length of "
@@ -641,6 +645,8 @@ class DepthwiseConv(Operation):
             )
         if isinstance(self.dilation_rate, int):
             dilation_rate = (self.dilation_rate,) * len(spatial_shape)
+        else:
+            dilation_rate = self.dilation_rate
         if len(dilation_rate) != len(spatial_shape):
             raise ValueError(
                 "Dilation must be None, scalar or tuple/list of length of "

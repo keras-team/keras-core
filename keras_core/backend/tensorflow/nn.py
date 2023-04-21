@@ -276,7 +276,7 @@ def _deconv_output_length(
     dilation=1,
 ):
     """Determines output length of a transposed convolution given input length.
-    
+
     Args:
         input_length: Integer.
         kernel_size: Integer.
