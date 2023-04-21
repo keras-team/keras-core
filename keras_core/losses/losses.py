@@ -98,7 +98,7 @@ class MeanAbsolutePercentageError(LossFunctionWrapper):
         )
 
 
-@keras_core_export("keras_core.losses.MeanASquaredLogarithmicError")
+@keras_core_export("keras_core.losses.MeanSquaredLogarithmicError")
 class MeanSquaredLogarithmicError(LossFunctionWrapper):
     """Computes the mean squared logarithmic error between `y_true` & `y_pred`.
 
@@ -127,11 +127,7 @@ class MeanSquaredLogarithmicError(LossFunctionWrapper):
 
 @keras_core_export(
     "keras_core.metrics.mean_squared_error",
-    "keras_core.metrics.mse",
-    "keras_core.metrics.MSE",
     "keras_core.losses.mean_squared_error",
-    "keras_core.losses.mse",
-    "keras_core.losses.MSE",
 )
 def mean_squared_error(y_true, y_pred):
     """Computes the mean squared error between labels and predictions.
@@ -163,11 +159,7 @@ def mean_squared_error(y_true, y_pred):
 
 @keras_core_export(
     "keras_core.metrics.mean_absolute_error",
-    "keras_core.metrics.mae",
-    "keras_core.metrics.MAE",
     "keras_core.losses.mean_absolute_error",
-    "keras_core.losses.mae",
-    "keras_core.losses.MAE",
 )
 def mean_absolute_error(y_true, y_pred):
     """Computes the mean absolute error between labels and predictions.
@@ -197,11 +189,7 @@ def mean_absolute_error(y_true, y_pred):
 
 @keras_core_export(
     "keras_core.metrics.mean_absolute_percentage_error",
-    "keras_core.metrics.mape",
-    "keras_core.metrics.MAPE",
     "keras_core.losses.mean_absolute_percentage_error",
-    "keras_core.losses.mape",
-    "keras_core.losses.MAPE",
 )
 def mean_absolute_percentage_error(y_true, y_pred):
     """Computes the mean absolute percentage error between `y_true` & `y_pred`.
@@ -236,11 +224,7 @@ def mean_absolute_percentage_error(y_true, y_pred):
 
 @keras_core_export(
     "keras_core.metrics.mean_squared_logarithmic_error",
-    "keras_core.metrics.msle",
-    "keras_core.metrics.MSLE",
     "keras_core.losses.mean_squared_logarithmic_error",
-    "keras_core.losses.msle",
-    "keras_core.losses.MSLE",
 )
 def mean_squared_logarithmic_error(y_true, y_pred):
     """Computes the mean squared logarithmic error between `y_true` & `y_pred`.
