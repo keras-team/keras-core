@@ -1,4 +1,4 @@
-import tensorflow as tf
+import numpy as np
 
 from keras_core import metrics
 from keras_core import testing
@@ -20,10 +20,10 @@ class FalsePositivesTest(testing.TestCase):
     def test_unweighted(self):
         fp_obj = metrics.FalsePositives()
 
-        y_true = tf.constant(
+        y_true = np.array(
             ((0, 1, 0, 1, 0), (0, 0, 1, 1, 1), (1, 1, 1, 1, 0), (0, 0, 0, 0, 1))
         )
-        y_pred = tf.constant(
+        y_pred = np.array(
             ((0, 0, 1, 1, 0), (1, 1, 1, 1, 1), (0, 1, 0, 1, 0), (1, 1, 1, 1, 1))
         )
 
@@ -33,20 +33,20 @@ class FalsePositivesTest(testing.TestCase):
 
     def test_weighted(self):
         fp_obj = metrics.FalsePositives()
-        y_true = tf.constant(
+        y_true = np.array(
             ((0, 1, 0, 1, 0), (0, 0, 1, 1, 1), (1, 1, 1, 1, 0), (0, 0, 0, 0, 1))
         )
-        y_pred = tf.constant(
+        y_pred = np.array(
             ((0, 0, 1, 1, 0), (1, 1, 1, 1, 1), (0, 1, 0, 1, 0), (1, 1, 1, 1, 1))
         )
-        sample_weight = tf.constant((1.0, 1.5, 2.0, 2.5))
+        sample_weight = np.array((1.0, 1.5, 2.0, 2.5))
         result = fp_obj(y_true, y_pred, sample_weight=sample_weight)
         self.assertAllClose(14.0, result)
 
     def test_unweighted_with_thresholds(self):
         fp_obj = metrics.FalsePositives(thresholds=[0.15, 0.5, 0.85])
 
-        y_pred = tf.constant(
+        y_pred = np.array(
             (
                 (0.9, 0.2, 0.8, 0.1),
                 (0.2, 0.9, 0.7, 0.6),
@@ -54,7 +54,7 @@ class FalsePositivesTest(testing.TestCase):
                 (0, 1, 0.7, 0.3),
             )
         )
-        y_true = tf.constant(
+        y_true = np.array(
             ((0, 1, 1, 0), (1, 0, 0, 0), (0, 0, 0, 0), (1, 1, 1, 1))
         )
 
@@ -65,7 +65,7 @@ class FalsePositivesTest(testing.TestCase):
     def test_weighted_with_thresholds(self):
         fp_obj = metrics.FalsePositives(thresholds=[0.15, 0.5, 0.85])
 
-        y_pred = tf.constant(
+        y_pred = np.array(
             (
                 (0.9, 0.2, 0.8, 0.1),
                 (0.2, 0.9, 0.7, 0.6),
@@ -73,7 +73,7 @@ class FalsePositivesTest(testing.TestCase):
                 (0, 1, 0.7, 0.3),
             )
         )
-        y_true = tf.constant(
+        y_true = np.array(
             ((0, 1, 1, 0), (1, 0, 0, 0), (0, 0, 0, 0), (1, 1, 1, 1))
         )
         sample_weight = (
