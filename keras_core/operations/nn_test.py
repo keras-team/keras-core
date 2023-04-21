@@ -7,6 +7,8 @@ from keras_core.backend import backend
 from keras_core.backend.keras_tensor import KerasTensor
 from keras_core.operations import nn as knn
 
+import tensorflow as tf
+
 
 @pytest.mark.skipif(
     backend() != "tensorflow",
@@ -254,3 +256,237 @@ class NNOpsCorrectnessTest(testing.TestCase):
             knn.log_softmax(x, axis=-1),
             [-2.407606, -1.4076059, -0.4076059],
         )
+
+    def test_conv(self):
+        # Test 1D conv.
+        inputs_1d = np.arange(120, dtype=float).reshape([2, 20, 3])
+        kernel = np.arange(24, dtype=float).reshape([4, 3, 2])
+
+        outputs = knn.conv(inputs_1d, kernel, 1, padding="valid")
+        expected = tf.nn.conv1d(inputs_1d, kernel, 1, padding="VALID")
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.conv(inputs_1d, kernel, 2, padding="same")
+        expected = tf.nn.conv1d(inputs_1d, kernel, 2, padding="SAME")
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.conv(inputs_1d, kernel, 1, padding="same", dilations=2)
+        expected = tf.nn.conv1d(
+            inputs_1d, kernel, 1, padding="SAME", dilations=2
+        )
+        self.assertAllClose(outputs, expected)
+
+        # Test 2D conv.
+        inputs_2d = np.arange(600, dtype=float).reshape([2, 10, 10, 3])
+        kernel = np.arange(24, dtype=float).reshape([2, 2, 3, 2])
+
+        outputs = knn.conv(inputs_2d, kernel, 1, padding="valid")
+        expected = tf.nn.conv2d(inputs_2d, kernel, 1, padding="VALID")
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.conv(inputs_2d, kernel, (1, 2), padding="valid")
+        expected = tf.nn.conv2d(inputs_2d, kernel, (1, 2), padding="VALID")
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.conv(inputs_2d, kernel, 2, padding="same")
+        expected = tf.nn.conv2d(inputs_2d, kernel, 2, padding="SAME")
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.conv(inputs_2d, kernel, 1, padding="same", dilations=2)
+        expected = tf.nn.conv2d(
+            inputs_2d, kernel, 1, padding="SAME", dilations=2
+        )
+        self.assertAllClose(outputs, expected)
+
+        # Test 3D conv.
+        inputs_3d = np.arange(3072, dtype=float).reshape([2, 8, 8, 8, 3])
+        kernel = np.arange(162, dtype=float).reshape([3, 3, 3, 3, 2])
+
+        outputs = knn.conv(inputs_3d, kernel, 1, padding="valid")
+        expected = tf.nn.conv3d(
+            inputs_3d, kernel, (1, 1, 1, 1, 1), padding="VALID"
+        )
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.conv(
+            inputs_3d,
+            kernel,
+            (1, 2, 1),
+            padding="valid",
+        )
+        expected = tf.nn.conv3d(
+            inputs_3d, kernel, (1, 1, 2, 1, 1), padding="VALID"
+        )
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.conv(inputs_3d, kernel, 2, padding="same")
+        expected = tf.nn.conv3d(
+            inputs_3d, kernel, (1, 2, 2, 2, 1), padding="SAME"
+        )
+        self.assertAllClose(outputs, expected)
+
+    def test_depthwise_conv(self):
+        # Test 2D conv.
+        inputs_2d = np.arange(600, dtype=float).reshape([2, 10, 10, 3])
+        kernel = np.arange(24, dtype=float).reshape([2, 2, 3, 2])
+
+        outputs = knn.depthwise_conv(inputs_2d, kernel, 1, padding="valid")
+        expected = tf.nn.depthwise_conv2d(
+            inputs_2d, kernel, (1, 1, 1, 1), padding="VALID"
+        )
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.depthwise_conv(inputs_2d, kernel, (1, 1), padding="valid")
+        expected = tf.nn.depthwise_conv2d(
+            inputs_2d, kernel, (1, 1, 1, 1), padding="VALID"
+        )
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.depthwise_conv(inputs_2d, kernel, 2, padding="same")
+        expected = tf.nn.depthwise_conv2d(
+            inputs_2d, kernel, (1, 2, 2, 1), padding="SAME"
+        )
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.depthwise_conv(
+            inputs_2d, kernel, 1, padding="same", dilations=2
+        )
+        expected = tf.nn.depthwise_conv2d(
+            inputs_2d, kernel, (1, 1, 1, 1), padding="SAME", dilations=(2, 2)
+        )
+        self.assertAllClose(outputs, expected)
+
+    def test_separable_conv(self):
+        # Test 2D conv.
+        inputs_2d = np.arange(600, dtype=float).reshape([2, 10, 10, 3])
+        depthwise_kernel = np.arange(24, dtype=float).reshape([2, 2, 3, 2])
+        pointwise_kernel = np.arange(72, dtype=float).reshape([1, 1, 6, 12])
+
+        outputs = knn.separable_conv(
+            inputs_2d, depthwise_kernel, pointwise_kernel, 1, padding="valid"
+        )
+        expected = tf.nn.separable_conv2d(
+            inputs_2d,
+            depthwise_kernel,
+            pointwise_kernel,
+            (1, 1, 1, 1),
+            padding="VALID",
+        )
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.separable_conv(
+            inputs_2d,
+            depthwise_kernel,
+            pointwise_kernel,
+            (1, 1),
+            padding="valid",
+        )
+        expected = tf.nn.separable_conv2d(
+            inputs_2d,
+            depthwise_kernel,
+            pointwise_kernel,
+            (1, 1, 1, 1),
+            padding="VALID",
+        )
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.separable_conv(
+            inputs_2d, depthwise_kernel, pointwise_kernel, 2, padding="same"
+        )
+        expected = tf.nn.separable_conv2d(
+            inputs_2d,
+            depthwise_kernel,
+            pointwise_kernel,
+            (1, 2, 2, 1),
+            padding="SAME",
+        )
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.separable_conv(
+            inputs_2d,
+            depthwise_kernel,
+            pointwise_kernel,
+            1,
+            padding="same",
+            dilations=2,
+        )
+        expected = tf.nn.separable_conv2d(
+            inputs_2d,
+            depthwise_kernel,
+            pointwise_kernel,
+            (1, 1, 1, 1),
+            padding="SAME",
+            dilations=(2, 2),
+        )
+        self.assertAllClose(outputs, expected)
+
+    def test_conv_transpose(self):
+        # Test 1D conv.
+        inputs_1d = np.arange(24, dtype=float).reshape([2, 4, 3])
+        kernel = np.arange(30, dtype=float).reshape([2, 5, 3])
+
+        outputs = knn.conv_transpose(inputs_1d, kernel, 2)
+        expected = tf.nn.conv_transpose(inputs_1d, kernel, [2, 8, 5], 2)
+        import pdb
+
+        pdb.set_trace()
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.conv(inputs_1d, kernel, 2, padding="same")
+        expected = tf.nn.conv1d(inputs_1d, kernel, 2, padding="SAME")
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.conv(inputs_1d, kernel, 1, padding="same", dilations=2)
+        expected = tf.nn.conv1d(
+            inputs_1d, kernel, 1, padding="SAME", dilations=2
+        )
+        self.assertAllClose(outputs, expected)
+
+        # Test 2D conv.
+        inputs_2d = np.arange(600, dtype=float).reshape([2, 10, 10, 3])
+        kernel = np.arange(24, dtype=float).reshape([2, 2, 3, 2])
+
+        outputs = knn.conv(inputs_2d, kernel, 1, padding="valid")
+        expected = tf.nn.conv2d(inputs_2d, kernel, 1, padding="VALID")
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.conv(inputs_2d, kernel, (1, 2), padding="valid")
+        expected = tf.nn.conv2d(inputs_2d, kernel, (1, 2), padding="VALID")
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.conv(inputs_2d, kernel, 2, padding="same")
+        expected = tf.nn.conv2d(inputs_2d, kernel, 2, padding="SAME")
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.conv(inputs_2d, kernel, 1, padding="same", dilations=2)
+        expected = tf.nn.conv2d(
+            inputs_2d, kernel, 1, padding="SAME", dilations=2
+        )
+        self.assertAllClose(outputs, expected)
+
+        # Test 3D conv.
+        inputs_3d = np.arange(3072, dtype=float).reshape([2, 8, 8, 8, 3])
+        kernel = np.arange(162, dtype=float).reshape([3, 3, 3, 3, 2])
+
+        outputs = knn.conv(inputs_3d, kernel, 1, padding="valid")
+        expected = tf.nn.conv3d(
+            inputs_3d, kernel, (1, 1, 1, 1, 1), padding="VALID"
+        )
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.conv(
+            inputs_3d,
+            kernel,
+            (1, 2, 1),
+            padding="valid",
+        )
+        expected = tf.nn.conv3d(
+            inputs_3d, kernel, (1, 1, 2, 1, 1), padding="VALID"
+        )
+        self.assertAllClose(outputs, expected)
+
+        outputs = knn.conv(inputs_3d, kernel, 2, padding="same")
+        expected = tf.nn.conv3d(
+            inputs_3d, kernel, (1, 2, 2, 2, 1), padding="SAME"
+        )
+        self.assertAllClose(outputs, expected)
