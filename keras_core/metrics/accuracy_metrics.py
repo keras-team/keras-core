@@ -5,11 +5,6 @@ from keras_core.backend import floatx, convert_to_tensor
 
 
 def accuracy(y_true, y_pred):
-    y_true = convert_to_tensor(y_true)
-    y_pred = convert_to_tensor(y_pred)
-    assert tuple(y_true.shape) == tuple(
-        y_pred.shape
-    ), f"y_true and y_pred must have the same shape but y_true.shape = {y_true.shape} and y_pred.shape = {y_pred.shape}"
     return ops.cast(ops.equal(y_true, y_pred), dtype=floatx())
 
 
