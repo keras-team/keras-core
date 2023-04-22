@@ -61,3 +61,7 @@ def softmax(x, axis=None):
 
 def log_softmax(x, axis=None):
     return tfnn.log_softmax(x, axis=axis)
+
+
+def one_hot(x, num_classes, axis=-1):
+    return tf.one_hot(x, num_classes, axis=axis)

@@ -136,9 +136,6 @@ def _update_confusion_matrix_variables_optimized(
         and tailing thresholds has any epsilon added for floating point
         imprecisions.  It will change how we handle the leading and tailing
         bucket.
-
-    Returns:
-      Update op.
     """
     num_thresholds = thresholds.shape.as_list()[0]
 

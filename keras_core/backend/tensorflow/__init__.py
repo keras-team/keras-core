@@ -6,6 +6,7 @@ from keras_core.backend.common import standardize_dtype
 from keras_core.backend.keras_tensor import KerasTensor
 from keras_core.backend.stateless_scope import get_stateless_scope
 from keras_core.backend.stateless_scope import in_stateless_scope
+from keras_core.backend.tensorflow import math
 from keras_core.backend.tensorflow import nn
 from keras_core.backend.tensorflow import numpy
 from keras_core.backend.tensorflow import random
@@ -242,18 +243,6 @@ def name_scope(name):
 
 def vectorized_map(function, elements):
     return tf.vectorized_map(function, elements)
-
-
-def unsorted_segment_sum(data, segment_ids, num_segments=None):
-    return tf.math.unsorted_segment_sum(data, segment_ids, num_segments)
-
-
-def one_hot(x, num_classes, axis=-1):
-    return tf.one_hot(x, num_classes, axis=axis)
-
-
-def top_k(x, k, sorted=False):
-    return tf.math.top_k(x, k, sorted=sorted)
 
 
 def compute_output_spec(fn, *args, **kwargs):

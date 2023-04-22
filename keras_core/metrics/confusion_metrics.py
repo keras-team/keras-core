@@ -10,14 +10,14 @@ class _ConfusionMatrixConditionCount(Metric):
     """Calculates the number of the given confusion matrix condition.
 
     Args:
-      confusion_matrix_cond: One of `metrics_utils.ConfusionMatrix` conditions.
-      thresholds: (Optional) Defaults to 0.5. A float value or a python
-        list/tuple of float threshold values in [0, 1]. A threshold is compared
-        with prediction values to determine the truth value of predictions
-        (i.e., above the threshold is `true`, below is `false`). One metric
-        value is generated for each threshold value.
-      name: (Optional) string name of the metric instance.
-      dtype: (Optional) data type of the metric result.
+        confusion_matrix_cond: One of `metrics_utils.ConfusionMatrix` conditions.
+        thresholds: (Optional) Defaults to 0.5. A float value or a python
+            list/tuple of float threshold values in [0, 1]. A threshold is compared
+            with prediction values to determine the truth value of predictions
+            (i.e., above the threshold is `true`, below is `false`). One metric
+            value is generated for each threshold value.
+        name: (Optional) string name of the metric instance.
+        dtype: (Optional) data type of the metric result.
     """
 
     def __init__(
@@ -42,14 +42,11 @@ class _ConfusionMatrixConditionCount(Metric):
         """Accumulates the metric statistics.
 
         Args:
-          y_true: The ground truth values.
-          y_pred: The predicted values.
-          sample_weight: Optional weighting of each example. Defaults to 1. Can
-            be a tensor whose rank is either 0, or the same rank as `y_true`,
-            and must be broadcastable to `y_true`.
-
-        Returns:
-          Update op.
+            y_true: The ground truth values.
+            y_pred: The predicted values.
+            sample_weight: Optional weighting of each example. Defaults to 1. Can
+                be a tensor whose rank is either 0, or the same rank as `y_true`,
+                and must be broadcastable to `y_true`.
         """
         return metrics_utils.update_confusion_matrix_variables(
             {self._confusion_matrix_cond: self.accumulator},
@@ -85,15 +82,15 @@ class FalsePositives(_ConfusionMatrixConditionCount):
     Use `sample_weight` of 0 to mask values.
 
     Args:
-      thresholds: (Optional) Defaults to 0.5. A float value, or a Python
-        list/tuple of float threshold values in [0, 1]. A threshold is compared
-        with prediction values to determine the truth value of predictions
-        (i.e., above the threshold is `true`, below is `false`). If used with a
-        loss function that sets `from_logits=True` (i.e. no sigmoid applied to
-        predictions), `thresholds` should be set to 0. One metric value is
-        generated for each threshold value.
-      name: (Optional) string name of the metric instance.
-      dtype: (Optional) data type of the metric result.
+        thresholds: (Optional) Defaults to 0.5. A float value, or a Python
+            list/tuple of float threshold values in [0, 1]. A threshold is compared
+            with prediction values to determine the truth value of predictions
+            (i.e., above the threshold is `true`, below is `false`). If used with a
+            loss function that sets `from_logits=True` (i.e. no sigmoid applied to
+            predictions), `thresholds` should be set to 0. One metric value is
+            generated for each threshold value.
+        name: (Optional) string name of the metric instance.
+        dtype: (Optional) data type of the metric result.
 
     Standalone usage:
 

@@ -61,3 +61,7 @@ def softmax(x):
 
 def log_softmax(x, axis=-1):
     return jnn.log_softmax(x, axis=axis)
+
+
+def one_hot(x, num_classes, axis=-1):
+    return jnn.one_hot(x, num_classes, axis=axis)
