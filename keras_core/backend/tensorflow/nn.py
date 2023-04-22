@@ -391,5 +391,6 @@ def conv_transpose(
         dilations=dilation_rate,
     )
 
+
 def one_hot(x, num_classes, axis=-1):
     return tf.one_hot(x, num_classes, axis=axis)

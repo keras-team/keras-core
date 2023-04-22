@@ -5,7 +5,7 @@ import numpy as np
 from keras_core import backend
 from keras_core import operations as ops
 from keras_core.losses.loss import squeeze_to_same_rank
-from keras_core.utils.generic_utils import to_list
+from keras_core.utils.python_utils import to_list
 
 NEG_INF = -1e10
 

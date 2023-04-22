@@ -2,17 +2,18 @@ from keras_core import backend
 from keras_core import initializers
 from keras_core import operations as ops
 from keras_core.api_export import keras_core_export
+from keras_core.metrics import metrics_utils
 from keras_core.metrics.metric import Metric
-from keras_core.utils import metrics_utils
 
 
 class _ConfusionMatrixConditionCount(Metric):
     """Calculates the number of the given confusion matrix condition.
 
     Args:
-        confusion_matrix_cond: One of `metrics_utils.ConfusionMatrix` conditions.
-        thresholds: (Optional) Defaults to 0.5. A float value or a python
-            list/tuple of float threshold values in [0, 1]. A threshold is compared
+        confusion_matrix_cond: One of `metrics_utils.ConfusionMatrix`
+            conditions.
+        thresholds: (Optional) Defaults to 0.5. A float value or a python list /
+            tuple of float threshold values in [0, 1]. A threshold is compared
             with prediction values to determine the truth value of predictions
             (i.e., above the threshold is `true`, below is `false`). One metric
             value is generated for each threshold value.
@@ -44,9 +45,9 @@ class _ConfusionMatrixConditionCount(Metric):
         Args:
             y_true: The ground truth values.
             y_pred: The predicted values.
-            sample_weight: Optional weighting of each example. Defaults to 1. Can
-                be a tensor whose rank is either 0, or the same rank as `y_true`,
-                and must be broadcastable to `y_true`.
+            sample_weight: Optional weighting of each example. Defaults to 1.
+                Can be a tensor whose rank is either 0, or the same rank as
+                `y_true`, and must be broadcastable to `y_true`.
         """
         return metrics_utils.update_confusion_matrix_variables(
             {self._confusion_matrix_cond: self.accumulator},
@@ -83,12 +84,12 @@ class FalsePositives(_ConfusionMatrixConditionCount):
 
     Args:
         thresholds: (Optional) Defaults to 0.5. A float value, or a Python
-            list/tuple of float threshold values in [0, 1]. A threshold is compared
-            with prediction values to determine the truth value of predictions
-            (i.e., above the threshold is `true`, below is `false`). If used with a
-            loss function that sets `from_logits=True` (i.e. no sigmoid applied to
-            predictions), `thresholds` should be set to 0. One metric value is
-            generated for each threshold value.
+            list/tuple of float threshold values in [0, 1]. A threshold is
+            compared with prediction values to determine the truth value of
+            predictions (i.e., above the threshold is `true`, below is `false`).
+            If used with a loss function that sets `from_logits=True` (i.e. no
+            sigmoid applied to predictions), `thresholds` should be set to 0.
+            One metric value is generated for each threshold value.
         name: (Optional) string name of the metric instance.
         dtype: (Optional) data type of the metric result.
 
