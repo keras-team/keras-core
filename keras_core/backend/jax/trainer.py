@@ -214,7 +214,8 @@ class JAXTrainer(base_trainer.Trainer):
                     break
 
             # Update variable values
-            # NOTE: doing this after each step would be a big performance bottleneck.
+            # NOTE: doing this after each step would be a big performance
+            # bottleneck.
             for ref_v, v in zip(self.trainable_variables, trainable_variables):
                 ref_v.assign(v)
             for ref_v, v in zip(
@@ -238,7 +239,6 @@ class JAXTrainer(base_trainer.Trainer):
                         y=val_y,
                         sample_weight=val_sample_weight,
                         batch_size=validation_batch_size or batch_size,
-                        epochs=1,
                     )
                 val_logs = self.evaluate(
                     x=val_x,
@@ -400,7 +400,8 @@ class JAXTrainer(base_trainer.Trainer):
                 metrics_variables,
             )
             logs, state = test_step(state, data)
-            # Note that trainable variables are not returned since they're immutable here.
+            # Note that trainable variables are not returned since they're
+            # immutable here.
             non_trainable_variables, metrics_variables = state
 
             callbacks.on_test_batch_end(step, logs)
@@ -435,7 +436,7 @@ class JAXTrainer(base_trainer.Trainer):
             # Build the model on one batch of data.
             for _, data in epoch_iterator.enumerate_epoch(return_type="np"):
                 # Build model
-                y_pred = self(data)
+                self(data)
                 break
 
         # Container that configures and calls callbacks.
