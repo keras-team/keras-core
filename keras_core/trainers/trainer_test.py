@@ -11,7 +11,9 @@ from keras_core import testing
 if backend.backend() == "jax":
     from keras_core.backend.jax.trainer import JAXTrainer as Trainer
 else:
-    from keras_core.backend.tensorflow.trainer import TensorFlowTrainer as Trainer
+    from keras_core.backend.tensorflow.trainer import (
+        TensorFlowTrainer as Trainer,
+    )
 
 
 # A model is just a layer mixed in with a Trainer.
@@ -72,7 +74,8 @@ class TestTrainer(testing.TestCase):
         # Fit the model to make sure compile_metrics are built
         model.fit(x, y, batch_size=2, epochs=1)
 
-        # The model should have 3 metrics: loss_tracker, compile_metrics, my_metric
+        # The model should have 3 metrics: loss_tracker, compile_metrics,
+        # my_metric.
         self.assertEqual(len(model.metrics), 3)
         self.assertEqual(model.metrics[0], model._loss_tracker)
         self.assertEqual(model.metrics[1], model.my_metric)
