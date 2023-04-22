@@ -4,8 +4,8 @@ from tensorflow.python.ops.numpy_ops import np_config
 from keras_core import metrics
 from keras_core import testing
 
-
 np_config.enable_numpy_behavior()
+
 
 class FalsePositivesTest(testing.TestCase):
     def test_config(self):
