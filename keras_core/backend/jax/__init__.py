@@ -50,6 +50,28 @@ def name_scope(name):
     return jax.named_scope(name)
 
 
+def vectorized_map(function, elements):
+    return jax.vmap(function)(elements)
+
+
+def unsorted_segment_sum(data, segment_ids, num_segments=None):
+    return jax.ops.segment_sum(
+        data, segment_ids, num_segments, indices_are_sorted=False
+    )
+
+
+def one_hot(x, num_classes, axis=-1):
+    return jax.nn.one_hot(x, num_classes, axis=axis)
+
+
+def top_k(x, k, sorted=False):
+    if sorted:
+        return ValueError(
+            "Jax backend does not support `sorted=True` for `ops.top_k`"
+        )
+    return jax.lax.top_k(x, k)
+
+
 class Variable(KerasVariable):
     def __init__(self, value, dtype=None, trainable=True, name=None):
         self.name = name or auto_name(self.__class__.__name__)

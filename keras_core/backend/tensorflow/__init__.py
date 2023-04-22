@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.experimental import numpy as tfnp
+from tensorflow.python.ops.numpy_ops import np_config
 
 from keras_core.backend.common import KerasVariable
 from keras_core.backend.common import standardize_dtype
@@ -10,6 +11,8 @@ from keras_core.backend.tensorflow import nn
 from keras_core.backend.tensorflow import numpy
 from keras_core.backend.tensorflow import random
 from keras_core.utils.naming import auto_name
+
+np_config.enable_numpy_behavior()
 
 DYNAMIC_SHAPES_OK = True
 
@@ -238,6 +241,22 @@ def cond(pred, true_fun, false_fun):
 
 def name_scope(name):
     return tf.name_scope(name)
+
+
+def vectorized_map(function, elements):
+    return tf.vectorized_map(function, elements)
+
+
+def unsorted_segment_sum(data, segment_ids, num_segments=None):
+    return tf.math.unsorted_segment_sum(data, segment_ids, num_segments)
+
+
+def one_hot(x, num_classes, axis=-1):
+    return tf.one_hot(x, num_classes, axis=axis)
+
+
+def top_k(x, k, sorted=False):
+    return tf.math.top_k(x, k, sorted=sorted)
 
 
 def compute_output_spec(fn, *args, **kwargs):

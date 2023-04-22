@@ -18,7 +18,6 @@
 from enum import Enum
 
 import numpy as np
-import tensorflow as tf
 
 from keras_core import backend
 from keras_core import operations as ops
@@ -92,7 +91,7 @@ def _update_confusion_matrix_variables_optimized(
       thresholds = [0.0, 1*width, 2*width, 3*width, ..., 1.0]
     Given a prediction value p, we can map it to its bucket by
       bucket_index(p) = floor( p * (num_thresholds - 1) )
-    so we can use tf.math.unsorted_segment_sum() to update the buckets in one
+    so we can use ops.unsorted_segmenet_sum() to update the buckets in one
     pass.
 
     Consider following example:
@@ -111,7 +110,7 @@ def _update_confusion_matrix_variables_optimized(
     # Note the second item "1.0" is floored to 0, since the value need to be
     # strictly larger than the bucket lower bound.
     # In the implementation, we use ops.ceil() - 1 to achieve this.
-    tp_bucket_value = tf.math.unsorted_segment_sum(true_labels, bucket_indices,
+    tp_bucket_value = ops.unsorted_segmenet_sum(true_labels, bucket_indices,
                                                    num_segments=num_thresholds)
                     = [1, 1, 0]
     # For [1, 1, 0] here, it means there is 1 true value contributed by bucket
@@ -219,27 +218,27 @@ def _update_confusion_matrix_variables_optimized(
                 label_and_bucket_index[0],
                 label_and_bucket_index[1],
             )
-            return tf.math.unsorted_segment_sum(
+            return ops.unsorted_segmenet_sum(
                 data=label,
                 segment_ids=bucket_index,
                 num_segments=num_thresholds,
             )
 
-        tp_bucket_v = tf.vectorized_map(
+        tp_bucket_v = ops.vectorized_map(
             gather_bucket, (true_labels, bucket_indices), warn=False
         )
-        fp_bucket_v = tf.vectorized_map(
+        fp_bucket_v = ops.vectorized_map(
             gather_bucket, (false_labels, bucket_indices), warn=False
         )
         tp = ops.transpose(ops.cumsum(tp_bucket_v, reverse=True, axis=1))
         fp = ops.transpose(ops.cumsum(fp_bucket_v, reverse=True, axis=1))
     else:
-        tp_bucket_v = tf.math.unsorted_segment_sum(
+        tp_bucket_v = ops.unsorted_segmenet_sum(
             data=true_labels,
             segment_ids=bucket_indices,
             num_segments=num_thresholds,
         )
-        fp_bucket_v = tf.math.unsorted_segment_sum(
+        fp_bucket_v = ops.unsorted_segmenet_sum(
             data=false_labels,
             segment_ids=bucket_indices,
             num_segments=num_thresholds,
@@ -426,8 +425,6 @@ def update_confusion_matrix_variables(
         )
         _, sample_weight = squeeze_to_same_rank(y_true, sample_weight)
 
-    y_pred.shape.assert_is_compatible_with(y_true.shape)
-
     if top_k is not None:
         y_pred = _filter_top_k(y_pred, top_k)
     if class_id is not None:
@@ -449,10 +446,12 @@ def update_confusion_matrix_variables(
 
     pred_shape = ops.shape(y_pred)
     num_predictions = pred_shape[0]
-    if y_pred.shape.ndims == 1:
+    if y_pred.ndim == 1:
         num_labels = 1
     else:
-        num_labels = ops.cast(ops.prod(pred_shape[1:], axis=0), "int32")
+        num_labels = ops.cast(
+            ops.prod(ops.array(pred_shape[1:]), axis=0), "int32"
+        )
     thresh_label_tile = ops.where(one_thresh, num_labels, 1)
 
     # Reshape predictions and labels, adding a dim for thresholding.
@@ -474,24 +473,24 @@ def update_confusion_matrix_variables(
         thresh_tiles = [1, num_predictions * num_labels]
         data_tiles = [num_thresholds, 1]
 
-    thresh_tiled = tf.tile(
+    thresh_tiled = ops.tile(
         ops.reshape(thresholds, thresh_pretile_shape), ops.array(thresh_tiles)
     )
 
     # Tile the predictions for every threshold.
-    preds_tiled = tf.tile(predictions_extra_dim, data_tiles)
+    preds_tiled = ops.tile(predictions_extra_dim, data_tiles)
 
     # Compare predictions and threshold.
     pred_is_pos = ops.greater(preds_tiled, thresh_tiled)
 
     # Tile labels by number of thresholds
-    label_is_pos = tf.tile(labels_extra_dim, data_tiles)
+    label_is_pos = ops.tile(labels_extra_dim, data_tiles)
 
     if sample_weight is not None:
         sample_weight = ops.broadcast_to(
             ops.cast(sample_weight, dtype=y_pred.dtype), y_pred.shape
         )
-        weights_tiled = tf.tile(
+        weights_tiled = ops.tile(
             ops.reshape(sample_weight, thresh_tiles), data_tiles
         )
     else:
@@ -500,7 +499,7 @@ def update_confusion_matrix_variables(
     if label_weights is not None and not multi_label:
         label_weights = ops.expand_dims(label_weights, 0)
         label_weights = ops.broadcast_to(label_weights, y_pred.shape)
-        label_weights_tiled = tf.tile(
+        label_weights_tiled = ops.tile(
             ops.reshape(label_weights, thresh_tiles), data_tiles
         )
         if weights_tiled is None:
@@ -541,7 +540,6 @@ def update_confusion_matrix_variables(
             )
 
 
-
 def _filter_top_k(x, k):
     """Filters top-k values in the last dim of x and set the rest to NEG_INF.
 
@@ -555,8 +553,8 @@ def _filter_top_k(x, k):
     Returns:
       tensor with same shape and dtype as x.
     """
-    _, top_k_idx = tf.math.top_k(x, k, sorted=False)
+    _, top_k_idx = ops.top_k(x, k, sorted=False)
     top_k_mask = ops.sum(
-        tf.one_hot(top_k_idx, ops.shape(x)[-1], axis=-1), axis=-2
+        ops.one_hot(top_k_idx, ops.shape(x)[-1], axis=-1), axis=-2
     )
     return x * top_k_mask + NEG_INF * (1 - top_k_mask)
