@@ -33,8 +33,8 @@ def get(identifier):
 
     Args:
         identifier: A loss identifier. One of None or string name of a loss
-            function/class or loss configuration dictionary or a loss function or a
-            loss class instance.
+            function/class or loss configuration dictionary or a loss function
+            or a loss class instance.
 
     Returns:
         A Keras loss as a `function`/ `Loss` class instance.
