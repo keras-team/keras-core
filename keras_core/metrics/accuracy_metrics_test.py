@@ -24,9 +24,7 @@ class AccuracyTest(testing.TestCase):
 
         # check with sample_weight
         acc_obj.update_state(
-            y_true=[[2], [1]],
-            y_pred=[[2], [0]],
-            sample_weight=[[0.5], [0.2]]
+            y_true=[[2], [1]], y_pred=[[2], [0]], sample_weight=[[0.5], [0.2]]
         )
         result = acc_obj.result()
         self.assertAlmostEqual(result, 0.9, 2)
