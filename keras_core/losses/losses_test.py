@@ -220,3 +220,165 @@ class MeanSquaredLogarithmicErrorTest(testing.TestCase):
         y_pred = np.array([[4, 8, 12], [8, 1, 3]], dtype="float32")
         loss = msle_obj(y_true, y_pred, sample_weight=0)
         self.assertAlmostEqual(loss, 0.0, 3)
+
+
+class HingeTest(testing.TestCase):
+    def test_unweighted(self):
+        y_true = np.array([[0., 1.], [0., 0.]])
+        y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
+
+        # Reduction = "sum_over_batch_size"
+        h = losses.Hinge(reduction="sum_over_batch_size")
+        loss = h(y_true, y_pred)
+        self.assertAlmostEqual(loss, 1.3, 3)
+
+        # Reduction = "sum"
+        h = losses.Hinge(reduction="sum")
+        loss = h(y_true, y_pred)
+        self.assertAlmostEqual(loss, 2.6, 3)
+
+        # Reduction = None
+        h = losses.Hinge(reduction=None)
+        loss = h(y_true, y_pred)
+        self.assertAllClose(loss, [1.1, 1.5])
+
+        # Bad reduction
+        with self.assertRaisesRegex(ValueError, "Invalid value for argument"):
+            losses.Hinge(reduction="abc")
+
+    def test_weighted(self):
+        y_true = np.array([[0., 1.], [0., 0.]])
+        y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
+        sample_weight = [1, 0]
+
+        # Reduction = "sum_over_batch_size"
+        h = losses.Hinge(reduction="sum_over_batch_size")
+        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        self.assertAlmostEqual(loss, 0.55, 3)
+
+        # Reduction = "sum"
+        h = losses.Hinge(reduction="sum")
+        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        self.assertAlmostEqual(loss, 1.1, 3)
+
+        # Reduction = None
+        h = losses.Hinge(reduction=None)
+        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        self.assertAlmostEqual(loss, [1.1, 0.])
+
+    def test_zero_weighted(self):
+        y_true = np.array([[0., 1.], [0., 0.]])
+        y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
+        sample_weight = 0.0
+
+        h = losses.Hinge()
+        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        self.assertEqual(loss, 0.0)
+
+
+class SquaredHingeTest(testing.TestCase):
+    def test_unweighted(self):
+        y_true = np.array([[0., 1.], [0., 0.]])
+        y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
+
+        # Reduction = "sum_over_batch_size"
+        h = losses.SquaredHinge(reduction="sum_over_batch_size")
+        loss = h(y_true, y_pred)
+        self.assertAlmostEqual(loss, 1.86, 3)
+
+        # Reduction = "sum"
+        h = losses.SquaredHinge(reduction="sum")
+        loss = h(y_true, y_pred)
+        self.assertAlmostEqual(loss, 3.72, 3)
+
+        # Reduction = None
+        h = losses.SquaredHinge(reduction=None)
+        loss = h(y_true, y_pred)
+        self.assertAllClose(loss, [1.46, 2.26])
+
+        # Bad reduction
+        with self.assertRaisesRegex(ValueError, "Invalid value for argument"):
+            losses.SquaredHinge(reduction="abc")
+
+    def test_weighted(self):
+        y_true = np.array([[0., 1.], [0., 0.]])
+        y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
+        sample_weight = [1, 0]
+
+        # Reduction = "sum_over_batch_size"
+        h = losses.SquaredHinge(reduction="sum_over_batch_size")
+        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        self.assertAlmostEqual(loss, 0.73, 3)
+
+        # Reduction = "sum"
+        h = losses.SquaredHinge(reduction="sum")
+        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        self.assertAlmostEqual(loss, 1.46, 3)
+
+        # Reduction = None
+        h = losses.SquaredHinge(reduction=None)
+        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        self.assertAlmostEqual(loss, [1.46, 0.])
+
+    def test_zero_weighted(self):
+        y_true = np.array([[0., 1.], [0., 0.]])
+        y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
+        sample_weight = 0.0
+
+        h = losses.SquaredHinge()
+        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        self.assertEqual(loss, 0.0)
+
+
+class CategoricalHingeTest(testing.TestCase):
+    def test_unweighted(self):
+        y_true = np.array([[0., 1.], [0., 0.]])
+        y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
+
+        # Reduction = "sum_over_batch_size"
+        h = losses.CategoricalHinge(reduction="sum_over_batch_size")
+        loss = h(y_true, y_pred)
+        self.assertAlmostEqual(loss, 1.4, 3)
+
+        # Reduction = "sum"
+        h = losses.CategoricalHinge(reduction="sum")
+        loss = h(y_true, y_pred)
+        self.assertAlmostEqual(loss, 2.8, 3)
+
+        # Reduction = None
+        h = losses.CategoricalHinge(reduction=None)
+        loss = h(y_true, y_pred)
+        self.assertAllClose(loss, [1.2, 1.6])
+
+        # Bad reduction
+        with self.assertRaisesRegex(ValueError, "Invalid value for argument"):
+            losses.CategoricalHinge(reduction="abc")
+
+    def test_weighted(self):
+        y_true = np.array([[0., 1.], [0., 0.]])
+        y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
+        sample_weight = [1, 0]
+
+        # Reduction = "sum_over_batch_size"
+        h = losses.CategoricalHinge(reduction="sum_over_batch_size")
+        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        self.assertAlmostEqual(loss, 0.6, 3)
+
+        # Reduction = "sum"
+        h = losses.CategoricalHinge(reduction="sum")
+        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        self.assertAlmostEqual(loss, 1.2, 3)
+
+        # Reduction = None
+        h = losses.CategoricalHinge(reduction=None)
+        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        self.assertAlmostEqual(loss, [1.2, 0.])
+
+    def test_zero_weighted(self):
+        y_true = np.array([[0., 1.], [0., 0.]])
+        y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
+        sample_weight = 0.0
+
+        h = losses.CategoricalHinge()
+        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        self.assertEqual(loss, 0.0)
