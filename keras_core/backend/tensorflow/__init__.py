@@ -1,6 +1,5 @@
 import tensorflow as tf
 from tensorflow.experimental import numpy as tfnp
-from tensorflow.python.ops.numpy_ops import np_config
 
 from keras_core.backend.common import KerasVariable
 from keras_core.backend.common import standardize_dtype
@@ -11,8 +10,6 @@ from keras_core.backend.tensorflow import nn
 from keras_core.backend.tensorflow import numpy
 from keras_core.backend.tensorflow import random
 from keras_core.utils.naming import auto_name
-
-np_config.enable_numpy_behavior()
 
 DYNAMIC_SHAPES_OK = True
 
