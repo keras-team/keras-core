@@ -199,7 +199,7 @@ class CategoricalHinge(LossFunctionWrapper):
         super().__init__(categorical_hinge, reduction=reduction, name=name)
 
 
-def _transform_binary_labels(y_true):
+def convert_binary_labels_to_hinge(y_true):
     """Converts binary labels into -1/1 for hinge loss/metric calculation."""
     are_zeros = ops.equal(y_true, 0)
     are_ones = ops.equal(y_true, 1)
@@ -252,7 +252,7 @@ def hinge(y_true, y_pred):
     y_pred = ops.convert_to_tensor(y_pred)
     y_true = ops.cast(y_true, dtype=y_pred.dtype)
     y_true = ops.convert_to_tensor(y_true)
-    y_true = _transform_binary_labels(y_true)
+    y_true = convert_binary_labels_to_hinge(y_true)
     return ops.mean(ops.maximum(1.0 - y_true * y_pred, 0.0), axis=-1)
 
 
@@ -288,7 +288,7 @@ def squared_hinge(y_true, y_pred):
     """
     y_pred = ops.convert_to_tensor(y_pred)
     y_true = ops.cast(y_true, y_pred.dtype)
-    y_true = _transform_binary_labels(y_true)
+    y_true = convert_binary_labels_to_hinge(y_true)
     return ops.mean(
         ops.square(ops.maximum(1.0 - y_true * y_pred, 0.0)), axis=-1
     )
