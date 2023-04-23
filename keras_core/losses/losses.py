@@ -129,42 +129,23 @@ class MeanSquaredLogarithmicError(LossFunctionWrapper):
 class Hinge(LossFunctionWrapper):
     """Computes the hinge loss between `y_true` & `y_pred`.
 
-    `loss = maximum(1 - y_true * y_pred, 0)`
+    Formula:
+
+    ```python
+    loss = maximum(1 - y_true * y_pred, 0)
+    ```
 
     `y_true` values are expected to be -1 or 1. If binary (0 or 1) labels are
     provided we will convert them to -1 or 1.
 
-    Standalone usage:
-
-    >>> y_true = [[0., 1.], [0., 0.]]
-    >>> y_pred = [[0.6, 0.4], [0.4, 0.6]]
-    >>> # Using 'sum_over_batch_size' reduction type.
-    >>> h = keras_core.losses.Hinge()
-    >>> h(y_true, y_pred)
-    >>> # Calling with 'sample_weight'.
-    >>> h(y_true, y_pred, sample_weight=[1, 0])
-    >>> # Using 'sum' reduction type.
-    >>> h = keras_core.losses.Hinge(reduction="sum")
-    >>> h(y_true, y_pred)
-    >>> # Using None reduction type.
-    >>> h = keras_core.losses.Hinge(reduction=None)
-    >>> h(y_true, y_pred)
-
-    Usage with the `compile()` API:
-
-    ```python
-    model.compile(optimizer='sgd', loss=keras_core.losses.Hinge())
-    ```
+    Args:
+        reduction: Type of reduction to apply to loss. For almost all cases
+            this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
+            `"sum_over_batch_size"` or None.
+        name: Optional name for the instance. Defaults to `"hinge"`
     """
-    def __init__(self, reduction="sum_over_batch_size", name="hinge"):
-        """Initializes `Hinge` instance.
 
-        Args:
-            reduction: Type of reduction to apply to loss. For almost all cases
-                this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
-                `"sum_over_batch_size"` or None.
-            name: Optional name for the instance. Defaults to `"hinge"`
-        """
+    def __init__(self, reduction="sum_over_batch_size", name="hinge"):
         super().__init__(hinge, reduction=reduction, name=name)
 
 
@@ -172,43 +153,23 @@ class Hinge(LossFunctionWrapper):
 class SquaredHinge(LossFunctionWrapper):
     """Computes the squared hinge loss between `y_true` & `y_pred`.
 
-    `loss = square(maximum(1 - y_true * y_pred, 0))`
+    Formula:
+
+    ```python
+    loss = square(maximum(1 - y_true * y_pred, 0))
+    ```
 
     `y_true` values are expected to be -1 or 1. If binary (0 or 1) labels are
     provided we will convert them to -1 or 1.
 
-    Standalone usage:
-
-    >>> y_true = [[0., 1.], [0., 0.]]
-    >>> y_pred = [[0.6, 0.4], [0.4, 0.6]]
-    >>> # Using 'sum_over_batch_size' reduction type.
-    >>> h = keras_core.losses.SquaredHinge()
-    >>> h(y_true, y_pred)
-    >>> # Calling with 'sample_weight'.
-    >>> h(y_true, y_pred, sample_weight=[1, 0])
-    >>> # Using 'sum' reduction type.
-    >>> h = keras_core.losses.SquaredHinge(reduction="sum")
-    >>> h(y_true, y_pred)
-    >>> # Using None reduction type.
-    >>> h = keras_core.losses.SquaredHinge(reduction=None)
-    >>> h(y_true, y_pred)
-
-    Usage with the `compile()` API:
-
-    ```python
-    model.compile(optimizer='sgd', loss=keras_core.losses.SquaredHinge())
-    ```
+    Args:
+        reduction: Type of reduction to apply to loss. For almost all cases
+            this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
+            `"sum_over_batch_size"` or None.
+        name: Optional name for the instance. Defaults to `"squared_hinge"`
     """
 
     def __init__(self, reduction="sum_over_batch_size", name="squared_hinge"):
-        """Initializes `SquaredHinge` instance.
-
-        Args:
-            reduction: Type of reduction to apply to loss. For almost all cases
-                this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
-                `"sum_over_batch_size"` or None.
-            name: Optional name for the instance. Defaults to `"squared_hinge"`
-        """
         super().__init__(squared_hinge, reduction=reduction, name=name)
 
 
@@ -216,48 +177,30 @@ class SquaredHinge(LossFunctionWrapper):
 class CategoricalHinge(LossFunctionWrapper):
     """Computes the categorical hinge loss between `y_true` & `y_pred`.
 
-    `loss = maximum(neg - pos + 1, 0)`
-    where `neg=maximum((1-y_true)*y_pred) and pos=sum(y_true*y_pred)`
-
-    Standalone usage:
-
-    >>> y_true = [[0, 1], [0, 0]]
-    >>> y_pred = [[0.6, 0.4], [0.4, 0.6]]
-    >>> # Using 'sum_over_batch_size' reduction type.
-    >>> h = keras_core.losses.CategoricalHinge()
-    >>> h(y_true, y_pred)
-    >>> # Calling with 'sample_weight'.
-    >>> h(y_true, y_pred, sample_weight=[1, 0])
-    >>> # Using 'sum' reduction type.
-    >>> h = keras_core.losses.CategoricalHinge(reduction="sum")
-    >>> h(y_true, y_pred)
-    >>> # Using None reduction type.
-    >>> h = CategoricalHinge(reduction=None)
-    >>> h(y_true, y_pred)
-
-    Usage with the `compile()` API:
+    Formula:
 
     ```python
-    model.compile(optimizer='sgd', loss=keras_core.losses.CategoricalHinge())
+    loss = maximum(neg - pos + 1, 0)
     ```
+
+    where `neg=maximum((1-y_true)*y_pred)` and `pos=sum(y_true*y_pred)`
+
+    Args:
+        reduction: Type of reduction to apply to loss. For almost all cases
+            this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
+            `"sum_over_batch_size"` or None.
+        name: Optional name for the instance. Defaults to
+            `"categorical_hinge"`
     """
 
     def __init__(
-            self, reduction="sum_over_batch_size", name="categorical_hinge"):
-        """Initializes `CategoricalHinge` instance.
-
-        Args:
-            reduction: Type of reduction to apply to loss. For almost all cases
-                this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
-                `"sum_over_batch_size"` or None.
-            name: Optional name for the instance. Defaults to
-                `"categorical_hinge"`
-        """
+        self, reduction="sum_over_batch_size", name="categorical_hinge"
+    ):
         super().__init__(categorical_hinge, reduction=reduction, name=name)
 
 
-def _maybe_convert_labels(y_true):
-    """Converts binary labels into -1/1."""
+def _transform_binary_labels(y_true):
+    """Converts binary labels into -1/1 for hinge loss/metric calculation."""
     are_zeros = ops.equal(y_true, 0)
     are_ones = ops.equal(y_true, 1)
     is_binary = ops.all((ops.logical_or(are_zeros, are_ones)))
@@ -271,7 +214,8 @@ def _maybe_convert_labels(y_true):
         return y_true
 
     updated_y_true = ops.cond(
-        is_binary, _convert_binary_labels, _return_labels_unconverted)
+        is_binary, _convert_binary_labels, _return_labels_unconverted
+    )
     return updated_y_true
 
 
@@ -284,7 +228,11 @@ def _maybe_convert_labels(y_true):
 def hinge(y_true, y_pred):
     """Computes the hinge loss between `y_true` & `y_pred`.
 
-    `loss = mean(maximum(1 - y_true * y_pred, 0), axis=-1)`
+    Formula:
+
+    ```python
+    loss = mean(maximum(1 - y_true * y_pred, 0), axis=-1)
+    ```
 
     Standalone usage:
 
@@ -301,11 +249,10 @@ def hinge(y_true, y_pred):
     Returns:
         Hinge loss values with shape = `[batch_size, d0, .. dN-1]`.
     """
-
     y_pred = ops.convert_to_tensor(y_pred)
     y_true = ops.cast(y_true, dtype=y_pred.dtype)
     y_true = ops.convert_to_tensor(y_true)
-    y_true = _maybe_convert_labels(y_true)
+    y_true = _transform_binary_labels(y_true)
     return ops.mean(ops.maximum(1.0 - y_true * y_pred, 0.0), axis=-1)
 
 
@@ -318,7 +265,11 @@ def hinge(y_true, y_pred):
 def squared_hinge(y_true, y_pred):
     """Computes the squared hinge loss between `y_true` & `y_pred`.
 
-    `loss = mean(square(maximum(1 - y_true * y_pred, 0)), axis=-1)`
+    Formula:
+
+    ```python
+    loss = mean(square(maximum(1 - y_true * y_pred, 0)), axis=-1)
+    ```
 
     Standalone usage:
 
@@ -337,10 +288,9 @@ def squared_hinge(y_true, y_pred):
     """
     y_pred = ops.convert_to_tensor(y_pred)
     y_true = ops.cast(y_true, y_pred.dtype)
-    y_true = _maybe_convert_labels(y_true)
+    y_true = _transform_binary_labels(y_true)
     return ops.mean(
-        ops.square(ops.maximum(1.0 - y_true * y_pred, 0.0)),
-        axis=-1
+        ops.square(ops.maximum(1.0 - y_true * y_pred, 0.0)), axis=-1
     )
 
 
@@ -353,8 +303,13 @@ def squared_hinge(y_true, y_pred):
 def categorical_hinge(y_true, y_pred):
     """Computes the categorical hinge loss between `y_true` & `y_pred`.
 
-    `loss = maximum(neg - pos + 1, 0)`
-    where `neg=maximum((1-y_true)*y_pred) and pos=sum(y_true*y_pred)`
+    Formula:
+
+    ```python
+    loss = maximum(neg - pos + 1, 0)
+    ```
+
+    where `neg=maximum((1-y_true)*y_pred)` and `pos=sum(y_true*y_pred)`
 
     Standalone usage:
 
@@ -365,11 +320,12 @@ def categorical_hinge(y_true, y_pred):
 
     Args:
         y_true: The ground truth values. `y_true` values are expected to be
-            either `{-1, +1}` or `{0, 1}` (i.e. a one-hot-encoded tensor).
-        y_pred: The predicted values.
+            either `{-1, +1}` or `{0, 1}` (i.e. a one-hot-encoded tensor) with
+            shape = `[batch_size, d0, .. dN]`.
+        y_pred: The predicted values with shape = `[batch_size, d0, .. dN]`.
 
     Returns:
-      Categorical hinge loss values.
+        Categorical hinge loss values with shape = `[batch_size, d0, .. dN-1]`.
     """
     y_pred = ops.convert_to_tensor(y_pred)
     y_true = ops.cast(y_true, y_pred.dtype)
