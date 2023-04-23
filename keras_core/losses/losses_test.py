@@ -224,22 +224,22 @@ class MeanSquaredLogarithmicErrorTest(testing.TestCase):
 
 class HingeTest(testing.TestCase):
     def test_unweighted(self):
-        y_true = np.array([[0., 1.], [0., 0.]])
+        y_true = np.array([[0.0, 1.0], [0.0, 0.0]])
         y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
 
         # Reduction = "sum_over_batch_size"
-        h = losses.Hinge(reduction="sum_over_batch_size")
-        loss = h(y_true, y_pred)
+        hinge_obj = losses.Hinge(reduction="sum_over_batch_size")
+        loss = hinge_obj(y_true, y_pred)
         self.assertAlmostEqual(loss, 1.3, 3)
 
         # Reduction = "sum"
-        h = losses.Hinge(reduction="sum")
-        loss = h(y_true, y_pred)
+        hinge_obj = losses.Hinge(reduction="sum")
+        loss = hinge_obj(y_true, y_pred)
         self.assertAlmostEqual(loss, 2.6, 3)
 
         # Reduction = None
-        h = losses.Hinge(reduction=None)
-        loss = h(y_true, y_pred)
+        hinge_obj = losses.Hinge(reduction=None)
+        loss = hinge_obj(y_true, y_pred)
         self.assertAllClose(loss, [1.1, 1.5])
 
         # Bad reduction
@@ -247,53 +247,53 @@ class HingeTest(testing.TestCase):
             losses.Hinge(reduction="abc")
 
     def test_weighted(self):
-        y_true = np.array([[0., 1.], [0., 0.]])
+        y_true = np.array([[0.0, 1.0], [0.0, 0.0]])
         y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
         sample_weight = [1, 0]
 
         # Reduction = "sum_over_batch_size"
-        h = losses.Hinge(reduction="sum_over_batch_size")
-        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        hinge_obj = losses.Hinge(reduction="sum_over_batch_size")
+        loss = hinge_obj(y_true, y_pred, sample_weight=sample_weight)
         self.assertAlmostEqual(loss, 0.55, 3)
 
         # Reduction = "sum"
-        h = losses.Hinge(reduction="sum")
-        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        hinge_obj = losses.Hinge(reduction="sum")
+        loss = hinge_obj(y_true, y_pred, sample_weight=sample_weight)
         self.assertAlmostEqual(loss, 1.1, 3)
 
         # Reduction = None
-        h = losses.Hinge(reduction=None)
-        loss = h(y_true, y_pred, sample_weight=sample_weight)
-        self.assertAlmostEqual(loss, [1.1, 0.])
+        hinge_obj = losses.Hinge(reduction=None)
+        loss = hinge_obj(y_true, y_pred, sample_weight=sample_weight)
+        self.assertAlmostEqual(loss, [1.1, 0.0])
 
     def test_zero_weighted(self):
-        y_true = np.array([[0., 1.], [0., 0.]])
+        y_true = np.array([[0.0, 1.0], [0.0, 0.0]])
         y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
         sample_weight = 0.0
 
-        h = losses.Hinge()
-        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        hinge_obj = losses.Hinge()
+        loss = hinge_obj(y_true, y_pred, sample_weight=sample_weight)
         self.assertEqual(loss, 0.0)
 
 
 class SquaredHingeTest(testing.TestCase):
     def test_unweighted(self):
-        y_true = np.array([[0., 1.], [0., 0.]])
+        y_true = np.array([[0.0, 1.0], [0.0, 0.0]])
         y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
 
         # Reduction = "sum_over_batch_size"
-        h = losses.SquaredHinge(reduction="sum_over_batch_size")
-        loss = h(y_true, y_pred)
+        hinge_obj = losses.SquaredHinge(reduction="sum_over_batch_size")
+        loss = hinge_obj(y_true, y_pred)
         self.assertAlmostEqual(loss, 1.86, 3)
 
         # Reduction = "sum"
-        h = losses.SquaredHinge(reduction="sum")
-        loss = h(y_true, y_pred)
+        hinge_obj = losses.SquaredHinge(reduction="sum")
+        loss = hinge_obj(y_true, y_pred)
         self.assertAlmostEqual(loss, 3.72, 3)
 
         # Reduction = None
-        h = losses.SquaredHinge(reduction=None)
-        loss = h(y_true, y_pred)
+        hinge_obj = losses.SquaredHinge(reduction=None)
+        loss = hinge_obj(y_true, y_pred)
         self.assertAllClose(loss, [1.46, 2.26])
 
         # Bad reduction
@@ -301,53 +301,53 @@ class SquaredHingeTest(testing.TestCase):
             losses.SquaredHinge(reduction="abc")
 
     def test_weighted(self):
-        y_true = np.array([[0., 1.], [0., 0.]])
+        y_true = np.array([[0.0, 1.0], [0.0, 0.0]])
         y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
         sample_weight = [1, 0]
 
         # Reduction = "sum_over_batch_size"
-        h = losses.SquaredHinge(reduction="sum_over_batch_size")
-        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        hinge_obj = losses.SquaredHinge(reduction="sum_over_batch_size")
+        loss = hinge_obj(y_true, y_pred, sample_weight=sample_weight)
         self.assertAlmostEqual(loss, 0.73, 3)
 
         # Reduction = "sum"
-        h = losses.SquaredHinge(reduction="sum")
-        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        hinge_obj = losses.SquaredHinge(reduction="sum")
+        loss = hinge_obj(y_true, y_pred, sample_weight=sample_weight)
         self.assertAlmostEqual(loss, 1.46, 3)
 
         # Reduction = None
-        h = losses.SquaredHinge(reduction=None)
-        loss = h(y_true, y_pred, sample_weight=sample_weight)
-        self.assertAlmostEqual(loss, [1.46, 0.])
+        hinge_obj = losses.SquaredHinge(reduction=None)
+        loss = hinge_obj(y_true, y_pred, sample_weight=sample_weight)
+        self.assertAlmostEqual(loss, [1.46, 0.0])
 
     def test_zero_weighted(self):
-        y_true = np.array([[0., 1.], [0., 0.]])
+        y_true = np.array([[0.0, 1.0], [0.0, 0.0]])
         y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
         sample_weight = 0.0
 
-        h = losses.SquaredHinge()
-        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        hinge_obj = losses.SquaredHinge()
+        loss = hinge_obj(y_true, y_pred, sample_weight=sample_weight)
         self.assertEqual(loss, 0.0)
 
 
 class CategoricalHingeTest(testing.TestCase):
     def test_unweighted(self):
-        y_true = np.array([[0., 1.], [0., 0.]])
+        y_true = np.array([[0.0, 1.0], [0.0, 0.0]])
         y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
 
         # Reduction = "sum_over_batch_size"
-        h = losses.CategoricalHinge(reduction="sum_over_batch_size")
-        loss = h(y_true, y_pred)
+        hinge_obj = losses.CategoricalHinge(reduction="sum_over_batch_size")
+        loss = hinge_obj(y_true, y_pred)
         self.assertAlmostEqual(loss, 1.4, 3)
 
         # Reduction = "sum"
-        h = losses.CategoricalHinge(reduction="sum")
-        loss = h(y_true, y_pred)
+        hinge_obj = losses.CategoricalHinge(reduction="sum")
+        loss = hinge_obj(y_true, y_pred)
         self.assertAlmostEqual(loss, 2.8, 3)
 
         # Reduction = None
-        h = losses.CategoricalHinge(reduction=None)
-        loss = h(y_true, y_pred)
+        hinge_obj = losses.CategoricalHinge(reduction=None)
+        loss = hinge_obj(y_true, y_pred)
         self.assertAllClose(loss, [1.2, 1.6])
 
         # Bad reduction
@@ -355,30 +355,30 @@ class CategoricalHingeTest(testing.TestCase):
             losses.CategoricalHinge(reduction="abc")
 
     def test_weighted(self):
-        y_true = np.array([[0., 1.], [0., 0.]])
+        y_true = np.array([[0.0, 1.0], [0.0, 0.0]])
         y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
         sample_weight = [1, 0]
 
         # Reduction = "sum_over_batch_size"
-        h = losses.CategoricalHinge(reduction="sum_over_batch_size")
-        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        hinge_obj = losses.CategoricalHinge(reduction="sum_over_batch_size")
+        loss = hinge_obj(y_true, y_pred, sample_weight=sample_weight)
         self.assertAlmostEqual(loss, 0.6, 3)
 
         # Reduction = "sum"
-        h = losses.CategoricalHinge(reduction="sum")
-        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        hinge_obj = losses.CategoricalHinge(reduction="sum")
+        loss = hinge_obj(y_true, y_pred, sample_weight=sample_weight)
         self.assertAlmostEqual(loss, 1.2, 3)
 
         # Reduction = None
-        h = losses.CategoricalHinge(reduction=None)
-        loss = h(y_true, y_pred, sample_weight=sample_weight)
-        self.assertAlmostEqual(loss, [1.2, 0.])
+        hinge_obj = losses.CategoricalHinge(reduction=None)
+        loss = hinge_obj(y_true, y_pred, sample_weight=sample_weight)
+        self.assertAlmostEqual(loss, [1.2, 0.0])
 
     def test_zero_weighted(self):
-        y_true = np.array([[0., 1.], [0., 0.]])
+        y_true = np.array([[0.0, 1.0], [0.0, 0.0]])
         y_pred = np.array([[0.6, 0.4], [0.4, 0.6]])
         sample_weight = 0.0
 
-        h = losses.CategoricalHinge()
-        loss = h(y_true, y_pred, sample_weight=sample_weight)
+        hinge_obj = losses.CategoricalHinge()
+        loss = hinge_obj(y_true, y_pred, sample_weight=sample_weight)
         self.assertEqual(loss, 0.0)
