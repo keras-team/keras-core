@@ -87,7 +87,7 @@ def reduce_values(values, reduction="sum_over_batch_size"):
         return values
     loss = ops.sum(values)
     if reduction == "sum_over_batch_size":
-        loss /= ops.cast(ops.shape(values)[0], loss.dtype)
+        loss /= ops.cast(ops.prod(ops.shape(values)), loss.dtype)
     return loss
 
 
