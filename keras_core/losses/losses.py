@@ -3,6 +3,7 @@ from keras_core import operations as ops
 from keras_core.api_export import keras_core_export
 from keras_core.losses.loss import Loss
 from keras_core.losses.loss import squeeze_to_same_rank
+from keras_core.regularizers.regularizers import l2_normalize
 
 
 class LossFunctionWrapper(Loss):
@@ -122,6 +123,43 @@ class MeanSquaredLogarithmicError(LossFunctionWrapper):
     ):
         super().__init__(
             mean_squared_logarithmic_error, reduction=reduction, name=name
+        )
+
+@keras_core_export("keras_core.losses.CosineSimilarity")
+class CosineSimilarity(LossFunctionWrapper):
+    """Computes the cosine similarity between `y_true` & `y_pred`.
+
+    Note that it is a number between -1 and 1. When it is a negative number
+    between -1 and 0, 0 indicates orthogonality and values closer to -1
+    indicate greater similarity. The values closer to 1 indicate greater
+    dissimilarity. This makes it usable as a loss function in a setting
+    where you try to maximize the proximity between predictions and targets.
+    If either `y_true` or `y_pred` is a zero vector, cosine similarity will be 0
+    regardless of the proximity between predictions and targets.
+
+    Formula:
+
+    ```python
+    loss = mean(square(log(y_true + 1) - log(y_pred + 1)))
+    ```
+
+    Args:
+        axis: The axis along which the cosine similarity is computed
+            (the features axis). Defaults to -1.
+        reduction: Type of reduction to apply to loss. For almost all cases
+            this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
+            `"sum_over_batch_size"` or None.
+        name: Optional name for the instance.
+    """
+
+    def __init__(
+        self,
+        axis=-1,
+        reduction="sum_over_batch_size",
+        name="cosine_similarity",
+    ):
+        super().__init__(
+            cosine_similarity, reduction=reduction, name=name, axis=axis
         )
 
 
@@ -478,3 +516,39 @@ def mean_squared_logarithmic_error(y_true, y_pred):
     first_log = ops.log(ops.maximum(y_pred, epsilon) + 1.0)
     second_log = ops.log(ops.maximum(y_true, epsilon) + 1.0)
     return ops.mean(ops.square(first_log - second_log), axis=-1)
+
+
+def cosine_similarity(y_true, y_pred, axis=-1):
+    """Computes the cosine similarity between labels and predictions.
+
+    Formula:
+    `loss = -sum(l2_norm(y_true) * l2_norm(y_pred))`
+
+    Note that it is a number between -1 and 1. When it is a negative number
+    between -1 and 0, 0 indicates orthogonality and values closer to -1
+    indicate greater similarity. The values closer to 1 indicate greater
+    dissimilarity. This makes it usable as a loss function in a setting
+    where you try to maximize the proximity between predictions and
+    targets. If either `y_true` or `y_pred` is a zero vector, cosine
+    similarity will be 0 regardless of the proximity between predictions
+    and targets.
+
+    Standalone usage:
+    >>> y_true = [[0., 1.], [1., 1.], [1., 1.]]
+    >>> y_pred = [[1., 0.], [1., 1.], [-1., -1.]]
+    >>> loss = keras_core.losses.cosine_similarity(y_true, y_pred, axis=-1)
+
+    Args:
+      y_true: Tensor of true targets.
+      y_pred: Tensor of predicted targets.
+      axis: Axis along which to determine similarity. Defaults to -1.
+
+    Returns:
+      Cosine similarity tensor.
+    """
+    y_pred = ops.convert_to_tensor(y_pred)
+    y_true = ops.convert_to_tensor(y_true, dtype=y_pred.dtype)
+    y_true, y_pred = squeeze_to_same_rank(y_true, y_pred)
+    y_pred = l2_normalize(y_pred, axis=axis)
+    y_true = l2_normalize(y_true, axis=axis)
+    return -ops.sum(y_true * y_pred, axis=axis)
