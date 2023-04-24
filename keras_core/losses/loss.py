@@ -54,7 +54,7 @@ class Loss:
 
 def standardize_reduction(reduction):
     allowed = {"sum_over_batch_size", "sum", None}
-    if not reduction in allowed:
+    if reduction not in allowed:
         raise ValueError(
             "Invalid value for argument `reduction`. "
             f"Expected on of {allowed}. Received: "
@@ -87,7 +87,10 @@ def reduce_values(values, reduction="sum_over_batch_size"):
         return values
     loss = ops.sum(values)
     if reduction == "sum_over_batch_size":
-        loss /= ops.cast(ops.shape(values)[0], loss.dtype)
+        loss /= ops.cast(
+            ops.prod(ops.convert_to_tensor(ops.shape(values), dtype="int32")),
+            loss.dtype,
+        )
     return loss
 
 

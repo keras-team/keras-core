@@ -32,11 +32,11 @@ class Model(Trainer, Layer):
 
     def __new__(cls, *args, **kwargs):
         # Signature detection
-        if functional_init_arguments(args, kwargs) and cls == Model:
+        if functional_init_arguments(args, kwargs):
             # Functional model
             from keras_core.models import functional
 
-            return functional.Functional(*args, **kwargs, skip_init=True)
+            return functional.Functional(*args, **kwargs)
         return Layer.__new__(cls)
 
     def __init__(self, trainable=True, name=None, dtype=None):

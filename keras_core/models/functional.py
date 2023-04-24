@@ -1,3 +1,4 @@
+import inspect
 import warnings
 
 from tensorflow import nest
@@ -7,6 +8,9 @@ from keras_core import operations as ops
 from keras_core.layers.layer import Layer
 from keras_core.models.model import Model
 from keras_core.operations.function import Function
+from keras_core.operations.function import make_node_key
+from keras_core.saving import serialization_lib
+from keras_core.utils import python_utils
 from keras_core.utils import tracking
 
 
@@ -24,15 +28,16 @@ class Functional(Function, Model):
     Symbolic add_loss
     """
 
+    def __new__(cls, *args, **kwargs):
+        # Skip Model.__new__.
+        return Function.__new__(cls)
+
     @tracking.no_automatic_dependency_tracking
     def __init__(self, inputs, outputs, name=None, **kwargs):
         # This is used by the Model class, since we have some logic to swap the
         # class in the __new__ method, which will lead to __init__ get invoked
         # twice. Using the skip_init to skip one of the invocation of __init__
         # to avoid any side effects
-        skip_init = kwargs.pop("skip_init", False)
-        if skip_init:
-            return
         if isinstance(inputs, dict):
             for k, v in inputs.items():
                 if not isinstance(v, backend.KerasTensor):
@@ -148,7 +153,6 @@ class Functional(Function, Model):
 
     def _adjust_input_rank(self, flat_inputs):
         flat_ref_shapes = [x.shape for x in self._inputs]
-        names = [x.name for x in self._inputs]
         adjusted = []
         for x, ref_shape in zip(flat_inputs, flat_ref_shapes):
             x_rank = len(x.shape)
@@ -184,6 +188,36 @@ class Functional(Function, Model):
         # Symbolic only. TODO
         raise NotImplementedError
 
+    @python_utils.default
+    def get_config(self):
+        # Prepare base arguments
+        config = {
+            "name": self.name,
+            "trainable": self.trainable,
+        }
+        # Check whether the class has a constructor compatible with a Functional
+        # model or if it has a custom constructor.
+        if functional_like_constructor(self.__class__):
+            # Only return a Functional config if the constructor is the same
+            # as that of a Functional model. This excludes subclassed Functional
+            # models with a custom __init__.
+            config = {**config, **get_functional_config(self)}
+        else:
+            # Try to autogenerate config
+            xtra_args = set(config.keys())
+            if getattr(self, "_auto_get_config", False):
+                config.update(self._auto_config.config)
+            # Remove args non explicitly supported
+            argspec = inspect.getfullargspec(self.__init__)
+            if argspec.varkw != "kwargs":
+                for key in xtra_args - xtra_args.intersection(argspec.args[1:]):
+                    config.pop(key, None)
+        return config
+
+    @classmethod
+    def from_config(self):
+        raise NotImplementedError
+
 
 def operation_fn(operation, training):
     def call(*args, **kwargs):
@@ -195,3 +229,15 @@ def operation_fn(operation, training):
         return operation(*args, **kwargs)
 
     return call
+
+
+def functional_like_constructor(cls):
+    init_args = inspect.getfullargspec(cls.__init__).args[1:]
+    functional_init_args = inspect.getfullargspec(Functional.__init__).args[1:]
+    if init_args == functional_init_args:
+        return True
+    return False
+
+
+def get_functional_config(network):
+    raise NotImplementedError

@@ -7,6 +7,7 @@ from keras_core.backend import backend
 from keras_core.backend.keras_tensor import KerasTensor
 from keras_core.operations import numpy as knp
 
+# TODO: remove reliance on this (or alternatively, turn it on by default).
 np_config.enable_numpy_behavior()
 
 
@@ -787,6 +788,7 @@ class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
 
     def test_expand_dims(self):
         x = KerasTensor([None, 3])
+        self.assertEqual(knp.expand_dims(x, -1).shape, (None, 3, 1))
         self.assertEqual(knp.expand_dims(x, 0).shape, (1, None, 3))
         self.assertEqual(knp.expand_dims(x, 1).shape, (None, 1, 3))
         self.assertEqual(knp.expand_dims(x, -2).shape, (None, 1, 3))

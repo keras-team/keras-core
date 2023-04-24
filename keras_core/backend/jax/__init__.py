@@ -5,6 +5,7 @@ from tensorflow import nest
 
 from keras_core.backend.common import KerasVariable
 from keras_core.backend.common import standardize_dtype
+from keras_core.backend.jax import math
 from keras_core.backend.jax import nn
 from keras_core.backend.jax import numpy
 from keras_core.backend.jax import random
@@ -42,12 +43,16 @@ def cast(x, dtype):
     return convert_to_tensor(x, dtype=dtype)
 
 
-def cond(pred, true_fun, false_fun):
-    return jax.lax.cond(pred, true_fn=true_fun, false_fun=false_fun)
+def cond(pred, true_fn, false_fn):
+    return jax.lax.cond(pred, true_fun=true_fn, false_fun=false_fn)
 
 
 def name_scope(name):
     return jax.named_scope(name)
+
+
+def vectorized_map(function, elements):
+    return jax.vmap(function)(elements)
 
 
 class Variable(KerasVariable):
