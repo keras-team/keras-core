@@ -452,7 +452,7 @@ class CosineSimilarityTest(testing.TestCase):
         )
 
         expected_loss = -np.mean(expected_loss * sample_weight)
-        self.assertAlmostEqual(self.evaluate(loss), expected_loss, 3)
+        self.assertAlmostEqual(loss, expected_loss, 3)
 
     def test_zero_weighted(self):
         self.setup()

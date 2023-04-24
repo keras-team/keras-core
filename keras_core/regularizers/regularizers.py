@@ -1,5 +1,6 @@
 import math
 
+from keras_core import backend
 from keras_core import operations as ops
 from keras_core.api_export import keras_core_export
 
@@ -346,5 +347,7 @@ def validate_float_arg(value, name):
 
 
 def l2_normalize(x, axis=0):
-    l2_norm = ops.sqrt(ops.sum(ops.square(x), axis=axis))
-    return x / l2_norm
+    epsilon = ops.convert_to_tensor(backend.epsilon())
+    square_sum = ops.sum(ops.square(x), axis=axis, keepdims=True)
+    l2_norm = ops.reciprocal(ops.sqrt(ops.maximum(square_sum, epsilon)))
+    return ops.multiply(x, l2_norm)
