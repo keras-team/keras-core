@@ -125,6 +125,7 @@ class MeanSquaredLogarithmicError(LossFunctionWrapper):
             mean_squared_logarithmic_error, reduction=reduction, name=name
         )
 
+
 @keras_core_export("keras_core.losses.CosineSimilarity")
 class CosineSimilarity(LossFunctionWrapper):
     """Computes the cosine similarity between `y_true` & `y_pred`.

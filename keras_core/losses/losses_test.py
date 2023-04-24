@@ -428,9 +428,7 @@ class CosineSimilarityTest(testing.TestCase):
         self.setup()
         cosine_obj = losses.CosineSimilarity()
         sample_weight = np.asarray([1.2, 3.4])
-        loss = cosine_obj(
-            self.y_true, self.y_pred, sample_weight=sample_weight
-        )
+        loss = cosine_obj(self.y_true, self.y_pred, sample_weight=sample_weight)
         expected_loss = -np.mean(self.expected_loss * sample_weight)
         self.assertAlmostEqual(loss, expected_loss, 3)
 
@@ -447,9 +445,7 @@ class CosineSimilarityTest(testing.TestCase):
 
         y_true = np_y_true
         y_pred = np_y_pred
-        loss = cosine_obj(
-            y_true, y_pred, sample_weight=sample_weight
-        )
+        loss = cosine_obj(y_true, y_pred, sample_weight=sample_weight)
 
         expected_loss = -np.mean(expected_loss * sample_weight)
         self.assertAlmostEqual(loss, expected_loss, 3)
