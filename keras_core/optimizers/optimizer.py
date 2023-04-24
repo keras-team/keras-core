@@ -12,7 +12,6 @@ from keras_core.utils.tracking import Tracker
 
 @keras_core_export(["keras_core.Optimizer", "keras_core.optimizers.Optimizer"])
 class Optimizer:
-    # TODO: support jit_compile
     def __init__(
         self,
         learning_rate,
@@ -475,7 +474,6 @@ class Optimizer:
             "use_ema": self.use_ema,
             "ema_momentum": self.ema_momentum,
             "ema_overwrite_frequency": self.ema_overwrite_frequency,
-            # TODO:support `jit_compile` "jit_compile": self.jit_compile,
         }
         return config
 
