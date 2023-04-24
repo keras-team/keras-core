@@ -168,7 +168,8 @@ class SerializationLibTest(testing.TestCase):
     # def test_safe_mode_scope(self):
     #     lmbda = keras_core.layers.Lambda(lambda x: x**2)
     #     with serialization_lib.SafeModeScope(safe_mode=True):
-    #         with self.assertRaisesRegex(ValueError, "arbitrary code execution"):
+    #         with self.assertRaisesRegex(ValueError,
+    #                                     "arbitrary code execution"):
     #             self.roundtrip(lmbda)
     #     with serialization_lib.SafeModeScope(safe_mode=False):
     #         _, new_lmbda, _ = self.roundtrip(lmbda)
@@ -204,7 +205,9 @@ class SerializationLibTest(testing.TestCase):
     #     y1 = model(x)
     #     _, new_model, _ = self.roundtrip(
     #         model,
-    #         custom_objects={"PlainFunctionalSubclass": PlainFunctionalSubclass},
+    #         custom_objects={
+    #             "PlainFunctionalSubclass": PlainFunctionalSubclass
+    #         },
     #     )
     #     new_model.set_weights(model.get_weights())
     #     y2 = new_model(x)
