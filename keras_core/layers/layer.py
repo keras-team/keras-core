@@ -13,6 +13,7 @@ And some more magic:
 - add_loss
 - metric tracking
 - RNG seed tracking
+- activity regularization
 """
 import collections
 import inspect
@@ -24,6 +25,7 @@ from tensorflow import nest
 
 from keras_core import backend
 from keras_core import initializers
+from keras_core import regularizers
 from keras_core import utils
 from keras_core.api_export import keras_core_export
 from keras_core.backend import KerasTensor
@@ -38,8 +40,11 @@ from keras_core.utils.tracking import Tracker
 
 @keras_core_export(["keras_core.Layer", "keras_core.layers.Layer"])
 class Layer(Operation):
-    def __init__(self, trainable=True, dtype=None, name=None):
+    def __init__(
+        self, activity_regularizer=None, trainable=True, dtype=None, name=None
+    ):
         super().__init__(name=name)
+        self.activity_regularizer = regularizers.get(activity_regularizer)
         self._trainable = trainable
         if dtype is None:
             dtype = backend.floatx()
@@ -53,8 +58,6 @@ class Layer(Operation):
         self._seed_generators = []
         self._losses = []
         self._variables = []
-        self._trainable_variables = []
-        self._non_trainable_variables = []
         self._supports_masking = not utils.is_default(self.compute_mask)
         self._build_shapes_dict = None
         self._call_signature_parameters = [
@@ -122,8 +125,10 @@ class Layer(Operation):
         if config:
             if "input_shape" in config:
                 self.build(config["input_shape"])
+                self._build_shapes_dict = config
             elif "shapes_dict" in config:
                 self.build(**config["shapes_dict"])
+                self._build_shapes_dict = config["shapes_dict"]
 
     def add_variable(
         self,
@@ -316,9 +321,16 @@ class Layer(Operation):
             kwargs["training"] = training
 
         # TODO: Populate mask argument(s)
+
+        # Call the layer.
         with backend.name_scope(self.name):
             outputs = super().__call__(*args, **kwargs)
+            # Record activity regularizer loss.
+            if self.activity_regularizer is not None:
+                self.add_loss(self.activity_regularizer(outputs))
+
         # TODO: Set masks on outputs
+        # self._set_mask_metadata(inputs, outputs, previous_mask)
 
         # Destroy call context if we created it
         self._maybe_reset_call_context()
@@ -433,6 +445,39 @@ class Layer(Operation):
                 weight_regularization_losses.append(regularizer(v))
         losses.extend(weight_regularization_losses)
         return losses
+
+    def save_own_variables(self, store):
+        """Saves the state of the layer.
+
+        You can override this method to take full control of how the state of
+        the layer is saved upon calling `model.save()`.
+
+        Args:
+            store: Dict where the state of the model will be saved.
+        """
+        all_vars = self._variables
+        for i, v in enumerate(all_vars):
+            store[f"{i}"] = np.array(v)
+
+    def load_own_variables(self, store):
+        """Loads the state of the layer.
+
+        You can override this method to take full control of how the state of
+        the layer is loaded upon calling `keras.models.load_model()`.
+
+        Args:
+            store: Dict from which the state of the model will be loaded.
+        """
+        all_vars = self._variables
+        if len(store.keys()) != len(all_vars):
+            raise ValueError(
+                f"Layer '{self.name}' expected {len(all_vars)} variables, "
+                "but received "
+                f"{len(store.keys())} variables during loading. "
+                f"Expected: {[v.name for v in all_vars]}"
+            )
+        for i, v in enumerate(all_vars):
+            v.assign(store[f"{i}"])
 
     def _clear_losses(self):
         if backend.in_stateless_scope():
@@ -565,6 +610,29 @@ class Layer(Operation):
             if recursive:
                 deque.extendleft(layer._layers)
         return layers
+
+    def _set_mask_metadata(self, inputs, outputs, previous_mask):
+        # Many `Layer`s don't need to call `compute_mask`.
+        # This method is optimized to do as little work as needed for the common
+        # case.
+        if not self._supports_masking:
+            return
+
+        flat_outputs = nest.flatten(outputs)
+
+        mask_already_computed = all(
+            getattr(x, "_keras_mask", None) is not None for x in flat_outputs
+        )
+        if mask_already_computed:
+            return
+
+        output_masks = self.compute_mask(inputs, previous_mask)
+        if output_masks is None:
+            return
+
+        flat_masks = nest.flatten(output_masks)
+        for tensor, mask in zip(flat_outputs, flat_masks):
+            tensor._keras_mask = mask
 
 
 def get_arguments_dict(fn, *args, **kwargs):
