@@ -165,7 +165,7 @@ class CosineSimilarity(LossFunctionWrapper):
         axis: The axis along which the cosine similarity is computed
             (the features axis). Defaults to -1.
         reduction: Type of reduction to apply to loss. Options are `"sum"`,
-            `"sum_over_batch_size"` or `None`. Defaults to 
+            `"sum_over_batch_size"` or `None`. Defaults to
             `"sum_over_batch_size"`.
         name: Optional name for the instance.
     """
