@@ -58,8 +58,6 @@ class Layer(Operation):
         self._seed_generators = []
         self._losses = []
         self._variables = []
-        self._trainable_variables = []
-        self._non_trainable_variables = []
         self._supports_masking = not utils.is_default(self.compute_mask)
         self._build_shapes_dict = None
         self._call_signature_parameters = [
@@ -131,6 +129,7 @@ class Layer(Operation):
             elif "shapes_dict" in config:
                 self.build(**config["shapes_dict"])
                 self._build_shapes_dict = config["shapes_dict"]
+            self.built = True
 
     def add_variable(
         self,
@@ -448,6 +447,55 @@ class Layer(Operation):
         losses.extend(weight_regularization_losses)
         return losses
 
+    def save_own_variables(self, store):
+        """Saves the state of the layer.
+
+        You can override this method to take full control of how the state of
+        the layer is saved upon calling `model.save()`.
+
+        Args:
+            store: Dict where the state of the model will be saved.
+        """
+        all_vars = self._variables
+        for i, v in enumerate(all_vars):
+            store[f"{i}"] = np.array(v)
+
+    def load_own_variables(self, store):
+        """Loads the state of the layer.
+
+        You can override this method to take full control of how the state of
+        the layer is loaded upon calling `keras.models.load_model()`.
+
+        Args:
+            store: Dict from which the state of the model will be loaded.
+        """
+        all_vars = self._variables
+        if len(store.keys()) != len(all_vars):
+            if len(all_vars) == 0 and not self.built:
+                raise ValueError(
+                    f"Layer '{self.name}' was never built "
+                    "and thus it doesn't have any variables. "
+                    f"However the weights file lists {len(store.keys())} "
+                    "variables for this layer. In most cases, "
+                    "this indicates that you need to implement the "
+                    "`def build_from_config(self, config)` method "
+                    "on the layer. "
+                    "You might also want to implement the method "
+                    "that generates the config at saving time, "
+                    "`def get_build_config(self)`. "
+                    "The method `build_from_config()` is meant "
+                    "to create the state "
+                    "of the layer (i.e. its variables) upon deserialization.",
+                )
+            raise ValueError(
+                f"Layer '{self.name}' expected {len(all_vars)} variables, "
+                "but received "
+                f"{len(store.keys())} variables during loading. "
+                f"Expected: {[v.name for v in all_vars]}"
+            )
+        for i, v in enumerate(all_vars):
+            v.assign(store[f"{i}"])
+
     def _clear_losses(self):
         if backend.in_stateless_scope():
             scope = backend.get_stateless_scope()
@@ -478,8 +526,8 @@ class Layer(Operation):
         return summary_utils.count_params(self.weights)
 
     def _maybe_build(self, *args, **kwargs):
-        arguments_dict = get_arguments_dict(self.call, *args, **kwargs)
         if not self.built:
+            arguments_dict = get_arguments_dict(self.call, *args, **kwargs)
             shapes_dict = get_shapes_dict(arguments_dict)
             self._build_shapes_dict = shapes_dict
             if len(shapes_dict) == 1:
