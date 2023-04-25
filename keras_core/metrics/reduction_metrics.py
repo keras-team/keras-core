@@ -28,7 +28,8 @@ def reduce_to_samplewise_values(values, sample_weight, reduce_fn, dtype):
 
     values_ndim = len(values.shape)
     if values_ndim > 1:
-        return reduce_fn(values, axis=list(range(1, values_ndim))), sample_weight
+        values = reduce_fn(values, axis=list(range(1, values_ndim)))
+        return values, sample_weight
     return values, sample_weight
 
 

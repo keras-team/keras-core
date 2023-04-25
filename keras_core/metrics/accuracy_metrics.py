@@ -1,10 +1,12 @@
 from keras_core import operations as ops
 from keras_core.metrics import reduction_metrics
 from keras_core.api_export import keras_core_export
-from keras_core.backend import floatx, convert_to_tensor
+from keras_core.backend import floatx
 
 
 def accuracy(y_true, y_pred):
+    y_true = ops.convert_to_tensor(y_true, dtype=floatx())
+    y_pred = ops.convert_to_tensor(y_pred, dtype=floatx())
     return ops.cast(ops.equal(y_true, y_pred), dtype=floatx())
 
 
@@ -48,3 +50,6 @@ class Accuracy(reduction_metrics.MeanMetricWrapper):
 
     def __init__(self, name="accuracy", dtype=None):
         super().__init__(fn=accuracy, name=name, dtype=dtype)
+
+    def get_config(self):
+        return {"name": self.name, "dtype": self.dtype}
