@@ -39,7 +39,7 @@ class MeanSquaredError(LossFunctionWrapper):
     Args:
         reduction: Type of reduction to apply to loss. For almost all cases
             this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
-            `"sum_over_batch_size"` or None.
+            `"sum_over_batch_size"` or `None`.
         name: Optional name for the instance.
     """
 
@@ -62,7 +62,7 @@ class MeanAbsoluteError(LossFunctionWrapper):
     Args:
         reduction: Type of reduction to apply to loss. For almost all cases
             this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
-            `"sum_over_batch_size"` or None.
+            `"sum_over_batch_size"` or `None`.
         name: Optional name for the instance.
     """
 
@@ -85,7 +85,7 @@ class MeanAbsolutePercentageError(LossFunctionWrapper):
     Args:
         reduction: Type of reduction to apply to loss. For almost all cases
             this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
-            `"sum_over_batch_size"` or None.
+            `"sum_over_batch_size"` or `None`.
         name: Optional name for the instance.
     """
 
@@ -112,7 +112,7 @@ class MeanSquaredLogarithmicError(LossFunctionWrapper):
     Args:
         reduction: Type of reduction to apply to loss. For almost all cases
             this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
-            `"sum_over_batch_size"` or None.
+            `"sum_over_batch_size"` or `None`.
         name: Optional name for the instance.
     """
 
@@ -132,11 +132,10 @@ class CosineSimilarity(LossFunctionWrapper):
 
     Note that it is a number between -1 and 1. When it is a negative number
     between -1 and 0, 0 indicates orthogonality and values closer to -1
-    indicate greater similarity. The values closer to 1 indicate greater
-    dissimilarity. This makes it usable as a loss function in a setting
-    where you try to maximize the proximity between predictions and targets.
-    If either `y_true` or `y_pred` is a zero vector, cosine similarity will be 0
-    regardless of the proximity between predictions and targets.
+    indicate greater similarity. This makes it usable as a loss function in a
+    setting where you try to maximize the proximity between predictions and
+    targets. If either `y_true` or `y_pred` is a zero vector, cosine similarity
+    will be 0 regardless of the proximity between predictions and targets.
 
     Formula:
 
@@ -147,9 +146,9 @@ class CosineSimilarity(LossFunctionWrapper):
     Args:
         axis: The axis along which the cosine similarity is computed
             (the features axis). Defaults to -1.
-        reduction: Type of reduction to apply to loss. For almost all cases
-            this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
-            `"sum_over_batch_size"` or None.
+        reduction: Type of reduction to apply to loss. Options are `"sum"`,
+            `"sum_over_batch_size"` or `None`. Defaults to 
+            `"sum_over_batch_size"`.
         name: Optional name for the instance.
     """
 
@@ -180,7 +179,7 @@ class Hinge(LossFunctionWrapper):
     Args:
         reduction: Type of reduction to apply to loss. For almost all cases
             this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
-            `"sum_over_batch_size"` or None.
+            `"sum_over_batch_size"` or `None`.
         name: Optional name for the instance. Defaults to `"hinge"`
     """
 
@@ -204,7 +203,7 @@ class SquaredHinge(LossFunctionWrapper):
     Args:
         reduction: Type of reduction to apply to loss. For almost all cases
             this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
-            `"sum_over_batch_size"` or None.
+            `"sum_over_batch_size"` or `None`.
         name: Optional name for the instance. Defaults to `"squared_hinge"`
     """
 
@@ -227,7 +226,7 @@ class CategoricalHinge(LossFunctionWrapper):
     Args:
         reduction: Type of reduction to apply to loss. For almost all cases
             this defaults to `"sum_over_batch_size"`. Options are `"sum"`,
-            `"sum_over_batch_size"` or None.
+            `"sum_over_batch_size"` or `None`.
         name: Optional name for the instance. Defaults to
             `"categorical_hinge"`
     """
@@ -519,17 +518,19 @@ def mean_squared_logarithmic_error(y_true, y_pred):
     return ops.mean(ops.square(first_log - second_log), axis=-1)
 
 
+@keras_core_export("keras_core.losses.cosine_similarity")
 def cosine_similarity(y_true, y_pred, axis=-1):
     """Computes the cosine similarity between labels and predictions.
 
     Formula:
-    `loss = -sum(l2_norm(y_true) * l2_norm(y_pred))`
+    ```python
+    loss = -sum(l2_norm(y_true) * l2_norm(y_pred))
+    ```
 
     Note that it is a number between -1 and 1. When it is a negative number
     between -1 and 0, 0 indicates orthogonality and values closer to -1
-    indicate greater similarity. The values closer to 1 indicate greater
-    dissimilarity. This makes it usable as a loss function in a setting
-    where you try to maximize the proximity between predictions and
+    indicate greater similarity. This makes it usable as a loss function in a
+    setting where you try to maximize the proximity between predictions and
     targets. If either `y_true` or `y_pred` is a zero vector, cosine
     similarity will be 0 regardless of the proximity between predictions
     and targets.
@@ -538,14 +539,15 @@ def cosine_similarity(y_true, y_pred, axis=-1):
     >>> y_true = [[0., 1.], [1., 1.], [1., 1.]]
     >>> y_pred = [[1., 0.], [1., 1.], [-1., -1.]]
     >>> loss = keras_core.losses.cosine_similarity(y_true, y_pred, axis=-1)
+    [-0., -0.99999994, 0.99999994]
 
     Args:
-      y_true: Tensor of true targets.
-      y_pred: Tensor of predicted targets.
-      axis: Axis along which to determine similarity. Defaults to -1.
+        y_true: Tensor of true targets.
+        y_pred: Tensor of predicted targets.
+        axis: Axis along which to determine similarity. Defaults to -1.
 
     Returns:
-      Cosine similarity tensor.
+        Cosine similarity tensor.
     """
     y_pred = ops.convert_to_tensor(y_pred)
     y_true = ops.convert_to_tensor(y_true, dtype=y_pred.dtype)
