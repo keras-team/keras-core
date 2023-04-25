@@ -14,7 +14,6 @@ from keras_core.utils.tracking import Tracker
 
 @keras_core_export(["keras_core.Optimizer", "keras_core.optimizers.Optimizer"])
 class Optimizer:
-    # TODO: support jit_compile
     def __init__(
         self,
         learning_rate,
@@ -137,7 +136,7 @@ class Optimizer:
         """Add an all-zeros variable with the shape and dtype of a reference variable."""
         initializer = initializers.Zeros()
         name = name or auto_name(self.__class__.__name__)
-        self.add_variable(
+        return self.add_variable(
             shape=reference_variable.shape,
             initializer=initializer,
             dtype=reference_variable.dtype,
@@ -500,7 +499,6 @@ class Optimizer:
             "use_ema": self.use_ema,
             "ema_momentum": self.ema_momentum,
             "ema_overwrite_frequency": self.ema_overwrite_frequency,
-            "jit_compile": self.jit_compile,
         }
         return config
 
