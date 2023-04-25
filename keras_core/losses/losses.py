@@ -4,6 +4,7 @@ from keras_core.api_export import keras_core_export
 from keras_core.losses.loss import Loss
 from keras_core.losses.loss import squeeze_to_same_rank
 from keras_core.regularizers.regularizers import l2_normalize
+from keras_core.saving import serialization_lib
 
 
 class LossFunctionWrapper(Loss):
@@ -19,11 +20,16 @@ class LossFunctionWrapper(Loss):
         return self.fn(y_true, y_pred, **self._fn_kwargs)
 
     def get_config(self):
-        raise NotImplementedError
+        base_config = super().get_config()
+        config = {"fn": serialization_lib.serialize_keras_object(self.fn)}
+        config.update(serialization_lib.serialize_keras_object(self._fn_kwargs))
+        return {**base_config, **config}
 
     @classmethod
-    def from_config(clf, config):
-        raise NotImplementedError
+    def from_config(cls, config):
+        if "fn" in config:
+            config = serialization_lib.deserialize_keras_object(config)
+        return cls(**config)
 
 
 @keras_core_export("keras_core.losses.MeanSquaredError")
@@ -48,6 +54,9 @@ class MeanSquaredError(LossFunctionWrapper):
     ):
         super().__init__(mean_squared_error, reduction=reduction, name=name)
 
+    def get_config(self):
+        return Loss.get_config(self)
+
 
 @keras_core_export("keras_core.losses.MeanAbsoluteError")
 class MeanAbsoluteError(LossFunctionWrapper):
@@ -70,6 +79,9 @@ class MeanAbsoluteError(LossFunctionWrapper):
         self, reduction="sum_over_batch_size", name="mean_absolute_error"
     ):
         super().__init__(mean_absolute_error, reduction=reduction, name=name)
+
+    def get_config(self):
+        return Loss.get_config(self)
 
 
 @keras_core_export("keras_core.losses.MeanAbsolutePercentageError")
@@ -98,6 +110,9 @@ class MeanAbsolutePercentageError(LossFunctionWrapper):
             mean_absolute_percentage_error, reduction=reduction, name=name
         )
 
+    def get_config(self):
+        return Loss.get_config(self)
+
 
 @keras_core_export("keras_core.losses.MeanSquaredLogarithmicError")
 class MeanSquaredLogarithmicError(LossFunctionWrapper):
@@ -124,6 +139,9 @@ class MeanSquaredLogarithmicError(LossFunctionWrapper):
         super().__init__(
             mean_squared_logarithmic_error, reduction=reduction, name=name
         )
+
+    def get_config(self):
+        return Loss.get_config(self)
 
 
 @keras_core_export("keras_core.losses.CosineSimilarity")
@@ -186,6 +204,9 @@ class Hinge(LossFunctionWrapper):
     def __init__(self, reduction="sum_over_batch_size", name="hinge"):
         super().__init__(hinge, reduction=reduction, name=name)
 
+    def get_config(self):
+        return Loss.get_config(self)
+
 
 @keras_core_export("keras_core.losses.SquaredHinge")
 class SquaredHinge(LossFunctionWrapper):
@@ -209,6 +230,9 @@ class SquaredHinge(LossFunctionWrapper):
 
     def __init__(self, reduction="sum_over_batch_size", name="squared_hinge"):
         super().__init__(squared_hinge, reduction=reduction, name=name)
+
+    def get_config(self):
+        return Loss.get_config(self)
 
 
 @keras_core_export("keras_core.losses.CategoricalHinge")
@@ -235,6 +259,9 @@ class CategoricalHinge(LossFunctionWrapper):
         self, reduction="sum_over_batch_size", name="categorical_hinge"
     ):
         super().__init__(categorical_hinge, reduction=reduction, name=name)
+
+    def get_config(self):
+        return Loss.get_config(self)
 
 
 def convert_binary_labels_to_hinge(y_true):
