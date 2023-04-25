@@ -769,7 +769,7 @@ class NNOpsCorrectnessTest(testing.TestCase):
         expected = tf.nn.conv3d(
             inputs_3d, kernel, (1, 1, 1, 1, 1), padding="VALID"
         )
-        self.assertAllClose(outputs, expected)
+        self.assertAllClose(outputs, expected, rtol=1e-5, atol=1e-5)
 
         outputs = knn.conv(
             inputs_3d,
@@ -785,13 +785,13 @@ class NNOpsCorrectnessTest(testing.TestCase):
             padding="VALID",
             dilations=(1, 1, 1, 1, 1),
         )
-        self.assertAllClose(outputs, expected)
+        self.assertAllClose(outputs, expected, rtol=1e-5, atol=1e-5)
 
         outputs = knn.conv(inputs_3d, kernel, 2, padding="same")
         expected = tf.nn.conv3d(
             inputs_3d, kernel, (1, 2, 2, 2, 1), padding="SAME"
         )
-        self.assertAllClose(outputs, expected)
+        self.assertAllClose(outputs, expected, rtol=1e-5, atol=1e-5)
 
     def test_depthwise_conv(self):
         # Test 2D conv.

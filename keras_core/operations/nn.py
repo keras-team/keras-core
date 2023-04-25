@@ -30,7 +30,9 @@ import numpy as np
 from keras_core import backend
 from keras_core.backend import KerasTensor
 from keras_core.backend import any_symbolic_tensors
-from keras_core.backend.common.utils import compute_output_shape_conv_transpose
+from keras_core.backend.common.backend_utils import (
+    compute_conv_transpose_output_shape,
+)
 from keras_core.operations.operation import Operation
 
 
@@ -900,7 +902,7 @@ class ConvTranspose(Operation):
         )
 
     def compute_output_spec(self, inputs, kernel):
-        output_shape = compute_output_shape_conv_transpose(
+        output_shape = compute_conv_transpose_output_shape(
             inputs,
             kernel,
             self.strides,

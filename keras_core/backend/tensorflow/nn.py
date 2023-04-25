@@ -1,6 +1,8 @@
 import tensorflow as tf
 
-from keras_core.backend.common.utils import compute_output_shape_conv_transpose
+from keras_core.backend.common.backend_utils import (
+    compute_conv_transpose_output_shape,
+)
 
 
 def relu(x):
@@ -277,7 +279,7 @@ def conv_transpose(
     dilation_rate=1,
 ):
     tf_data_format = _convert_data_format(data_format, len(inputs.shape))
-    output_shape = compute_output_shape_conv_transpose(
+    output_shape = compute_conv_transpose_output_shape(
         inputs,
         kernel,
         strides,

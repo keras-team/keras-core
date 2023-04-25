@@ -177,7 +177,7 @@ def average_pool(
         return pooled / window_counts
 
 
-def _convert_to_dimension_numbers(
+def _convert_to_lax_conv_dimension_numbers(
     num_spatial_dims,
     data_format="channels_last",
     transpose=False,
@@ -211,7 +211,7 @@ def conv(
     dilation_rate=1,
 ):
     num_spatial_dims = inputs.ndim - 2
-    dimension_numbers = _convert_to_dimension_numbers(
+    dimension_numbers = _convert_to_lax_conv_dimension_numbers(
         num_spatial_dims,
         data_format,
         transpose=False,
@@ -247,7 +247,7 @@ def depthwise_conv(
     dilation_rate=1,
 ):
     num_spatial_dims = inputs.ndim - 2
-    dimension_numbers = _convert_to_dimension_numbers(
+    dimension_numbers = _convert_to_lax_conv_dimension_numbers(
         num_spatial_dims,
         data_format,
         transpose=False,
@@ -319,7 +319,7 @@ def conv_transpose(
     dilation_rate=1,
 ):
     num_spatial_dims = inputs.ndim - 2
-    dimension_numbers = _convert_to_dimension_numbers(
+    dimension_numbers = _convert_to_lax_conv_dimension_numbers(
         num_spatial_dims,
         data_format,
         transpose=False,

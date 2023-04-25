@@ -1,4 +1,4 @@
-def _deconv_output_length(
+def _compute_conv_transpose_output_length(
     input_length,
     kernel_size,
     padding,
@@ -32,7 +32,7 @@ def _deconv_output_length(
     return length
 
 
-def compute_output_shape_conv_transpose(
+def compute_conv_transpose_output_shape(
     inputs,
     kernel,
     strides,
@@ -62,7 +62,7 @@ def compute_output_shape_conv_transpose(
             None if output_padding is None else output_padding[i]
         )
         output_shape.append(
-            _deconv_output_length(
+            _compute_conv_transpose_output_length(
                 inputs_spatial_shape[i],
                 kernel_spatial_shape[i],
                 padding=padding,
