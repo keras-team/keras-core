@@ -103,7 +103,7 @@ class BinaryAccuracy(reduction_metrics.MeanMetricWrapper):
     ```python
     model.compile(optimizer='sgd',
                   loss='mse',
-                  metrics=[tf.keras.metrics.BinaryAccuracy()])
+                  metrics=[keras_core.metrics.BinaryAccuracy()])
     ```
     """
 
