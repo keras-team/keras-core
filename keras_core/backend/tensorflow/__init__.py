@@ -1,9 +1,11 @@
+import numpy as np
 import tensorflow as tf
 from tensorflow.experimental import numpy as tfnp
 
 from keras_core.backend.common import KerasVariable
 from keras_core.backend.common import standardize_dtype
 from keras_core.backend.keras_tensor import KerasTensor
+from keras_core.backend.stateless_scope import StatelessScope
 from keras_core.backend.stateless_scope import get_stateless_scope
 from keras_core.backend.stateless_scope import in_stateless_scope
 from keras_core.backend.tensorflow import math
@@ -16,11 +18,10 @@ DYNAMIC_SHAPES_OK = True
 
 
 class Variable(KerasVariable, tf.__internal__.types.Tensor):
-    def __init__(self, value, dtype=None, trainable=True, name=None):
-        self.name = name or auto_name(self.__class__.__name__)
-        dtype = standardize_dtype(dtype)
-        self.trainable = trainable
-        self._value = tf.Variable(value, dtype=dtype)
+    def _initialize(self, value):
+        self._value = tf.Variable(
+            value, dtype=self._dtype, trainable=self.trainable
+        )
 
     def assign(self, value):
         value = convert_to_tensor(value, dtype=self.dtype)
@@ -45,6 +46,15 @@ class Variable(KerasVariable, tf.__internal__.types.Tensor):
             value = scope.get_current_value(self)
             if value is not None:
                 return value
+        if self._value is None:
+            # Unitialized variable. Return a placeholder.
+            # This is fine because it's only ever used
+            # during shape inference in a scratch graph
+            # (anything else would be a bug, to be fixed.)
+            return tf.constant(
+                self._initializer(self._shape, dtype=self._dtype),
+                dtype=self._dtype,
+            )
         return self._value
 
     @property
@@ -217,6 +227,8 @@ class Variable(KerasVariable, tf.__internal__.types.Tensor):
 
 def convert_to_tensor(x, dtype=None):
     dtype = standardize_dtype(dtype)
+    if tf.is_tensor(x):
+        return tf.cast(x, dtype=dtype)
     return tf.convert_to_tensor(x, dtype=dtype)
 
 
@@ -248,23 +260,26 @@ def vectorized_map(function, elements):
 def compute_output_spec(fn, *args, **kwargs):
     graph_name = auto_name("scratch_graph")
     with tf.__internal__.FuncGraph(graph_name).as_default():
+        with StatelessScope():
 
-        def convert_keras_tensor_to_tf(x):
-            if isinstance(x, KerasTensor):
-                return tf.compat.v1.placeholder(shape=x.shape, dtype=x.dtype)
-            return x
+            def convert_keras_tensor_to_tf(x):
+                if isinstance(x, KerasTensor):
+                    return tf.compat.v1.placeholder(
+                        shape=x.shape, dtype=x.dtype
+                    )
+                return x
 
-        args, kwargs = tf.nest.map_structure(
-            convert_keras_tensor_to_tf, (args, kwargs)
-        )
-        tf_out = fn(*args, **kwargs)
+            args, kwargs = tf.nest.map_structure(
+                convert_keras_tensor_to_tf, (args, kwargs)
+            )
+            tf_out = fn(*args, **kwargs)
 
-        def convert_tf_to_keras_tensor(x):
-            if tf.is_tensor(x):
-                return KerasTensor(x.shape, x.dtype)
-            return x
+            def convert_tf_to_keras_tensor(x):
+                if tf.is_tensor(x):
+                    return KerasTensor(x.shape, x.dtype)
+                return x
 
-        return tf.nest.map_structure(convert_tf_to_keras_tensor, tf_out)
+            return tf.nest.map_structure(convert_tf_to_keras_tensor, tf_out)
 
 
 def execute(op_name, *args, **kwargs):
@@ -274,3 +289,18 @@ def execute(op_name, *args, **kwargs):
     raise AttributeError(
         f"The TensorFlow backend does not support op '{op_name}'"
     )
+
+
+def traceable_tensor(shape, dtype=None):
+    """Create a "traceable tensor".
+
+    That's a tensor that can be passed as input
+    to a stateful backend-native function to
+    create state during the trace.
+    """
+    shape = list(shape)
+    dtype = dtype or "float32"
+    for i, x in enumerate(shape):
+        if x is None:
+            shape[i] = 1
+    return tf.ones(shape, dtype=dtype)

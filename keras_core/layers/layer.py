@@ -18,6 +18,7 @@ And some more magic:
 import collections
 import inspect
 import threading
+import warnings
 
 import numpy as np
 from tensorflow import keras as tf_keras
@@ -35,13 +36,19 @@ from keras_core.operations.operation import Operation
 from keras_core.utils import summary_utils
 from keras_core.utils.tracking import Tracker
 
-# TODO: cache all call signature processing. See layer_utils.CallFunctionSpec() in Keras.
+# TODO: cache all call signature processing.
+# See layer_utils.CallFunctionSpec() in Keras.
 
 
 @keras_core_export(["keras_core.Layer", "keras_core.layers.Layer"])
 class Layer(Operation):
     def __init__(
-        self, activity_regularizer=None, trainable=True, dtype=None, name=None
+        self,
+        *,
+        activity_regularizer=None,
+        trainable=True,
+        dtype=None,
+        name=None,
     ):
         super().__init__(name=name)
         self.activity_regularizer = regularizers.get(activity_regularizer)
@@ -129,6 +136,7 @@ class Layer(Operation):
             elif "shapes_dict" in config:
                 self.build(**config["shapes_dict"])
                 self._build_shapes_dict = config["shapes_dict"]
+            self.built = True
 
     def add_variable(
         self,
@@ -144,9 +152,9 @@ class Layer(Operation):
         # TODO: handle layout
         self._check_super_called()
         initializer = initializers.get(initializer)
-        value = initializer(shape=shape, dtype=dtype)
         variable = backend.Variable(
-            value=value,
+            initializer=initializer,
+            shape=shape,
             dtype=dtype,
             trainable=trainable,
             name=name,
@@ -202,10 +210,19 @@ class Layer(Operation):
 
     @property
     def weights(self):
-        # Return only "own weights" of all Layers, recursively
-        weights = self._variables[:]
+        # Return only "own weights" of all Layers, recursively.
+        # Also deduplicate them.
+        weights = []
+        seen_ids = set()
+        for w in self._variables:
+            if id(w) not in seen_ids:
+                weights.append(w)
+                seen_ids.add(id(w))
         for layer in self._layers:
-            weights.extend(layer._variables)
+            for w in layer.weights:
+                if id(w) not in seen_ids:
+                    weights.append(w)
+                    seen_ids.add(id(w))
         return weights
 
     @property
@@ -224,8 +241,8 @@ class Layer(Operation):
         if len(layer_weights) != len(weights):
             raise ValueError(
                 f"You called `set_weights(weights)` on layer '{self.name}' "
-                f"with a weight list of length {len(weights)}, but the layer was "
-                f"expecting {len(layer_weights)} weights."
+                f"with a weight list of length {len(weights)}, but the layer "
+                f"was expecting {len(layer_weights)} weights."
             )
         for variable, value in zip(layer_weights, weights):
             if variable.shape != value.shape:
@@ -304,9 +321,9 @@ class Layer(Operation):
 
         # Infer training value
         # Training phase for `Layer.call` is set via (in order of priority):
-        # (1) The `training` argument passed to this `Layer.call`, if it is not None
+        # (1) The `training` argument passed to this `Layer.call`, if not None
         # (2) The training argument of an outer `Layer.call`.
-        # (4) Any non-None default value for `training` specified in the call signature
+        # (4) Any non-None default value for `training` in the call signature
         # (5) False (treating the layer as if it's in inference)
         arguments_dict = get_arguments_dict(self.call, *args, **kwargs)
         training = arguments_dict.get("training", None)
@@ -327,7 +344,9 @@ class Layer(Operation):
             outputs = super().__call__(*args, **kwargs)
             # Record activity regularizer loss.
             if self.activity_regularizer is not None:
-                self.add_loss(self.activity_regularizer(outputs))
+                for output in nest.flatten(outputs):
+                    if backend.is_tensor(output):
+                        self.add_loss(self.activity_regularizer(output))
 
         # TODO: Set masks on outputs
         # self._set_mask_metadata(inputs, outputs, previous_mask)
@@ -348,23 +367,25 @@ class Layer(Operation):
 
         if not self.built:
             raise ValueError(
-                "To call stateless_call, {self.__class__.__name__} must be built "
-                "(i.e. its variables must have been already created). "
+                "To call stateless_call, {self.__class__.__name__} must be "
+                "built (i.e. its variables must have been already created). "
                 "You can build it by calling it on some data."
             )
         if len(trainable_variables) != len(self.trainable_variables):
             raise ValueError(
                 "Argument `trainable_variables` must be a list of tensors "
-                f"corresponding 1:1 to {self.__class__.__name__}().trainable_variables. "
-                f"Received list with length {len(trainable_variables)}, but expected "
-                f"{len(self.trainable_variables)} variables."
+                "corresponding 1:1 to "
+                f"{self.__class__.__name__}().trainable_variables. "
+                f"Received list with length {len(trainable_variables)}, "
+                f"but expected {len(self.trainable_variables)} variables."
             )
         if len(non_trainable_variables) != len(self.non_trainable_variables):
             raise ValueError(
                 "Argument `non_trainable_variables` must be a list of tensors "
-                f"corresponding 1:1 to {self.__class__.__name__}().non_trainable_variables. "
-                f"Received list with length {len(non_trainable_variables)}, but expected "
-                f"{len(self.non_trainable_variables)} variables."
+                "corresponding 1:1 to "
+                f"{self.__class__.__name__}().non_trainable_variables. "
+                f"Received list with length {len(non_trainable_variables)}, "
+                f"but expected {len(self.non_trainable_variables)} variables."
             )
 
         # Gather variable mapping
@@ -422,8 +443,8 @@ class Layer(Operation):
         for x in losses:
             if not backend.is_tensor(x):
                 raise ValueError(
-                    "`add_loss()` can only be called from inside `build()` or `call()`, "
-                    f"on a tensor input. Received invalid value: {x}"
+                    "`add_loss()` can only be called from inside `build()` or "
+                    f"`call()`, on a tensor input. Received invalid value: {x}"
                 )
         if backend.in_stateless_scope():
             scope = backend.get_stateless_scope()
@@ -470,6 +491,22 @@ class Layer(Operation):
         """
         all_vars = self._variables
         if len(store.keys()) != len(all_vars):
+            if len(all_vars) == 0 and not self.built:
+                raise ValueError(
+                    f"Layer '{self.name}' was never built "
+                    "and thus it doesn't have any variables. "
+                    f"However the weights file lists {len(store.keys())} "
+                    "variables for this layer. In most cases, "
+                    "this indicates that you need to implement the "
+                    "`def build_from_config(self, config)` method "
+                    "on the layer. "
+                    "You might also want to implement the method "
+                    "that generates the config at saving time, "
+                    "`def get_build_config(self)`. "
+                    "The method `build_from_config()` is meant "
+                    "to create the state "
+                    "of the layer (i.e. its variables) upon deserialization.",
+                )
             raise ValueError(
                 f"Layer '{self.name}' expected {len(all_vars)} variables, "
                 "but received "
@@ -509,26 +546,101 @@ class Layer(Operation):
         return summary_utils.count_params(self.weights)
 
     def _maybe_build(self, *args, **kwargs):
-        arguments_dict = get_arguments_dict(self.call, *args, **kwargs)
         if not self.built:
+            arguments_dict = get_arguments_dict(self.call, *args, **kwargs)
             shapes_dict = get_shapes_dict(arguments_dict)
             self._build_shapes_dict = shapes_dict
+            failure = False
             if len(shapes_dict) == 1:
                 # Single arg: pass it positionally
                 input_shape = tuple(shapes_dict.values())[0]
                 with backend.name_scope(self.name):
-                    self.build(input_shape)
+                    if utils.is_default(
+                        self.build
+                    ) and might_have_unbuilt_state(self):
+                        status = self._build_by_run_for_single_pos_arg(
+                            input_shape
+                        )
+                        if not status:
+                            failure = True
+                    else:
+                        self.build(input_shape)
             else:
                 # More than one shape: pass them by name,
                 # and check that build() expects the right args.
                 check_build_signature(self.build, shapes_dict)
                 with backend.name_scope(self.name):
-                    self.build(**shapes_dict)
+                    if utils.is_default(
+                        self.build
+                    ) and might_have_unbuilt_state(self):
+                        status = self._build_by_run_for_kwargs(shapes_dict)
+                        if not status:
+                            failure = True
+                    else:
+                        self.build(**shapes_dict)
+            if failure:
+                raise ValueError(
+                    f"Layer '{self.name}' looks like it has "
+                    "unbuilt state, but Keras is not able to "
+                    "trace the layer `call()` in order to "
+                    "build it automatically. You must implement "
+                    "the `def build(self, input_shape)` method on your "
+                    "layer. It should create all variables used by the "
+                    "layer (e.g. by calling `layer.build()` on all its "
+                    "children layers)."
+                )
             self.built = True
 
             # Check input spec again (after build, since self.input_spec
             # may have been updated
             self._assert_input_compatibility(*args)
+
+    def _build_by_run_for_single_pos_arg(self, input_shape):
+        # Case: all inputs are in the first arg (possibly nested).
+        if is_shape_tuple(input_shape):
+            input_shape = tuple(input_shape)
+        if isinstance(input_shape, list):
+            input_tensors = [
+                backend.traceable_tensor(shape) for shape in input_shape
+            ]
+        elif isinstance(input_shape, dict):
+            input_tensors = {
+                k: backend.traceable_tensor(shape)
+                for k, shape in input_shape.items()
+            }
+        else:
+            input_tensors = backend.traceable_tensor(input_shape)
+        try:
+            self.call(input_tensors)
+            return True
+        except Exception as e:
+            warnings.warn(
+                "Error when attempting to automatically build "
+                f"the layer by tracing it: {e}"
+            )
+            return False
+
+    def _build_by_run_for_kwargs(self, shapes_dict):
+        # Case: inputs were recorded as multiple keyword arguments.
+        if all(is_shape_tuple(s) for s in shapes_dict.values()):
+            # Case: all input keyword arguments were plain tensors.
+            input_tensors = {
+                # We strip the `_shape` suffix to recover kwarg names.
+                k[:-6]: backend.traceable_tensor(shape)
+                for k, shape in shapes_dict.items()
+            }
+            try:
+                self.call(**input_tensors)
+                return True
+            except Exception as e:
+                warnings.warn(
+                    "Error when attempting to automatically build "
+                    f"the layer by tracing it: {e}"
+                )
+                return False
+        else:
+            # Not supported: nested input keyword arguments.
+            return False
 
     def __repr__(self):
         # TODO: improve
@@ -578,7 +690,7 @@ class Layer(Operation):
     def _maybe_reset_call_context(self):
         global CALL_CTX
         call_ctx = getattr(CALL_CTX, "current", None)
-        if call_ctx is None and call_ctx.entry_layer == self:
+        if call_ctx is None or call_ctx.entry_layer == self:
             CALL_CTX.current = None
 
     def _get_default_training_value(self):
@@ -651,7 +763,8 @@ def get_shapes_dict(arguments_dict):
     Example:
 
     ```
-    >>> get_shapes_dict({"input_a": KerasTensor(shape=(2, 3)), "training": False})
+    >>> get_shapes_dict(
+        {"input_a": KerasTensor(shape=(2, 3)), "training": False})
     {"input_a_shape": (2, 3)}
     ```
     """
@@ -669,8 +782,8 @@ def get_shapes_dict(arguments_dict):
                     for x in flat
                 ):
                     raise ValueError(
-                        "You cannot mix tensors and non-tensors in a nested argument. "
-                        f"Invalid argument: {k}={v}"
+                        "You cannot mix tensors and non-tensors in a nested "
+                        f"argument. Invalid argument: {k}={v}"
                     )
             shapes_dict[f"{k}_shape"] = nest.map_structure(
                 lambda x: backend.standardize_shape(x.shape), v
@@ -679,7 +792,7 @@ def get_shapes_dict(arguments_dict):
 
 
 def check_build_signature(build_fn, shapes_dict):
-    """Asserts that the argument names in build_fn match the entries in shapes_dict.
+    """Asserts that the argument names in build_fn match entries in shapes_dict.
 
     For instance if call() has the signature `def call(self, a, b)`
     then we'll see `shapes_dict == {"a_shape": (...), "b_shape": (...)}
@@ -719,3 +832,13 @@ class CallContext:
     def __init__(self, entry_layer):
         self.entry_layer = entry_layer
         self.training = None
+
+
+def is_shape_tuple(s):
+    return isinstance(s, (list, tuple)) and all(
+        d is None or isinstance(d, int) for d in s
+    )
+
+
+def might_have_unbuilt_state(layer):
+    return any(not lr.built for lr in layer._layers)

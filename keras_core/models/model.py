@@ -1,6 +1,8 @@
 import os
+import warnings
 
 from keras_core import backend
+from keras_core import utils
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
 from keras_core.saving import saving_lib
@@ -158,7 +160,7 @@ class Model(Trainer, Layer):
         )
 
     def save(self, filepath, overwrite=True):
-        if not filepath.endswith(".keras"):
+        if not str(filepath).endswith(".keras"):
             raise ValueError(
                 "The filename must end in `.keras`. "
                 f"Received: filepath={filepath}"
@@ -174,7 +176,7 @@ class Model(Trainer, Layer):
         saving_lib.save_model(self, filepath)
 
     def save_weights(self, filepath, overwrite=True):
-        if not filepath.endswith(".weights.h5"):
+        if not str(filepath).endswith(".weights.h5"):
             raise ValueError(
                 "The filename must end in `.weights.h5`. "
                 f"Received: filepath={filepath}"
@@ -203,6 +205,51 @@ class Model(Trainer, Layer):
                 f"File format not supported: filepath={filepath}. "
                 "Keras Core only supports V3 `.keras` and `.weights.h5` "
                 "files."
+            )
+
+    def build_from_config(self, config):
+        if not config:
+            return
+        if "input_shape" in config:
+            # Case: all inputs are in the first arg (possibly nested).
+            if utils.is_default(self.build):
+                status = self._build_by_run_for_single_pos_arg(
+                    config["input_shape"]
+                )
+            else:
+                try:
+                    self.build(config["input_shape"])
+                    status = True
+                except:
+                    status = False
+            self._build_shapes_dict = config
+
+        elif "shapes_dict" in config:
+            # Case: inputs were recorded as multiple keyword arguments.
+            if utils.is_default(self.build):
+                status = self._build_for_kwargs(config["shapes_dict"])
+            else:
+                try:
+                    self.build(**config["shapes_dict"])
+                    status = True
+                except:
+                    status = False
+            self._build_shapes_dict = config["shapes_dict"]
+
+        if not status:
+            warnings.warn(
+                f"Model '{self.name}' had a build config, but the model "
+                "cannot be built automatically in "
+                "`build_from_config(config)`. "
+                "You should implement "
+                "`def build_from_config(self, config)`, "
+                "and you might also want to implement the method "
+                " that generates the config at saving time, "
+                "`def get_build_config(self)`. "
+                "The method `build_from_config()` is meant to "
+                "create the state of the model (i.e. its variables) "
+                "upon deserialization.",
+                stacklevel=2,
             )
 
     def export(self, filepath):
