@@ -174,14 +174,14 @@ class CategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
     >>> m = keras_core.metrics.CategoricalAccuracy()
     >>> m.update_state([[0, 0, 1], [0, 1, 0]], [[0.1, 0.9, 0.8],
     ...                 [0.05, 0.95, 0]])
-    >>> m.result().numpy()
+    >>> m.result()
     0.5
 
     >>> m.reset_state()
     >>> m.update_state([[0, 0, 1], [0, 1, 0]], [[0.1, 0.9, 0.8],
     ...                 [0.05, 0.95, 0]],
     ...                sample_weight=[0.7, 0.3])
-    >>> m.result().numpy()
+    >>> m.result()
     0.3
 
     Usage with `compile()` API:
@@ -190,7 +190,7 @@ class CategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
     model.compile(
         optimizer='sgd',
         loss='mse',
-        metrics=[tf.keras.metrics.CategoricalAccuracy()])
+        metrics=[keras_core.metrics.CategoricalAccuracy()])
     ```
     """
 
