@@ -320,6 +320,8 @@ def sigmoid(x):
         x: Input tensor.
     """
     output = ops.sigmoid(x)
+    # Cache the logits to use for crossentropy loss.
+    output._keras_logits = x
     return output
 
 

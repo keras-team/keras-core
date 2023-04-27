@@ -4,33 +4,18 @@ from keras_core import callbacks
 from keras_core import layers
 from keras_core import models
 from keras_core import testing
-from keras_core.testing import test_utils
-from keras_core.utils import np_utils
-
-TRAIN_SAMPLES = 10
-TEST_SAMPLES = 10
-NUM_CLASSES = 2
-INPUT_DIM = 3
-BATCH_SIZE = 5
 
 
 class EarlyStoppingTest(testing.TestCase):
     def test_early_stopping(self):
-        (x_train, y_train), (
-            x_test,
-            y_test,
-        ) = test_utils.get_test_data(
-            train_samples=TRAIN_SAMPLES,
-            test_samples=TEST_SAMPLES,
-            input_shape=(INPUT_DIM,),
-            num_classes=NUM_CLASSES,
-        )
-        y_test = np_utils.to_categorical(y_test)
-        y_train = np_utils.to_categorical(y_train)
+        x_train = np.random.random((10, 5))
+        y_train = np.random.random((10, 1))
+        x_test = np.random.random((10, 5))
+        y_test = np.random.random((10, 1))
         model = models.Sequential(
             (
                 layers.Dense(1, activation="relu"),
-                layers.Dense(1, activation="sigmoid"),
+                layers.Dense(1, activation="relu"),
             )
         )
         model.compile(
@@ -56,7 +41,7 @@ class EarlyStoppingTest(testing.TestCase):
             model.fit(
                 x_train,
                 y_train,
-                batch_size=BATCH_SIZE,
+                batch_size=5,
                 validation_data=(x_test, y_test),
                 callbacks=cbks,
                 epochs=5,
@@ -87,7 +72,7 @@ class EarlyStoppingTest(testing.TestCase):
         model = models.Sequential(
             (
                 layers.Dense(1, activation="relu"),
-                layers.Dense(1, activation="sigmoid"),
+                layers.Dense(1, activation="relu"),
             )
         )
         model.compile(
@@ -108,16 +93,12 @@ class EarlyStoppingTest(testing.TestCase):
 
     def test_early_stopping_with_baseline(self):
         baseline = 0.6
-        (data, labels), _ = test_utils.get_test_data(
-            train_samples=100,
-            test_samples=50,
-            input_shape=(1,),
-            num_classes=NUM_CLASSES,
-        )
+        x_train = np.random.random((10, 5))
+        y_train = np.random.random((10, 1))
         model = models.Sequential(
             (
                 layers.Dense(1, activation="relu"),
-                layers.Dense(1, activation="sigmoid"),
+                layers.Dense(1, activation="relu"),
             )
         )
         model.compile(optimizer="sgd", loss="mae", metrics=["mse"])
@@ -127,7 +108,7 @@ class EarlyStoppingTest(testing.TestCase):
             monitor="mse", patience=patience, baseline=baseline
         )
         hist = model.fit(
-            data, labels, callbacks=[stopper], verbose=0, epochs=20
+            x_train, y_train, callbacks=[stopper], verbose=0, epochs=20
         )
         assert len(hist.epoch) >= patience
 
@@ -189,17 +170,12 @@ class EarlyStoppingTest(testing.TestCase):
         self.assertEqual(early_stop.model.get_weights(), 2)
 
     def test_early_stopping_with_start_from_epoch(self):
-        (data, labels), _ = test_utils.get_test_data(
-            train_samples=TRAIN_SAMPLES,
-            test_samples=TEST_SAMPLES,
-            input_shape=(INPUT_DIM,),
-            num_classes=NUM_CLASSES,
-        )
-        labels = np_utils.to_categorical(labels)
+        x_train = np.random.random((10, 5))
+        y_train = np.random.random((10, 1))
         model = models.Sequential(
             (
                 layers.Dense(1, activation="relu"),
-                layers.Dense(1, activation="sigmoid"),
+                layers.Dense(1, activation="relu"),
             )
         )
         model.compile(optimizer="sgd", loss="mae", metrics=["mse"])
@@ -211,7 +187,7 @@ class EarlyStoppingTest(testing.TestCase):
             start_from_epoch=start_from_epoch,
         )
         history = model.fit(
-            data, labels, callbacks=[stopper], verbose=0, epochs=20
+            x_train, y_train, callbacks=[stopper], verbose=0, epochs=20
         )
         # Test 'patience' argument functions correctly when used
         # in conjunction with 'start_from_epoch'.
@@ -225,7 +201,7 @@ class EarlyStoppingTest(testing.TestCase):
             start_from_epoch=start_from_epoch,
         )
         history = model.fit(
-            data, labels, callbacks=[stopper], verbose=0, epochs=20
+            x_train, y_train, callbacks=[stopper], verbose=0, epochs=20
         )
         # Test for boundary condition when 'patience' = 0.
         self.assertGreaterEqual(len(history.epoch), start_from_epoch)
