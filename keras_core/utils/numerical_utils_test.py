@@ -41,21 +41,18 @@ class TestNumericalUtils(testing.TestCase, parameterized.TestCase):
         self.assertEqual(one_hot.shape, (3, 5 + 1))
 
     def test_to_categorical_with_backend_tensor(self):
-        expected = np.array(
-            [
-                [1, 0, 0, 0, 0],
-                [0, 0, 1, 0, 0],
-                [0, 1, 0, 0, 0],
-                [0, 0, 0, 1, 0],
-                [0, 0, 0, 0, 1],
-            ]
+        label = backend.convert_to_tensor(np.array([0, 2, 1, 3, 4]))
+        expected = backend.convert_to_tensor(
+            np.array(
+                [
+                    [1, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 1, 0, 0, 0],
+                    [0, 0, 0, 1, 0],
+                    [0, 0, 0, 0, 1],
+                ]
+            )
         )
-        if backend.backend() == "tensorflow":
-            label = tf.constant([0, 2, 1, 3, 4])
-            expected = tf.constant(expected)
-        elif backend() == "jax":
-            label = jnp.array([0, 2, 1, 3, 4])
-            expected = jnp.array(expected)
         one_hot = numerical_utils.to_categorical(label, NUM_CLASSES)
         assert backend.is_tensor(one_hot)
         assert all(ops.equal(one_hot, expected))
