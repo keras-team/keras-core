@@ -1,11 +1,7 @@
-import jax
 import numpy as np
-import tensorflow as tf
 from absl.testing import parameterized
-from jax import numpy as jnp
 
 from keras_core import backend
-from keras_core import operations as ops
 from keras_core import testing
 from keras_core.utils import numerical_utils
 
