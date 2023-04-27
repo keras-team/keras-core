@@ -55,4 +55,4 @@ class TestNumericalUtils(testing.TestCase, parameterized.TestCase):
         )
         one_hot = numerical_utils.to_categorical(label, NUM_CLASSES)
         assert backend.is_tensor(one_hot)
-        assert all(ops.equal(one_hot, expected))
+        self.assertAllClose(one_hot, expected)
