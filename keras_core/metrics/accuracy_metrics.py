@@ -123,8 +123,8 @@ def categorical_accuracy(y_true, y_pred):
     y_pred = ops.convert_to_tensor(y_pred)
     y_true = ops.convert_to_tensor(y_true, dtype=y_true.dtype)
     y_true_org_shape = ops.shape(y_true)
-    y_pred_rank = y_pred.shape.ndims
-    y_true_rank = y_true.shape.ndims
+    y_pred_rank = len(y_pred.shape)
+    y_true_rank = len(y_true.shape)
 
     # If the shape of y_true is (num_samples, 1), squeeze to (num_samples,)
     if (
