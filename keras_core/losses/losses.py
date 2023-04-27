@@ -3,8 +3,8 @@ from keras_core import operations as ops
 from keras_core.api_export import keras_core_export
 from keras_core.losses.loss import Loss
 from keras_core.losses.loss import squeeze_to_same_rank
-from keras_core.regularizers.regularizers import l2_normalize
 from keras_core.saving import serialization_lib
+from keras_core.utils.numerical_utils import l2_normalize
 
 
 class LossFunctionWrapper(Loss):

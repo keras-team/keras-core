@@ -1,8 +1,8 @@
 import math
 
-from keras_core import backend
 from keras_core import operations as ops
 from keras_core.api_export import keras_core_export
+from keras_core.utils.numerical_utils import l2_normalize
 
 
 @keras_core_export(
@@ -344,10 +344,3 @@ def validate_float_arg(value, name):
             f"Received: {name}={value}"
         )
     return float(value)
-
-
-def l2_normalize(x, axis=0):
-    epsilon = ops.convert_to_tensor(backend.epsilon())
-    square_sum = ops.sum(ops.square(x), axis=axis, keepdims=True)
-    l2_norm = ops.reciprocal(ops.sqrt(ops.maximum(square_sum, epsilon)))
-    return ops.multiply(x, l2_norm)
