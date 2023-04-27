@@ -1025,7 +1025,7 @@ class Einsum(Operation):
     def compute_output_spec(self, *operands):
         """Compute the output shape of `einsum`.
 
-        In an overview, the shape computation follows the steps below:
+        The shape computation follows the steps below:
         1. Find all letters in the input specs (left part of "->"), and
             break them into two categories: letters appearing more than once
             go to `reduced_dims`, otherwise go to `kept_dims`.
@@ -1082,7 +1082,7 @@ class Einsum(Operation):
             raise ValueError(
                 f"Number of operands ({len(operands)}) does not match the "
                 f"number of input specs ({len(input_specs)}) in `einsum`, "
-                f"received `subscripts={self.subscripts}.`"
+                f"received subscripts={self.subscripts}."
             )
         reduced_dims = set()
         kept_dims = set()
