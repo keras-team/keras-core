@@ -44,10 +44,9 @@ class Accuracy(reduction_metrics.MeanMetricWrapper):
     Usage with `compile()` API:
 
     ```python
-    model.compile(
-        optimizer='sgd',
-        loss='mse',
-        metrics=[keras_core.metrics.Accuracy()])
+    model.compile(optimizer='sgd',
+                  loss='mse',
+                  metrics=[keras_core.metrics.Accuracy()])
     ```
     """
 
@@ -102,10 +101,9 @@ class BinaryAccuracy(reduction_metrics.MeanMetricWrapper):
     Usage with `compile()` API:
 
     ```python
-    model.compile(
-        optimizer='sgd',
-        loss='mse',
-        metrics=[keras_core.metrics.BinaryAccuracy()])
+    model.compile(optimizer='sgd',
+                  loss='mse',
+                  metrics=[keras_core.metrics.BinaryAccuracy()])
     ```
     """
 
@@ -187,10 +185,9 @@ class CategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
     Usage with `compile()` API:
 
     ```python
-    model.compile(
-        optimizer='sgd',
-        loss='mse',
-        metrics=[keras_core.metrics.CategoricalAccuracy()])
+    model.compile(optimizer='sgd',
+                  loss='mse',
+                  metrics=[keras_core.metrics.CategoricalAccuracy()])
     ```
     """
 
