@@ -68,6 +68,38 @@ class NumpyTwoInputOpsDynamicShapeTest(testing.TestCase):
         self.assertEqual(knp.cross(x1, y).shape, (2, 3, 3))
         self.assertEqual(knp.cross(x2, y).shape, (None, 3))
 
+    def test_einsum(self):
+        x = KerasTensor([None, 3])
+        y = KerasTensor([3, 4])
+        self.assertEqual(knp.einsum("ij,jk->ik", x, y).shape, (None, 4))
+        self.assertEqual(knp.einsum("ij,jk->ikj", x, y).shape, (None, 4, 3))
+        self.assertEqual(knp.einsum("ii", x).shape, ())
+        self.assertEqual(knp.einsum(",ij", 5, x).shape, (None, 3))
+
+        x = KerasTensor([None, 3, 4])
+        y = KerasTensor([None, 4, 5])
+        z = KerasTensor([1, 1, 1, 9])
+        self.assertEqual(knp.einsum("ijk,jkl->li", x, y).shape, (5, None))
+        self.assertEqual(knp.einsum("ijk,jkl->lij", x, y).shape, (5, None, 3))
+        self.assertEqual(
+            knp.einsum("...,...j->...j", x, y).shape, (None, 3, 4, 5)
+        )
+        self.assertEqual(
+            knp.einsum("i...,...j->i...j", x, y).shape, (None, 3, 4, 5)
+        )
+        self.assertEqual(knp.einsum("i...,...j", x, y).shape, (3, 4, None, 5))
+        self.assertEqual(
+            knp.einsum("i...,...j,...k", x, y, z).shape, (1, 3, 4, None, 5, 9)
+        )
+        self.assertEqual(
+            knp.einsum("mij,ijk,...", x, y, z).shape, (1, 1, 1, 9, 5, None)
+        )
+
+        with self.assertRaises(ValueError):
+            x = KerasTensor([None, 3])
+            y = KerasTensor([3, 4])
+            knp.einsum("ijk,jk->ik", x, y)
+
     def test_full_like(self):
         x = KerasTensor([None, 3])
         self.assertEqual(knp.full_like(x, KerasTensor([1, 3])).shape, (None, 3))
@@ -180,12 +212,14 @@ class NumpyTwoInputOpsDynamicShapeTest(testing.TestCase):
         x = KerasTensor([None, 3])
         indices = KerasTensor([1, 3])
         self.assertEqual(knp.take_along_axis(x, indices, axis=0).shape, (1, 3))
-        self.assertEqual(knp.take_along_axis(x, indices, axis=1).shape, (1, 3))
+        self.assertEqual(
+            knp.take_along_axis(x, indices, axis=1).shape, (None, 3)
+        )
 
         x = KerasTensor([None, 3, 3])
         indices = KerasTensor([1, 3, None])
         self.assertEqual(
-            knp.take_along_axis(x, indices, axis=1).shape, (1, 3, 3)
+            knp.take_along_axis(x, indices, axis=1).shape, (None, 3, 3)
         )
 
     def test_tensordot(self):
@@ -340,6 +374,37 @@ class NumpyTwoInputOpsStaticShapeTest(testing.TestCase):
             x = KerasTensor([4, 3, 3])
             y = KerasTensor([2, 3, 3])
             knp.cross(x, y)
+
+    def test_einsum(self):
+        x = KerasTensor([2, 3])
+        y = KerasTensor([3, 4])
+        self.assertEqual(knp.einsum("ij,jk->ik", x, y).shape, (2, 4))
+        self.assertEqual(knp.einsum("ij,jk->ikj", x, y).shape, (2, 4, 3))
+        self.assertEqual(knp.einsum("ii", x).shape, ())
+        self.assertEqual(knp.einsum(",ij", 5, x).shape, (2, 3))
+
+        x = KerasTensor([2, 3, 4])
+        y = KerasTensor([3, 4, 5])
+        z = KerasTensor([1, 1, 1, 9])
+        self.assertEqual(knp.einsum("ijk,jkl->li", x, y).shape, (5, 2))
+        self.assertEqual(knp.einsum("ijk,jkl->lij", x, y).shape, (5, 2, 3))
+        self.assertEqual(knp.einsum("...,...j->...j", x, y).shape, (2, 3, 4, 5))
+        self.assertEqual(
+            knp.einsum("i...,...j->i...j", x, y).shape, (2, 3, 4, 5)
+        )
+        self.assertEqual(knp.einsum("i...,...j", x, y).shape, (3, 4, 2, 5))
+        self.assertEqual(knp.einsum("i...,...j", x, y).shape, (3, 4, 2, 5))
+        self.assertEqual(
+            knp.einsum("i...,...j,...k", x, y, z).shape, (1, 3, 4, 2, 5, 9)
+        )
+        self.assertEqual(
+            knp.einsum("mij,ijk,...", x, y, z).shape, (1, 1, 1, 9, 5, 2)
+        )
+
+        with self.assertRaises(ValueError):
+            x = KerasTensor([2, 3])
+            y = KerasTensor([3, 4])
+            knp.einsum("ijk,jk->ik", x, y)
 
     def test_full_like(self):
         x = KerasTensor([2, 3])
@@ -782,6 +847,18 @@ class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
         x = KerasTensor([None, 3, 3])
         self.assertEqual(knp.diagonal(x).shape, (3, None))
 
+    def test_dot(self):
+        x = KerasTensor([None, 3])
+        y = KerasTensor([3, 2])
+        z = KerasTensor([None, None, 2])
+        self.assertEqual(knp.dot(x, y).shape, (None, 2))
+        self.assertEqual(knp.dot(x, 2).shape, (None, 3))
+        self.assertEqual(knp.dot(x, z).shape, (None, None, 2))
+
+        x = KerasTensor([None])
+        y = KerasTensor([5])
+        self.assertEqual(knp.dot(x, y).shape, ())
+
     def test_exp(self):
         x = KerasTensor([None, 3])
         self.assertEqual(knp.exp(x).shape, (None, 3))
@@ -1187,6 +1264,23 @@ class NumpyOneInputOpsStaticShapeTest(testing.TestCase):
             x = KerasTensor([3])
             knp.diagonal(x)
 
+    def test_dot(self):
+        x = KerasTensor([2, 3])
+        y = KerasTensor([3, 2])
+        z = KerasTensor([4, 3, 2])
+        self.assertEqual(knp.dot(x, y).shape, (2, 2))
+        self.assertEqual(knp.dot(x, 2).shape, (2, 3))
+        self.assertEqual(knp.dot(x, z).shape, (2, 4, 2))
+
+        x = KerasTensor([5])
+        y = KerasTensor([5])
+        self.assertEqual(knp.dot(x, y).shape, ())
+
+        with self.assertRaises(ValueError):
+            x = KerasTensor([2, 3])
+            y = KerasTensor([2, 3])
+            knp.dot(x, y)
+
     def test_exp(self):
         x = KerasTensor([2, 3])
         self.assertEqual(knp.exp(x).shape, (2, 3))
@@ -1550,6 +1644,41 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         self.assertAllClose(np.array(knp.Cross()(x1, y2)), np.cross(x1, y2))
         self.assertAllClose(np.array(knp.Cross()(x1, y3)), np.cross(x1, y3))
         self.assertAllClose(np.array(knp.Cross()(x2, y3)), np.cross(x2, y3))
+
+    def test_einsum(self):
+        x = np.arange(24).reshape([2, 3, 4])
+        y = np.arange(24).reshape([2, 4, 3])
+        self.assertAllClose(
+            np.array(knp.einsum("ijk,lkj->il", x, y)),
+            np.einsum("ijk,lkj->il", x, y),
+        )
+        self.assertAllClose(
+            np.array(knp.einsum("ijk,ikj->i", x, y)),
+            np.einsum("ijk,ikj->i", x, y),
+        )
+        self.assertAllClose(
+            np.array(knp.einsum("i...,j...k->...ijk", x, y)),
+            np.einsum("i..., j...k->...ijk", x, y),
+        )
+        self.assertAllClose(
+            np.array(knp.einsum(",ijk", 5, y)), np.einsum(",ijk", 5, y)
+        )
+
+        self.assertAllClose(
+            np.array(knp.Einsum("ijk,lkj->il")(x, y)),
+            np.einsum("ijk,lkj->il", x, y),
+        )
+        self.assertAllClose(
+            np.array(knp.Einsum("ijk,ikj->i")(x, y)),
+            np.einsum("ijk,ikj->i", x, y),
+        )
+        self.assertAllClose(
+            np.array(knp.Einsum("i...,j...k->...ijk")(x, y)),
+            np.einsum("i...,j...k->...ijk", x, y),
+        )
+        self.assertAllClose(
+            np.array(knp.Einsum(",ijk")(5, y)), np.einsum(",ijk", 5, y)
+        )
 
     def test_full_like(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
@@ -2345,6 +2474,18 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
             np.array(knp.diagonal(x, offset=-1, axis1=2, axis2=3)),
             np.diagonal(x, offset=-1, axis1=2, axis2=3),
         )
+
+    def test_dot(self):
+        x = np.arange(24).reshape([2, 3, 4])
+        y = np.arange(12).reshape([4, 3])
+        z = np.arange(4)
+        self.assertAllClose(np.array(knp.dot(x, y)), np.dot(x, y))
+        self.assertAllClose(np.array(knp.dot(x, z)), np.dot(x, z))
+        self.assertAllClose(np.array(knp.dot(x, 2)), np.dot(x, 2))
+
+        self.assertAllClose(np.array(knp.Dot()(x, y)), np.dot(x, y))
+        self.assertAllClose(np.array(knp.Dot()(x, z)), np.dot(x, z))
+        self.assertAllClose(np.array(knp.Dot()(x, 2)), np.dot(x, 2))
 
     def test_exp(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])

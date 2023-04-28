@@ -2,6 +2,7 @@ import math
 
 from keras_core import operations as ops
 from keras_core.api_export import keras_core_export
+from keras_core.utils.numerical_utils import l2_normalize
 
 
 @keras_core_export(
@@ -22,7 +23,8 @@ class Regularizer:
 
     - `kernel_regularizer`: Regularizer to apply a penalty on the layer's kernel
     - `bias_regularizer`: Regularizer to apply a penalty on the layer's bias
-    - `activity_regularizer`: Regularizer to apply a penalty on the layer's output
+    - `activity_regularizer`: Regularizer to apply a penalty on the layer's
+        output
 
     All layers (including custom layers) expose `activity_regularizer` as a
     settable property, whether or not it is in the constructor arguments.
@@ -278,15 +280,15 @@ class OrthogonalRegularizer(Regularizer):
     (i.e. the basis of the output space) orthogonal to each other.
 
     Arguments:
-        factor: Float. The regularization factor. The regularization penalty will
-            be proportional to `factor` times the mean of the dot products between
-            the L2-normalized rows (if `mode="rows"`, or columns if
+        factor: Float. The regularization factor. The regularization penalty
+            will be proportional to `factor` times the mean of the dot products
+            between the L2-normalized rows (if `mode="rows"`, or columns if
             `mode="columns"`) of the inputs, excluding the product of each
             row/column with itself.  Defaults to 0.01.
-        mode: String, one of `{"rows", "columns"}`. Defaults to `"rows"`. In rows
-            mode, the regularization effect seeks to make the rows of the input
-            orthogonal to each other. In columns mode, it seeks to make the columns
-            of the input orthogonal to each other.
+        mode: String, one of `{"rows", "columns"}`. Defaults to `"rows"`. In
+            rows mode, the regularization effect seeks to make the rows of the
+            input orthogonal to each other. In columns mode, it seeks to make
+            the columns of the input orthogonal to each other.
 
     Example:
 
@@ -343,8 +345,3 @@ def validate_float_arg(value, name):
             f"Received: {name}={value}"
         )
     return float(value)
-
-
-def l2_normalize(x, axis=0):
-    l2_norm = ops.sqrt(ops.sum(ops.square(x), axis=axis))
-    return x / l2_norm
