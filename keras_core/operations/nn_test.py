@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 import tensorflow as tf
-from tensorflow.python.ops.numpy_ops import np_config
 
 from keras_core import testing
 from keras_core.backend import backend
@@ -280,6 +279,12 @@ class NNOpsDynamicShapeTest(testing.TestCase):
             (None, 21, 21, 5),
         )
 
+    def test_one_hot(self):
+        x = KerasTensor([None, 3, 1])
+        self.assertEqual(knn.one_hot(x, 5).shape, (None, 3, 1, 5))
+        self.assertEqual(knn.one_hot(x, 5, 1).shape, (None, 5, 3, 1))
+        self.assertEqual(knn.one_hot(x, 5, 2).shape, (None, 3, 5, 1))
+
 
 class NNOpsStaticShapeTest(testing.TestCase):
     def test_relu(self):
@@ -541,6 +546,12 @@ class NNOpsStaticShapeTest(testing.TestCase):
             ).shape,
             (2, 21, 21, 5),
         )
+
+    def test_one_hot(self):
+        x = KerasTensor([2, 3, 1])
+        self.assertEqual(knn.one_hot(x, 5).shape, (2, 3, 1, 5))
+        self.assertEqual(knn.one_hot(x, 5, 1).shape, (2, 5, 3, 1))
+        self.assertEqual(knn.one_hot(x, 5, 2).shape, (2, 3, 5, 1))
 
 
 class NNOpsCorrectnessTest(testing.TestCase):
@@ -919,3 +930,28 @@ class NNOpsCorrectnessTest(testing.TestCase):
             inputs_2d, kernel, [2, 8, 8, 5], 2, padding="SAME"
         )
         self.assertAllClose(outputs, expected)
+
+    def test_one_hot(self):
+        # Test 1D one-hot.
+        indices_1d = np.array([0, 1, 2, 3])
+        self.assertAllClose(
+            knn.one_hot(indices_1d, 4), tf.one_hot(indices_1d, 4)
+        )
+        self.assertAllClose(
+            knn.one_hot(indices_1d, 4, axis=0),
+            tf.one_hot(indices_1d, 4, axis=0),
+        )
+
+        # Test 2D one-hot.
+        indices_2d = np.array([[0, 1], [2, 3]])
+        self.assertAllClose(
+            knn.one_hot(indices_2d, 4), tf.one_hot(indices_2d, 4)
+        )
+        self.assertAllClose(
+            knn.one_hot(indices_2d, 4, axis=2),
+            tf.one_hot(indices_2d, 4, axis=2),
+        )
+        self.assertAllClose(
+            knn.one_hot(indices_2d, 4, axis=1),
+            tf.one_hot(indices_2d, 4, axis=1),
+        )
