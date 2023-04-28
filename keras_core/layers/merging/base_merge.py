@@ -3,16 +3,16 @@ from keras_core import operations as ops
 from keras_core.layers.layer import Layer
 
 
-class _Merge(Layer):
+class Merge(Layer):
     """Generic merge layer for elementwise merge functions.
+
     Used to implement `Sum`, `Average`, etc.
+
+    Args:
+        **kwargs: standard layer keyword arguments.
     """
 
     def __init__(self, **kwargs):
-        """Initializes a Merge layer.
-        Args:
-          **kwargs: standard layer keyword arguments.
-        """
         super().__init__(**kwargs)
         self.supports_masking = True
 
@@ -21,17 +21,21 @@ class _Merge(Layer):
 
     def _compute_elemwise_op_output_shape(self, shape1, shape2):
         """Computes the shape of the resultant of an elementwise operation.
+
         Args:
-            shape1: tuple or None. Shape of the first tensor
-            shape2: tuple or None. Shape of the second tensor
+            shape1: Tuple or None. Shape of the first tensor
+            shape2: Tuple or None. Shape of the second tensor
+
         Returns:
-            expected output shape when an element-wise operation is
+            Expected output shape when an element-wise operation is
             carried out on 2 tensors with shapes shape1 and shape2.
             tuple or None.
+
         Raises:
-            ValueError: if shape1 and shape2 are not compatible for
+            ValueError: If shape1 and shape2 are not compatible for
                 element-wise operations.
         """
+
         if None in [shape1, shape2]:
             return None
         elif len(shape1) < len(shape2):
@@ -66,7 +70,7 @@ class _Merge(Layer):
             raise ValueError(
                 "A merge layer should be called "
                 "on a list of at least 1 input. "
-                f"Got {len(input_shape)} inputs. "
+                f"Received {len(input_shape)} inputs. "
                 f"Full input_shape received: {input_shape}"
             )
 
@@ -74,7 +78,7 @@ class _Merge(Layer):
         if len(batch_sizes) > 1:
             raise ValueError(
                 "Cannot merge tensors with different batch sizes. "
-                f"Got tensors with shapes {input_shape}"
+                f"Received tensors with shapes {input_shape}"
             )
 
         if input_shape[0] is None:
