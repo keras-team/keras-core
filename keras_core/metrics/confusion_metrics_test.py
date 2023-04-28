@@ -4,6 +4,8 @@ from tensorflow.python.ops.numpy_ops import np_config
 from keras_core import metrics
 from keras_core import testing
 
+# TODO: remove reliance on this (or alternatively, turn it on by default).
+# This is no longer needed with tf-nightly.
 np_config.enable_numpy_behavior()
 
 

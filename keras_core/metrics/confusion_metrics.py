@@ -113,6 +113,7 @@ class FalsePositives(_ConfusionMatrixConditionCount):
             dtype=dtype,
         )
 
+
 @keras_core_export("keras_core.metrics.FalseNegatives")
 class FalseNegatives(_ConfusionMatrixConditionCount):
     """Calculates the number of false negatives.
