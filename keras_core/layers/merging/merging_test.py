@@ -9,7 +9,7 @@ from keras_core import testing
 
 
 @pytest.mark.skipif(
-    backend() != "tensorflow",
+    backend.backend() != "tensorflow",
     reason="Dynamic shapes are only supported in TensorFlow backend.",
 )
 class MergingLayersDynamicShapeTest(testing.TestCase):
