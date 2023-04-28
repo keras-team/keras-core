@@ -126,26 +126,26 @@ class FalseNegatives(_ConfusionMatrixConditionCount):
     Use `sample_weight` of 0 to mask values.
 
     Args:
-      thresholds: (Optional) Defaults to 0.5. A float value, or a Python
-        list/tuple of float threshold values in [0, 1]. A threshold is compared
-        with prediction values to determine the truth value of predictions
-        (i.e., above the threshold is `true`, below is `false`). If used with a
-        loss function that sets `from_logits=True` (i.e. no sigmoid applied to
-        predictions), `thresholds` should be set to 0. One metric value is
-        generated for each threshold value.
-      name: (Optional) string name of the metric instance.
-      dtype: (Optional) data type of the metric result.
+        thresholds: (Optional) Defaults to 0.5. A float value, or a Python
+            list/tuple of float threshold values in [0, 1]. A threshold is
+            compared with prediction values to determine the truth value of
+            predictions (i.e., above the threshold is `true`, below is `false`).
+            If used with a loss function that sets `from_logits=True` (i.e. no
+            sigmoid applied to predictions), `thresholds` should be set to 0.
+            One metric value is generated for each threshold value.
+        name: (Optional) string name of the metric instance.
+        dtype: (Optional) data type of the metric result.
 
     Standalone usage:
 
     >>> m = keras_core.metrics.FalseNegatives()
     >>> m.update_state([0, 1, 1, 1], [0, 1, 0, 0])
-    >>> m.result().numpy()
+    >>> m.result()
     2.0
 
     >>> m.reset_state()
     >>> m.update_state([0, 1, 1, 1], [0, 1, 0, 0], sample_weight=[0, 0, 1, 0])
-    >>> m.result().numpy()
+    >>> m.result()
     1.0
     """
 
@@ -170,26 +170,26 @@ class TrueNegatives(_ConfusionMatrixConditionCount):
     Use `sample_weight` of 0 to mask values.
 
     Args:
-      thresholds: (Optional) Defaults to 0.5. A float value, or a Python
-        list/tuple of float threshold values in [0, 1]. A threshold is compared
-        with prediction values to determine the truth value of predictions
-        (i.e., above the threshold is `true`, below is `false`). If used with a
-        loss function that sets `from_logits=True` (i.e. no sigmoid applied to
-        predictions), `thresholds` should be set to 0. One metric value is
-        generated for each threshold value.
-      name: (Optional) string name of the metric instance.
-      dtype: (Optional) data type of the metric result.
+        thresholds: (Optional) Defaults to 0.5. A float value, or a Python
+            list/tuple of float threshold values in [0, 1]. A threshold is
+            compared with prediction values to determine the truth value of
+            predictions (i.e., above the threshold is `true`, below is `false`).
+            If used with a loss function that sets `from_logits=True` (i.e. no
+            sigmoid applied to predictions), `thresholds` should be set to 0.
+            One metric value is generated for each threshold value.
+        name: (Optional) string name of the metric instance.
+        dtype: (Optional) data type of the metric result.
 
     Standalone usage:
 
     >>> m = keras_core.metrics.TrueNegatives()
     >>> m.update_state([0, 1, 0, 0], [1, 1, 0, 0])
-    >>> m.result().numpy()
+    >>> m.result()
     2.0
 
     >>> m.reset_state()
     >>> m.update_state([0, 1, 0, 0], [1, 1, 0, 0], sample_weight=[0, 0, 1, 0])
-    >>> m.result().numpy()
+    >>> m.result()
     1.0
     """
 
@@ -214,26 +214,26 @@ class TruePositives(_ConfusionMatrixConditionCount):
     Use `sample_weight` of 0 to mask values.
 
     Args:
-      thresholds: (Optional) Defaults to 0.5. A float value, or a Python
-        list/tuple of float threshold values in [0, 1]. A threshold is compared
-        with prediction values to determine the truth value of predictions
-        (i.e., above the threshold is `true`, below is `false`). If used with a
-        loss function that sets `from_logits=True` (i.e. no sigmoid applied to
-        predictions), `thresholds` should be set to 0. One metric value is
-        generated for each threshold value.
-      name: (Optional) string name of the metric instance.
-      dtype: (Optional) data type of the metric result.
+        thresholds: (Optional) Defaults to 0.5. A float value, or a Python
+            list/tuple of float threshold values in [0, 1]. A threshold is
+            compared with prediction values to determine the truth value of
+            predictions (i.e., above the threshold is `true`, below is `false`).
+            If used with a loss function that sets `from_logits=True` (i.e. no
+            sigmoid applied to predictions), `thresholds` should be set to 0.
+            One metric value is generated for each threshold value.
+        name: (Optional) string name of the metric instance.
+        dtype: (Optional) data type of the metric result.
 
     Standalone usage:
 
     >>> m = keras_core.metrics.TruePositives()
     >>> m.update_state([0, 1, 1, 1], [1, 0, 1, 1])
-    >>> m.result().numpy()
+    >>> m.result()
     2.0
 
     >>> m.reset_state()
     >>> m.update_state([0, 1, 1, 1], [1, 0, 1, 1], sample_weight=[0, 0, 1, 0])
-    >>> m.result().numpy()
+    >>> m.result()
     1.0
     """
 
