@@ -109,7 +109,7 @@ class RMSprop(optimizer.Optimizer):
 
     def update_step(self, gradient, variable, learning_rate):
         """Update step given gradient and the associated model variable."""
-        lr = ops.cast(self.learning_rate, variable.dtype)
+        lr = ops.cast(learning_rate, variable.dtype)
         gradient = ops.cast(gradient, variable.dtype)
 
         velocity = self._velocities[self._get_variable_index(variable)]

@@ -1,9 +1,6 @@
-# flake8: noqa
-
 import numpy as np
 
 from keras_core import backend
-from keras_core import operations as ops
 from keras_core import testing
 from keras_core.optimizers.adam import Adam
 
@@ -55,17 +52,9 @@ class AdamTest(testing.TestCase):
         grads = np.arange(0.1, 1.1, 0.1)
         first_grads = np.full((10,), 0.01)
 
-        # fmt: off
-        golden = np.array(
-            [[0.999, 0.999, 0.999, 0.999, 0.999, 0.999, 0.999, 0.999, 0.999,
-            0.999], [0.9982, 0.9982, 0.9982, 0.9982, 0.9982, 0.9982, 0.9982,
-            0.9982, 0.9982, 0.9982], [0.9973, 0.9973, 0.9974, 0.9974, 0.9974,
-            0.9974, 0.9974, 0.9974, 0.9974, 0.9974], [0.9964, 0.9964, 0.9964,
-            0.9965, 0.9965, 0.9965, 0.9965, 0.9965, 0.9965, 0.9965], [0.9954,
-            0.9955, 0.9955, 0.9955, 0.9955, 0.9955, 0.9955, 0.9955, 0.9955,
-            0.9955]]
+        golden = np.tile(
+            [[0.999], [0.9982], [0.9974], [0.9965], [0.9955]], (1, 10)
         )
-        # fmt: on
 
         optimizer.apply_gradients(zip([first_grads], [x]))
         for i in range(5):
