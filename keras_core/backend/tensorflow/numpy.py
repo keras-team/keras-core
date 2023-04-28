@@ -340,6 +340,10 @@ def moveaxis(x, source, destination):
     return tfnp.moveaxis(x, source=source, destination=destination)
 
 
+def nan_to_num(x):
+    return tfnp.nan_to_num(x)
+
+
 def ndim(x):
     return tfnp.ndim(x)
 
