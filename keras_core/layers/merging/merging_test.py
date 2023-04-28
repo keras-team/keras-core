@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from keras_core import backend
 from keras_core import layers
