@@ -341,7 +341,16 @@ def moveaxis(x, source, destination):
 
 
 def nan_to_num(x):
-    return tfnp.nan_to_num(x)
+    # Replace NaN with 0
+    x = tf.where(tf.math.is_nan(x), 0, x)
+
+    # Replace positive infinitiy with dtype.max
+    x = tf.where(tf.math.is_inf(x) & (x > 0), x.dtype.max, x)
+
+    # Replace negative infinity with dtype.min
+    x = tf.where(tf.math.is_inf(x) & (x < 0), x.dtype.min, x)
+
+    return x
 
 
 def ndim(x):
