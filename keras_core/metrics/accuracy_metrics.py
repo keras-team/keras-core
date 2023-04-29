@@ -256,13 +256,13 @@ class SparseCategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
 
     >>> m = keras_core.metrics.SparseCategoricalAccuracy()
     >>> m.update_state([[2], [1]], [[0.1, 0.6, 0.3], [0.05, 0.95, 0]])
-    >>> m.result().numpy()
+    >>> m.result()
     0.5
 
     >>> m.reset_state()
     >>> m.update_state([[2], [1]], [[0.1, 0.6, 0.3], [0.05, 0.95, 0]],
     ...                sample_weight=[0.7, 0.3])
-    >>> m.result().numpy()
+    >>> m.result()
     0.3
 
     Usage with `compile()` API:
