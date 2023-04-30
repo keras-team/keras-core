@@ -15,6 +15,8 @@ def top_k(x, k, sorted=False):
     return jax.lax.top_k(x, k)
 
 
-def in_top_k(x, y, k):
-    topk, _ = top_k(x, k)
-    return (y == topk)
+def in_top_k(targets, predictions, k):
+    topk_indices = top_k(predictions, k)[1]
+    targets = targets[..., None]
+    mask = targets == topk_indices
+    return jax.numpy.any(mask, axis=1)

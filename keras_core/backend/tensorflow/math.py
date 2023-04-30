@@ -12,5 +12,5 @@ def top_k(x, k, sorted=False):
     return tf.math.top_k(x, k, sorted=sorted)
 
 
-def in_top_k(x, y, k):
-    return tf.math.in_top_k(x, y, k)
+def in_top_k(targets, predictions, k):
+    return tf.math.in_top_k(targets, predictions, k)

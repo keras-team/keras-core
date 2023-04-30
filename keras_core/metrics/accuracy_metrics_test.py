@@ -138,21 +138,23 @@ class TopKCategoricalAccuracyTest(testing.TestCase):
 
     def test_unweighted(self):
         top_k_cat_acc_obj = accuracy_metrics.TopKCategoricalAccuracy(
-            k=1, name="sparse_categorical_accuracy", dtype="float32"
+            k=1, name="top_k_categorical_accuracy", dtype="float32"
         )
-        y_true = np.array([[0, 0, 1], [0, 1, 0]])
-        y_pred = np.array([[0.1, 0.9, 0.8], [0.05, 0.95, 0]])
+        y_true = np.array([2, 1])
+        y_pred = np.array([[0.1, 0.9, 0.8], [0.05, 0.95, 0]], dtype="float32")
         top_k_cat_acc_obj.update_state(y_true, y_pred)
         result = top_k_cat_acc_obj.result()
         self.assertAllClose(result, 0.5, atol=1e-3)
 
     def test_weighted(self):
         top_k_cat_acc_obj = accuracy_metrics.TopKCategoricalAccuracy(
-            k=1, name="sparse_categorical_accuracy", dtype="float32"
+            k=1, name="top_k_categorical_accuracy", dtype="float32"
         )
-        y_true = np.array([[0, 0, 1], [0, 1, 0]])
-        y_pred = np.array([[0.1, 0.9, 0.8], [0.05, 0.95, 0]])
+        y_true = np.array([2, 1])
+        y_pred = np.array([[0.1, 0.9, 0.8], [0.05, 0.95, 0]], dtype="float32")
         sample_weight = np.array([0.7, 0.3])
-        top_k_cat_acc_obj.update_state(y_true, y_pred, sample_weight=sample_weight)
+        top_k_cat_acc_obj.update_state(
+            y_true, y_pred, sample_weight=sample_weight
+        )
         result = top_k_cat_acc_obj.result()
         self.assertAllClose(result, 0.3, atol=1e-3)

@@ -298,9 +298,7 @@ def top_k_categorical_accuracy(y_true, y_pred, k=5):
             y_true = ops.reshape(y_true, [-1])
 
     matches = ops.cast(
-        ops.in_top_k(
-            ops.cast(y_true, "int32"), y_pred, k=k
-        )[0],
+        ops.in_top_k(ops.cast(y_true, "int32"), y_pred, k=k),
         dtype=backend.floatx(),
     )
 
@@ -324,13 +322,13 @@ class TopKCategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
     Standalone usage:
 
     >>> m = keras_core.metrics.TopKCategoricalAccuracy(k=1)
-    >>> m.update_state([[0, 0, 1], [0, 1, 0]],
+    >>> m.update_state([2, 1],
     ...                [[0.1, 0.9, 0.8], [0.05, 0.95, 0]])
     >>> m.result()
     0.5
 
     >>> m.reset_state()
-    >>> m.update_state([[0, 0, 1], [0, 1, 0]],
+    >>> m.update_state([2, 1],
     ...                [[0.1, 0.9, 0.8], [0.05, 0.95, 0]],
     ...                sample_weight=[0.7, 0.3])
     >>> m.result()
@@ -346,7 +344,9 @@ class TopKCategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
     """
 
     def __init__(self, k=5, name="top_k_categorical_accuracy", dtype=None):
-        super().__init__(fn=top_k_categorical_accuracy, name=name, dtype=dtype)
+        super().__init__(
+            fn=top_k_categorical_accuracy, name=name, dtype=dtype, k=k
+        )
 
     def get_config(self):
         return {"name": self.name, "dtype": self.dtype}
