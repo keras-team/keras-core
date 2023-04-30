@@ -33,8 +33,8 @@ class MergingLayersDynamicShapeTest(testing.TestCase):
             supports_masking=True,
         )
 
-        input_1 = layers.Input(shape=shape, batch_size=batch_size)
-        input_2 = layers.Input(shape=shape, batch_size=batch_size)
+        input_1 = layers.Input(shape=shape)
+        input_2 = layers.Input(shape=shape)
         add_layer = layers.Add()
         out = add_layer([input_1, input_2])
         model = models.Model([input_1, input_2], out)
