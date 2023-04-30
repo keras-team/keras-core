@@ -285,6 +285,7 @@ def top_k_categorical_accuracy(y_true, y_pred, k=5):
     reshape_matches = False
     y_pred = ops.convert_to_tensor(y_pred)
     y_true = ops.convert_to_tensor(y_true, dtype=y_true.dtype)
+    y_true = ops.argmax(y_true, axis=-1)
     y_true_rank = len(y_true.shape)
     y_pred_rank = len(y_pred.shape)
     y_true_org_shape = ops.shape(y_true)
@@ -322,13 +323,13 @@ class TopKCategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
     Standalone usage:
 
     >>> m = keras_core.metrics.TopKCategoricalAccuracy(k=1)
-    >>> m.update_state([2, 1],
+    >>> m.update_state([[0, 0, 1], [0, 1, 0]],
     ...                [[0.1, 0.9, 0.8], [0.05, 0.95, 0]])
     >>> m.result()
     0.5
 
     >>> m.reset_state()
-    >>> m.update_state([2, 1],
+    >>> m.update_state([[0, 0, 1], [0, 1, 0]],
     ...                [[0.1, 0.9, 0.8], [0.05, 0.95, 0]],
     ...                sample_weight=[0.7, 0.3])
     >>> m.result()
