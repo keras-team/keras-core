@@ -279,3 +279,74 @@ class SparseCategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
 
     def get_config(self):
         return {"name": self.name, "dtype": self.dtype}
+
+
+def top_k_categorical_accuracy(y_true, y_pred, k=5):
+    reshape_matches = False
+    y_pred = ops.convert_to_tensor(y_pred)
+    y_true = ops.convert_to_tensor(y_true, dtype=y_true.dtype)
+    y_true_rank = len(y_true.shape)
+    y_pred_rank = len(y_pred.shape)
+    y_true_org_shape = ops.shape(y_true)
+
+    # Flatten y_pred to (batch_size, num_samples) and y_true to (num_samples,)
+    if (y_true_rank is not None) and (y_pred_rank is not None):
+        if y_pred_rank > 2:
+            y_pred = ops.reshape(y_pred, [-1, y_pred.shape[-1]])
+        if y_true_rank > 1:
+            reshape_matches = True
+            y_true = ops.reshape(y_true, [-1])
+
+    matches = ops.cast(
+        ops.in_top_k(
+            predictions=y_pred, targets=ops.cast(y_true, "int32"), k=k
+        ),
+        dtype=backend.floatx(),
+    )
+
+    # returned matches is expected to have same shape as y_true input
+    if reshape_matches:
+        matches = ops.reshape(matches, new_shape=y_true_org_shape)
+
+    return matches
+
+
+@keras_core_export("keras_core.metrics.TopKCategoricalAccuracy")
+class TopKCategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
+    """Computes how often targets are in the top `K` predictions.
+
+    Args:
+        k: (Optional) Number of top elements to look at for computing accuracy.
+            Defaults to 5.
+        name: (Optional) string name of the metric instance.
+        dtype: (Optional) data type of the metric result.
+
+    Standalone usage:
+
+    >>> m = keras_core.metrics.TopKCategoricalAccuracy(k=1)
+    >>> m.update_state([[0, 0, 1], [0, 1, 0]],
+    ...                [[0.1, 0.9, 0.8], [0.05, 0.95, 0]])
+    >>> m.result()
+    0.5
+
+    >>> m.reset_state()
+    >>> m.update_state([[0, 0, 1], [0, 1, 0]],
+    ...                [[0.1, 0.9, 0.8], [0.05, 0.95, 0]],
+    ...                sample_weight=[0.7, 0.3])
+    >>> m.result()
+    0.3
+
+    Usage with `compile()` API:
+
+    ```python
+    model.compile(optimizer='sgd',
+                  loss='mse',
+                  metrics=[tf.keras.metrics.TopKCategoricalAccuracy()])
+    ```
+    """
+
+    def __init__(self, name="top_k_categorical_accuracy", dtype=None):
+        super().__init__(fn=sparse_categorical_accuracy, name=name, dtype=dtype)
+
+    def get_config(self):
+        return {"name": self.name, "dtype": self.dtype}
