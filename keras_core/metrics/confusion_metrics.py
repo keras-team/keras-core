@@ -115,7 +115,6 @@ class FalsePositives(_ConfusionMatrixConditionCount):
             dtype=dtype,
         )
 
-
 @keras_core_export("keras_core.metrics.FalseNegatives")
 class FalseNegatives(_ConfusionMatrixConditionCount):
     """Calculates the number of false negatives.
@@ -246,7 +245,6 @@ class TruePositives(_ConfusionMatrixConditionCount):
             name=name,
             dtype=dtype,
         )
-
 
 @keras_core_export("keras_core.metrics.Precision")
 class Precision(Metric):
@@ -384,11 +382,9 @@ class Precision(Metric):
         )
 
     def result(self):
-        result = ops.nan_to_num(
-            ops.divide(
-                self.true_positives,
-                ops.add(self.true_positives, self.false_positives),
-            )
+        result = ops.divide(
+            self.true_positives,
+            self.true_positives + self.false_positives + backend.epsilon(),
         )
         return result[0] if len(self.thresholds) == 1 else result
 
