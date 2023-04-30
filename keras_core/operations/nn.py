@@ -23,6 +23,8 @@ separable_conv
 conv_transpose
 
 one_hot
+top_k
+in_top_k
 
 ctc ??
 """
@@ -1011,3 +1013,43 @@ def one_hot(x, num_classes, axis=-1):
     if any_symbolic_tensors((x,)):
         return OneHot(num_classes, axis=axis).symbolic_call(x)
     return backend.nn.one_hot(x, num_classes, axis=axis)
+
+
+class TopK(Operation):
+    def __init__(self, k, sorted=True):
+        super().__init__()
+        self.k = k
+        self.sorted = sorted
+    
+    def call(self, x):
+        return backend.math.top_k(x, self.k, sorted=self.sorted)
+    
+    def compute_output_spec(self, x):
+        x_shape = list(getattr(x, "shape", []))
+        x_shape[-1] = self.k
+        return KerasTensor(x_shape)
+
+
+def top_k(x, k, sorted=True):
+    if any_symbolic_tensors((x,)):
+        return TopK(k, sorted=sorted).symbolic_call(x)
+    return backend.math.top_k(x, k, sorted=sorted)
+
+
+class InTopK(Operation):
+    def __init__(self, k):
+        super().__init__()
+        self.k = k
+    
+    def call(self, x, y):
+        return backend.math.in_top_k(x, y, self.k)
+    
+    def compute_output_spec(self, x):
+        x_shape = list(getattr(x, "shape", []))
+        return KerasTensor(x_shape[-1])
+
+
+def in_top_k(x, y, k):
+    if any_symbolic_tensors((x, y)):
+        return InTopK(k).symbolic_call(x, y)
+    return backend.math.in_top_k(x, y, k)

@@ -10,3 +10,7 @@ def segment_sum(data, segment_ids, num_segments=None, sorted=False):
 
 def top_k(x, k, sorted=False):
     return tf.math.top_k(x, k, sorted=sorted)
+
+
+def in_top_k(x, y, k):
+    return tf.math.in_top_k(x, y, k)

@@ -299,8 +299,8 @@ def top_k_categorical_accuracy(y_true, y_pred, k=5):
 
     matches = ops.cast(
         ops.in_top_k(
-            predictions=y_pred, targets=ops.cast(y_true, "int32"), k=k
-        ),
+            ops.cast(y_true, "int32"), y_pred, k=k
+        )[0],
         dtype=backend.floatx(),
     )
 
@@ -345,8 +345,8 @@ class TopKCategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
     ```
     """
 
-    def __init__(self, name="top_k_categorical_accuracy", dtype=None):
-        super().__init__(fn=sparse_categorical_accuracy, name=name, dtype=dtype)
+    def __init__(self, k=5, name="top_k_categorical_accuracy", dtype=None):
+        super().__init__(fn=top_k_categorical_accuracy, name=name, dtype=dtype)
 
     def get_config(self):
         return {"name": self.name, "dtype": self.dtype}
