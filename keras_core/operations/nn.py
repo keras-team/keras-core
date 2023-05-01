@@ -309,6 +309,11 @@ class MaxPool(Operation):
                 )
         elif self.padding == "same":
             output_spatial_shape = np.floor((spatial_shape - 1) / strides) + 1
+        else:
+            raise ValueError(
+                "`padding` must be either `valid` or `same`, but received "
+                f"{self.padding}."
+            )
         output_spatial_shape = [int(i) for i in output_spatial_shape]
         if self.data_format == "channels_last":
             output_shape = (
@@ -317,7 +322,7 @@ class MaxPool(Operation):
                 + [inputs.shape[-1]]
             )
         else:
-            output_shape = inputs.shape[:2] + list(output_spatial_shape)
+            output_shape = list(inputs.shape[:2]) + list(output_spatial_shape)
         return KerasTensor(output_shape, dtype=inputs.dtype)
 
 
