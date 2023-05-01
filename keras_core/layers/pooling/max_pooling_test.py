@@ -12,7 +12,7 @@ class MaxPoolingBasicTest(testing.TestCase, parameterized.TestCase):
         (2, 1, "same", "channels_first", (3, 5, 4), (3, 5, 4)),
         ((2,), (2,), "valid", "channels_last", (3, 5, 4), (3, 2, 4)),
     )
-    def test_max_pooling_1d(
+    def test_max_pooling1d(
         self,
         pool_size,
         strides,
@@ -42,7 +42,7 @@ class MaxPoolingBasicTest(testing.TestCase, parameterized.TestCase):
         (2, 1, "same", "channels_first", (3, 5, 5, 4), (3, 5, 5, 4)),
         ((2, 3), (2, 2), "valid", "channels_last", (3, 5, 5, 4), (3, 2, 2, 4)),
     )
-    def test_max_pooling_2d(
+    def test_max_pooling2d(
         self,
         pool_size,
         strides,
@@ -79,7 +79,7 @@ class MaxPoolingBasicTest(testing.TestCase, parameterized.TestCase):
             (3, 2, 2, 4, 4),
         ),
     )
-    def test_max_pooling_3d(
+    def test_max_pooling3d(
         self,
         pool_size,
         strides,
@@ -111,7 +111,7 @@ class MaxPoolingCorrectnessTest(testing.TestCase, parameterized.TestCase):
         (2, 1, "same", "channels_first"),
         ((2,), (2,), "valid", "channels_last"),
     )
-    def test_max_pooling_1d(self, pool_size, strides, padding, data_format):
+    def test_max_pooling1d(self, pool_size, strides, padding, data_format):
         inputs = np.arange(24, dtype=np.float).reshape((2, 3, 4))
 
         layer = layers.MaxPooling1D(
@@ -135,7 +135,7 @@ class MaxPoolingCorrectnessTest(testing.TestCase, parameterized.TestCase):
         (2, 1, "valid", "channels_last"),
         ((2, 3), (2, 2), "same", "channels_last"),
     )
-    def test_max_pooling_2d(self, pool_size, strides, padding, data_format):
+    def test_max_pooling2d(self, pool_size, strides, padding, data_format):
         inputs = np.arange(300, dtype=np.float).reshape((3, 5, 5, 4))
 
         layer = layers.MaxPooling2D(
@@ -160,7 +160,7 @@ class MaxPoolingCorrectnessTest(testing.TestCase, parameterized.TestCase):
         (2, 1, "same", "channels_first"),
         ((2, 3, 2), (2, 2, 1), "valid", "channels_last"),
     )
-    def test_max_pooling_3d(self, pool_size, strides, padding, data_format):
+    def test_max_pooling3d(self, pool_size, strides, padding, data_format):
         inputs = np.arange(240, dtype=np.float).reshape((2, 3, 4, 5, 2))
 
         layer = layers.MaxPooling3D(
