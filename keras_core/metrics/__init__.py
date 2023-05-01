@@ -1,12 +1,15 @@
 from keras_core.api_export import keras_core_export
 from keras_core.metrics.confusion_metrics import FalseNegatives
 from keras_core.metrics.confusion_metrics import FalsePositives
+from keras_core.metrics.confusion_metrics import Precision
 from keras_core.metrics.confusion_metrics import TrueNegatives
 from keras_core.metrics.confusion_metrics import TruePositives
 from keras_core.metrics.hinge_metrics import CategoricalHinge
 from keras_core.metrics.hinge_metrics import Hinge
 from keras_core.metrics.hinge_metrics import SquaredHinge
 from keras_core.metrics.metric import Metric
+from keras_core.metrics.probabilistic_metrics import KLDivergence
+from keras_core.metrics.probabilistic_metrics import Poisson
 from keras_core.metrics.reduction_metrics import Mean
 from keras_core.metrics.reduction_metrics import MeanMetricWrapper
 from keras_core.metrics.reduction_metrics import Sum
@@ -25,6 +28,8 @@ ALL_OBJECTS = {
     Hinge,
     SquaredHinge,
     CategoricalHinge,
+    KLDivergence,
+    Poisson,
 }
 ALL_OBJECTS_DICT = {cls.__name__: cls for cls in ALL_OBJECTS}
 ALL_OBJECTS_DICT.update(
