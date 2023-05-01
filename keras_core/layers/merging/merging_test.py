@@ -27,19 +27,18 @@ class MergingLayersTest(testing.TestCase):
         reason="Dynamic shapes are only supported in TensorFlow backend.",
     )
     def test_add_correctness_dynamic(self):
-        shape = (2, 4, 5)
-        x1 = np.random.rand(*shape)
-        x2 = np.random.rand(*shape)
+        x1 = np.random.rand(2, 4, 5)
+        x2 = np.random.rand(2, 4, 5)
         x3 = ops.convert_to_tensor(x1 + x2)
 
-        input_1 = layers.Input(shape=shape)
-        input_2 = layers.Input(shape=shape)
+        input_1 = layers.Input(shape=(4, 5))
+        input_2 = layers.Input(shape=(4, 5))
         add_layer = layers.Add()
         out = add_layer([input_1, input_2])
         model = models.Model([input_1, input_2], out)
         res = model([x1, x2])
 
-        self.assertEqual(res.shape, shape)
+        self.assertEqual(res.shape, (2, 4, 5))
         self.assertAllClose(res, x3, atol=1e-4)
         self.assertIsNone(
             add_layer.compute_mask([input_1, input_2], [None, None])
@@ -85,7 +84,6 @@ class MergingLayersTest(testing.TestCase):
         batch_size = 2
         shape = (4, 5)
         x1 = np.random.rand(batch_size, *shape)
-        x2 = np.random.rand(batch_size, *shape)
 
         input_1 = layers.Input(shape=shape, batch_size=batch_size)
         input_2 = layers.Input(shape=shape, batch_size=batch_size)
