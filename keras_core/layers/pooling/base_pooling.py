@@ -13,7 +13,7 @@ class BasePooling(Layer):
         pool_size,
         strides,
         pool_dimensions,
-        pool_type="max",
+        pool_mode="max",
         padding="valid",
         data_format=None,
         name=None,
@@ -23,7 +23,7 @@ class BasePooling(Layer):
 
         self.pool_size = pool_size
         self.strides = pool_size if strides is None else strides
-        self.pool_type = pool_type
+        self.pool_mode = pool_mode
         self.padding = padding
         self.data_format = (
             image_data_format() if data_format is None else data_format
@@ -32,7 +32,7 @@ class BasePooling(Layer):
         self.input_spec = InputSpec(ndim=pool_dimensions + 2)
 
     def call(self, inputs):
-        if self.pool_type == "max":
+        if self.pool_mode == "max":
             return ops.max_pool(
                 inputs,
                 pool_size=self.pool_size,
@@ -40,7 +40,7 @@ class BasePooling(Layer):
                 padding=self.padding,
                 data_format=self.data_format,
             )
-        elif self.pool_type == "average":
+        elif self.pool_mode == "average":
             return ops.average_pool(
                 inputs,
                 pool_size=self.pool_size,
@@ -50,8 +50,8 @@ class BasePooling(Layer):
             )
         else:
             raise ValueError(
-                "`pool_type` must be either `max` or `average`, but received "
-                f"{self.pool_type}."
+                "`pool_mode` must be either `max` or `average`, but received "
+                f"{self.pool_mode}."
             )
 
     def compute_output_shape(self, input_shape):

@@ -75,7 +75,7 @@ class AveragePooling3D(BasePooling):
             pool_size,
             strides,
             pool_dimensions=3,
-            pool_type="average",
+            pool_mode="average",
             padding=padding,
             data_format=data_format,
             name=name,
