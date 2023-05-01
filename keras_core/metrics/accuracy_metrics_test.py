@@ -10,6 +10,11 @@ class AccuracyTest(testing.TestCase):
         self.assertEqual(acc_obj.name, "accuracy")
         self.assertEqual(len(acc_obj.variables), 2)
         self.assertEqual(acc_obj._dtype, "float32")
+
+        # Test get_config
+        acc_obj_config = acc_obj.get_config()
+        self.assertEqual(acc_obj_config["name"], "accuracy")
+        self.assertEqual(acc_obj_config["dtype"], "float32")
         # TODO: Check save and restore config
 
     def test_unweighted(self):
@@ -38,6 +43,11 @@ class BinaryAccuracyTest(testing.TestCase):
         self.assertEqual(bin_acc_obj.name, "binary_accuracy")
         self.assertEqual(len(bin_acc_obj.variables), 2)
         self.assertEqual(bin_acc_obj._dtype, "float32")
+
+        # Test get_config
+        bin_acc_obj_config = bin_acc_obj.get_config()
+        self.assertEqual(bin_acc_obj_config["name"], "binary_accuracy")
+        self.assertEqual(bin_acc_obj_config["dtype"], "float32")
         # TODO: Check save and restore config
 
     def test_unweighted(self):
@@ -70,6 +80,11 @@ class CategoricalAccuracyTest(testing.TestCase):
         self.assertEqual(cat_acc_obj.name, "categorical_accuracy")
         self.assertEqual(len(cat_acc_obj.variables), 2)
         self.assertEqual(cat_acc_obj._dtype, "float32")
+
+        # Test get_config
+        cat_acc_obj_config = cat_acc_obj.get_config()
+        self.assertEqual(cat_acc_obj_config["name"], "categorical_accuracy")
+        self.assertEqual(cat_acc_obj_config["dtype"], "float32")
         # TODO: Check save and restore config
 
     def test_unweighted(self):
@@ -102,6 +117,13 @@ class SparseCategoricalAccuracyTest(testing.TestCase):
         self.assertEqual(sp_cat_acc_obj.name, "sparse_categorical_accuracy")
         self.assertEqual(len(sp_cat_acc_obj.variables), 2)
         self.assertEqual(sp_cat_acc_obj._dtype, "float32")
+
+        # Test get_config
+        sp_cat_acc_obj_config = sp_cat_acc_obj.get_config()
+        self.assertEqual(
+            sp_cat_acc_obj_config["name"], "sparse_categorical_accuracy"
+        )
+        self.assertEqual(sp_cat_acc_obj_config["dtype"], "float32")
         # TODO: Check save and restore config
 
     def test_unweighted(self):
@@ -134,6 +156,14 @@ class TopKCategoricalAccuracyTest(testing.TestCase):
         self.assertEqual(top_k_cat_acc_obj.name, "top_k_categorical_accuracy")
         self.assertEqual(len(top_k_cat_acc_obj.variables), 2)
         self.assertEqual(top_k_cat_acc_obj._dtype, "float32")
+
+        # Test get_config
+        top_k_cat_acc_obj_config = top_k_cat_acc_obj.get_config()
+        self.assertEqual(
+            top_k_cat_acc_obj_config["name"], "top_k_categorical_accuracy"
+        )
+        self.assertEqual(top_k_cat_acc_obj_config["dtype"], "float32")
+        self.assertEqual(top_k_cat_acc_obj_config["k"], 1)
         # TODO: Check save and restore config
 
     def test_unweighted(self):
@@ -170,6 +200,15 @@ class SparseTopKCategoricalAccuracyTest(testing.TestCase):
         )
         self.assertEqual(len(sp_top_k_cat_acc_obj.variables), 2)
         self.assertEqual(sp_top_k_cat_acc_obj._dtype, "float32")
+
+        # Test get_config
+        sp_top_k_cat_acc_obj_config = sp_top_k_cat_acc_obj.get_config()
+        self.assertEqual(
+            sp_top_k_cat_acc_obj_config["name"],
+            "sparse_top_k_categorical_accuracy",
+        )
+        self.assertEqual(sp_top_k_cat_acc_obj_config["dtype"], "float32")
+        self.assertEqual(sp_top_k_cat_acc_obj_config["k"], 1)
         # TODO: Check save and restore config
 
     def test_unweighted(self):

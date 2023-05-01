@@ -340,17 +340,21 @@ class TopKCategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
     ```python
     model.compile(optimizer='sgd',
                   loss='mse',
-                  metrics=[tf.keras.metrics.TopKCategoricalAccuracy()])
+                  metrics=[keras_core.metrics.TopKCategoricalAccuracy()])
     ```
     """
 
     def __init__(self, k=5, name="top_k_categorical_accuracy", dtype=None):
         super().__init__(
-            fn=top_k_categorical_accuracy, name=name, dtype=dtype, k=k
+            fn=top_k_categorical_accuracy,
+            name=name,
+            dtype=dtype,
+            k=k,
         )
+        self.k = k
 
     def get_config(self):
-        return {"name": self.name, "dtype": self.dtype}
+        return {"name": self.name, "dtype": self.dtype, "k": self.k}
 
 
 def sparse_top_k_categorical_accuracy(y_true, y_pred, k=5):
@@ -417,8 +421,12 @@ class SparseTopKCategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
         self, k=5, name="sparse_top_k_categorical_accuracy", dtype=None
     ):
         super().__init__(
-            fn=sparse_top_k_categorical_accuracy, name=name, dtype=dtype, k=k
+            fn=sparse_top_k_categorical_accuracy,
+            name=name,
+            dtype=dtype,
+            k=k,
         )
+        self.k = k
 
     def get_config(self):
-        return {"name": self.name, "dtype": self.dtype}
+        return {"name": self.name, "dtype": self.dtype, "k": self.k}
