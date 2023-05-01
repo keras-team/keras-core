@@ -14,7 +14,7 @@ class Add(Merge):
     >>> input_shape = (2, 3, 4)
     >>> x1 = np.random.rand(*input_shape)
     >>> x2 = np.random.rand(*input_shape)
-    >>> y = keras.layers.Add()([x1, x2])
+    >>> y = keras_core.layers.Add()([x1, x2])
 
     Usage in a Keras model:
 
@@ -65,5 +65,4 @@ def add(inputs, **kwargs):
     >>> model = keras_core.models.Model(inputs=[input1, input2], outputs=out)
 
     """
-
     return Add(**kwargs)(inputs)
