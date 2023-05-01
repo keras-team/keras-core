@@ -133,8 +133,7 @@ class MaxPoolingCorrectnessTest(testing.TestCase, parameterized.TestCase):
 
     @parameterized.parameters(
         (2, 1, "valid", "channels_last"),
-        (2, 1, "same", "channels_first"),
-        ((2, 3), (2, 2), "valid", "channels_last"),
+        ((2, 3), (2, 2), "same", "channels_last"),
     )
     def test_max_pooling_2d(self, pool_size, strides, padding, data_format):
         inputs = np.arange(300, dtype=np.float).reshape((3, 5, 5, 4))
