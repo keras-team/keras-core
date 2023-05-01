@@ -75,7 +75,7 @@ class MaxPooling3D(BasePooling):
             pool_size,
             strides,
             pool_dimensions=3,
-            pool_type="max",
+            pool_mode="max",
             padding=padding,
             data_format=data_format,
             name=name,

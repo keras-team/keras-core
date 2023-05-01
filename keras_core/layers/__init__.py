@@ -6,12 +6,12 @@ from keras_core.layers.core.input_layer import InputLayer
 from keras_core.layers.layer import Layer
 from keras_core.layers.merging.add import Add
 from keras_core.layers.merging.add import add
-from keras_core.layers.pooling.average_pooling_1d import AveragePooling1D
-from keras_core.layers.pooling.average_pooling_2d import AveragePooling2D
-from keras_core.layers.pooling.average_pooling_3d import AveragePooling3D
-from keras_core.layers.pooling.max_pooling_1d import MaxPooling1D
-from keras_core.layers.pooling.max_pooling_2d import MaxPooling2D
-from keras_core.layers.pooling.max_pooling_3d import MaxPooling3D
+from keras_core.layers.pooling.average_pooling1d import AveragePooling1D
+from keras_core.layers.pooling.average_pooling2d import AveragePooling2D
+from keras_core.layers.pooling.average_pooling3d import AveragePooling3D
+from keras_core.layers.pooling.max_pooling1d import MaxPooling1D
+from keras_core.layers.pooling.max_pooling2d import MaxPooling2D
+from keras_core.layers.pooling.max_pooling3d import MaxPooling3D
 from keras_core.layers.regularization.activity_regularization import (
     ActivityRegularization,
 )

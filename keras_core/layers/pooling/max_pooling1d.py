@@ -2,16 +2,17 @@ from keras_core.api_export import keras_core_export
 from keras_core.layers.pooling.base_pooling import BasePooling
 
 
-@keras_core_export("keras_core.layers.AveragePooling1D")
-class AveragePooling1D(BasePooling):
-    """Average pooling for temporal data.
+@keras_core_export("keras_core.layers.MaxPooling1D")
+class MaxPooling1D(BasePooling):
+    """Max pooling operation for 1D temporal data.
 
-    Downsamples the input representation by taking the average value over the
-    window defined by `pool_size`. The window is shifted by `strides`.  The
-    resulting output when using "valid" padding option has a shape of:
-    `output_shape = (input_shape - pool_size + 1) / strides)`
+    Downsamples the input representation by taking the maximum value over a
+    spatial window of size `pool_size`. The window is shifted by `strides`.
 
-    The resulting output shape when using the "same" padding option is:
+    The resulting output when using the `"valid"` padding option has a shape of:
+    `output_shape = (input_shape - pool_size + 1) / strides)`.
+
+    The resulting output shape when using the `"same"` padding option is:
     `output_shape = input_shape / strides`
 
     Args:
@@ -31,16 +32,16 @@ class AveragePooling1D(BasePooling):
             If you never set it, then it will be "channels_last".
 
     Input shape:
-        - If `data_format='channels_last'`:
-            3D tensor with shape `(batch_size, steps, features)`.
-        - If `data_format='channels_first'`:
-            3D tensor with shape `(batch_size, features, steps)`.
+      - If `data_format="channels_last"`:
+        3D tensor with shape `(batch_size, steps, features)`.
+      - If `data_format="channels_first"`:
+        3D tensor with shape `(batch_size, features, steps)`.
 
     Output shape:
-        - If `data_format='channels_last'`:
-            3D tensor with shape `(batch_size, downsampled_steps, features)`.
-        - If `data_format='channels_first'`:
-            3D tensor with shape `(batch_size, features, downsampled_steps)`.
+      - If `data_format="channels_last"`:
+        3D tensor with shape `(batch_size, downsampled_steps, features)`.
+      - If `data_format="channels_first"`:
+        3D tensor with shape `(batch_size, features, downsampled_steps)`.
 
     Examples:
 
@@ -48,25 +49,25 @@ class AveragePooling1D(BasePooling):
 
     >>> x = np.array([1., 2., 3., 4., 5.])
     >>> x = np.reshape(x, [1, 5, 1])
-    >>> avg_pool_1d = keras_core.layers.AveragePooling1D(pool_size=2,
+    >>> max_pool_1d = keras_core.layers.MaxPooling1D(pool_size=2,
     ...    strides=1, padding='valid')
-    >>> avg_pool_1d(x)
+    >>> max_pool_1d(x)
 
     `strides=2` and `padding="valid"`:
 
     >>> x = np.array([1., 2., 3., 4., 5.])
     >>> x = np.reshape(x, [1, 5, 1])
-    >>> avg_pool_1d = keras_core.layers.AveragePooling1D(pool_size=2,
+    >>> max_pool_1d = keras_core.layers.MaxPooling1D(pool_size=2,
     ...    strides=2, padding='valid')
-    >>> avg_pool_1d(x)
+    >>> max_pool_1d(x)
 
     `strides=1` and `padding="same"`:
 
     >>> x = np.array([1., 2., 3., 4., 5.])
     >>> x = np.reshape(x, [1, 5, 1])
-    >>> avg_pool_1d = keras_core.layers.AveragePooling1D(pool_size=2,
+    >>> max_pool_1d = keras_core.layers.MaxPooling1D(pool_size=2,
     ...    strides=1, padding='same')
-    >>> avg_pool_1d(x)
+    >>> max_pool_1d(x)
     """
 
     def __init__(
@@ -82,7 +83,7 @@ class AveragePooling1D(BasePooling):
             pool_size,
             strides,
             pool_dimensions=1,
-            pool_type="average",
+            pool_mode="max",
             padding=padding,
             data_format=data_format,
             name=name,

@@ -2,12 +2,12 @@ from keras_core.api_export import keras_core_export
 from keras_core.layers.pooling.base_pooling import BasePooling
 
 
-@keras_core_export("keras_core.layers.AveragePooling2D")
-class AveragePooling2D(BasePooling):
-    """Average pooling operation for 2D spatial data.
+@keras_core_export("keras_core.layers.MaxPooling2D")
+class MaxPooling2D(BasePooling):
+    """Max pooling operation for 2D spatial data.
 
     Downsamples the input along its spatial dimensions (height and width)
-    by taking the average value over an input window
+    by taking the maximum value over an input window
     (of size defined by `pool_size`) for each channel of the input.
     The window is shifted by `strides` along each dimension.
 
@@ -61,9 +61,9 @@ class AveragePooling2D(BasePooling):
     ...               [4., 5., 6.],
     ...               [7., 8., 9.]])
     >>> x = np.reshape(x, [1, 3, 3, 1])
-    >>> avg_pool_2d = keras_core.layers.AveragePooling2D(pool_size=(2, 2),
+    >>> max_pool_2d = keras_core.layers.MaxPooling2D(pool_size=(2, 2),
     ...    strides=(1, 1), padding='valid')
-    >>> avg_pool_2d(x)
+    >>> max_pool_2d(x)
 
     `strides=(2, 2)` and `padding="valid"`:
 
@@ -71,9 +71,9 @@ class AveragePooling2D(BasePooling):
     ...                  [5., 6., 7., 8.],
     ...                  [9., 10., 11., 12.]])
     >>> x = tf.reshape(x, [1, 3, 4, 1])
-    >>> avg_pool_2d = tf.keras.layers.AveragePooling2D(pool_size=(2, 2),
+    >>> max_pool_2d = tf.keras.layers.MaxPooling2D(pool_size=(2, 2),
     ...    strides=(2, 2), padding='valid')
-    >>> avg_pool_2d(x)
+    >>> max_pool_2d(x)
 
     `stride=(1, 1)` and `padding="same"`:
 
@@ -81,9 +81,9 @@ class AveragePooling2D(BasePooling):
     ...                  [4., 5., 6.],
     ...                  [7., 8., 9.]])
     >>> x = tf.reshape(x, [1, 3, 3, 1])
-    >>> avg_pool_2d = keras_core.layers.AveragePooling2D(pool_size=(2, 2),
+    >>> max_pool_2d = keras_core.layers.MaxPooling2D(pool_size=(2, 2),
     ...    strides=(1, 1), padding='same')
-    >>> avg_pool_2d(x)
+    >>> max_pool_2d(x)
     """
 
     def __init__(
@@ -91,7 +91,7 @@ class AveragePooling2D(BasePooling):
         pool_size,
         strides,
         padding="valid",
-        data_format="channels_last",
+        data_format=None,
         name=None,
         **kwargs
     ):
@@ -99,7 +99,7 @@ class AveragePooling2D(BasePooling):
             pool_size,
             strides,
             pool_dimensions=2,
-            pool_type="average",
+            pool_mode="max",
             padding=padding,
             data_format=data_format,
             name=name,
