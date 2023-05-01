@@ -273,7 +273,6 @@ class KLDivergence(LossFunctionWrapper):
     ```python
     loss = y_true * log(y_true / y_pred)
     ```
-    See: https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence
 
     Args:
         reduction: Type of reduction to apply to loss. For almost all cases
@@ -642,11 +641,14 @@ def cosine_similarity(y_true, y_pred, axis=-1):
 def kl_divergence(y_true, y_pred):
     """Computes Kullback-Leibler divergence loss between `y_true` & `y_pred`.
 
-    `loss = y_true * log(y_true / y_pred)`
+    Formula:
 
-    See: https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence
+    ```python
+    loss = y_true * log(y_true / y_pred)
+    ```
 
     Standalone usage:
+
     >>> y_true = np.random.randint(0, 2, size=(2, 3)).astype(np.float32)
     >>> y_pred = np.random.random(size=(2, 3))
     >>> loss = keras_core.losses.kl_divergence(y_true, y_pred)
@@ -654,17 +656,14 @@ def kl_divergence(y_true, y_pred):
     >>> y_true = ops.clip(y_true, 1e-7, 1)
     >>> y_pred = ops.clip(y_pred, 1e-7, 1)
     >>> assert np.array_equal(
-    ...     loss.numpy(), np.sum(y_true * np.log(y_true / y_pred), axis=-1))
+    ...     loss, np.sum(y_true * np.log(y_true / y_pred), axis=-1))
 
     Args:
-      y_true: Tensor of true targets.
-      y_pred: Tensor of predicted targets.
+        y_true: Tensor of true targets.
+        y_pred: Tensor of predicted targets.
 
     Returns:
-      A `Tensor` with loss.
-
-    Raises:
-      TypeError: If `y_true` cannot be cast to the `y_pred.dtype`.
+        KL Divergence loss values with shape = `[batch_size, d0, .. dN-1]`.
     """
     y_pred = ops.convert_to_tensor(y_pred)
     y_true = ops.convert_to_tensor(y_true, y_pred.dtype)
@@ -682,8 +681,11 @@ def kl_divergence(y_true, y_pred):
 def poisson(y_true, y_pred):
     """Computes the Poisson loss between y_true and y_pred.
 
-    The Poisson loss is the mean of the elements of the `Tensor`
-    `y_pred - y_true * log(y_pred)`.
+    Formula:
+
+    ```python
+    loss = y_pred - y_true * log(y_pred)
+    ```
 
     Standalone usage:
 
@@ -693,18 +695,15 @@ def poisson(y_true, y_pred):
     >>> assert loss.shape == (2,)
     >>> y_pred = y_pred + 1e-7
     >>> assert np.allclose(
-    ...     loss.numpy(), np.mean(y_pred - y_true * np.log(y_pred), axis=-1),
+    ...     loss, np.mean(y_pred - y_true * np.log(y_pred), axis=-1),
     ...     atol=1e-5)
 
     Args:
-      y_true: Ground truth values. shape = `[batch_size, d0, .. dN]`.
-      y_pred: The predicted values. shape = `[batch_size, d0, .. dN]`.
+        y_true: Ground truth values. shape = `[batch_size, d0, .. dN]`.
+        y_pred: The predicted values. shape = `[batch_size, d0, .. dN]`.
 
     Returns:
-       Poisson loss value. shape = `[batch_size, d0, .. dN-1]`.
-
-    Raises:
-      InvalidArgumentError: If `y_true` and `y_pred` have incompatible shapes.
+        Poisson loss values with shape = `[batch_size, d0, .. dN-1]`.
     """
     y_pred = ops.convert_to_tensor(y_pred)
     y_true = ops.convert_to_tensor(y_true, dtype=y_pred.dtype)

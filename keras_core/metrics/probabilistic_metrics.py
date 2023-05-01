@@ -9,11 +9,15 @@ class KLDivergence(reduction_metrics.MeanMetricWrapper):
     """Computes Kullback-Leibler divergence metric between `y_true` and
     `y_pred`.
 
-    `metric = y_true * log(y_true / y_pred)`
+    Formula:
+
+    ```python
+    metric = y_true * log(y_true / y_pred)
+    ```
 
     Args:
-      name: (Optional) string name of the metric instance.
-      dtype: (Optional) data type of the metric result.
+        name: (Optional) string name of the metric instance.
+        dtype: (Optional) data type of the metric result.
 
     Standalone usage:
 
@@ -48,11 +52,15 @@ class KLDivergence(reduction_metrics.MeanMetricWrapper):
 class Poisson(reduction_metrics.MeanMetricWrapper):
     """Computes the Poisson metric between `y_true` and `y_pred`.
 
-    `metric = y_pred - y_true * log(y_pred)`
+    Formula:
+
+    ```python
+    metric = y_pred - y_true * log(y_pred)
+    ```
 
     Args:
-      name: (Optional) string name of the metric instance.
-      dtype: (Optional) data type of the metric result.
+        name: (Optional) string name of the metric instance.
+        dtype: (Optional) data type of the metric result.
 
     Standalone usage:
 
