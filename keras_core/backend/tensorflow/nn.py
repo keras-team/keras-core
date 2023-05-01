@@ -78,8 +78,26 @@ def max_pool(
 ):
     strides = pool_size if strides is None else strides
     padding = padding.upper()
-    data_format = _convert_data_format(data_format, len(inputs.shape))
-    return tf.nn.max_pool(inputs, pool_size, strides, padding, data_format)
+    tf_data_format = _convert_data_format(data_format, len(inputs.shape))
+    num_spatial_dims = len(inputs.shape) - 2
+    if num_spatial_dims == 3 and data_format == "channels_first":
+        # Tensorflow 3D pooling does not support `channels_first` format, so
+        # we need to transpose to `channels_last` format.
+        inputs = tf.transpose(inputs, (0, 2, 3, 4, 1))
+        tf_data_format = _convert_data_format(
+            "channels_last", len(inputs.shape)
+        )
+
+    outputs = tf.nn.max_pool(
+        inputs,
+        pool_size,
+        strides,
+        padding,
+        tf_data_format,
+    )
+    if num_spatial_dims == 3 and data_format == "channels_first":
+        outputs = tf.transpose(outputs, (0, 4, 1, 2, 3))
+    return outputs
 
 
 def average_pool(
@@ -91,8 +109,25 @@ def average_pool(
 ):
     strides = pool_size if strides is None else strides
     padding = padding.upper()
-    data_format = _convert_data_format(data_format, len(inputs.shape))
-    return tf.nn.avg_pool(inputs, pool_size, strides, padding, data_format)
+    tf_data_format = _convert_data_format(data_format, len(inputs.shape))
+    num_spatial_dims = len(inputs.shape) - 2
+    if num_spatial_dims == 3 and data_format == "channels_first":
+        # Tensorflow 3D pooling does not support `channels_first` format, so
+        # we need to transpose to `channels_last` format.
+        inputs = tf.transpose(inputs, (0, 2, 3, 4, 1))
+        tf_data_format = _convert_data_format(
+            "channels_last", len(inputs.shape)
+        )
+    outputs = tf.nn.avg_pool(
+        inputs,
+        pool_size,
+        strides,
+        padding,
+        tf_data_format,
+    )
+    if num_spatial_dims == 3 and data_format == "channels_first":
+        outputs = tf.transpose(outputs, (0, 4, 1, 2, 3))
+    return outputs
 
 
 def _convert_data_format(data_format, ndim):
