@@ -6,6 +6,8 @@ from keras_core.layers.core.input_layer import InputLayer
 from keras_core.layers.layer import Layer
 from keras_core.layers.merging.add import Add
 from keras_core.layers.merging.add import add
+from keras_core.layers.merging.subtract import Subtract
+from keras_core.layers.merging.subtract import subtract
 from keras_core.layers.pooling.average_pooling1d import AveragePooling1D
 from keras_core.layers.pooling.average_pooling2d import AveragePooling2D
 from keras_core.layers.pooling.average_pooling3d import AveragePooling3D

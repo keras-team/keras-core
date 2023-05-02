@@ -1,41 +1,71 @@
 from keras_core.api_export import keras_core_export
+from keras_core.metrics.accuracy_metrics import Accuracy
+from keras_core.metrics.accuracy_metrics import BinaryAccuracy
+from keras_core.metrics.accuracy_metrics import CategoricalAccuracy
+from keras_core.metrics.accuracy_metrics import SparseCategoricalAccuracy
+from keras_core.metrics.accuracy_metrics import SparseTopKCategoricalAccuracy
+from keras_core.metrics.accuracy_metrics import TopKCategoricalAccuracy
 from keras_core.metrics.confusion_metrics import FalseNegatives
 from keras_core.metrics.confusion_metrics import FalsePositives
 from keras_core.metrics.confusion_metrics import Precision
+from keras_core.metrics.confusion_metrics import Recall
 from keras_core.metrics.confusion_metrics import TrueNegatives
 from keras_core.metrics.confusion_metrics import TruePositives
 from keras_core.metrics.hinge_metrics import CategoricalHinge
 from keras_core.metrics.hinge_metrics import Hinge
 from keras_core.metrics.hinge_metrics import SquaredHinge
 from keras_core.metrics.metric import Metric
+from keras_core.metrics.probabilistic_metrics import BinaryCrossentropy
+from keras_core.metrics.probabilistic_metrics import CategoricalCrossentropy
 from keras_core.metrics.probabilistic_metrics import KLDivergence
 from keras_core.metrics.probabilistic_metrics import Poisson
+from keras_core.metrics.probabilistic_metrics import (
+    SparseCategoricalCrossentropy,
+)
 from keras_core.metrics.reduction_metrics import Mean
 from keras_core.metrics.reduction_metrics import MeanMetricWrapper
 from keras_core.metrics.reduction_metrics import Sum
 from keras_core.metrics.regression_metrics import MeanSquaredError
-from keras_core.metrics.regression_metrics import mean_squared_error
 from keras_core.saving import serialization_lib
-from keras_core.utils import naming
 
 ALL_OBJECTS = {
+    # Base
     Metric,
     Mean,
     Sum,
-    MeanSquaredError,
     MeanMetricWrapper,
+    # Regression
+    MeanSquaredError,
+    # Classification
+    FalseNegatives,
     FalsePositives,
+    Precision,
+    Recall,
+    TrueNegatives,
+    TruePositives,
+    # Hinge
     Hinge,
     SquaredHinge,
     CategoricalHinge,
+    # Probabilistic
     KLDivergence,
     Poisson,
+    BinaryCrossentropy,
+    CategoricalCrossentropy,
+    SparseCategoricalCrossentropy,
+    # Accuracy
+    Accuracy,
+    BinaryAccuracy,
+    CategoricalAccuracy,
+    SparseCategoricalAccuracy,
+    TopKCategoricalAccuracy,
+    SparseTopKCategoricalAccuracy,
 }
 ALL_OBJECTS_DICT = {cls.__name__: cls for cls in ALL_OBJECTS}
 ALL_OBJECTS_DICT.update(
     {
-        "mse": mean_squared_error,
-        "MSE": mean_squared_error,
+        "mse": MeanSquaredError,
+        "MSE": MeanSquaredError,
     }
 )
 
