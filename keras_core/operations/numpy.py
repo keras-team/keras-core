@@ -1857,7 +1857,7 @@ class Max(Operation):
         self.keepdims = keepdims
         self.initial = initial
 
-    def call(self, x, initial):
+    def call(self, x):
         return backend.numpy.max(
             x, axis=self.axis, keepdims=self.keepdims, initial=self.initial
         )
