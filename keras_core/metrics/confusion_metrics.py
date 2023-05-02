@@ -664,8 +664,6 @@ class SensitivitySpecificityBase(Metric):
 class SensitivityAtSpecificity(SensitivitySpecificityBase):
     """Computes best sensitivity where specificity is >= specified value.
 
-    the sensitivity at a given specificity.
-
     `Sensitivity` measures the proportion of actual positives that are correctly
     identified as such (tp / (tp + fn)).
     `Specificity` measures the proportion of actual negatives that are correctly
