@@ -187,13 +187,17 @@ class CosineSimilarity(LossFunctionWrapper):
 class Huber(LossFunctionWrapper):
     """Computes the Huber loss between `y_true` & `y_pred`.
 
-    For each value x in `error = y_true - y_pred`:
+    Formula:
+    ```python
+    for x in error:
+        if abs(x) <= delta:
+            loss.append(0.5 * x^2)
+        elif abs(x) > delta:
+            loss.append(delta * abs(x) - 0.5 * delta^2)
 
+    loss = mean(loss, axis=-1)
     ```
-    loss = 0.5 * x^2                  if |x| <= d
-    loss = 0.5 * d^2 + d * (|x| - d)  if |x| > d
-    ```
-    where d is `delta`. See: https://en.wikipedia.org/wiki/Huber_loss
+    See: [Huber loss](https://en.wikipedia.org/wiki/Huber_loss).
 
     Args:
         delta: A float, the point where the Huber loss function changes from a
@@ -217,7 +221,12 @@ class Huber(LossFunctionWrapper):
 class LogCosh(LossFunctionWrapper):
     """Computes the logarithm of the hyperbolic cosine of the prediction error.
 
-    `logcosh = log((exp(x) + exp(-x))/2)`,
+    Formula:
+
+    ```python
+    error = y_pred - y_true
+    logcosh = log((exp(error) + exp(-error))/2)`
+    ```
     where x is the error `y_pred - y_true`.
 
     Args:
