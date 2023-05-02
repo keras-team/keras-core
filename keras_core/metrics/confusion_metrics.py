@@ -14,9 +14,9 @@ class _ConfusionMatrixConditionCount(Metric):
         confusion_matrix_cond: One of `metrics_utils.ConfusionMatrix`
             conditions.
         thresholds: (Optional) Defaults to 0.5. A float value or a python list /
-            tuple of float threshold values in [0, 1]. A threshold is compared
+            tuple of float threshold values in `[0, 1]`. A threshold is compared
             with prediction values to determine the truth value of predictions
-            (i.e., above the threshold is `true`, below is `false`). One metric
+            (i.e., above the threshold is `True`, below is `False`). One metric
             value is generated for each threshold value.
         name: (Optional) string name of the metric instance.
         dtype: (Optional) data type of the metric result.
@@ -85,9 +85,9 @@ class FalsePositives(_ConfusionMatrixConditionCount):
 
     Args:
         thresholds: (Optional) Defaults to 0.5. A float value, or a Python
-            list/tuple of float threshold values in [0, 1]. A threshold is
+            list/tuple of float threshold values in `[0, 1]`. A threshold is
             compared with prediction values to determine the truth value of
-            predictions (i.e., above the threshold is `true`, below is `false`).
+            predictions (i.e., above the threshold is `True`, below is `False`).
             If used with a loss function that sets `from_logits=True` (i.e. no
             sigmoid applied to predictions), `thresholds` should be set to 0.
             One metric value is generated for each threshold value.
@@ -129,9 +129,9 @@ class FalseNegatives(_ConfusionMatrixConditionCount):
 
     Args:
         thresholds: (Optional) Defaults to 0.5. A float value, or a Python
-            list/tuple of float threshold values in [0, 1]. A threshold is
+            list/tuple of float threshold values in `[0, 1]`. A threshold is
             compared with prediction values to determine the truth value of
-            predictions (i.e., above the threshold is `true`, below is `false`).
+            predictions (i.e., above the threshold is `True`, below is `False`).
             If used with a loss function that sets `from_logits=True` (i.e. no
             sigmoid applied to predictions), `thresholds` should be set to 0.
             One metric value is generated for each threshold value.
@@ -173,9 +173,9 @@ class TrueNegatives(_ConfusionMatrixConditionCount):
 
     Args:
         thresholds: (Optional) Defaults to 0.5. A float value, or a Python
-            list/tuple of float threshold values in [0, 1]. A threshold is
+            list/tuple of float threshold values in `[0, 1]`. A threshold is
             compared with prediction values to determine the truth value of
-            predictions (i.e., above the threshold is `true`, below is `false`).
+            predictions (i.e., above the threshold is `True`, below is `False`).
             If used with a loss function that sets `from_logits=True` (i.e. no
             sigmoid applied to predictions), `thresholds` should be set to 0.
             One metric value is generated for each threshold value.
@@ -217,9 +217,9 @@ class TruePositives(_ConfusionMatrixConditionCount):
 
     Args:
         thresholds: (Optional) Defaults to 0.5. A float value, or a Python
-            list/tuple of float threshold values in [0, 1]. A threshold is
+            list/tuple of float threshold values in `[0, 1]`. A threshold is
             compared with prediction values to determine the truth value of
-            predictions (i.e., above the threshold is `true`, below is `false`).
+            predictions (i.e., above the threshold is `True`, below is `False`).
             If used with a loss function that sets `from_logits=True` (i.e. no
             sigmoid applied to predictions), `thresholds` should be set to 0.
             One metric value is generated for each threshold value.
@@ -272,13 +272,13 @@ class Precision(Metric):
 
     Args:
         thresholds: (Optional) A float value, or a Python list/tuple of float
-            threshold values in [0, 1]. A threshold is compared with prediction
-            values to determine the truth value of predictions (i.e., above the
-            threshold is `true`, below is `false`). If used with a loss function
-            that sets `from_logits=True` (i.e. no sigmoid applied to
-            predictions), `thresholds` should be set to 0. One metric value is
-            generated for each threshold value. If neither thresholds nor top_k
-            are set, the default is to calculate precision with
+            threshold values in `[0, 1]`. A threshold is compared with
+            prediction values to determine the truth value of predictions (i.e.,
+            above the threshold is `True`, below is `False`). If used with a
+            loss function that sets `from_logits=True` (i.e. no sigmoid applied
+            to predictions), `thresholds` should be set to 0. One metric value
+            is generated for each threshold value. If neither thresholds nor
+            top_k are set, the default is to calculate precision with
             `thresholds=0.5`.
         top_k: (Optional) Unset by default. An int value specifying the top-k
             predictions to consider when calculating precision.
@@ -427,10 +427,10 @@ class Recall(Metric):
 
     Args:
         thresholds: (Optional) A float value, or a Python list/tuple of float
-            threshold values in [0, 1]. A threshold is compared with prediction
-            values to determine the truth value of predictions (i.e., above the
-            threshold is `true`, below is `false`). If used with a loss function
-            that sets `from_logits=True` (i.e. no sigmoid applied to
+            threshold values in `[0, 1]`. A threshold is compared with
+            prediction values to determine the truth value of predictions (i.e.,
+            above thethreshold is `True`, below is `False`). If used with a loss
+            function that sets `from_logits=True` (i.e. no sigmoid applied to
             predictions), `thresholds` should be set to 0. One metric value is
             generated for each threshold value. If neither thresholds nor top_k
             are set, the default is to calculate recall with `thresholds=0.5`.
