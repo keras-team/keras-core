@@ -33,7 +33,8 @@ class Adadelta(optimizer.Optimizer):
         {{base_optimizer_keyword_args}}
 
     Reference:
-        - [Zeiler, 2012](http://arxiv.org/abs/1212.5701)
+
+    - [Zeiler, 2012](http://arxiv.org/abs/1212.5701)
     """
 
     def __init__(
@@ -49,7 +50,6 @@ class Adadelta(optimizer.Optimizer):
         ema_momentum=0.99,
         ema_overwrite_frequency=None,
         name="adadelta",
-        **kwargs
     ):
         super().__init__(
             learning_rate=learning_rate,
@@ -61,7 +61,6 @@ class Adadelta(optimizer.Optimizer):
             ema_momentum=ema_momentum,
             ema_overwrite_frequency=ema_overwrite_frequency,
             name=name,
-            **kwargs
         )
         self.rho = rho
         self.epsilon = epsilon
@@ -96,7 +95,6 @@ class Adadelta(optimizer.Optimizer):
         def rms(x):
             return ops.sqrt(x + self.epsilon)
 
-        # Dense gradients.
         accumulated_grad.assign(
             rho * accumulated_grad + (1 - rho) * grad * grad
         )

@@ -29,8 +29,9 @@ class Adagrad(optimizer.Optimizer):
         {{base_optimizer_keyword_args}}
 
     Reference:
-        - [Duchi et al., 2011](
-            http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf).
+
+    - [Duchi et al., 2011](
+        http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf).
     """
 
     def __init__(
@@ -46,7 +47,6 @@ class Adagrad(optimizer.Optimizer):
         ema_momentum=0.99,
         ema_overwrite_frequency=None,
         name="adagrad",
-        **kwargs
     ):
         super().__init__(
             learning_rate=learning_rate,
@@ -58,7 +58,6 @@ class Adagrad(optimizer.Optimizer):
             ema_momentum=ema_momentum,
             ema_overwrite_frequency=ema_overwrite_frequency,
             name=name,
-            **kwargs
         )
         self.initial_accumulator_value = initial_accumulator_value
         self.epsilon = epsilon
