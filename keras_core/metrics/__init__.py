@@ -1,7 +1,14 @@
 from keras_core.api_export import keras_core_export
+from keras_core.metrics.accuracy_metrics import Accuracy
+from keras_core.metrics.accuracy_metrics import BinaryAccuracy
+from keras_core.metrics.accuracy_metrics import CategoricalAccuracy
+from keras_core.metrics.accuracy_metrics import SparseCategoricalAccuracy
+from keras_core.metrics.accuracy_metrics import SparseTopKCategoricalAccuracy
+from keras_core.metrics.accuracy_metrics import TopKCategoricalAccuracy
 from keras_core.metrics.confusion_metrics import FalseNegatives
 from keras_core.metrics.confusion_metrics import FalsePositives
 from keras_core.metrics.confusion_metrics import Precision
+from keras_core.metrics.confusion_metrics import Recall
 from keras_core.metrics.confusion_metrics import TrueNegatives
 from keras_core.metrics.confusion_metrics import TruePositives
 from keras_core.metrics.hinge_metrics import CategoricalHinge
@@ -19,12 +26,6 @@ from keras_core.metrics.reduction_metrics import Mean
 from keras_core.metrics.reduction_metrics import MeanMetricWrapper
 from keras_core.metrics.reduction_metrics import Sum
 from keras_core.metrics.regression_metrics import MeanSquaredError
-from keras_core.metrics.accuracy_metrics import Accuracy
-from keras_core.metrics.accuracy_metrics import BinaryAccuracy
-from keras_core.metrics.accuracy_metrics import CategoricalAccuracy
-from keras_core.metrics.accuracy_metrics import SparseCategoricalAccuracy
-from keras_core.metrics.accuracy_metrics import TopKCategoricalAccuracy
-from keras_core.metrics.accuracy_metrics import SparseTopKCategoricalAccuracy
 from keras_core.saving import serialization_lib
 
 ALL_OBJECTS = {
@@ -39,6 +40,7 @@ ALL_OBJECTS = {
     FalseNegatives,
     FalsePositives,
     Precision,
+    Recall,
     TrueNegatives,
     TruePositives,
     # Hinge
