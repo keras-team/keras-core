@@ -26,7 +26,7 @@ def mean(x, axis=None, keepdims=False):
     return tfnp.mean(x, axis=axis, keepdims=keepdims)
 
 
-def max(x, axis=None, keepdims=False):
+def max(x, axis=None, keepdims=False, initial=None):
     return tfnp.max(x, axis=axis, keepdims=keepdims)
 
 

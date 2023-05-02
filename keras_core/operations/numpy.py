@@ -1848,16 +1848,19 @@ def matmul(x1, x2):
 
 
 class Max(Operation):
-    def __init__(self, axis=None, keepdims=False):
+    def __init__(self, axis=None, keepdims=False, initial=None):
         super().__init__()
         if isinstance(axis, int):
             self.axis = [axis]
         else:
             self.axis = axis
         self.keepdims = keepdims
+        self.initial = initial
 
-    def call(self, x):
-        return backend.numpy.max(x, axis=self.axis, keepdims=self.keepdims)
+    def call(self, x, initial):
+        return backend.numpy.max(
+            x, axis=self.axis, keepdims=self.keepdims, initial=self.initial
+        )
 
     def compute_output_spec(self, x):
         return KerasTensor(
@@ -1866,10 +1869,12 @@ class Max(Operation):
         )
 
 
-def max(x, axis=None, keepdims=False):
+def max(x, axis=None, keepdims=False, initial=None):
     if any_symbolic_tensors((x,)):
-        return Max(axis=axis, keepdims=keepdims).symbolic_call(x)
-    return backend.numpy.max(x, axis=axis, keepdims=keepdims)
+        return Max(axis=axis, keepdims=keepdims, initial=initial).symbolic_call(
+            x
+        )
+    return backend.numpy.max(x, axis=axis, keepdims=keepdims, initial=initial)
 
 
 class Maximum(Operation):
