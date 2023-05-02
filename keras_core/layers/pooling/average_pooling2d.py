@@ -30,28 +30,28 @@ class AveragePooling2D(BasePooling):
             `"valid"` means no padding. `"same"` results in padding evenly to
             the left/right or up/down of the input such that output has the same
             height/width dimension as the input.
-        data_format: string, either `channels_last` or `channels_first`. The
-            ordering of the dimensions in the inputs. `channels_last`
+        data_format: string, either `"channels_last"` or `"channels_first"`.
+            The ordering of the dimensions in the inputs. `"channels_last"`
             corresponds to inputs with shape `(batch, height, width, channels)`
             while `channels_first` corresponds to inputs with shape
             `(batch, channels, height, width)`. It defaults to the
             `image_data_format` value found in your Keras config file at
             `~/.keras/keras.json`. If you never set it, then it will be
-            "channels_last".
+            `"channels_last"`.
 
     Input shape:
-        - If `data_format='channels_last'`:
-            4D tensor with shape `(batch_size, height, width, channels)`.
-        - If `data_format='channels_first'`:
-            4D tensor with shape `(batch_size, channels, height, width)`.
+    - If `data_format="channels_last"`:
+        4D tensor with shape `(batch_size, height, width, channels)`.
+    - If `data_format="channels_first"`:
+        4D tensor with shape `(batch_size, channels, height, width)`.
 
     Output shape:
-        - If `data_format='channels_last'`:
-            4D tensor with shape
-            `(batch_size, pooled_height, pooled_width, channels)`.
-        - If `data_format='channels_first'`:
-            4D tensor with shape
-            `(batch_size, channels, pooled_height, pooled_width)`.
+    - If `data_format="channels_last"`:
+        4D tensor with shape
+        `(batch_size, pooled_height, pooled_width, channels)`.
+    - If `data_format="channels_first"`:
+        4D tensor with shape
+        `(batch_size, channels, pooled_height, pooled_width)`.
 
     Examples:
 
@@ -62,27 +62,27 @@ class AveragePooling2D(BasePooling):
     ...               [7., 8., 9.]])
     >>> x = np.reshape(x, [1, 3, 3, 1])
     >>> avg_pool_2d = keras_core.layers.AveragePooling2D(pool_size=(2, 2),
-    ...    strides=(1, 1), padding='valid')
+    ...    strides=(1, 1), padding="valid")
     >>> avg_pool_2d(x)
 
     `strides=(2, 2)` and `padding="valid"`:
 
-    >>> x = tf.constant([[1., 2., 3., 4.],
-    ...                  [5., 6., 7., 8.],
-    ...                  [9., 10., 11., 12.]])
-    >>> x = tf.reshape(x, [1, 3, 4, 1])
-    >>> avg_pool_2d = tf.keras.layers.AveragePooling2D(pool_size=(2, 2),
-    ...    strides=(2, 2), padding='valid')
+    >>> x = np.array([[1., 2., 3., 4.],
+    ...              [5., 6., 7., 8.],
+    ...              [9., 10., 11., 12.]])
+    >>> x = np.reshape(x, [1, 3, 4, 1])
+    >>> avg_pool_2d = keras_core.layers.AveragePooling2D(pool_size=(2, 2),
+    ...    strides=(2, 2), padding="valid")
     >>> avg_pool_2d(x)
 
     `stride=(1, 1)` and `padding="same"`:
 
-    >>> x = tf.constant([[1., 2., 3.],
+    >>> x = np.array([[1., 2., 3.],
     ...                  [4., 5., 6.],
     ...                  [7., 8., 9.]])
-    >>> x = tf.reshape(x, [1, 3, 3, 1])
+    >>> x = np.reshape(x, [1, 3, 3, 1])
     >>> avg_pool_2d = keras_core.layers.AveragePooling2D(pool_size=(2, 2),
-    ...    strides=(1, 1), padding='same')
+    ...    strides=(1, 1), padding="same")
     >>> avg_pool_2d(x)
     """
 

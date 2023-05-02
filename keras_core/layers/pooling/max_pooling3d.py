@@ -22,29 +22,29 @@ class MaxPooling3D(BasePooling):
             `"valid"` means no padding. `"same"` results in padding evenly to
             the left/right or up/down of the input such that output has the same
             height/width dimension as the input.
-        data_format: string, either `channels_last` or `channels_first`. The
-            ordering of the dimensions in the inputs. `channels_last`
+        data_format: string, either `"channels_last"` or `"channels_first"`.
+            The ordering of the dimensions in the inputs. `"channels_last"`
             corresponds to inputs with shape
-            `(batch, spatial_dim1, spatial_dim2, spatial_dim3, channels)`
-            while `channels_first` corresponds to inputs with shape
+            `(batch, spatial_dim1, spatial_dim2, spatial_dim3, channels)` while
+            `channels_first` corresponds to inputs with shape
             `(batch, channels, spatial_dim1, spatial_dim2, spatial_dim3)`.
-            It defaults to the `image_data_format` value found in your
-            Keras config file at `~/.keras/keras.json`. If you never set it,
-            then it will be "channels_last".
+            It defaults to the `image_data_format` value found in your Keras
+            config file at `~/.keras/keras.json`. If you never set it, then it
+            will be `"channels_last"`.
 
     Input shape:
-      - If `data_format="channels_last"`:
+    - If `data_format="channels_last"`:
         5D tensor with shape:
         `(batch_size, spatial_dim1, spatial_dim2, spatial_dim3, channels)`
-      - If `data_format="channels_first"`:
+    - If `data_format="channels_first"`:
         5D tensor with shape:
         `(batch_size, channels, spatial_dim1, spatial_dim2, spatial_dim3)`
 
     Output shape:
-      - If `data_format='channels_last'`:
+    - If `data_format="channels_last"`:
         5D tensor with shape:
         `(batch_size, pooled_dim1, pooled_dim2, pooled_dim3, channels)`
-      - If `data_format='channels_first'`:
+    - If `data_format="channels_first"`:
         5D tensor with shape:
         `(batch_size, channels, pooled_dim1, pooled_dim2, pooled_dim3)`
 

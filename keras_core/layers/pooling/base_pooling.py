@@ -50,7 +50,7 @@ class BasePooling(Layer):
             )
         else:
             raise ValueError(
-                "`pool_mode` must be either `max` or `average`, but received "
+                "`pool_mode` must be either 'max' or 'average'. Received: "
                 f"{self.pool_mode}."
             )
 

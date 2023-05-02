@@ -69,7 +69,7 @@ def log_softmax(x, axis=None):
     return tf.nn.log_softmax(x, axis=axis)
 
 
-def _transpose_pool_inputs(inputs):
+def _transpose_spatial_inputs(inputs):
     num_spatial_dims = len(inputs.shape) - 2
     # Tensorflow pooling does not support `channels_first` format, so
     # we need to transpose to `channels_last` format.
@@ -87,8 +87,8 @@ def _transpose_pool_inputs(inputs):
     return inputs
 
 
-def _transpose_pool_outputs(outputs):
-    # Undo the tranpose in `_transpose_pool_inputs`.
+def _transpose_spatial_outputs(outputs):
+    # Undo the tranpose in `_transpose_spatial_inputs`.
     num_spatial_dims = len(outputs.shape) - 2
     if num_spatial_dims == 1:
         outputs = tf.transpose(outputs, (0, 2, 1))
@@ -112,7 +112,7 @@ def max_pool(
     if data_format == "channels_first":
         # Tensorflow pooling does not support `channels_first` format, so
         # we need to transpose to `channels_last` format.
-        inputs = _transpose_pool_inputs(inputs)
+        inputs = _transpose_spatial_inputs(inputs)
 
     outputs = tf.nn.max_pool(
         inputs,
@@ -122,7 +122,7 @@ def max_pool(
         tf_data_format,
     )
     if data_format == "channels_first":
-        outputs = _transpose_pool_outputs(outputs)
+        outputs = _transpose_spatial_outputs(outputs)
     return outputs
 
 
@@ -139,7 +139,7 @@ def average_pool(
     if data_format == "channels_first":
         # Tensorflow pooling does not support `channels_first` format, so
         # we need to transpose to `channels_last` format.
-        inputs = _transpose_pool_inputs(inputs)
+        inputs = _transpose_spatial_inputs(inputs)
 
     outputs = tf.nn.avg_pool(
         inputs,
@@ -149,7 +149,7 @@ def average_pool(
         tf_data_format,
     )
     if data_format == "channels_first":
-        outputs = _transpose_pool_outputs(outputs)
+        outputs = _transpose_spatial_outputs(outputs)
     return outputs
 
 
