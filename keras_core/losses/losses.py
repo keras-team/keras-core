@@ -1296,7 +1296,7 @@ def huber(y_true, y_pred, delta=1.0):
             loss.append(0.5 * x^2)
         elif abs(x) > delta:
             loss.append(delta * abs(x) - 0.5 * delta^2)
-    
+
     loss = mean(loss, axis=-1)
     ```
     See: [Huber loss](https://en.wikipedia.org/wiki/Huber_loss).
@@ -1335,7 +1335,9 @@ def huber(y_true, y_pred, delta=1.0):
     )
 
 
-@keras_core_export(["keras_core.losses.log_cosh", "keras_core.metrics.log_cosh"])
+@keras_core_export(
+    ["keras_core.losses.log_cosh", "keras_core.metrics.log_cosh"]
+)
 def log_cosh(y_true, y_pred):
     """Logarithm of the hyperbolic cosine of the prediction error.
 
