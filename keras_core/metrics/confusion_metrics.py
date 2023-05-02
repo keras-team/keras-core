@@ -69,7 +69,7 @@ class _ConfusionMatrixConditionCount(Metric):
     def get_config(self):
         config = {"thresholds": self.init_thresholds}
         base_config = super().get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        return {**base_config, **config}
 
 
 @keras_core_export("keras_core.metrics.FalsePositives")
@@ -402,7 +402,7 @@ class Precision(Metric):
             "class_id": self.class_id,
         }
         base_config = super().get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        return {**base_config, **config}
 
 
 @keras_core_export("keras_core.metrics.Recall")
@@ -542,7 +542,7 @@ class Recall(Metric):
             "class_id": self.class_id,
         }
         base_config = super().get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        return {**base_config, **config}
 
 
 class SensitivitySpecificityBase(Metric):
@@ -632,7 +632,7 @@ class SensitivitySpecificityBase(Metric):
     def get_config(self):
         config = {"class_id": self.class_id}
         base_config = super().get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        return {**base_config, **config}
 
     def _find_max_under_constraint(self, constrained, dependent, predicate):
         """Returns the maximum of dependent_statistic that satisfies the
@@ -763,7 +763,7 @@ class SensitivityAtSpecificity(SensitivitySpecificityBase):
             "specificity": self.specificity,
         }
         base_config = super().get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        return {**base_config, **config}
 
 
 @keras_core_export("keras_core.metrics.SpecificityAtSensitivity")
@@ -867,7 +867,7 @@ class SpecificityAtSensitivity(SensitivitySpecificityBase):
             "sensitivity": self.sensitivity,
         }
         base_config = super().get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        return {**base_config, **config}
 
 
 @keras_core_export("keras_core.metrics.PrecisionAtRecall")
@@ -954,7 +954,7 @@ class PrecisionAtRecall(SensitivitySpecificityBase):
     def get_config(self):
         config = {"num_thresholds": self.num_thresholds, "recall": self.recall}
         base_config = super().get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        return {**base_config, **config}
 
 
 @keras_core_export("keras_core.metrics.RecallAtPrecision")
@@ -1052,4 +1052,4 @@ class RecallAtPrecision(SensitivitySpecificityBase):
             "precision": self.precision,
         }
         base_config = super().get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        return {**base_config, **config}
