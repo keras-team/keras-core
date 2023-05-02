@@ -38,7 +38,6 @@ class Subtract(Merge):
                 f"Received: input_shape={input_shape}"
             )
 
-
     def _merge_function(self, inputs):
         if len(inputs) != 2:
             raise ValueError(
@@ -46,7 +45,6 @@ class Subtract(Merge):
                 f"Received: inputs={inputs}"
             )
         return inputs[0] - inputs[1]
-
 
 
 @keras_core_export("keras_core.layers.subtract")

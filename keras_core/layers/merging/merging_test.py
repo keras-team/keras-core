@@ -175,7 +175,6 @@ class MergingLayersTest(testing.TestCase):
         batch_size = 2
         shape = (4, 5)
         x1 = np.random.rand(batch_size, *shape)
-        x2 = np.random.rand(batch_size, *shape)
 
         input_1 = layers.Input(shape=shape, batch_size=batch_size)
         input_2 = layers.Input(shape=shape, batch_size=batch_size)
@@ -200,4 +199,3 @@ class MergingLayersTest(testing.TestCase):
             ValueError, "layer should be called on exactly 2 inputs"
         ):
             layers.Subtract()([input_1])
-
