@@ -2,7 +2,9 @@ from keras_core.api_export import keras_core_export
 from keras_core.layers.pooling.base_pooling import BasePooling
 
 
-@keras_core_export("keras_core.layers.MaxPooling2D")
+@keras_core_export(
+    ["keras_core.layers.MaxPooling2D", "keras_core.layers.MaxPool2D"]
+)
 class MaxPooling2D(BasePooling):
     """Max pooling operation for 2D spatial data.
 
@@ -33,7 +35,7 @@ class MaxPooling2D(BasePooling):
         data_format: string, either `"channels_last"` or `"channels_first"`.
             The ordering of the dimensions in the inputs. `"channels_last"`
             corresponds to inputs with shape `(batch, height, width, channels)`
-            while `channels_first` corresponds to inputs with shape
+            while `"channels_first"` corresponds to inputs with shape
             `(batch, channels, height, width)`. It defaults to the
             `image_data_format` value found in your Keras config file at
             `~/.keras/keras.json`. If you never set it, then it will be
