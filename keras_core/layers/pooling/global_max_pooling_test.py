@@ -6,13 +6,13 @@ from keras_core import layers
 from keras_core import testing
 
 
-class GlobalAveragePoolingBasicTest(testing.TestCase, parameterized.TestCase):
+class GlobalMaxPoolingBasicTest(testing.TestCase, parameterized.TestCase):
     @parameterized.parameters(
         ("channels_last", False, (3, 5, 4), (3, 4)),
         ("channels_last", True, (3, 5, 4), (3, 1, 4)),
         ("channels_first", False, (3, 5, 4), (3, 5)),
     )
-    def test_global_average_pooling1d(
+    def test_global_max_pooling1d(
         self,
         data_format,
         keepdims,
@@ -20,7 +20,7 @@ class GlobalAveragePoolingBasicTest(testing.TestCase, parameterized.TestCase):
         output_shape,
     ):
         self.run_layer_test(
-            layers.GlobalAveragePooling1D,
+            layers.GlobalMaxPooling1D,
             init_kwargs={
                 "data_format": data_format,
                 "keepdims": keepdims,
@@ -38,7 +38,7 @@ class GlobalAveragePoolingBasicTest(testing.TestCase, parameterized.TestCase):
         ("channels_last", True, (3, 5, 6, 4), (3, 1, 1, 4)),
         ("channels_first", False, (3, 5, 6, 4), (3, 5)),
     )
-    def test_global_average_pooling2d(
+    def test_global_max_pooling2d(
         self,
         data_format,
         keepdims,
@@ -46,7 +46,7 @@ class GlobalAveragePoolingBasicTest(testing.TestCase, parameterized.TestCase):
         output_shape,
     ):
         self.run_layer_test(
-            layers.GlobalAveragePooling2D,
+            layers.GlobalMaxPooling2D,
             init_kwargs={
                 "data_format": data_format,
                 "keepdims": keepdims,
@@ -64,7 +64,7 @@ class GlobalAveragePoolingBasicTest(testing.TestCase, parameterized.TestCase):
         ("channels_last", True, (3, 5, 6, 5, 4), (3, 1, 1, 1, 4)),
         ("channels_first", False, (3, 5, 6, 5, 4), (3, 5)),
     )
-    def test_global_average_pooling3d(
+    def test_global_max_pooling3d(
         self,
         data_format,
         keepdims,
@@ -72,7 +72,7 @@ class GlobalAveragePoolingBasicTest(testing.TestCase, parameterized.TestCase):
         output_shape,
     ):
         self.run_layer_test(
-            layers.GlobalAveragePooling3D,
+            layers.GlobalMaxPooling3D,
             init_kwargs={
                 "data_format": data_format,
                 "keepdims": keepdims,
@@ -86,22 +86,20 @@ class GlobalAveragePoolingBasicTest(testing.TestCase, parameterized.TestCase):
         )
 
 
-class GlobalAveragePoolingCorrectnessTest(
-    testing.TestCase, parameterized.TestCase
-):
+class GlobalMaxPoolingCorrectnessTest(testing.TestCase, parameterized.TestCase):
     @parameterized.parameters(
         ("channels_last", False),
         ("channels_last", True),
         ("channels_first", False),
     )
-    def test_global_average_pooling1d(self, data_format, keepdims):
+    def test_global_max_pooling1d(self, data_format, keepdims):
         inputs = np.arange(24, dtype=np.float).reshape((2, 3, 4))
 
-        layer = layers.GlobalAveragePooling1D(
+        layer = layers.GlobalMaxPooling1D(
             data_format=data_format,
             keepdims=keepdims,
         )
-        tf_keras_layer = tf.keras.layers.GlobalAveragePooling1D(
+        tf_keras_layer = tf.keras.layers.GlobalMaxPooling1D(
             data_format=data_format,
             keepdims=keepdims,
         )
@@ -115,14 +113,14 @@ class GlobalAveragePoolingCorrectnessTest(
         ("channels_last", True),
         ("channels_first", False),
     )
-    def test_global_average_pooling2d(self, data_format, keepdims):
+    def test_global_max_pooling2d(self, data_format, keepdims):
         inputs = np.arange(96, dtype=np.float).reshape((2, 3, 4, 4))
 
-        layer = layers.GlobalAveragePooling2D(
+        layer = layers.GlobalMaxPooling2D(
             data_format=data_format,
             keepdims=keepdims,
         )
-        tf_keras_layer = tf.keras.layers.GlobalAveragePooling2D(
+        tf_keras_layer = tf.keras.layers.GlobalMaxPooling2D(
             data_format=data_format,
             keepdims=keepdims,
         )
@@ -136,14 +134,14 @@ class GlobalAveragePoolingCorrectnessTest(
         ("channels_last", True),
         ("channels_first", False),
     )
-    def test_global_average_pooling3d(self, data_format, keepdims):
+    def test_global_max_pooling3d(self, data_format, keepdims):
         inputs = np.arange(360, dtype=np.float).reshape((2, 3, 3, 5, 4))
 
-        layer = layers.GlobalAveragePooling3D(
+        layer = layers.GlobalMaxPooling3D(
             data_format=data_format,
             keepdims=keepdims,
         )
-        tf_keras_layer = tf.keras.layers.GlobalAveragePooling3D(
+        tf_keras_layer = tf.keras.layers.GlobalMaxPooling3D(
             data_format=data_format,
             keepdims=keepdims,
         )
