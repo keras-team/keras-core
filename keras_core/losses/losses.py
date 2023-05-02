@@ -1111,7 +1111,7 @@ def mean_squared_error(y_true, y_pred):
     loss = mean(square(y_true - y_pred), axis=-1)
     ```
 
-    Standalone usage:
+    Example:
 
     >>> y_true = np.random.randint(0, 2, size=(2, 3))
     >>> y_pred = np.random.random(size=(2, 3))
@@ -1285,19 +1285,23 @@ def cosine_similarity(y_true, y_pred, axis=-1):
     return -ops.sum(y_true * y_pred, axis=axis)
 
 
-@keras_core_export("keras_core.losses.huber")
+@keras_core_export(["keras_core.losses.huber", "keras_core.metrics.huber"])
 def huber(y_true, y_pred, delta=1.0):
     """Computes Huber loss value.
 
-    For each value x in `error = y_true - y_pred`:
-
+    Formula:
+    ```python
+    for x in error:
+        if abs(x) <= delta:
+            loss.append(0.5 * x^2)
+        elif abs(x) > delta:
+            loss.append(delta * abs(x) - 0.5 * delta^2)
+    
+    loss = mean(loss, axis=-1)
     ```
-    loss = 0.5 * x^2                  if |x| <= d
-    loss = d * |x| - 0.5 * d^2        if |x| > d
-    ```
-    where d is `delta`. See: https://en.wikipedia.org/wiki/Huber_loss
+    See: [Huber loss](https://en.wikipedia.org/wiki/Huber_loss).
 
-    Standalone usage:
+    Example:
 
     >>> y_true = [[0, 1], [0, 0]]
     >>> y_pred = [[0.6, 0.4], [0.4, 0.6]]
@@ -1331,16 +1335,21 @@ def huber(y_true, y_pred, delta=1.0):
     )
 
 
-@keras_core_export("keras_core.losses.log_cosh")
+@keras_core_export(["keras_core.losses.log_cosh", "keras_core.metrics.log_cosh"])
 def log_cosh(y_true, y_pred):
     """Logarithm of the hyperbolic cosine of the prediction error.
 
-    `log(cosh(x))` is approximately equal to `(x ** 2) / 2` for small `x` and
-    to `abs(x) - log(2)` for large `x`. This means that 'logcosh' works mostly
-    like the mean squared error, but will not be so strongly affected by the
-    occasional wildly incorrect prediction.
+    Formula:
+    ```python
+    loss = mean(log(cosh(y_pred - y_true)), axis=-1)
+    ```
 
-    Standalone usage:
+    Note that `log(cosh(x))` is approximately equal to `(x ** 2) / 2` for small
+    `x` and to `abs(x) - log(2)` for large `x`. This means that 'logcosh' works
+    mostly like the mean squared error, but will not be so strongly affected by
+    the occasional wildly incorrect prediction.
+
+    Example:
 
     >>> y_true = [[0., 1.], [0., 0.]]
     >>> y_pred = [[1., 1.], [0., 0.]]
