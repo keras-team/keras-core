@@ -63,8 +63,8 @@ def gelu(x, approximate=True):
     return jnn.gelu(x, approximate)
 
 
-def softmax(x):
-    return jnn.softmax(x)
+def softmax(x, axis=None):
+    return jnn.softmax(x, axis=axis)
 
 
 def log_softmax(x, axis=-1):

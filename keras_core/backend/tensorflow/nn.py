@@ -49,7 +49,7 @@ def leaky_relu(x, negative_slope=0.2):
 
 
 def hard_sigmoid(x):
-    x = tf.convert_to_tensor(x) / 5.0 + 0.5
+    x = x / 6.0 + 0.5
     return tf.clip_by_value(x, 0.0, 1.0)
 
 
