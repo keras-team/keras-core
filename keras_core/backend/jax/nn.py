@@ -19,6 +19,10 @@ def sigmoid(x):
     return jnn.sigmoid(x)
 
 
+def tanh(x):
+    return jnn.tanh(x)
+
+
 def softplus(x):
     return jnn.softplus(x)
 

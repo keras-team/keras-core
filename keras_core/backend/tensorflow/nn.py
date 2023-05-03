@@ -20,6 +20,10 @@ def sigmoid(x):
     return tf.nn.sigmoid(x)
 
 
+def tanh(x):
+    return tf.nn.tanh(x)
+
+
 def softplus(x):
     return tf.math.softplus(x)
 
@@ -45,7 +49,7 @@ def leaky_relu(x, negative_slope=0.2):
 
 
 def hard_sigmoid(x):
-    x = x / 6.0 + 0.5
+    x = tf.convert_to_tensor(x) / 5.0 + 0.5
     return tf.clip_by_value(x, 0.0, 1.0)
 
 

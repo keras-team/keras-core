@@ -83,6 +83,20 @@ def sigmoid(x):
     return backend.nn.sigmoid(x)
 
 
+class TanH(Operation):
+    def call(self, x):
+        return backend.nn.tanh(x)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape)
+
+
+def tanh(x):
+    if any_symbolic_tensors((x,)):
+        return TanH().symbolic_call(x)
+    return backend.nn.tanh(x)
+
+
 class Softplus(Operation):
     def call(self, x):
         return backend.nn.softplus(x)
@@ -246,7 +260,7 @@ class Softmax(Operation):
 def softmax(x, axis=None):
     if any_symbolic_tensors((x,)):
         return Softmax(axis).symbolic_call(x)
-    return backend.nn.softmax(x)
+    return backend.nn.softmax(x, axis=axis)
 
 
 class LogSoftmax(Operation):
