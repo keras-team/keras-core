@@ -1204,9 +1204,9 @@ def mean_absolute_percentage_error(y_true, y_pred):
     >>> y_pred = np.random.random(size=(2, 3))
     >>> loss = keras_core.losses.mean_absolute_percentage_error(y_true, y_pred)
     """
-    epsilon = ops.convert_to_tensor(backend.epsilon())
     y_pred = ops.convert_to_tensor(y_pred)
     y_true = ops.convert_to_tensor(y_true, dtype=y_pred.dtype)
+    epsilon = ops.convert_to_tensor(backend.epsilon())
     y_true, y_pred = squeeze_to_same_rank(y_true, y_pred)
     diff = ops.abs((y_true - y_pred) / ops.maximum(ops.abs(y_true), epsilon))
     return 100.0 * ops.mean(diff, axis=-1)
@@ -1380,7 +1380,7 @@ def log_cosh(y_true, y_pred):
     log2 = ops.convert_to_tensor(ops.log(2.0), dtype=y_pred.dtype)
 
     def _logcosh(x):
-        return x + ops.softplus(-2.0 * x) - log2
+        return x + ops.softplus(ops.multiply(x, -2.0)) - log2
 
     return ops.mean(_logcosh(y_pred - y_true), axis=-1)
 
