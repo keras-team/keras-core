@@ -291,41 +291,6 @@ class MaxPool(Operation):
         )
 
     def compute_output_spec(self, inputs):
-<<<<<<< HEAD
-        strides = self.pool_size if self.strides is None else self.strides
-        input_shape = np.array(inputs.shape)
-        if self.data_format == "channels_last":
-            spatial_shape = input_shape[1:-1]
-        else:
-            spatial_shape = input_shape[2:]
-        pool_size = np.array(self.pool_size)
-        if self.padding == "valid":
-            output_spatial_shape = (
-                np.floor((spatial_shape - self.pool_size) / strides) + 1
-            )
-            negative_in_shape = np.all(output_spatial_shape < 0)
-            if negative_in_shape:
-                raise ValueError(
-                    "Computed output size would be negative. Received "
-                    f"`inputs.shape={input_shape}` and `pool_size={pool_size}`."
-                )
-        elif self.padding == "same":
-            output_spatial_shape = np.floor((spatial_shape - 1) / strides) + 1
-        else:
-            raise ValueError(
-                "`padding` must be either `valid` or `same`, but received "
-                f"{self.padding}."
-            )
-        output_spatial_shape = [int(i) for i in output_spatial_shape]
-        if self.data_format == "channels_last":
-            output_shape = (
-                [inputs.shape[0]]
-                + list(output_spatial_shape)
-                + [inputs.shape[-1]]
-            )
-        else:
-            output_shape = list(inputs.shape[:2]) + list(output_spatial_shape)
-=======
         output_shape = operation_utils.compute_pooling_output_shape(
             inputs.shape,
             self.pool_size,
@@ -333,7 +298,6 @@ class MaxPool(Operation):
             self.padding,
             self.data_format,
         )
->>>>>>> main
         return KerasTensor(output_shape, dtype=inputs.dtype)
 
 
