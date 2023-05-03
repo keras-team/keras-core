@@ -30,7 +30,7 @@ class GlobalAveragePoolingBasicTest(testing.TestCase, parameterized.TestCase):
             expected_num_trainable_weights=0,
             expected_num_non_trainable_weights=0,
             expected_num_losses=0,
-            supports_masking=False,
+            supports_masking=True,
         )
 
     @parameterized.parameters(
@@ -108,6 +108,14 @@ class GlobalAveragePoolingCorrectnessTest(
 
         outputs = layer(inputs)
         expected = tf_keras_layer(inputs)
+        self.assertAllClose(outputs, expected)
+        
+        if data_format == "channels_last":
+            mask = np.array([[1, 1, 0], [0, 1, 0]], dtype=np.int)
+        else:
+            mask = np.array([[1, 1, 0, 0], [0, 1, 0, 1]], dtype=np.int)
+        outputs = layer(inputs, mask)
+        expected = tf_keras_layer(inputs, mask)
         self.assertAllClose(outputs, expected)
 
     @parameterized.parameters(

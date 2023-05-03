@@ -1,4 +1,5 @@
 from keras_core import operations as ops
+from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.pooling.base_global_pooling import BaseGlobalPooling
 
@@ -25,6 +26,11 @@ class GlobalAveragePooling1D(BaseGlobalPooling):
             reduced for spatial dimensions. If `keepdims` is `True`, the
             temporal dimension are retained with length 1.
             The behavior is the same as for `tf.reduce_mean` or `np.mean`.
+
+    Call arguments:
+        inputs: A 3D tensor.
+        mask: Binary tensor of shape `(batch_size, steps)` indicating whether
+            a given step should be masked (excluded from the average).
 
     Input shape:
     - If `data_format='channels_last'`:
@@ -58,7 +64,21 @@ class GlobalAveragePooling1D(BaseGlobalPooling):
             keepdims=keepdims,
             **kwargs,
         )
+        self.supports_masking = True
 
-    def call(self, inputs):
+    def call(self, inputs, mask=None):
         steps_axis = 1 if self.data_format == "channels_last" else 2
-        return ops.mean(inputs, axis=steps_axis, keepdims=self.keepdims)
+        if mask is not None:
+            mask = backend.cast(mask, inputs[0].dtype)
+            mask = ops.expand_dims(
+                mask, 2 if self.data_format == "channels_last" else 1
+            )
+            inputs *= mask
+            return ops.sum(
+                inputs, axis=steps_axis, keepdims=self.keepdims
+            ) / ops.sum(mask, axis=steps_axis, keepdims=self.keepdims)
+        else:
+            return ops.mean(inputs, axis=steps_axis, keepdims=self.keepdims)
+        
+    def compute_mask(self, inputs, mask=None):
+        return None
