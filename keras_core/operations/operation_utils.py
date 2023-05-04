@@ -99,9 +99,6 @@ def compute_conv_output_shape(
             )
     elif padding == "same":
         output_spatial_shape = np.floor((spatial_shape - 1) / strides) + 1
-    import pdb
-
-    pdb.set_trace()
     output_spatial_shape = tuple([int(i) for i in output_spatial_shape])
     if data_format == "channels_last":
         output_shape = (

@@ -232,11 +232,10 @@ class BaseConv(Layer):
         )
 
         if self.use_bias:
-            output_rank = outputs.shape.rank
             if self.data_format == "channels_last":
-                bias_shape = (1,) * (output_rank - 1) + (self.filters,)
+                bias_shape = (1,) * (self.rank + 1) + (self.filters,)
             else:
-                bias_shape = (1, self.filters) + (1,) * (output_rank - 2)
+                bias_shape = (1, self.filters) + (1,) * self.rank
             bias = ops.reshape(self.bias, bias_shape)
             outputs += bias
 
@@ -245,12 +244,7 @@ class BaseConv(Layer):
         return outputs
 
     def compute_output_shape(self, input_shape):
-        if self.data_format == "channels_last":
-            kernel_shape = self.kernel_size + (input_shape[-1], self.filters)
-        else:
-            kernel_shape = (
-                (self.filters,) + self.kernel_size + (input_shape[1],)
-            )
+        kernel_shape = self.kernel_size + (input_shape[-1], self.filters)
         return compute_conv_output_shape(
             input_shape,
             kernel_shape,

@@ -9,7 +9,7 @@ from keras_core import testing
 class ConvBasicTest(testing.TestCase, parameterized.TestCase):
     @parameterized.parameters(
         (5, 2, 1, "valid", "channels_last", 1, 1, (3, 5, 4), (3, 4, 5)),
-        (6, 2, 1, "same", "channels_first", (1,), 2, (3, 4, 4), (3, 6, 4)),
+        (6, 2, 1, "same", "channels_first", (2,), 2, (3, 4, 4), (3, 6, 4)),
         (6, (2,), (2,), "valid", "channels_last", 1, 2, (3, 5, 4), (3, 2, 6)),
     )
     def test_conv1d(
@@ -42,3 +42,20 @@ class ConvBasicTest(testing.TestCase, parameterized.TestCase):
             expected_num_losses=0,
             supports_masking=False,
         )
+
+class ConvCorrectnessTest(testing.TestCase, parameterized.TestCase):
+    @parameterized.parameters(
+        (5, 2, 1, "valid", "channels_last", 1, 1),
+        (6, 2, 1, "same", "channels_first", (2,), 2),
+        (6, (2,), (2,), "valid", "channels_last", 1, 2),
+    )
+    def test_conv1d(
+        self,
+        filters,
+        kernel_size,
+        strides,
+        padding,
+        data_format,
+        dilation_rate,
+        groups,
+    ):
