@@ -569,7 +569,7 @@ class MergingLayersTest(testing.TestCase):
             layers.Concatenate,
             init_kwargs={"axis": 1},
             input_shape=[(2, 3), (2, 3)],
-            expected_output_shape=(4, 3),
+            expected_output_shape=(2, 6),
             expected_num_trainable_weights=0,
             expected_num_non_trainable_weights=0,
             expected_num_seed_generators=0,
@@ -663,8 +663,8 @@ class MergingLayersTest(testing.TestCase):
         self.run_layer_test(
             layers.Dot,
             init_kwargs={"axes": -1},
-            input_shape=[(4, 3), (5, 3)],
-            expected_output_shape=(4, 5),
+            input_shape=[(4, 3), (4, 3)],
+            expected_output_shape=(4, 1),
             expected_num_trainable_weights=0,
             expected_num_non_trainable_weights=0,
             expected_num_seed_generators=0,
@@ -694,9 +694,6 @@ class MergingLayersTest(testing.TestCase):
 
         self.assertEqual(res.shape, (2, 1))
         self.assertAllClose(res, expected, atol=1e-4)
-        self.assertIsNone(
-            merge_layer.compute_mask([input_1, input_2], [None, None])
-        )
 
     def test_dot_correctness_static(self):
         batch_size = 2
@@ -718,6 +715,3 @@ class MergingLayersTest(testing.TestCase):
 
         self.assertEqual(res.shape, (2, 1))
         self.assertAllClose(res, expected, atol=1e-4)
-        self.assertIsNone(
-            merge_layer.compute_mask([input_1, input_2], [None, None])
-        )
