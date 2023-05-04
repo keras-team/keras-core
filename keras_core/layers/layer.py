@@ -29,7 +29,7 @@ from keras_core import regularizers
 from keras_core import utils
 from keras_core.api_export import keras_core_export
 from keras_core.backend import KerasTensor
-from keras_core.backend import global_state
+from keras_core.backend.common import global_state
 from keras_core.layers import input_spec
 from keras_core.metrics.metric import Metric
 from keras_core.operations.operation import Operation
@@ -877,6 +877,9 @@ def get_shapes_dict(call_spec):
     """
     shapes_dict = {}
     for k, v in call_spec.tensor_arguments_dict.items():
+        if k == "mask" or k.startswith("mask_"):
+            # Do not include mask tensors in shapes dict
+            continue
         if k in call_spec.nested_tensor_argument_names:
             shapes_dict[f"{k}_shape"] = nest.map_structure(
                 lambda x: backend.standardize_shape(x.shape), v
