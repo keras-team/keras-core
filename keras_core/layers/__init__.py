@@ -18,6 +18,9 @@ from keras_core.layers.merging.multiply import Multiply
 from keras_core.layers.merging.multiply import multiply
 from keras_core.layers.merging.subtract import Subtract
 from keras_core.layers.merging.subtract import subtract
+from keras_core.layers.convolutional.conv1d import Conv1D
+from keras_core.layers.convolutional.conv2d import Conv2D
+from keras_core.layers.convolutional.conv3d import Conv3D
 from keras_core.layers.pooling.average_pooling1d import AveragePooling1D
 from keras_core.layers.pooling.average_pooling2d import AveragePooling2D
 from keras_core.layers.pooling.average_pooling3d import AveragePooling3D

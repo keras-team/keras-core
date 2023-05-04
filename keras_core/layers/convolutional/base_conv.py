@@ -10,8 +10,10 @@ from keras_core import constraints
 from keras_core import initializers
 from keras_core import regularizers
 
+from keras_core.operations.operation_utils import compute_conv_output_shape
 
-class Conv(Layer):
+
+class BaseConv(Layer):
     """Abstract N-D convolution layer (private, used as implementation base).
 
     This layer creates a convolution kernel that is convolved
@@ -108,13 +110,21 @@ class Conv(Layer):
         self.rank = rank
         self.filters = filters
         self.groups = groups or 1
+
+        if isinstance(kernel_size, int):
+            kernel_size = (kernel_size,) * self.rank
         self.kernel_size = kernel_size
+        if isinstance(strides, int):
+            strides = (strides,) * self.rank
         self.strides = strides
+        if isinstance(dilation_rate, int):
+            dilation_rate = (dilation_rate,) * self.rank
+        self.dilation_rate = dilation_rate
+
         self.padding = padding
         self.data_format = (
             image_data_format() if data_format is None else data_format
         )
-        self.dilation_rate = dilation_rate
         self.activation = activations.get(activation)
         self.use_bias = use_bias
         self.kernel_initializer = initializers.get(kernel_initializer)
@@ -160,3 +170,120 @@ class Conv(Layer):
                 f"`dilation_rate > 1`. Received: strides={self.strides} and "
                 f"dilation_rate={self.dilation_rate}"
             )
+
+    def build(self, input_shape):
+        if self.data_format == "channels_last":
+            channel_axis = -1
+            input_channel = input_shape[-1]
+        else:
+            channel_axis = 1
+            input_channel = input_shape[1]
+        self.input_spec = InputSpec(
+            min_ndim=self.rank + 2, axes={channel_axis: input_channel}
+        )
+        if input_channel % self.groups != 0:
+            raise ValueError(
+                "The number of input channels must be evenly divisible by "
+                "the number of groups. Received groups={}, but the input "
+                "has {} channels (full input shape is {}).".format(
+                    self.groups, input_channel, input_shape
+                )
+            )
+        kernel_shape = self.kernel_size + (
+            input_channel // self.groups,
+            self.filters,
+        )
+
+        # compute_output_shape contains some validation logic for the input
+        # shape, and make sure the output shape has all positive dimensions.
+        self.compute_output_shape(input_shape)
+
+        self.kernel = self.add_weight(
+            name="kernel",
+            shape=kernel_shape,
+            initializer=self.kernel_initializer,
+            regularizer=self.kernel_regularizer,
+            constraint=self.kernel_constraint,
+            trainable=True,
+            dtype=self.dtype,
+        )
+        if self.use_bias:
+            self.bias = self.add_weight(
+                name="bias",
+                shape=(self.filters,),
+                initializer=self.bias_initializer,
+                regularizer=self.bias_regularizer,
+                constraint=self.bias_constraint,
+                trainable=True,
+                dtype=self.dtype,
+            )
+        else:
+            self.bias = None
+        self.built = True
+
+    def call(self, inputs):
+        outputs = ops.conv(
+            inputs,
+            self.kernel,
+            strides=list(self.strides),
+            padding=self.padding,
+            dilation_rate=self.dilation_rate,
+            data_format=self.data_format,
+        )
+
+        if self.use_bias:
+            output_rank = outputs.shape.rank
+            if self.data_format == "channels_last":
+                bias_shape = (1,) * (output_rank - 1) + (self.filters,)
+            else:
+                bias_shape = (1, self.filters) + (1,) * (output_rank - 2)
+            bias = ops.reshape(self.bias, bias_shape)
+            outputs += bias
+
+        if self.activation is not None:
+            return self.activation(outputs)
+        return outputs
+
+    def compute_output_shape(self, input_shape):
+        if self.data_format == "channels_last":
+            kernel_shape = self.kernel_size + (input_shape[-1], self.filters)
+        else:
+            kernel_shape = (
+                (self.filters,) + self.kernel_size + (input_shape[1],)
+            )
+        return compute_conv_output_shape(
+            input_shape,
+            kernel_shape,
+            strides=self.strides,
+            padding=self.padding,
+            data_format=self.data_format,
+            dilation_rate=self.dilation_rate,
+        )
+
+    def get_config(self):
+        config = {
+            "filters": self.filters,
+            "kernel_size": self.kernel_size,
+            "strides": self.strides,
+            "padding": self.padding,
+            "data_format": self.data_format,
+            "dilation_rate": self.dilation_rate,
+            "groups": self.groups,
+            "activation": activations.serialize(self.activation),
+            "use_bias": self.use_bias,
+            "kernel_initializer": initializers.serialize(
+                self.kernel_initializer
+            ),
+            "bias_initializer": initializers.serialize(self.bias_initializer),
+            "kernel_regularizer": regularizers.serialize(
+                self.kernel_regularizer
+            ),
+            "bias_regularizer": regularizers.serialize(self.bias_regularizer),
+            "activity_regularizer": regularizers.serialize(
+                self.activity_regularizer
+            ),
+            "kernel_constraint": constraints.serialize(self.kernel_constraint),
+            "bias_constraint": constraints.serialize(self.bias_constraint),
+        }
+        base_config = super().get_config()
+        return dict(list(base_config.items()) + list(config.items()))

@@ -193,22 +193,24 @@ def conv(
     data_format="channel_last",
     dilation_rate=1,
 ):
-    """General N-D convolution function.
-
-    Arg:
-    """
-
-    data_format = _convert_data_format(data_format, len(inputs.shape))
+    tf_data_format = _convert_data_format("channels_last", len(inputs.shape))
+    if data_format == "channels_first":
+        # Tensorflow conv does not support `channels_first` format, so
+        # we need to transpose to `channels_last` format.
+        inputs = _transpose_spatial_inputs(inputs)
     padding = padding.upper()
 
-    return tf.nn.convolution(
+    outputs = tf.nn.convolution(
         inputs,
         kernel,
         strides,
         padding,
-        data_format=data_format,
+        data_format=tf_data_format,
         dilations=dilation_rate,
     )
+    if data_format == "channels_first":
+        outputs = _transpose_spatial_outputs(outputs)
+    return outputs
 
 
 def depthwise_conv(
