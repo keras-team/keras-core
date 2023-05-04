@@ -25,7 +25,8 @@ def batch_dot(x, y, axes=None):
         first dimension of `y`
     * `y.shape[1]` : 30 : append to output shape
     * `y.shape[2]` : 20 : do not append to output shape, dimension 2 of
-        `y` has been summed over. (`dot_axes[1]` = 2) `output_shape` = `(100, 30)`
+        `y` has been summed over.
+        (`dot_axes[1]` = 2) `output_shape` = `(100, 30)`
 
     Examples:
 
@@ -100,10 +101,10 @@ def batch_dot(x, y, axes=None):
     # sanity checks
     if 0 in axes:
         raise ValueError(
-            f"Cannot perform batch_dot over axis 0. "
-            f"If your inputs are not batched, "
-            f"add a dummy batch dimension to your "
-            f"inputs using keras_core.operations.expand_dims(x, 0)"
+            "Cannot perform batch_dot over axis 0. "
+            "If your inputs are not batched, "
+            "add a dummy batch dimension to your "
+            "inputs using keras_core.operations.expand_dims(x, 0)"
         )
     a0, a1 = axes
     d1 = x_shape[a0]
@@ -213,10 +214,10 @@ def l2_normalize(x, axis=None, epsilon=1e-9):
 
     Returns:
         A normalized tensor with the same shape as input.
-  """
+    """
 
     square_sum = ops.sum(ops.square(x), axis=axis, keepdims=True)
-    x_inv_norm = 1. / ops.sqrt(ops.maximum(square_sum, epsilon))
+    x_inv_norm = 1.0 / ops.sqrt(ops.maximum(square_sum, epsilon))
     return ops.multiply(x, x_inv_norm)
 
 
@@ -272,8 +273,8 @@ class Dot(Merge):
                 )
             if len(axes) != 2:
                 raise ValueError(
-                    f"Invalid format for argument `axes`: it should contain two "
-                    f"elements. Received: axes={axes}"
+                    f"Invalid format for argument `axes`: it should contain "
+                    f"two elements. Received: axes={axes}"
                 )
             if not isinstance(axes[0], int) or not isinstance(axes[1], int):
                 raise ValueError(

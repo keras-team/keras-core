@@ -687,7 +687,7 @@ class MergingLayersTest(testing.TestCase):
 
         input_1 = layers.Input(shape=(4,))
         input_2 = layers.Input(shape=(4,))
-        merge_layer =  layers.Dot(axes=axes)
+        merge_layer = layers.Dot(axes=axes)
         out = merge_layer([input_1, input_2])
         model = models.Model([input_1, input_2], out)
         res = model([x1, x2])
@@ -711,7 +711,7 @@ class MergingLayersTest(testing.TestCase):
 
         input_1 = layers.Input(shape=shape, batch_size=batch_size)
         input_2 = layers.Input(shape=shape, batch_size=batch_size)
-        merge_layer =  layers.Dot(axes=axes)
+        merge_layer = layers.Dot(axes=axes)
         out = merge_layer([input_1, input_2])
         model = models.Model([input_1, input_2], out)
         res = model([x1, x2])
