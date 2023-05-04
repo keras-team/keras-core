@@ -28,5 +28,8 @@ if backend() == "tensorflow":
 elif backend() == "jax":
     print_msg("Using JAX backend.")
     from keras_core.backend.jax import *  # noqa: F403
+elif backend() == "numpy":
+    print_msg("Using NumPy backend.")
+    from keras_core.backend.numpy import *  # noqa: F403
 else:
     raise ValueError(f"Unable to import backend : {backend()}")
