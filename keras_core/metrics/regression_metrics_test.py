@@ -112,7 +112,7 @@ class MeanAbsoluteErrorTest(testing.TestCase):
             [[0, 0, 1, 1, 0], [1, 1, 1, 1, 1], [0, 1, 0, 1, 0], [1, 1, 1, 1, 1]]
         )
 
-        update_op = mae_obj.update_state(y_true, y_pred)
+        mae_obj.update_state(y_true, y_pred)
         result = mae_obj.result()
         self.assertAllClose(0.5, result, atol=1e-5)
 

@@ -14,13 +14,17 @@ from keras_core.utils.numerical_utils import normalize
 class MeanSquaredError(reduction_metrics.MeanMetricWrapper):
     """Computes the mean squared error between `y_true` and `y_pred`.
 
+    Formula:
+
+    ```python
+    loss = mean(square(y_true - y_pred))
+    ```
+
     Args:
         name: (Optional) string name of the metric instance.
         dtype: (Optional) data type of the metric result.
 
     Example:
-
-    Standalone usage:
 
     >>> m = keras_core.metrics.MeanSquaredError()
     >>> m.update_state([[0, 1], [0, 0]], [[1, 1], [0, 0]])
@@ -39,6 +43,12 @@ class MeanSquaredError(reduction_metrics.MeanMetricWrapper):
 class MeanAbsoluteError(reduction_metrics.MeanMetricWrapper):
     """Computes the mean absolute error between the labels and predictions.
 
+    Formula:
+
+    ```python
+    loss = mean(abs(y_true - y_pred))
+    ```
+
     Args:
         name: (Optional) string name of the metric instance.
         dtype: (Optional) data type of the metric result.
@@ -47,14 +57,14 @@ class MeanAbsoluteError(reduction_metrics.MeanMetricWrapper):
 
     Standalone usage:
 
-    >>> m = tf.keras.metrics.MeanAbsoluteError()
+    >>> m = keras_core.metrics.MeanAbsoluteError()
     >>> m.update_state([[0, 1], [0, 0]], [[1, 1], [0, 0]])
-    >>> m.result().numpy()
+    >>> m.result()
     0.25
     >>> m.reset_state()
     >>> m.update_state([[0, 1], [0, 0]], [[1, 1], [0, 0]],
     ...                sample_weight=[1, 0])
-    >>> m.result().numpy()
+    >>> m.result()
     0.5
 
     Usage with `compile()` API:
@@ -63,7 +73,7 @@ class MeanAbsoluteError(reduction_metrics.MeanMetricWrapper):
     model.compile(
         optimizer='sgd',
         loss='mse',
-        metrics=[tf.keras.metrics.MeanAbsoluteError()])
+        metrics=[keras_core.metrics.MeanAbsoluteError()])
     ```
     """
 
@@ -76,8 +86,13 @@ class MeanAbsoluteError(reduction_metrics.MeanMetricWrapper):
 
 @keras_core_export("keras_core.metrics.MeanAbsolutePercentageError")
 class MeanAbsolutePercentageError(reduction_metrics.MeanMetricWrapper):
-    """Computes the mean absolute percentage error between `y_true` and
-    `y_pred`.
+    """Computes mean absolute percentage error between `y_true` and `y_pred`.
+
+    Formula:
+
+    ```python
+    loss = 100 * mean(abs((y_true - y_pred) / y_true))
+    ```
 
     Args:
         name: (Optional) string name of the metric instance.
@@ -87,14 +102,14 @@ class MeanAbsolutePercentageError(reduction_metrics.MeanMetricWrapper):
 
     Standalone usage:
 
-    >>> m = tf.keras.metrics.MeanAbsolutePercentageError()
+    >>> m = keras_core.metrics.MeanAbsolutePercentageError()
     >>> m.update_state([[0, 1], [0, 0]], [[1, 1], [0, 0]])
-    >>> m.result().numpy()
+    >>> m.result()
     250000000.0
     >>> m.reset_state()
     >>> m.update_state([[0, 1], [0, 0]], [[1, 1], [0, 0]],
     ...                sample_weight=[1, 0])
-    >>> m.result().numpy()
+    >>> m.result()
     500000000.0
 
     Usage with `compile()` API:
@@ -103,7 +118,7 @@ class MeanAbsolutePercentageError(reduction_metrics.MeanMetricWrapper):
     model.compile(
         optimizer='sgd',
         loss='mse',
-        metrics=[tf.keras.metrics.MeanAbsolutePercentageError()])
+        metrics=[keras_core.metrics.MeanAbsolutePercentageError()])
     ```
     """
 
@@ -116,8 +131,13 @@ class MeanAbsolutePercentageError(reduction_metrics.MeanMetricWrapper):
 
 @keras_core_export("keras_core.metrics.MeanSquaredLogarithmicError")
 class MeanSquaredLogarithmicError(reduction_metrics.MeanMetricWrapper):
-    """Computes the mean squared logarithmic error between `y_true` and
-    `y_pred`.
+    """Computes mean squared logarithmic error between `y_true` and `y_pred`.
+
+    Formula:
+
+    ```python
+    loss = mean(square(log(y_true + 1) - log(y_pred + 1)))
+    ```
 
     Args:
         name: (Optional) string name of the metric instance.
@@ -127,14 +147,14 @@ class MeanSquaredLogarithmicError(reduction_metrics.MeanMetricWrapper):
 
     Standalone usage:
 
-    >>> m = tf.keras.metrics.MeanSquaredLogarithmicError()
+    >>> m = keras_core.metrics.MeanSquaredLogarithmicError()
     >>> m.update_state([[0, 1], [0, 0]], [[1, 1], [0, 0]])
-    >>> m.result().numpy()
+    >>> m.result()
     0.12011322
     >>> m.reset_state()
     >>> m.update_state([[0, 1], [0, 0]], [[1, 1], [0, 0]],
     ...                sample_weight=[1, 0])
-    >>> m.result().numpy()
+    >>> m.result()
     0.24022643
 
     Usage with `compile()` API:
@@ -143,7 +163,7 @@ class MeanSquaredLogarithmicError(reduction_metrics.MeanMetricWrapper):
     model.compile(
         optimizer='sgd',
         loss='mse',
-        metrics=[tf.keras.metrics.MeanSquaredLogarithmicError()])
+        metrics=[keras_core.metrics.MeanSquaredLogarithmicError()])
     ```
     """
 
@@ -159,7 +179,10 @@ class CosineSimilarity(reduction_metrics.MeanMetricWrapper):
     """Computes the cosine similarity between the labels and predictions.
 
     Formula:
-    `cosine similarity = (a . b) / ||a|| ||b||`
+
+    ```python
+    loss = sum(l2_norm(y_true) * l2_norm(y_pred))
+    ```
     See: [Cosine Similarity](https://en.wikipedia.org/wiki/Cosine_similarity).
     This metric keeps the average cosine similarity between `predictions` and
     `labels` over a stream of data.
@@ -179,14 +202,14 @@ class CosineSimilarity(reduction_metrics.MeanMetricWrapper):
     >>> # l2_norm(y_true) . l2_norm(y_pred) = [[0., 0.], [0.5, 0.5]]
     >>> # result = mean(sum(l2_norm(y_true) . l2_norm(y_pred), axis=1))
     >>> #        = ((0. + 0.) +  (0.5 + 0.5)) / 2
-    >>> m = tf.keras.metrics.CosineSimilarity(axis=1)
+    >>> m = keras_core.metrics.CosineSimilarity(axis=1)
     >>> m.update_state([[0., 1.], [1., 1.]], [[1., 0.], [1., 1.]])
-    >>> m.result().numpy()
+    >>> m.result()
     0.49999997
     >>> m.reset_state()
     >>> m.update_state([[0., 1.], [1., 1.]], [[1., 0.], [1., 1.]],
     ...                sample_weight=[0.3, 0.7])
-    >>> m.result().numpy()
+    >>> m.result()
     0.6999999
 
     Usage with `compile()` API:
@@ -195,7 +218,7 @@ class CosineSimilarity(reduction_metrics.MeanMetricWrapper):
     model.compile(
         optimizer='sgd',
         loss='mse',
-        metrics=[tf.keras.metrics.CosineSimilarity(axis=1)])
+        metrics=[keras_core.metrics.CosineSimilarity(axis=1)])
     ```
     """
 
@@ -211,8 +234,11 @@ class LogCoshError(reduction_metrics.MeanMetricWrapper):
     """Computes the logarithm of the hyperbolic cosine of the prediction error.
 
     Formula:
-    `logcosh = log((exp(x) + exp(-x))/2)`, where x is the error (y_pred -
-    y_true)
+
+    ```python
+    error = y_pred - y_true
+    logcosh = mean(log((exp(error) + exp(-error))/2), axis=-1)
+    ```
 
     Args:
         name: (Optional) string name of the metric instance.
@@ -222,14 +248,14 @@ class LogCoshError(reduction_metrics.MeanMetricWrapper):
 
     Standalone usage:
 
-    >>> m = tf.keras.metrics.LogCoshError()
+    >>> m = keras_core.metrics.LogCoshError()
     >>> m.update_state([[0, 1], [0, 0]], [[1, 1], [0, 0]])
-    >>> m.result().numpy()
+    >>> m.result()
     0.10844523
     >>> m.reset_state()
     >>> m.update_state([[0, 1], [0, 0]], [[1, 1], [0, 0]],
     ...                sample_weight=[1, 0])
-    >>> m.result().numpy()
+    >>> m.result()
     0.21689045
 
     Usage with `compile()` API:
@@ -237,7 +263,7 @@ class LogCoshError(reduction_metrics.MeanMetricWrapper):
     ```python
     model.compile(optimizer='sgd',
                   loss='mse',
-                  metrics=[tf.keras.metrics.LogCoshError()])
+                  metrics=[keras_core.metrics.LogCoshError()])
     ```
     """
 
@@ -252,6 +278,7 @@ def cosine_similarity(y_true, y_pred, axis=-1):
     """Computes the cosine similarity between labels and predictions.
 
     Formula:
+
     ```python
     loss = sum(l2_norm(y_true) * l2_norm(y_pred))
     ```

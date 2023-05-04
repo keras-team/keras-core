@@ -160,7 +160,7 @@ class CosineSimilarity(LossFunctionWrapper):
     Formula:
 
     ```python
-    loss = mean(square(log(y_true + 1) - log(y_pred + 1)))
+    loss = -sum(l2_norm(y_true) * l2_norm(y_pred))
     ```
 
     Args:
@@ -188,6 +188,7 @@ class Huber(LossFunctionWrapper):
     """Computes the Huber loss between `y_true` & `y_pred`.
 
     Formula:
+
     ```python
     for x in error:
         if abs(x) <= delta:
@@ -1380,7 +1381,7 @@ def log_cosh(y_true, y_pred):
     log2 = ops.convert_to_tensor(ops.log(2.0), dtype=y_pred.dtype)
 
     def _logcosh(x):
-        return x + ops.softplus(ops.multiply(x, -2.0)) - log2
+        return x + ops.softplus(x * -2.0) - log2
 
     return ops.mean(_logcosh(y_pred - y_true), axis=-1)
 
