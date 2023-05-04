@@ -3,7 +3,8 @@ Upload to GCS:
 
 ```
 gcloud config set project tensorflow
-gcloud storage cp /Users/fchollet/Downloads/CaliforniaHousing/california_housing.npz gs://tensorflow/tf-keras-datasets/california_housing.npz
+gcloud storage cp $HOME/Downloads/CaliforniaHousing/california_housing.npz \
+    gs://tensorflow/tf-keras-datasets/california_housing.npz
 ```
 """
 import numpy as np
