@@ -1,3 +1,5 @@
+from contextlib import nullcontext
+
 import numpy as np
 from tensorflow import nest
 
@@ -50,19 +52,9 @@ def cond(pred, true_fn, false_fn):
     return false_fn
 
 
-class NamedScope:
-    def __init__(self, name):
-        self.name = name
-        
-    def __enter__(self):
-        print(f"Starting named scope '{self.name}'")
-        
-    def __exit__(self):
-        print(f"Ending named scope '{self.name}'")
-
-
 def name_scope(name):
-    return NamedScope(name)
+    # There is no need for a named context for NumPy.
+    return nullcontext()
 
 
 def vectorized_map(function, elements):
@@ -103,7 +95,7 @@ class Variable(KerasVariable):
         if self._value is None:
             # Unitialized variable. Return a placeholder.
             # This is fine because it's only ever used
-            # in during shape inference with JAX tracer objects
+            # in during shape inference with NumPy tracer objects
             # (anything else would be a bug, to be fixed.)
             return self._maybe_autocast(
                 np.array(
@@ -118,7 +110,7 @@ class Variable(KerasVariable):
 
     # Overload native accessor.
     def __array__(self):
-        return np.array(self.value)
+        return self
 
     def _convert_to_tensor(self, value, dtype=None):
         return convert_to_tensor(value, dtype=dtype)
@@ -127,12 +119,23 @@ class Variable(KerasVariable):
 # Shape / dtype inference util
 def compute_output_spec(fn, *args, **kwargs):
     with StatelessScope():
+
+        def convert_keras_tensor_to_numpy(x):
+            if isinstance(x, KerasTensor):
+                return x.numpy()
+            return x
+
+        args, kwargs = nest.map_structure(
+            convert_keras_tensor_to_numpy, (args, kwargs)
+        )
         np_out = fn(*args, **kwargs)
 
-        def convert_np_to_keras_tensor(x):
+        def convert_numpy_to_keras_tensor(x):
             if isinstance(x, np.ndarray):
                 return KerasTensor(x.shape, x.dtype)
-        return nest.map_structure(convert_np_to_keras_tensor, np_out)
+            return x
+
+        return nest.map_structure(convert_numpy_to_keras_tensor, np_out)
 
 
 def traceable_tensor(shape, dtype=None):
@@ -144,7 +147,4 @@ def traceable_tensor(shape, dtype=None):
     """
     shape = list(shape)
     dtype = dtype or "float32"
-    for i, x in enumerate(shape):
-        if x is None:
-            shape[i] = 1
     return np.ones(shape, dtype=dtype)
