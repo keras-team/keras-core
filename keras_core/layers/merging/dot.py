@@ -287,6 +287,7 @@ class Dot(Merge):
         self._reshape_required = False
 
     def build(self, input_shape):
+        super().build(input_shape)
         # Used purely for shape validation.
         if not isinstance(input_shape[0], tuple) or len(input_shape) != 2:
             raise ValueError(
