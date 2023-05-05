@@ -12,16 +12,16 @@ class UnitNormalization(Layer):
 
     Example:
 
-    >>> data = tf.constant(np.arange(6).reshape(2, 3), dtype=tf.float32)
-    >>> normalized_data = tf.keras.layers.UnitNormalization()(data)
-    >>> print(tf.reduce_sum(normalized_data[0, :] ** 2).numpy())
+    >>> data = np.arange(6).reshape(2, 3)
+    >>> normalized_data = keras_core.layers.UnitNormalization()(data)
+    >>> print(np.sum(normalized_data[0, :] ** 2)
     1.0
 
     Args:
-      axis: Integer or list/tuple. The axis or axes to normalize across.
-        Typically, this is the features axis or axes. The left-out axes are
-        typically the batch axis or axes. `-1` is the last dimension
-        in the input. Defaults to `-1`.
+        axis: Integer or list/tuple. The axis or axes to normalize across.
+            Typically, this is the features axis or axes. The left-out axes are
+            typically the batch axis or axes. `-1` is the last dimension
+            in the input. Defaults to `-1`.
     """
 
     def __init__(self, axis=-1, **kwargs):

@@ -28,19 +28,19 @@ class UnitNormalizationTest(testing.TestCase):
     def test_correctness(self):
         layer = layers.UnitNormalization(axis=-1)
         inputs = np.random.normal(size=(2, 3))
-        outputs = layer(inputs).numpy()
+        outputs = layer(inputs)
         self.assertAllClose(squared_l2_norm(outputs[0, :]), 1.0)
         self.assertAllClose(squared_l2_norm(outputs[1, :]), 1.0)
 
         layer = layers.UnitNormalization(axis=(1, 2))
         inputs = np.random.normal(size=(2, 3, 3))
-        outputs = layer(inputs).numpy()
+        outputs = layer(inputs)
         self.assertAllClose(squared_l2_norm(outputs[0, :, :]), 1.0)
         self.assertAllClose(squared_l2_norm(outputs[1, :, :]), 1.0)
 
         layer = layers.UnitNormalization(axis=1)
         inputs = np.random.normal(size=(2, 3, 2))
-        outputs = layer(inputs).numpy()
+        outputs = layer(inputs)
         self.assertAllClose(squared_l2_norm(outputs[0, :, 0]), 1.0)
         self.assertAllClose(squared_l2_norm(outputs[1, :, 0]), 1.0)
         self.assertAllClose(squared_l2_norm(outputs[0, :, 1]), 1.0)

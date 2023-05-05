@@ -185,7 +185,7 @@ class LayerNormalization(Layer):
         # the last dimension
         broadcast_shape = [1] * ndims
         for dim in self.axis:
-            broadcast_shape[dim] = input_shape.dims[dim].value
+            broadcast_shape[dim] = input_shape[dim]
 
         def _broadcast(v):
             if (
