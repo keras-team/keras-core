@@ -1,5 +1,6 @@
 from keras_core.layers.activations.activation import Activation
 from keras_core.layers.core.dense import Dense
+from keras_core.layers.core.einsum_dense import EinsumDense
 from keras_core.layers.core.embedding import Embedding
 from keras_core.layers.core.identity import Identity
 from keras_core.layers.core.input_layer import Input
@@ -12,6 +13,8 @@ from keras_core.layers.merging.average import Average
 from keras_core.layers.merging.average import average
 from keras_core.layers.merging.concatenate import Concatenate
 from keras_core.layers.merging.concatenate import concatenate
+from keras_core.layers.merging.dot import Dot
+from keras_core.layers.merging.dot import dot
 from keras_core.layers.merging.maximum import Maximum
 from keras_core.layers.merging.maximum import maximum
 from keras_core.layers.merging.minimum import Minimum
