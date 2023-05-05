@@ -92,14 +92,8 @@ class LayerNormalization(Layer):
             None by default.
         gamma_constraint: Optional constraint for the gamma weight.
             None by default.
+        **kwargs: Base layer keyword arguments (e.g. `name` and `dtype`).
 
-    Input shape:
-        Arbitrary. Use the keyword argument `input_shape` (tuple of
-        integers, does not include the samples axis) when using this
-        layer as the first layer in a model.
-
-    Output shape:
-        Same shape as input.
 
     Reference:
 
@@ -242,4 +236,4 @@ class LayerNormalization(Layer):
             "gamma_constraint": constraints.serialize(self.gamma_constraint),
         }
         base_config = super().get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        return {**base_config, **config}
