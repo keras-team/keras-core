@@ -5,6 +5,6 @@ class UpSamplingTest(testing.TestCase):
     def test_upsampling_1d(self):
         self.run_layer_test(
             layers.UpSampling1D,
-            kwargs={"size": 2},
+            init_kwargs={"size": 2},
             input_shape=(3, 5, 4),
         )
