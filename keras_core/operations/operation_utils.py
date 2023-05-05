@@ -57,6 +57,7 @@ def compute_conv_output_shape(
     data_format="channels_last",
     dilation_rate=1,
 ):
+    """Compute the output shape of conv ops."""
     if data_format == "channels_last":
         spatial_shape = input_shape[1:-1]
     else:

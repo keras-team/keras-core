@@ -24,7 +24,7 @@ class BaseConv(Layer):
     once (except the `trainable` attribute).
 
     Args:
-        rank: int, the rank of the convolution, e.g. "2" for 2D convolution.
+        rank: int, the rank of the convolution, e.g. 2 for 2D convolution.
         filters: int, the dimension of the output space (the number of filters
             in the convolution).
         kernel_size: int or tuple/list of N integers (N=`rank`), specifying the
