@@ -27,6 +27,12 @@ def mean(x, axis=None, keepdims=False):
 
 
 def max(x, axis=None, keepdims=False, initial=None):
+    # The TensorFlow numpy API implementation doesn't support `initial` so we
+    # handle it manually here.
+    if initial is not None:
+        return tf.math.maximum(
+            tfnp.max(x, axis=axis, keepdims=keepdims), initial
+        )
     return tfnp.max(x, axis=axis, keepdims=keepdims)
 
 

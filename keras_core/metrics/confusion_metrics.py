@@ -665,9 +665,9 @@ class SensitivityAtSpecificity(SensitivitySpecificityBase):
     """Computes best sensitivity where specificity is >= specified value.
 
     `Sensitivity` measures the proportion of actual positives that are correctly
-    identified as such (tp / (tp + fn)).
+    identified as such `(tp / (tp + fn))`.
     `Specificity` measures the proportion of actual negatives that are correctly
-    identified as such (tn / (tn + fp)).
+    identified as such `(tn / (tn + fp))`.
 
     This metric creates four local variables, `true_positives`,
     `true_negatives`, `false_positives` and `false_negatives` that are used to
@@ -769,9 +769,9 @@ class SpecificityAtSensitivity(SensitivitySpecificityBase):
     """Computes best specificity where sensitivity is >= specified value.
 
     `Sensitivity` measures the proportion of actual positives that are correctly
-    identified as such (tp / (tp + fn)).
+    identified as such `(tp / (tp + fn))`.
     `Specificity` measures the proportion of actual negatives that are correctly
-    identified as such (tn / (tn + fp)).
+    identified as such `(tn / (tn + fp))`.
 
     This metric creates four local variables, `true_positives`,
     `true_negatives`, `false_positives` and `false_negatives` that are used to
