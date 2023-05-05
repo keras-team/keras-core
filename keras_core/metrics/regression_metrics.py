@@ -220,14 +220,14 @@ class RootMeanSquaredError(reduction_metrics.Mean):
         """Accumulates root mean squared error statistics.
 
         Args:
-          y_true: The ground truth values.
-          y_pred: The predicted values.
-          sample_weight: Optional weighting of each example. Can
-            be a `Tensor` whose rank is either 0, or the same rank as `y_true`,
-            and must be broadcastable to `y_true`. Defaults to `1`.
+            y_true: The ground truth values.
+            y_pred: The predicted values.
+            sample_weight: Optional weighting of each example. Can
+                be a `Tensor` whose rank is either 0, or the same rank as `y_true`,
+                and must be broadcastable to `y_true`. Defaults to `1`.
 
         Returns:
-          Update op.
+            Update op.
         """
         y_true = ops.convert_to_tensor(y_true, self._dtype)
         y_pred = ops.convert_to_tensor(y_pred, self._dtype)
