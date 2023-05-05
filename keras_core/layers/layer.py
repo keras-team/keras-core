@@ -29,7 +29,7 @@ from keras_core import regularizers
 from keras_core import utils
 from keras_core.api_export import keras_core_export
 from keras_core.backend import KerasTensor
-from keras_core.backend import global_state
+from keras_core.backend.common import global_state
 from keras_core.layers import input_spec
 from keras_core.metrics.metric import Metric
 from keras_core.operations.operation import Operation
@@ -415,15 +415,58 @@ class Layer(Operation):
         raise NotImplementedError
 
     def stateless_call(
-        self, trainable_variables, non_trainable_variables, *args, **kwargs
+        self,
+        trainable_variables,
+        non_trainable_variables,
+        *args,
+        return_losses=False,
+        **kwargs,
     ):
-        # TODO: also handle losses
+        """Call the layer without any side effects.
 
+        Args:
+            trainable_variables: List of trainable variables of the model.
+            non_trainable_variables: List of non-trainable variables of the model.
+            *args: Positional argumets to be passed to `call()`.
+            return_losses: If `True`, `stateless_call()` will return the list of
+                losses created during `call()` as part of its return values.
+            **kwargs: Keyword arguments to be passed to `call()`.
+
+        Returns:
+            A tuple. By default, returns `(outputs, non_trainable_variables)`.
+                If `return_losses = True`, then returns
+                `(outputs, non_trainable_variables, losses)`.
+
+        Note: `non_trainable_variables` include not only non-trainable weights
+        such as `BatchNormalization` statistics, but also RNG seed state
+        (if there are any random operations part of the layer, such as dropout),
+        and `Metric` state (if there are any metrics attached to the layer).
+        These are all elements of state of the layer.
+
+        Example:
+
+        ```python
+        model = ...
+        data = ...
+        trainable_variables = model.trainable_variables
+        non_trainable_variables = model.non_trainable_variables
+        # Call the model with zero side effects
+        outputs, non_trainable_variables = model.stateless_call(
+            trainable_variables,
+            non_trainable_variables,
+            data,
+        )
+        # Attach the updated state to the model
+        # (until you do this, the model is still in its pre-call state).
+        for ref_var, value in zip(model.non_trainable_variables, non_trainable_variables):
+            ref_var.assign(value)
+        ```
+        """
         self._check_super_called()
 
         if not self.built:
             raise ValueError(
-                "To call stateless_call, {self.__class__.__name__} must be "
+                f"To call stateless_call, {self.__class__.__name__} must be "
                 "built (i.e. its variables must have been already created). "
                 "You can build it by calling it on some data."
             )
@@ -452,7 +495,9 @@ class Layer(Operation):
         mapping = list(trainable_mapping) + list(non_trainable_mapping)
 
         # Call in stateless scope
-        with backend.StatelessScope(state_mapping=mapping) as scope:
+        with backend.StatelessScope(
+            state_mapping=mapping, collect_losses=return_losses
+        ) as scope:
             outputs = self.call(*args, **kwargs)
 
         # Gather updated non-trainable variables
@@ -463,6 +508,9 @@ class Layer(Operation):
                 non_trainable_variables.append(new_v)
             else:
                 non_trainable_variables.append(v)
+
+        if return_losses:
+            return outputs, non_trainable_variables, scope.losses[:]
         return outputs, non_trainable_variables
 
     def compute_output_spec(self, *args, **kwargs):
@@ -479,6 +527,23 @@ class Layer(Operation):
             else:
                 # More than one shape: pass them by name.
                 output_shape = self.compute_output_shape(**shapes_dict)
+            if (
+                isinstance(output_shape, list)
+                and output_shape
+                and isinstance(output_shape[0], (int, type(None)))
+            ):
+                output_shape = tuple(output_shape)
+            if not isinstance(output_shape, (list, tuple, dict)):
+                try:
+                    output_shape = tuple(output_shape)
+                except:
+                    raise ValueError(
+                        "Method `compute_output_shape()` of layer "
+                        f"{self.__class__.__name__} is returning "
+                        "a type that cannot be interpreted as a shape. "
+                        "It should return a shape tuple. "
+                        f"Received: {output_shape}"
+                    )
             if (
                 isinstance(output_shape, tuple)
                 and output_shape
@@ -877,6 +942,9 @@ def get_shapes_dict(call_spec):
     """
     shapes_dict = {}
     for k, v in call_spec.tensor_arguments_dict.items():
+        if k == "mask" or k.startswith("mask_"):
+            # Do not include mask tensors in shapes dict
+            continue
         if k in call_spec.nested_tensor_argument_names:
             shapes_dict[f"{k}_shape"] = nest.map_structure(
                 lambda x: backend.standardize_shape(x.shape), v

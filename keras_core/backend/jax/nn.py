@@ -19,6 +19,10 @@ def sigmoid(x):
     return jnn.sigmoid(x)
 
 
+def tanh(x):
+    return jnn.tanh(x)
+
+
 def softplus(x):
     return jnn.softplus(x)
 
@@ -59,8 +63,8 @@ def gelu(x, approximate=True):
     return jnn.gelu(x, approximate)
 
 
-def softmax(x):
-    return jnn.softmax(x)
+def softmax(x, axis=None):
+    return jnn.softmax(x, axis=axis)
 
 
 def log_softmax(x, axis=-1):
@@ -376,6 +380,7 @@ def categorical_crossentropy(target, output, from_logits=False, axis=-1):
             "Received: "
             f"target.shape={target.shape}, output.shape={output.shape}"
         )
+
     if from_logits:
         log_prob = jax.nn.log_softmax(output, axis=axis)
     else:

@@ -61,11 +61,10 @@ class Optimizer:
             )
 
         self.built = False
-        # NOTE: the below will not work in a stateless scope.
-        # optimizers should be created outside of any stateless scope,
-        # at this time.
+        # Note: dtype="int" will resolve to int32 in JAX
+        # (since int64 is disallowed in JAX) and to int64 in TF.
         self.iterations = backend.Variable(
-            0, name="iteration", dtype="int32", trainable=False
+            0, name="iteration", dtype="int", trainable=False
         )
         if isinstance(
             learning_rate, learning_rate_schedule.LearningRateSchedule

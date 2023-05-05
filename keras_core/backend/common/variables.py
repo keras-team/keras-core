@@ -1,5 +1,5 @@
-from keras_core.backend import global_state
-from keras_core.backend.config import floatx
+from keras_core.backend import config
+from keras_core.backend.common import global_state
 from keras_core.utils.naming import auto_name
 
 
@@ -20,7 +20,7 @@ class KerasVariable:
                     f"Received: initializer={initializer} "
                     f"and shape={shape}"
                 )
-        from keras_core.backend.stateless_scope import in_stateless_scope
+        from keras_core.backend.common.stateless_scope import in_stateless_scope
 
         if in_stateless_scope():
             if callable(initializer):
@@ -51,7 +51,7 @@ class KerasVariable:
     def _deferred_initialize(self):
         if self._value is not None:
             raise ValueError(f"Variable {self.name} is already initialized.")
-        from keras_core.backend.stateless_scope import in_stateless_scope
+        from keras_core.backend.common.stateless_scope import in_stateless_scope
 
         if in_stateless_scope():
             raise ValueError(
@@ -333,8 +333,13 @@ ALLOWED_DTYPES = {
 
 
 def standardize_dtype(dtype):
+    if dtype == "int":
+        if config.backend() == "tensorflow":
+            dtype = "int64"
+        else:
+            dtype = "int32"
     if dtype is None:
-        return floatx()
+        return config.floatx()
     if hasattr(dtype, "name"):
         dtype = dtype.name
     if dtype not in ALLOWED_DTYPES:

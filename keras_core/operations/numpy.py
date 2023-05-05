@@ -283,7 +283,7 @@ class All(Operation):
                 axis=self.axis,
                 keepdims=self.keepdims,
             ),
-            dtype=x.dtype,
+            dtype="bool",
         )
 
 
@@ -291,6 +291,39 @@ def all(x, axis=None, keepdims=False):
     if any_symbolic_tensors((x,)):
         return All(axis=axis, keepdims=keepdims).symbolic_call(x)
     return backend.numpy.all(x, axis=axis, keepdims=keepdims)
+
+
+class Any(Operation):
+    def __init__(self, axis=None, keepdims=False):
+        super().__init__()
+        if isinstance(axis, int):
+            self.axis = [axis]
+        else:
+            self.axis = axis
+        self.keepdims = keepdims
+
+    def call(self, x):
+        return backend.numpy.any(
+            x,
+            axis=self.axis,
+            keepdims=self.keepdims,
+        )
+
+    def compute_output_spec(self, x):
+        return KerasTensor(
+            reduce_shape(
+                x.shape,
+                axis=self.axis,
+                keepdims=self.keepdims,
+            ),
+            dtype="bool",
+        )
+
+
+def any(x, axis=None, keepdims=False):
+    if any_symbolic_tensors((x,)):
+        return Any(axis=axis, keepdims=keepdims).symbolic_call(x)
+    return backend.numpy.any(x, axis=axis, keepdims=keepdims)
 
 
 class Amax(Operation):
@@ -1848,16 +1881,19 @@ def matmul(x1, x2):
 
 
 class Max(Operation):
-    def __init__(self, axis=None, keepdims=False):
+    def __init__(self, axis=None, keepdims=False, initial=None):
         super().__init__()
         if isinstance(axis, int):
             self.axis = [axis]
         else:
             self.axis = axis
         self.keepdims = keepdims
+        self.initial = initial
 
     def call(self, x):
-        return backend.numpy.max(x, axis=self.axis, keepdims=self.keepdims)
+        return backend.numpy.max(
+            x, axis=self.axis, keepdims=self.keepdims, initial=self.initial
+        )
 
     def compute_output_spec(self, x):
         return KerasTensor(
@@ -1866,10 +1902,12 @@ class Max(Operation):
         )
 
 
-def max(x, axis=None, keepdims=False):
+def max(x, axis=None, keepdims=False, initial=None):
     if any_symbolic_tensors((x,)):
-        return Max(axis=axis, keepdims=keepdims).symbolic_call(x)
-    return backend.numpy.max(x, axis=axis, keepdims=keepdims)
+        return Max(axis=axis, keepdims=keepdims, initial=initial).symbolic_call(
+            x
+        )
+    return backend.numpy.max(x, axis=axis, keepdims=keepdims, initial=initial)
 
 
 class Maximum(Operation):
@@ -1928,15 +1966,18 @@ def meshgrid(*x, indexing="xy"):
 
 
 class Min(Operation):
-    def __init__(self, axis=None, keepdims=False):
+    def __init__(self, axis=None, keepdims=False, initial=None):
         if isinstance(axis, int):
             self.axis = [axis]
         else:
             self.axis = axis
         self.keepdims = keepdims
+        self.initial = initial
 
     def call(self, x):
-        return backend.numpy.min(x, axis=self.axis, keepdims=self.keepdims)
+        return backend.numpy.min(
+            x, axis=self.axis, keepdims=self.keepdims, initial=self.initial
+        )
 
     def compute_output_spec(self, x):
         return KerasTensor(
@@ -1945,10 +1986,12 @@ class Min(Operation):
         )
 
 
-def min(x, axis=None, keepdims=False):
+def min(x, axis=None, keepdims=False, initial=None):
     if any_symbolic_tensors((x,)):
-        return Min(axis=axis, keepdims=keepdims).symbolic_call(x)
-    return backend.numpy.min(x, axis=axis, keepdims=keepdims)
+        return Min(axis=axis, keepdims=keepdims, initial=initial).symbolic_call(
+            x
+        )
+    return backend.numpy.min(x, axis=axis, keepdims=keepdims, initial=initial)
 
 
 class Minimum(Operation):

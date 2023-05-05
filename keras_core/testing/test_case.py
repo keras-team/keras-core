@@ -220,7 +220,7 @@ class TestCase(unittest.TestCase):
 
 
 def create_keras_tensors(input_shape, dtype):
-    from keras_core.backend import keras_tensor
+    from keras_core.backend.common import keras_tensor
 
     if isinstance(input_shape, tuple):
         return keras_tensor.KerasTensor(input_shape, dtype=dtype)
@@ -241,6 +241,11 @@ def create_eager_tensors(input_shape, dtype):
     elif dtype in ["int16", "int32", "int64"]:
 
         def create_fn(shape, dtype):
+            shape = list(shape)
+            for i in range(len(shape)):
+                if shape[i] is None:
+                    shape[i] = 2
+            shape = tuple(shape)
             return ops.cast(
                 random.uniform(shape, dtype="float32") * 3, dtype=dtype
             )
