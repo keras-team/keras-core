@@ -323,8 +323,8 @@ def meshgrid(*x, indexing="xy"):
     return jnp.meshgrid(*x, indexing=indexing)
 
 
-def min(x, axis=None, keepdims=False):
-    return jnp.min(x, axis=axis, keepdims=keepdims)
+def min(x, axis=None, keepdims=False, initial=None):
+    return jnp.min(x, axis=axis, keepdims=keepdims, initial=initial)
 
 
 def minimum(x1, x2):
