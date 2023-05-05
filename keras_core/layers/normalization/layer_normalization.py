@@ -15,34 +15,6 @@ class LayerNormalization(Layer):
     i.e. applies a transformation that maintains the mean activation within each
     example close to 0 and the activation standard deviation close to 1.
 
-    Given a tensor `inputs`, moments are calculated and normalization
-    is performed across the axes specified in `axis`.
-
-    Example:
-
-    >>> data = tf.constant(np.arange(10).reshape(5, 2) * 10, dtype=tf.float32)
-    >>> print(data)
-    tf.Tensor(
-    [[ 0. 10.]
-     [20. 30.]
-     [40. 50.]
-     [60. 70.]
-     [80. 90.]], shape=(5, 2), dtype=float32)
-
-    >>> layer = tf.keras.layers.LayerNormalization(axis=1)
-    >>> output = layer(data)
-    >>> print(output)
-    tf.Tensor(
-    [[-1. 1.]
-     [-1. 1.]
-     [-1. 1.]
-     [-1. 1.]
-     [-1. 1.]], shape=(5, 2), dtype=float32)
-
-    Notice that with Layer Normalization the normalization happens across the
-    axes *within* each example, rather than across different examples in the
-    batch.
-
     If `scale` or `center` are enabled, the layer will scale the normalized
     outputs by broadcasting them with a trainable variable `gamma`, and center
     the outputs by broadcasting with a trainable variable `beta`. `gamma` will
@@ -81,7 +53,7 @@ class LayerNormalization(Layer):
 
     For example:
 
-    >>> layer = tf.keras.layers.LayerNormalization(axis=[1, 2, 3])
+    >>> layer = keras_core.layers.LayerNormalization(axis=[1, 2, 3])
     >>> layer.build([5, 20, 30, 40])
     >>> print(layer.beta.shape)
     (20, 30, 40)
@@ -98,38 +70,40 @@ class LayerNormalization(Layer):
     Normalization layer with group size set to 1.
 
     Args:
-      axis: Integer or List/Tuple. The axis or axes to normalize across.
-        Typically, this is the features axis/axes. The left-out axes are
-        typically the batch axis/axes. `-1` is the last dimension in the
-        input. Defaults to `-1`.
-      epsilon: Small float added to variance to avoid dividing by zero. Defaults
-        to 1e-3
-      center: If True, add offset of `beta` to normalized tensor. If False,
-        `beta` is ignored. Defaults to `True`.
-      scale: If True, multiply by `gamma`. If False, `gamma` is not used.
-        When the next layer is linear (also e.g. `nn.relu`), this can be
-        disabled since the scaling will be done by the next layer.
-        Defaults to `True`.
-      beta_initializer: Initializer for the beta weight. Defaults to zeros.
-      gamma_initializer: Initializer for the gamma weight. Defaults to ones.
-      beta_regularizer: Optional regularizer for the beta weight. None by
-        default.
-      gamma_regularizer: Optional regularizer for the gamma weight. None by
-        default.
-      beta_constraint: Optional constraint for the beta weight. None by default.
-      gamma_constraint: Optional constraint for the gamma weight. None by
-        default.
+        axis: Integer or List/Tuple. The axis or axes to normalize across.
+            Typically, this is the features axis/axes. The left-out axes are
+            typically the batch axis/axes. `-1` is the last dimension in the
+            input. Defaults to `-1`.
+        epsilon: Small float added to variance to avoid dividing by zero.
+            Defaults to 1e-3.
+        center: If True, add offset of `beta` to normalized tensor. If False,
+            `beta` is ignored. Defaults to `True`.
+        scale: If True, multiply by `gamma`. If False, `gamma` is not used.
+            When the next layer is linear (also e.g. `nn.relu`), this can be
+            disabled since the scaling will be done by the next layer.
+            Defaults to `True`.
+        beta_initializer: Initializer for the beta weight. Defaults to zeros.
+        gamma_initializer: Initializer for the gamma weight. Defaults to ones.
+        beta_regularizer: Optional regularizer for the beta weight.
+            None by default.
+        gamma_regularizer: Optional regularizer for the gamma weight.
+            None by default.
+        beta_constraint: Optional constraint for the beta weight.
+            None by default.
+        gamma_constraint: Optional constraint for the gamma weight.
+            None by default.
 
     Input shape:
-      Arbitrary. Use the keyword argument `input_shape` (tuple of
-      integers, does not include the samples axis) when using this layer as the
-      first layer in a model.
+        Arbitrary. Use the keyword argument `input_shape` (tuple of
+        integers, does not include the samples axis) when using this
+        layer as the first layer in a model.
 
     Output shape:
-      Same shape as input.
+        Same shape as input.
 
     Reference:
-      - [Lei Ba et al., 2016](https://arxiv.org/abs/1607.06450).
+
+    - [Lei Ba et al., 2016](https://arxiv.org/abs/1607.06450).
     """
 
     def __init__(
