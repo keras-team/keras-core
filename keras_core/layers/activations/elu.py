@@ -7,10 +7,10 @@ from keras_core.layers.layer import Layer
 class ELU(Layer):
     """Applies an Exponential Linear Unit function to an output.
 
-    It follows:
-    ```
-        f(x) = (exp(x) - 1.) for x < 0
-        f(x) = x for x >= 0
+    Formula:
+    ```python
+    f(x) = (exp(x) - 1.) for x < 0
+    f(x) = x for x >= 0
     ```
 
     Args:
