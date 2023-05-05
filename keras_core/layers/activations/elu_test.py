@@ -7,7 +7,7 @@ from keras_core import testing
 from keras_core.layers.activations import elu
 
 
-class AdagradTest(testing.TestCase):
+class ELUTest(testing.TestCase):
     def test_config(self):
         elu_layer = elu.ELU()
         self.run_class_serialization_test(elu_layer)

@@ -6,19 +6,16 @@ from keras_core.layers.layer import Layer
 @keras_core_export("keras_core.layers.ELU")
 class ELU(Layer):
     """Applies an Exponential Linear Unit function to an output.
+    
+    It follows:
+    ```
+        f(x) = (exp(x) - 1.) for x < 0
+        f(x) = x for x >= 0
+    ```
 
     Args:
         **kwargs: Base layer keyword arguments, such as
             `name` and `dtype`.
-
-    Example:
-
-    >>> layer = keras_core.layers.ELU()
-    >>> layer([-3.0, -1.0, 0.0, 2.0])
-    [0.0, 0.0, 0.0, 2.0]
-    >>> layer = keras_core.layers.Activation(keras_core.activations.relu)
-    >>> layer([-3.0, -1.0, 0.0, 2.0])
-    [0.0, 0.0, 0.0, 2.0]
     """
 
     def __init__(self, **kwargs):
@@ -30,3 +27,4 @@ class ELU(Layer):
 
     def compute_output_shape(self, input_shape):
         return input_shape
+
