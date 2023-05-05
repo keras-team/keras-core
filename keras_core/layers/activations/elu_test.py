@@ -1,6 +1,3 @@
-# flake8: noqa
-
-
 import numpy as np
 
 from keras_core import testing

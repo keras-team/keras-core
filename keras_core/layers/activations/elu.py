@@ -6,7 +6,7 @@ from keras_core.layers.layer import Layer
 @keras_core_export("keras_core.layers.ELU")
 class ELU(Layer):
     """Applies an Exponential Linear Unit function to an output.
-    
+
     It follows:
     ```
         f(x) = (exp(x) - 1.) for x < 0
@@ -27,4 +27,3 @@ class ELU(Layer):
 
     def compute_output_shape(self, input_shape):
         return input_shape
-
