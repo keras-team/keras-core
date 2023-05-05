@@ -1,15 +1,13 @@
 """Keras base class for convolution layers."""
 
-
-from keras_core import operations as ops
-from keras_core.backend import image_data_format
-from keras_core.layers.input_spec import InputSpec
-from keras_core.layers.layer import Layer
 from keras_core import activations
 from keras_core import constraints
 from keras_core import initializers
+from keras_core import operations as ops
 from keras_core import regularizers
-
+from keras_core.backend import image_data_format
+from keras_core.layers.input_spec import InputSpec
+from keras_core.layers.layer import Layer
 from keras_core.operations.operation_utils import compute_conv_output_shape
 
 
@@ -26,56 +24,51 @@ class BaseConv(Layer):
     once (except the `trainable` attribute).
 
     Args:
-      rank: An integer, the rank of the convolution, e.g. "2" for 2D
-        convolution.
-      filters: Integer, the dimensionality of the output space (i.e. the number
-        of filters in the convolution). Could be "None", eg in the case of
-        depth wise convolution.
-      kernel_size: An integer or tuple/list of n integers, specifying the
-        length of the convolution window.
-      strides: An integer or tuple/list of n integers,
-        specifying the stride length of the convolution.
-        Specifying any stride value != 1 is incompatible with specifying
-        any `dilation_rate` value != 1.
-      padding: One of `"valid"`,  `"same"`, or `"causal"` (case-insensitive).
-        `"valid"` means no padding. `"same"` results in padding with zeros
-        evenly to the left/right or up/down of the input such that output has
-        the same height/width dimension as the input. `"causal"` results in
-        causal (dilated) convolutions, e.g. `output[t]` does not depend on
-        `input[t+1:]`.
-      data_format: A string, one of `channels_last` (default) or
-        `channels_first`.
-        The ordering of the dimensions in the inputs.
-        `channels_last` corresponds to inputs with shape
-        `(batch_size, ..., channels)` while `channels_first` corresponds to
-        inputs with shape `(batch_size, channels, ...)`.
-      dilation_rate: An integer or tuple/list of n integers, specifying
-        the dilation rate to use for dilated convolution.
-        Currently, specifying any `dilation_rate` value != 1 is
-        incompatible with specifying any `strides` value != 1.
-      groups: A positive integer specifying the number of groups in which the
-        input is split along the channel axis. Each group is convolved
-        separately with `filters / groups` filters. The output is the
-        concatenation of all the `groups` results along the channel axis.
-        Input channels and `filters` must both be divisible by `groups`.
-      activation: Activation function to use.
-        If you don't specify anything, no activation is applied.
-      use_bias: Boolean, whether the layer uses a bias.
-      kernel_initializer: An initializer for the convolution kernel. If None,
-        the default initializer (glorot_uniform) will be used.
-      bias_initializer: An initializer for the bias vector. If None, the default
-        initializer (zeros) will be used.
-      kernel_regularizer: Optional regularizer for the convolution kernel.
-      bias_regularizer: Optional regularizer for the bias vector.
-      activity_regularizer: Optional regularizer function for the output.
-      kernel_constraint: Optional projection function to be applied to the
-          kernel after being updated by an `Optimizer` (e.g. used to implement
-          norm constraints or value constraints for layer weights). The function
-          must take as input the unprojected variable and must return the
-          projected variable (which must have the same shape). Constraints are
-          not safe to use when doing asynchronous distributed training.
-      bias_constraint: Optional projection function to be applied to the
-          bias after being updated by an `Optimizer`.
+        rank: int, the rank of the convolution, e.g. "2" for 2D convolution.
+        filters: int, the dimension of the output space (the number of filters
+            in the convolution).
+        kernel_size: int or tuple/list of N integers (N=`rank`), specifying the
+            size of the convolution window.
+        strides: int or tuple/list of N integers, specifying the stride length
+            of the convolution. If only one int is specified, the same stride
+            size will be used for all dimensions. `stride value != 1` is
+            incompatible with `dilation_rate != 1`.
+        padding: string, either `"valid"` or `"same"` (case-insensitive).
+            `"valid"` means no padding. `"same"` results in padding evenly to
+            the left/right or up/down of the input such that output has the same
+            height/width dimension as the input.
+        data_format: string, either `"channels_last"` or `"channels_first"`.
+            The ordering of the dimensions in the inputs. `"channels_last"`
+            corresponds to inputs with shape `(batch, steps, features)`
+            while `"channels_first"` corresponds to inputs with shape
+            `(batch, features, steps)`. It defaults to the `image_data_format`
+            value found in your Keras config file at `~/.keras/keras.json`.
+            If you never set it, then it will be `"channels_last"`.
+        dilation_rate: int or tuple/list of N integers, specifying the dilation
+            rate to use for dilated convolution. If only one int is specified,
+            the same dilation rate will be used for all dimensions.
+        groups: A positive int specifying the number of groups in which the
+            input is split along the channel axis. Each group is convolved
+            separately with `filters // groups` filters. The output is the
+            concatenation of all the `groups` results along the channel axis.
+            Input channels and `filters` must both be divisible by `groups`.
+        activation: Activation function. If `None`, no activation is applied.
+        use_bias: bool, if `True`, bias will be added to the output.
+        kernel_initializer: Initializer for the convolution kernel. If `None`,
+            the default initializer (`"glorot_uniform"`) will be used.
+        bias_initializer: Initializer for the bias vector. If `None`, the
+            default initializer (`"zeros"`) will be used.
+        kernel_regularizer: Optional regularizer for the convolution kernel.
+        bias_regularizer: Optional regularizer for the bias vector.
+        activity_regularizer: Optional regularizer function for the output.
+        kernel_constraint: Optional projection function to be applied to the
+            kernel after being updated by an `Optimizer` (e.g. used to implement
+            norm constraints or value constraints for layer weights). The
+            function must take as input the unprojected variable and must return
+            the projected variable (which must have the same shape). Constraints
+            are not safe to use when doing asynchronous distributed training.
+        bias_constraint: Optional projection function to be applied to the
+            bias after being updated by an `Optimizer`.
     """
 
     def __init__(
@@ -114,9 +107,11 @@ class BaseConv(Layer):
         if isinstance(kernel_size, int):
             kernel_size = (kernel_size,) * self.rank
         self.kernel_size = kernel_size
+
         if isinstance(strides, int):
             strides = (strides,) * self.rank
         self.strides = strides
+
         if isinstance(dilation_rate, int):
             dilation_rate = (dilation_rate,) * self.rank
         self.dilation_rate = dilation_rate
@@ -255,29 +250,37 @@ class BaseConv(Layer):
         )
 
     def get_config(self):
-        config = {
-            "filters": self.filters,
-            "kernel_size": self.kernel_size,
-            "strides": self.strides,
-            "padding": self.padding,
-            "data_format": self.data_format,
-            "dilation_rate": self.dilation_rate,
-            "groups": self.groups,
-            "activation": activations.serialize(self.activation),
-            "use_bias": self.use_bias,
-            "kernel_initializer": initializers.serialize(
-                self.kernel_initializer
-            ),
-            "bias_initializer": initializers.serialize(self.bias_initializer),
-            "kernel_regularizer": regularizers.serialize(
-                self.kernel_regularizer
-            ),
-            "bias_regularizer": regularizers.serialize(self.bias_regularizer),
-            "activity_regularizer": regularizers.serialize(
-                self.activity_regularizer
-            ),
-            "kernel_constraint": constraints.serialize(self.kernel_constraint),
-            "bias_constraint": constraints.serialize(self.bias_constraint),
-        }
-        base_config = super().get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        config = super().get_config()
+        config.update(
+            {
+                "filters": self.filters,
+                "kernel_size": self.kernel_size,
+                "strides": self.strides,
+                "padding": self.padding,
+                "data_format": self.data_format,
+                "dilation_rate": self.dilation_rate,
+                "groups": self.groups,
+                "activation": activations.serialize(self.activation),
+                "use_bias": self.use_bias,
+                "kernel_initializer": initializers.serialize(
+                    self.kernel_initializer
+                ),
+                "bias_initializer": initializers.serialize(
+                    self.bias_initializer
+                ),
+                "kernel_regularizer": regularizers.serialize(
+                    self.kernel_regularizer
+                ),
+                "bias_regularizer": regularizers.serialize(
+                    self.bias_regularizer
+                ),
+                "activity_regularizer": regularizers.serialize(
+                    self.activity_regularizer
+                ),
+                "kernel_constraint": constraints.serialize(
+                    self.kernel_constraint
+                ),
+                "bias_constraint": constraints.serialize(self.bias_constraint),
+            }
+        )
+        return config

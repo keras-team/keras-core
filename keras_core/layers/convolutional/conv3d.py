@@ -6,108 +6,90 @@ from keras_core.layers.convolutional.base_conv import BaseConv
     ["keras_core.layers.Conv3D", "keras_core.layers.Convolution3D"]
 )
 class Conv3D(BaseConv):
-    """1D convolution layer (e.g. temporal convolution).
+    """3D convolution layer.
 
-    This layer creates a convolution kernel that is convolved
-    with the layer input over a single spatial (or temporal) dimension
-    to produce a tensor of outputs.
-    If `use_bias` is True, a bias vector is created and added to the outputs.
-    Finally, if `activation` is not `None`,
-    it is applied to the outputs as well.
+    This layer creates a convolution kernel that is convolved with the layer
+    input over a single spatial (or temporal) dimension to produce a tensor of
+    outputs. If `use_bias` is True, a bias vector is created and added to the
+    outputs. Finally, if `activation` is not `None`, it is applied to the
+    outputs as well.
 
-    When using this layer as the first layer in a model,
-    provide an `input_shape` argument
-    (tuple of integers or `None`, e.g.
-    `(10, 128)` for sequences of 10 vectors of 128-dimensional vectors,
-    or `(None, 128)` for variable-length sequences of 128-dimensional vectors.
+    Args:
+        filters: int, the dimension of the output space (the number of filters
+            in the convolution).
+        kernel_size: int or tuple/list of 3 integer, specifying the size of the
+            convolution window.
+        strides: int or tuple/list of 3 integer, specifying the stride length
+            of the convolution. `stride value != 1` is incompatible with
+            `dilation_rate != 1`.
+        padding: string, either `"valid"` or `"same"` (case-insensitive).
+            `"valid"` means no padding. `"same"` results in padding evenly to
+            the left/right or up/down of the input such that output has the same
+            height/width dimension as the input.
+        data_format: string, either `"channels_last"` or `"channels_first"`.
+            The ordering of the dimensions in the inputs. `"channels_last"`
+            corresponds to inputs with shape
+            `(batch_size, spatial_dim1, spatial_dim2, spatial_dim3, channels)`
+            while `"channels_first"` corresponds to inputs with shape
+            `(batch_size, spatial_dim1, spatial_dim2, spatial_dim3, channels)`.
+            It defaults to the `image_data_format` value found in your Keras
+            config file at `~/.keras/keras.json`. If you never set it, then it
+            will be `"channels_last"`.
+        dilation_rate: int or tuple/list of 3 integers, specifying the dilation
+            rate to use for dilated convolution.
+        groups: A positive int specifying the number of groups in which the
+            input is split along the channel axis. Each group is convolved
+            separately with `filters // groups` filters. The output is the
+            concatenation of all the `groups` results along the channel axis.
+            Input channels and `filters` must both be divisible by `groups`.
+        activation: Activation function. If `None`, no activation is applied.
+        use_bias: bool, if `True`, bias will be added to the output.
+        kernel_initializer: Initializer for the convolution kernel. If `None`,
+            the default initializer (`"glorot_uniform"`) will be used.
+        bias_initializer: Initializer for the bias vector. If `None`, the
+            default initializer (`"zeros"`) will be used.
+        kernel_regularizer: Optional regularizer for the convolution kernel.
+        bias_regularizer: Optional regularizer for the bias vector.
+        activity_regularizer: Optional regularizer function for the output.
+        kernel_constraint: Optional projection function to be applied to the
+            kernel after being updated by an `Optimizer` (e.g. used to implement
+            norm constraints or value constraints for layer weights). The
+            function must take as input the unprojected variable and must return
+            the projected variable (which must have the same shape). Constraints
+            are not safe to use when doing asynchronous distributed training.
+        bias_constraint: Optional projection function to be applied to the
+            bias after being updated by an `Optimizer`.
+
+    Input shape:
+    - If `data_format="channels_last"`:
+        5D tensor with shape:
+        `(batch_size, spatial_dim1, spatial_dim2, spatial_dim3, channels)`
+    - If `data_format="channels_first"`:
+        5D tensor with shape:
+        `(batch_size, channels, spatial_dim1, spatial_dim2, spatial_dim3)`
+
+    Output shape:
+    - If `data_format="channels_last"`:
+        5D tensor with shape:
+        `(batch_size, new_spatial_dim1, new_spatial_dim2, new_spatial_dim3,
+        channels)`
+    - If `data_format="channels_first"`:
+        5D tensor with shape:
+        `(batch_size, channels, new_spatial_dim1, new_spatial_dim2,
+        new_spatial_dim3)`
+
+    Returns:
+        A 5D tensor representing `activation(conv3d(inputs, kernel) + bias)`.
+
+    Raises:
+        ValueError: when both `strides > 1` and `dilation_rate > 1`.
 
     Examples:
 
-    >>> # The inputs are 128-length vectors with 10 timesteps, and the
-    >>> # batch size is 4.
-    >>> input_shape = (4, 10, 128)
-    >>> x = tf.random.normal(input_shape)
-    >>> y = tf.keras.layers.Conv1D(
-    ... 32, 3, activation='relu',input_shape=input_shape[1:])(x)
+    >>> x = np.random.rand(4, 10, 10, 10, 128)
+    >>> y = keras_core.layers.Conv3D(32, 3, activation='relu')(x)
     >>> print(y.shape)
-    (4, 8, 32)
-
-    >>> # With extended batch shape [4, 7] (e.g. weather data where batch
-    >>> # dimensions correspond to spatial location and the third dimension
-    >>> # corresponds to time.)
-    >>> input_shape = (4, 7, 10, 128)
-    >>> x = tf.random.normal(input_shape)
-    >>> y = tf.keras.layers.Conv1D(
-    ... 32, 3, activation='relu', input_shape=input_shape[2:])(x)
-    >>> print(y.shape)
-    (4, 7, 8, 32)
-
-    Args:
-      filters: Integer, the dimensionality of the output space
-        (i.e. the number of output filters in the convolution).
-      kernel_size: An integer or tuple/list of a single integer,
-        specifying the length of the 1D convolution window.
-      strides: An integer or tuple/list of a single integer,
-        specifying the stride length of the convolution.
-        Specifying any stride value != 1 is incompatible with specifying
-        any `dilation_rate` value != 1.
-      padding: One of `"valid"`, `"same"` or `"causal"` (case-insensitive).
-        `"valid"` means no padding. `"same"` results in padding with zeros
-        evenly to the left/right or up/down of the input such that output has
-        the same height/width dimension as the input.
-        `"causal"` results in causal (dilated) convolutions, e.g. `output[t]`
-        does not depend on `input[t+1:]`. Useful when modeling temporal data
-        where the model should not violate the temporal order.
-        See [WaveNet: A Generative Model for Raw Audio, section
-          2.1](https://arxiv.org/abs/1609.03499).
-      data_format: A string, one of `channels_last` (default) or
-        `channels_first`. The ordering of the dimensions in the inputs.
-        `channels_last` corresponds to inputs with shape `(batch_size, width,
-        channels)` while `channels_first` corresponds to inputs with shape
-        `(batch_size, channels, width)`. Note that the `channels_first` format
-        is currently not supported by TensorFlow on CPU.
-      dilation_rate: an integer or tuple/list of a single integer, specifying
-        the dilation rate to use for dilated convolution.
-        Currently, specifying any `dilation_rate` value != 1 is
-        incompatible with specifying any `strides` value != 1.
-      groups: A positive integer specifying the number of groups in which the
-        input is split along the channel axis. Each group is convolved
-        separately with `filters / groups` filters. The output is the
-        concatenation of all the `groups` results along the channel axis.
-        Input channels and `filters` must both be divisible by `groups`.
-      activation: Activation function to use.
-        If you don't specify anything, no activation is applied
-        (see `keras.activations`).
-      use_bias: Boolean, whether the layer uses a bias vector.
-      kernel_initializer: Initializer for the `kernel` weights matrix
-        (see `keras.initializers`). Defaults to 'glorot_uniform'.
-      bias_initializer: Initializer for the bias vector
-        (see `keras.initializers`). Defaults to 'zeros'.
-      kernel_regularizer: Regularizer function applied to
-        the `kernel` weights matrix (see `keras.regularizers`).
-      bias_regularizer: Regularizer function applied to the bias vector
-        (see `keras.regularizers`).
-      activity_regularizer: Regularizer function applied to
-        the output of the layer (its "activation")
-        (see `keras.regularizers`).
-      kernel_constraint: Constraint function applied to the kernel matrix
-        (see `keras.constraints`).
-      bias_constraint: Constraint function applied to the bias vector
-        (see `keras.constraints`).
-
-    Input shape:
-      3+D tensor with shape: `batch_shape + (steps, input_dim)`
-
-    Output shape:
-      3+D tensor with shape: `batch_shape + (new_steps, filters)`
-        `steps` value might have changed due to padding or strides.
-
-    Returns:
-      A tensor of rank 3 representing
-      `activation(conv1d(inputs, kernel) + bias)`.
-
-    Raises:
-      ValueError: when both `strides > 1` and `dilation_rate > 1`.
+    (4, 8, 8, 8, 32)
     """
 
     def __init__(
