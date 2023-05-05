@@ -223,8 +223,9 @@ class RootMeanSquaredError(reduction_metrics.Mean):
             y_true: The ground truth values.
             y_pred: The predicted values.
             sample_weight: Optional weighting of each example. Can
-                be a `Tensor` whose rank is either 0, or the same rank as `y_true`,
-                and must be broadcastable to `y_true`. Defaults to `1`.
+                be a `Tensor` whose rank is either 0, or the same rank as
+                `y_true`, and must be broadcastable to `y_true`.
+                Defaults to `1`.
 
         Returns:
             Update op.
