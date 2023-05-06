@@ -53,8 +53,10 @@ class UpSampling1D(Layer):
         return [input_shape[0], size, input_shape[2]]
 
     def call(self, inputs):
-        output = ops.repeat_elements(inputs, self.size, axis=1)
-        return output
+        inputs_shape = inputs.shape
+        # For static axis
+        if inputs_shape[1] is not None:
+            return ops.repeat(x=inputs, repeats=self.size, axis=1)
 
     def get_config(self):
         config = {"size": self.size}
