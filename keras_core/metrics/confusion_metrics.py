@@ -369,7 +369,7 @@ class Precision(Metric):
             y_pred: The predicted values. Each element must be in the range
                 `[0, 1]`.
             sample_weight: Optional weighting of each example. Defaults to 1.
-                Can be a `Tensor` whose rank is either 0, or the same rank as
+                Can be a tensor whose rank is either 0, or the same rank as
                 `y_true`, and must be broadcastable to `y_true`.
         """
         metrics_utils.update_confusion_matrix_variables(
@@ -510,7 +510,7 @@ class Recall(Metric):
             y_pred: The predicted values. Each element must be in the range
                 `[0, 1]`.
             sample_weight: Optional weighting of each example. Defaults to 1.
-                Can be a `Tensor` whose rank is either 0, or the same rank as
+                Can be a tensor whose rank is either 0, or the same rank as
                 `y_true`, and must be broadcastable to `y_true`.
         """
         metrics_utils.update_confusion_matrix_variables(
@@ -608,7 +608,7 @@ class SensitivitySpecificityBase(Metric):
             y_true: The ground truth values.
             y_pred: The predicted values.
             sample_weight: Optional weighting of each example. Defaults to 1.
-                Can be a `Tensor` whose rank is either 0, or the same rank as
+                Can be a tensor whose rank is either 0, or the same rank as
                 `y_true`, and must be broadcastable to `y_true`.
         """
         metrics_utils.update_confusion_matrix_variables(
@@ -1102,8 +1102,8 @@ class AUC(Metric):
         num_thresholds: (Optional) The number of thresholds to
             use when discretizing the roc curve. Values must be > 1.
             Defaults to `200`.
-        curve: (Optional) Specifies the name of the curve to be computed, 'ROC'
-            [default] or 'PR' for the Precision-Recall-curve.
+        curve: (Optional) Specifies the name of the curve to be computed,
+            `'ROC'` (default) or `'PR'` for the Precision-Recall-curve.
         summation_method: (Optional) Specifies the [Riemann summation method](
               https://en.wikipedia.org/wiki/Riemann_sum) used.
               'interpolation' (default) applies mid-point summation scheme for
@@ -1117,7 +1117,7 @@ class AUC(Metric):
         thresholds: (Optional) A list of floating point values to use as the
             thresholds for discretizing the curve. If set, the `num_thresholds`
             parameter is ignored. Values should be in `[0, 1]`. Endpoint
-            thresholds equal to {-epsilon, 1+epsilon} for a small positive
+            thresholds equal to {`-epsilon`, `1+epsilon`} for a small positive
             epsilon value will be automatically included with these to correctly
             handle predictions equal to exactly 0 or 1.
         multi_label: boolean indicating whether multilabel data should be
@@ -1152,7 +1152,8 @@ class AUC(Metric):
     >>> # threshold values are [0 - 1e-7, 0.5, 1 + 1e-7]
     >>> # tp = [2, 1, 0], fp = [2, 0, 0], fn = [0, 1, 2], tn = [0, 2, 2]
     >>> # tp_rate = recall = [1, 0.5, 0], fp_rate = [1, 0, 0]
-    >>> # auc = ((((1+0.5)/2)*(1-0)) + (((0.5+0)/2)*(0-0))) = 0.75
+    >>> # auc = ((((1 + 0.5) / 2) * (1 - 0)) + (((0.5 + 0) / 2) * (0 - 0)))
+    >>> #     = 0.75
     >>> m.result()
     0.75
 
@@ -1328,7 +1329,7 @@ class AUC(Metric):
             y_true: The ground truth values.
             y_pred: The predicted values.
             sample_weight: Optional weighting of each example. Can
-                be a `Tensor` whose rank is either 0, or the same rank as
+                be a tensor whose rank is either 0, or the same rank as
                 `y_true`, and must be broadcastable to `y_true`. Defaults to
                 `1`.
         """
@@ -1568,4 +1569,4 @@ class AUC(Metric):
             # initialized from this config has the same thresholds.
             config["thresholds"] = self.thresholds[1:-1]
         base_config = super().get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        return {**base_config, **config}
