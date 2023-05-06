@@ -56,6 +56,8 @@ class UpSampling1D(Layer):
         if inputs_shape[1] is not None:
             return ops.repeat(x=inputs, repeats=self.size, axis=1)
 
+        # TODO(rchao): Add dynamic axis support.
+
     def get_config(self):
         config = {"size": self.size}
         base_config = super().get_config()
