@@ -1,5 +1,3 @@
-import math
-
 from keras_core import operations as ops
 from keras_core.layers.input_spec import InputSpec
 from keras_core.layers.layer import Layer
@@ -19,17 +17,17 @@ class UpSampling1D(Layer):
       [ 3  4  5]]
      [[ 6  7  8]
       [ 9 10 11]]]
-    >>> y = keras.layers.UpSampling1D(size=2)(x)
+    >>> y = keras_core.layers.UpSampling1D(size=2)(x)
     >>> print(y)
-    tf.Tensor(
-      [[[ 0  1  2]
-        [ 0  1  2]
-        [ 3  4  5]
-        [ 3  4  5]]
-       [[ 6  7  8]
-        [ 6  7  8]
-        [ 9 10 11]
-        [ 9 10 11]]], shape=(2, 4, 3), dtype=int64)
+    [[[ 0.  1.  2.]
+      [ 0.  1.  2.]
+      [ 3.  4.  5.]
+      [ 3.  4.  5.]]
+
+     [[ 6.  7.  8.]
+      [ 6.  7.  8.]
+      [ 9. 10. 11.]
+      [ 9. 10. 11.]]]
 
     Args:
       size: Integer. Upsampling factor.
