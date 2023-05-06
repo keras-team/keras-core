@@ -5,7 +5,9 @@ from absl import logging
 from absl.testing import parameterized
 from tensorflow.python.ops.numpy_ops import np_config
 
+from keras_core import layers
 from keras_core import metrics
+from keras_core import models
 from keras_core import operations as ops
 from keras_core import testing
 from keras_core.metrics import metrics_utils
@@ -1108,7 +1110,7 @@ class RecallAtPrecisionTest(testing.TestCase, parameterized.TestCase):
 
 
 class AUCTest(testing.TestCase):
-    def setup(self):
+    def setUp(self):
         self.num_thresholds = 3
         self.y_pred = np.array([0, 0.5, 0.3, 0.9], dtype="float32")
         self.y_pred_multi_label = np.array(
@@ -1142,7 +1144,6 @@ class AUCTest(testing.TestCase):
         # tp = [7, 4, 0], fp = [3, 0, 0], fn = [0, 3, 7], tn = [0, 3, 3]
 
     def test_config(self):
-        self.setup()
         auc_obj = metrics.AUC(
             num_thresholds=100,
             curve="PR",
@@ -1188,7 +1189,6 @@ class AUCTest(testing.TestCase):
         self.assertAllClose(auc_obj.thresholds, auc_obj2.thresholds)
 
     def test_config_manual_thresholds(self):
-        self.setup()
         auc_obj = metrics.AUC(
             num_thresholds=None,
             curve="PR",
@@ -1223,12 +1223,10 @@ class AUCTest(testing.TestCase):
         self.assertAllClose(auc_obj.thresholds, auc_obj2.thresholds)
 
     def test_unweighted_all_correct(self):
-        self.setup()
         auc_obj = metrics.AUC()
         self.assertEqual(auc_obj(self.y_true, self.y_true), 1)
 
     def test_unweighted(self):
-        self.setup()
         auc_obj = metrics.AUC(num_thresholds=self.num_thresholds)
         result = auc_obj(self.y_true, self.y_pred)
 
@@ -1241,7 +1239,6 @@ class AUCTest(testing.TestCase):
         self.assertAllClose(result, expected_result, 1e-3)
 
     def test_unweighted_from_logits(self):
-        self.setup()
         auc_obj = metrics.AUC(
             num_thresholds=self.num_thresholds, from_logits=True
         )
@@ -1256,7 +1253,6 @@ class AUCTest(testing.TestCase):
         self.assertAllClose(result, expected_result, 1e-3)
 
     def test_manual_thresholds(self):
-        self.setup()
         # Verify that when specified, thresholds are used instead of
         # num_thresholds.
         auc_obj = metrics.AUC(num_thresholds=2, thresholds=[0.5])
@@ -1273,7 +1269,6 @@ class AUCTest(testing.TestCase):
         self.assertAllClose(result, expected_result, 1e-3)
 
     def test_weighted_roc_interpolation(self):
-        self.setup()
         auc_obj = metrics.AUC(num_thresholds=self.num_thresholds)
         result = auc_obj(
             self.y_true, self.y_pred, sample_weight=self.sample_weight
@@ -1288,7 +1283,6 @@ class AUCTest(testing.TestCase):
         self.assertAllClose(result, expected_result, 1e-3)
 
     def test_weighted_roc_majoring(self):
-        self.setup()
         auc_obj = metrics.AUC(
             num_thresholds=self.num_thresholds, summation_method="majoring"
         )
@@ -1305,7 +1299,6 @@ class AUCTest(testing.TestCase):
         self.assertAllClose(result, expected_result, 1e-3)
 
     def test_weighted_roc_minoring(self):
-        self.setup()
         auc_obj = metrics.AUC(
             num_thresholds=self.num_thresholds, summation_method="minoring"
         )
@@ -1322,7 +1315,6 @@ class AUCTest(testing.TestCase):
         self.assertAllClose(result, expected_result, 1e-3)
 
     def test_weighted_pr_majoring(self):
-        self.setup()
         auc_obj = metrics.AUC(
             num_thresholds=self.num_thresholds,
             curve="PR",
@@ -1341,7 +1333,6 @@ class AUCTest(testing.TestCase):
         self.assertAllClose(result, expected_result, 1e-3)
 
     def test_weighted_pr_minoring(self):
-        self.setup()
         auc_obj = metrics.AUC(
             num_thresholds=self.num_thresholds,
             curve="PR",
@@ -1360,7 +1351,6 @@ class AUCTest(testing.TestCase):
         self.assertAllClose(result, expected_result, 1e-3)
 
     def test_weighted_pr_interpolation(self):
-        self.setup()
         auc_obj = metrics.AUC(num_thresholds=self.num_thresholds, curve="PR")
         result = auc_obj(
             self.y_true, self.y_pred, sample_weight=self.sample_weight
@@ -1408,7 +1398,6 @@ class AUCTest(testing.TestCase):
         try:
             from scipy import special
 
-            self.setup()
             logits = special.expit(
                 -np.array(
                     [
@@ -1426,3 +1415,250 @@ class AUCTest(testing.TestCase):
             self.assertEqual(result, 0.5)
         except ImportError as e:
             logging.warning(f"Cannot test special functions: {str(e)}")
+
+
+class MultiAUCTest(testing.TestCase):
+    def setUp(self):
+        self.num_thresholds = 5
+        self.y_pred = np.array(
+            [[0, 0.5, 0.3, 0.9], [0.1, 0.2, 0.3, 0.4]], dtype="float32"
+        ).T
+
+        epsilon = 1e-12
+        self.y_pred_logits = -ops.log(1.0 / (self.y_pred + epsilon) - 1.0)
+
+        self.y_true_good = np.array([[0, 0, 1, 1], [0, 0, 1, 1]]).T
+        self.y_true_bad = np.array([[0, 0, 1, 1], [1, 1, 0, 0]]).T
+        self.sample_weight = [1, 2, 3, 4]
+
+        # threshold values are [0 - 1e-7, 0.25, 0.5, 0.75, 1 + 1e-7]
+        # y_pred when threshold = 0 - 1e-7   : [[1, 1, 1, 1], [1, 1, 1, 1]]
+        # y_pred when threshold = 0.25       : [[0, 1, 1, 1], [0, 0, 1, 1]]
+        # y_pred when threshold = 0.5        : [[0, 0, 0, 1], [0, 0, 0, 0]]
+        # y_pred when threshold = 0.75       : [[0, 0, 0, 1], [0, 0, 0, 0]]
+        # y_pred when threshold = 1 + 1e-7   : [[0, 0, 0, 0], [0, 0, 0, 0]]
+
+        # for y_true_good, over thresholds:
+        # tp = [[2, 2, 1, 1, 0], [2, 2, 0, 0, 0]]
+        # fp = [[2, 1, 0, 0 , 0], [2, 0, 0 ,0, 0]]
+        # fn = [[0, 0, 1, 1, 2], [0, 0, 2, 2, 2]]
+        # tn = [[0, 1, 2, 2, 2], [0, 2, 2, 2, 2]]
+
+        # tpr = [[1, 1, 0.5, 0.5, 0], [1, 1, 0, 0, 0]]
+        # fpr = [[1, 0.5, 0, 0, 0], [1, 0, 0, 0, 0]]
+
+        # for y_true_bad:
+        # tp = [[2, 2, 1, 1, 0], [2, 0, 0, 0, 0]]
+        # fp = [[2, 1, 0, 0 , 0], [2, 2, 0 ,0, 0]]
+        # fn = [[0, 0, 1, 1, 2], [0, 2, 2, 2, 2]]
+        # tn = [[0, 1, 2, 2, 2], [0, 0, 2, 2, 2]]
+
+        # tpr = [[1, 1, 0.5, 0.5, 0], [1, 0, 0, 0, 0]]
+        # fpr = [[1, 0.5, 0, 0, 0], [1, 1, 0, 0, 0]]
+
+        # for y_true_good with sample_weights:
+
+        # tp = [[7, 7, 4, 4, 0], [7, 7, 0, 0, 0]]
+        # fp = [[3, 2, 0, 0, 0], [3, 0, 0, 0, 0]]
+        # fn = [[0, 0, 3, 3, 7], [0, 0, 7, 7, 7]]
+        # tn = [[0, 1, 3, 3, 3], [0, 3, 3, 3, 3]]
+
+        # tpr = [[1, 1,    0.57, 0.57, 0], [1, 1, 0, 0, 0]]
+        # fpr = [[1, 0.67, 0,    0,    0], [1, 0, 0, 0, 0]]
+
+    def test_unweighted_all_correct(self):
+        auc_obj = metrics.AUC(multi_label=True)
+        result = auc_obj(self.y_true_good, self.y_true_good)
+        self.assertEqual(result, 1)
+
+    def test_unweighted_all_correct_flat(self):
+        auc_obj = metrics.AUC(multi_label=False)
+        result = auc_obj(self.y_true_good, self.y_true_good)
+        self.assertEqual(result, 1)
+
+    def test_unweighted(self):
+        auc_obj = metrics.AUC(
+            num_thresholds=self.num_thresholds, multi_label=True
+        )
+        result = auc_obj(self.y_true_good, self.y_pred)
+
+        # tpr = [[1, 1, 0.5, 0.5, 0], [1, 1, 0, 0, 0]]
+        # fpr = [[1, 0.5, 0, 0, 0], [1, 0, 0, 0, 0]]
+        expected_result = (0.875 + 1.0) / 2.0
+        self.assertAllClose(result, expected_result, 1e-3)
+
+    def test_unweighted_from_logits(self):
+        auc_obj = metrics.AUC(
+            num_thresholds=self.num_thresholds,
+            multi_label=True,
+            from_logits=True,
+        )
+        result = auc_obj(self.y_true_good, self.y_pred_logits)
+
+        # tpr = [[1, 1, 0.5, 0.5, 0], [1, 1, 0, 0, 0]]
+        # fpr = [[1, 0.5, 0, 0, 0], [1, 0, 0, 0, 0]]
+        expected_result = (0.875 + 1.0) / 2.0
+        self.assertAllClose(result, expected_result, 1e-3)
+
+    def test_sample_weight_flat(self):
+        auc_obj = metrics.AUC(
+            num_thresholds=self.num_thresholds, multi_label=False
+        )
+        result = auc_obj(
+            self.y_true_good, self.y_pred, sample_weight=[1, 2, 3, 4]
+        )
+
+        # tpr = [1, 1, 0.2857, 0.2857, 0]
+        # fpr = [1, 0.3333, 0, 0, 0]
+        expected_result = 1.0 - (0.3333 * (1.0 - 0.2857) / 2.0)
+        self.assertAllClose(result, expected_result, 1e-3)
+
+    def test_full_sample_weight_flat(self):
+        auc_obj = metrics.AUC(
+            num_thresholds=self.num_thresholds, multi_label=False
+        )
+        sw = np.arange(4 * 2)
+        sw = sw.reshape(4, 2)
+        result = auc_obj(self.y_true_good, self.y_pred, sample_weight=sw)
+
+        # tpr = [1, 1, 0.2727, 0.2727, 0]
+        # fpr = [1, 0.3333, 0, 0, 0]
+        expected_result = 1.0 - (0.3333 * (1.0 - 0.2727) / 2.0)
+        self.assertAllClose(result, expected_result, 1e-3)
+
+    def test_label_weights(self):
+        auc_obj = metrics.AUC(
+            num_thresholds=self.num_thresholds,
+            multi_label=True,
+            label_weights=[0.75, 0.25],
+        )
+        result = auc_obj(self.y_true_good, self.y_pred)
+
+        # tpr = [[1, 1, 0.5, 0.5, 0], [1, 1, 0, 0, 0]]
+        # fpr = [[1, 0.5, 0, 0, 0], [1, 0, 0, 0, 0]]
+        expected_result = (0.875 * 0.75 + 1.0 * 0.25) / (0.75 + 0.25)
+        self.assertAllClose(result, expected_result, 1e-3)
+
+    def test_label_weights_flat(self):
+        auc_obj = metrics.AUC(
+            num_thresholds=self.num_thresholds,
+            multi_label=False,
+            label_weights=[0.75, 0.25],
+        )
+        result = auc_obj(self.y_true_good, self.y_pred)
+
+        # tpr = [1, 1, 0.375, 0.375, 0]
+        # fpr = [1, 0.375, 0, 0, 0]
+        expected_result = 1.0 - ((1.0 - 0.375) * 0.375 / 2.0)
+        self.assertAllClose(result, expected_result, 1e-2)
+
+    def test_unweighted_flat(self):
+        auc_obj = metrics.AUC(
+            num_thresholds=self.num_thresholds, multi_label=False
+        )
+        result = auc_obj(self.y_true_good, self.y_pred)
+
+        # tp = [4, 4, 1, 1, 0]
+        # fp = [4, 1, 0, 0, 0]
+        # fn = [0, 0, 3, 3, 4]
+        # tn = [0, 3, 4, 4, 4]
+
+        # tpr = [1, 1, 0.25, 0.25, 0]
+        # fpr = [1, 0.25, 0, 0, 0]
+        expected_result = 1.0 - (3.0 / 32.0)
+        self.assertAllClose(result, expected_result, 1e-3)
+
+    def test_unweighted_flat_from_logits(self):
+        auc_obj = metrics.AUC(
+            num_thresholds=self.num_thresholds,
+            multi_label=False,
+            from_logits=True,
+        )
+        result = auc_obj(self.y_true_good, self.y_pred_logits)
+
+        # tp = [4, 4, 1, 1, 0]
+        # fp = [4, 1, 0, 0, 0]
+        # fn = [0, 0, 3, 3, 4]
+        # tn = [0, 3, 4, 4, 4]
+
+        # tpr = [1, 1, 0.25, 0.25, 0]
+        # fpr = [1, 0.25, 0, 0, 0]
+        expected_result = 1.0 - (3.0 / 32.0)
+        self.assertAllClose(result, expected_result, 1e-3)
+
+    def test_manual_thresholds(self):
+        # Verify that when specified, thresholds are used instead of
+        # num_thresholds.
+        auc_obj = metrics.AUC(
+            num_thresholds=2, thresholds=[0.5], multi_label=True
+        )
+        self.assertEqual(auc_obj.num_thresholds, 3)
+        self.assertAllClose(auc_obj.thresholds, [0.0, 0.5, 1.0])
+        result = auc_obj(self.y_true_good, self.y_pred)
+
+        # tp = [[2, 1, 0], [2, 0, 0]]
+        # fp = [2, 0, 0], [2, 0, 0]]
+        # fn = [[0, 1, 2], [0, 2, 2]]
+        # tn = [[0, 2, 2], [0, 2, 2]]
+
+        # tpr = [[1, 0.5, 0], [1, 0, 0]]
+        # fpr = [[1, 0, 0], [1, 0, 0]]
+
+        # auc by slice = [0.75, 0.5]
+        expected_result = (0.75 + 0.5) / 2.0
+
+        self.assertAllClose(result, expected_result, 1e-3)
+
+    def test_weighted_roc_interpolation(self):
+        auc_obj = metrics.AUC(
+            num_thresholds=self.num_thresholds, multi_label=True
+        )
+        result = auc_obj(
+            self.y_true_good, self.y_pred, sample_weight=self.sample_weight
+        )
+
+        # tpr = [[1, 1,    0.57, 0.57, 0], [1, 1, 0, 0, 0]]
+        # fpr = [[1, 0.67, 0,    0,    0], [1, 0, 0, 0, 0]]
+        expected_result = 1.0 - 0.5 * 0.43 * 0.67
+        self.assertAllClose(result, expected_result, 1e-1)
+
+    def test_pr_interpolation_unweighted(self):
+        auc_obj = metrics.AUC(
+            num_thresholds=self.num_thresholds, curve="PR", multi_label=True
+        )
+        good_result = auc_obj(self.y_true_good, self.y_pred)
+        with self.subTest(name="good"):
+            # PR AUCs are 0.917 and 1.0 respectively
+            self.assertAllClose(good_result, (0.91667 + 1.0) / 2.0, 1e-1)
+        bad_result = auc_obj(self.y_true_bad, self.y_pred)
+        with self.subTest(name="bad"):
+            # PR AUCs are 0.917 and 0.5 respectively
+            self.assertAllClose(bad_result, (0.91667 + 0.5) / 2.0, 1e-1)
+
+    def test_pr_interpolation(self):
+        auc_obj = metrics.AUC(
+            num_thresholds=self.num_thresholds, curve="PR", multi_label=True
+        )
+        good_result = auc_obj(
+            self.y_true_good, self.y_pred, sample_weight=self.sample_weight
+        )
+        # PR AUCs are 0.939 and 1.0 respectively
+        self.assertAllClose(good_result, (0.939 + 1.0) / 2.0, 1e-1)
+
+    def test_keras_model_compiles(self):
+        inputs = layers.Input(shape=(10,), batch_size=1)
+        output = layers.Dense(3, activation="sigmoid")(inputs)
+        model = models.Model(inputs=inputs, outputs=output)
+        model.compile(
+            optimizer="adam",
+            loss="binary_crossentropy",
+            metrics=[metrics.AUC(multi_label=True)],
+        )
+
+    def test_reset_state(self):
+        auc_obj = metrics.AUC(
+            num_thresholds=self.num_thresholds, multi_label=True
+        )
+        auc_obj(self.y_true_good, self.y_pred)
+        auc_obj.reset_state()
+        self.assertAllClose(auc_obj.true_positives, np.zeros((5, 2)))

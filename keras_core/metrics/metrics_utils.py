@@ -263,8 +263,8 @@ def _update_confusion_matrix_variables_optimized(
         fp_bucket_v = backend.vectorized_map(
             gather_bucket, (false_labels, bucket_indices)
         )
-        tp = ops.transpose(ops.cumsum(ops.flip(tp_bucket_v), axis=1))
-        fp = ops.transpose(ops.cumsum(ops.flip(fp_bucket_v), axis=1))
+        tp = ops.transpose(ops.flip(ops.cumsum(ops.flip(tp_bucket_v), axis=1)))
+        fp = ops.transpose(ops.flip(ops.cumsum(ops.flip(fp_bucket_v), axis=1)))
     else:
         tp_bucket_v = ops.segment_sum(
             data=true_labels,
