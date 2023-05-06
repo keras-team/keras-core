@@ -131,9 +131,6 @@ class BaseConv(Layer):
         self.input_spec = InputSpec(min_ndim=self.rank + 2)
         self.data_format = self.data_format
 
-        self._validate_init()
-
-    def _validate_init(self):
         if self.filters is not None and self.filters <= 0:
             raise ValueError(
                 "Invalid value for argument `filters`. Expected a strictly "
@@ -149,14 +146,14 @@ class BaseConv(Layer):
 
         if not all(self.kernel_size):
             raise ValueError(
-                "The argument `kernel_size` cannot contain 0(s). Received: %s"
-                % (self.kernel_size,)
+                "The argument `kernel_size` cannot contain 0(s). Received: "
+                f"{self.kernel_size}"
             )
 
         if not all(self.strides):
             raise ValueError(
-                "The argument `strides` cannot contains 0(s). Received: %s"
-                % (self.strides,)
+                "The argument `strides` cannot contains 0(s). Received: "
+                f"{self.strides}"
             )
 
         if max(self.strides) > 1 and max(self.dilation_rate) > 1:
@@ -179,10 +176,9 @@ class BaseConv(Layer):
         if input_channel % self.groups != 0:
             raise ValueError(
                 "The number of input channels must be evenly divisible by "
-                "the number of groups. Received groups={}, but the input "
-                "has {} channels (full input shape is {}).".format(
-                    self.groups, input_channel, input_shape
-                )
+                f"the number of groups. Received groups={self.groups}, but the "
+                f"input has {input_channel} channels (full input shape is "
+                f"{input_shape})."
             )
         kernel_shape = self.kernel_size + (
             input_channel // self.groups,
@@ -239,10 +235,10 @@ class BaseConv(Layer):
         return outputs
 
     def compute_output_shape(self, input_shape):
-        kernel_shape = self.kernel_size + (input_shape[-1], self.filters)
         return compute_conv_output_shape(
             input_shape,
-            kernel_shape,
+            self.filters,
+            self.kernel_size,
             strides=self.strides,
             padding=self.padding,
             data_format=self.data_format,

@@ -8,9 +8,39 @@ from keras_core import testing
 
 class ConvBasicTest(testing.TestCase, parameterized.TestCase):
     @parameterized.parameters(
-        (5, 2, 1, "valid", "channels_last", 1, 1, (3, 5, 4), (3, 4, 5)),
-        (6, 2, 1, "same", "channels_last", (2,), 2, (3, 4, 4), (3, 4, 6)),
-        (6, 2, (2,), "valid", "channels_last", 1, 2, (3, 5, 4), (3, 2, 6)),
+        {
+            "filters": 5,
+            "kernel_size": 2,
+            "strides": 1,
+            "padding": "valid",
+            "data_format": "channels_last",
+            "dilation_rate": 1,
+            "groups": 1,
+            "input_shape": (3, 5, 4),
+            "output_shape": (3, 4, 5),
+        },
+        {
+            "filters": 6,
+            "kernel_size": 2,
+            "strides": 1,
+            "padding": "same",
+            "data_format": "channels_last",
+            "dilation_rate": (2,),
+            "groups": 2,
+            "input_shape": (3, 4, 4),
+            "output_shape": (3, 4, 6),
+        },
+        {
+            "filters": 6,
+            "kernel_size": 2,
+            "strides": (2,),
+            "padding": "valid",
+            "data_format": "channels_last",
+            "dilation_rate": 1,
+            "groups": 2,
+            "input_shape": (3, 5, 4),
+            "output_shape": (3, 2, 6),
+        },
     )
     def test_conv1d_basic(
         self,
@@ -44,29 +74,39 @@ class ConvBasicTest(testing.TestCase, parameterized.TestCase):
         )
 
     @parameterized.parameters(
-        (5, 2, 1, "valid", "channels_last", 1, 1, (3, 5, 5, 4), (3, 4, 4, 5)),
-        (
-            6,
-            2,
-            1,
-            "same",
-            "channels_last",
-            (2, 2),
-            2,
-            (3, 4, 4, 4),
-            (3, 4, 4, 6),
-        ),
-        (
-            6,
-            (2, 2),
-            (2, 1),
-            "valid",
-            "channels_last",
-            (1, 1),
-            2,
-            (3, 5, 5, 4),
-            (3, 2, 4, 6),
-        ),
+        {
+            "filters": 5,
+            "kernel_size": 2,
+            "strides": 1,
+            "padding": "valid",
+            "data_format": "channels_last",
+            "dilation_rate": 1,
+            "groups": 1,
+            "input_shape": (3, 5, 5, 4),
+            "output_shape": (3, 4, 4, 5),
+        },
+        {
+            "filters": 6,
+            "kernel_size": 2,
+            "strides": 1,
+            "padding": "same",
+            "data_format": "channels_last",
+            "dilation_rate": (2, 2),
+            "groups": 2,
+            "input_shape": (3, 4, 4, 4),
+            "output_shape": (3, 4, 4, 6),
+        },
+        {
+            "filters": 6,
+            "kernel_size": (2, 2),
+            "strides": (2, 1),
+            "padding": "valid",
+            "data_format": "channels_last",
+            "dilation_rate": (1, 1),
+            "groups": 2,
+            "input_shape": (3, 5, 5, 4),
+            "output_shape": (3, 2, 4, 6),
+        },
     )
     def test_conv2d_basic(
         self,
@@ -100,39 +140,39 @@ class ConvBasicTest(testing.TestCase, parameterized.TestCase):
         )
 
     @parameterized.parameters(
-        (
-            5,
-            2,
-            1,
-            "valid",
-            "channels_last",
-            1,
-            1,
-            (3, 5, 5, 5, 4),
-            (3, 4, 4, 4, 5),
-        ),
-        (
-            6,
-            2,
-            1,
-            "same",
-            "channels_last",
-            (2, 2, 2),
-            2,
-            (3, 4, 4, 4, 4),
-            (3, 4, 4, 4, 6),
-        ),
-        (
-            6,
-            (2, 2, 3),
-            (2, 1, 2),
-            "valid",
-            "channels_last",
-            (1, 1, 1),
-            2,
-            (3, 5, 5, 5, 4),
-            (3, 2, 4, 2, 6),
-        ),
+        {
+            "filters": 5,
+            "kernel_size": 2,
+            "strides": 1,
+            "padding": "valid",
+            "data_format": "channels_last",
+            "dilation_rate": 1,
+            "groups": 1,
+            "input_shape": (3, 5, 5, 5, 4),
+            "output_shape": (3, 4, 4, 4, 5),
+        },
+        {
+            "filters": 6,
+            "kernel_size": 2,
+            "strides": 1,
+            "padding": "same",
+            "data_format": "channels_last",
+            "dilation_rate": (2, 2, 2),
+            "groups": 2,
+            "input_shape": (3, 4, 4, 4, 4),
+            "output_shape": (3, 4, 4, 4, 6),
+        },
+        {
+            "filters": 6,
+            "kernel_size": (2, 2, 3),
+            "strides": (2, 1, 2),
+            "padding": "valid",
+            "data_format": "channels_last",
+            "dilation_rate": (1, 1, 1),
+            "groups": 2,
+            "input_shape": (3, 5, 5, 5, 4),
+            "output_shape": (3, 2, 4, 2, 6),
+        },
     )
     def test_conv3d_basic(
         self,
@@ -191,9 +231,33 @@ class ConvBasicTest(testing.TestCase, parameterized.TestCase):
 
 class ConvCorrectnessTest(testing.TestCase, parameterized.TestCase):
     @parameterized.parameters(
-        (5, 2, 1, "valid", "channels_last", 1, 1),
-        (6, 2, 1, "same", "channels_last", (2,), 2),
-        (6, (2,), (2,), "valid", "channels_last", 1, 2),
+        {
+            "filters": 5,
+            "kernel_size": 2,
+            "strides": 1,
+            "padding": "valid",
+            "data_format": "channels_last",
+            "dilation_rate": 1,
+            "groups": 1,
+        },
+        {
+            "filters": 6,
+            "kernel_size": 2,
+            "strides": 1,
+            "padding": "same",
+            "data_format": "channels_last",
+            "dilation_rate": (2,),
+            "groups": 2,
+        },
+        {
+            "filters": 6,
+            "kernel_size": (2,),
+            "strides": (2,),
+            "padding": "valid",
+            "data_format": "channels_last",
+            "dilation_rate": 1,
+            "groups": 2,
+        },
     )
     def test_conv1d(
         self,
@@ -242,9 +306,33 @@ class ConvCorrectnessTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(outputs, expected)
 
     @parameterized.parameters(
-        (5, 2, (2, 1), "valid", "channels_last", 1, 1),
-        (6, 2, 1, "same", "channels_last", (2, 1), 2),
-        (6, (2, 3), 1, "valid", "channels_last", (1, 2), 2),
+        {
+            "filters": 5,
+            "kernel_size": 2,
+            "strides": 1,
+            "padding": "valid",
+            "data_format": "channels_last",
+            "dilation_rate": 1,
+            "groups": 1,
+        },
+        {
+            "filters": 6,
+            "kernel_size": 2,
+            "strides": 1,
+            "padding": "same",
+            "data_format": "channels_last",
+            "dilation_rate": (2, 2),
+            "groups": 2,
+        },
+        {
+            "filters": 6,
+            "kernel_size": (2, 2),
+            "strides": (2, 1),
+            "padding": "valid",
+            "data_format": "channels_last",
+            "dilation_rate": (1, 1),
+            "groups": 2,
+        },
     )
     def test_conv2d(
         self,
@@ -293,9 +381,33 @@ class ConvCorrectnessTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(outputs, expected)
 
     @parameterized.parameters(
-        (5, 2, (2, 1, 2), "valid", "channels_last", 1, 1),
-        (6, 2, 1, "same", "channels_last", (2, 1, 1), 2),
-        (6, (2, 3, 1), 1, "valid", "channels_last", (1, 2, 2), 2),
+        {
+            "filters": 5,
+            "kernel_size": 2,
+            "strides": 1,
+            "padding": "valid",
+            "data_format": "channels_last",
+            "dilation_rate": 1,
+            "groups": 1,
+        },
+        {
+            "filters": 6,
+            "kernel_size": 2,
+            "strides": 1,
+            "padding": "same",
+            "data_format": "channels_last",
+            "dilation_rate": (2, 2, 2),
+            "groups": 2,
+        },
+        {
+            "filters": 6,
+            "kernel_size": (2, 2, 3),
+            "strides": (2, 1, 2),
+            "padding": "valid",
+            "data_format": "channels_last",
+            "dilation_rate": (1, 1, 1),
+            "groups": 2,
+        },
     )
     def test_conv3d(
         self,
@@ -339,5 +451,6 @@ class ConvCorrectnessTest(testing.TestCase, parameterized.TestCase):
         layer.bias.assign(bias_weights)
         tf_keras_layer.bias.assign(bias_weights)
         outputs = layer(inputs)
+
         expected = tf_keras_layer(inputs)
         self.assertAllClose(outputs, expected)

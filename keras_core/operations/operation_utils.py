@@ -51,7 +51,8 @@ def compute_pooling_output_shape(
 
 def compute_conv_output_shape(
     input_shape,
-    kernel_shape,
+    filters,
+    kernel_size,
     strides=1,
     padding="valid",
     data_format="channels_last",
@@ -60,8 +61,10 @@ def compute_conv_output_shape(
     """Compute the output shape of conv ops."""
     if data_format == "channels_last":
         spatial_shape = input_shape[1:-1]
+        kernel_shape = kernel_size + (input_shape[-1], filters)
     else:
         spatial_shape = input_shape[2:]
+        kernel_shape = kernel_size + (input_shape[1], filters)
     if len(kernel_shape) != len(input_shape):
         raise ValueError(
             "Kernel shape must have the same length as input, but received "
