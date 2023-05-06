@@ -5,8 +5,7 @@ from keras_core import initializers
 from keras_core import layers
 from keras_core import testing
 from keras_core.models import Sequential
-from keras_core.testing import test_utils
-from keras_core.utils import np_utils
+from keras_core.utils import numerical_utils
 
 
 class TerminateOnNaNTest(testing.TestCase):
@@ -18,16 +17,13 @@ class TerminateOnNaNTest(testing.TestCase):
         BATCH_SIZE = 4
 
         np.random.seed(1337)
-        (x_train, y_train), (x_test, y_test) = test_utils.get_test_data(
-            train_samples=TRAIN_SAMPLES,
-            test_samples=TEST_SAMPLES,
-            input_shape=(INPUT_DIM,),
-            num_classes=NUM_CLASSES,
-        )
+        x_train = np.random.random((TRAIN_SAMPLES, INPUT_DIM))
+        y_train = np.random.choice(np.arange(NUM_CLASSES), size=TRAIN_SAMPLES)
+        x_test = np.random.random((TEST_SAMPLES, INPUT_DIM))
+        y_test = np.random.choice(np.arange(NUM_CLASSES), size=TEST_SAMPLES)
 
-        y_test = np_utils.to_categorical(y_test)
-        y_train = np_utils.to_categorical(y_train)
-        cbks = [callbacks.TerminateOnNaN()]
+        y_test = numerical_utils.to_categorical(y_test)
+        y_train = numerical_utils.to_categorical(y_train)
         model = Sequential()
         initializer = initializers.Constant(value=1e5)
         for _ in range(5):
@@ -46,7 +42,7 @@ class TerminateOnNaNTest(testing.TestCase):
             y_train,
             batch_size=BATCH_SIZE,
             validation_data=(x_test, y_test),
-            callbacks=cbks,
+            callbacks=[callbacks.TerminateOnNaN()],
             epochs=20,
         )
         loss = history.history["loss"]

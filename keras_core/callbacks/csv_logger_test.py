@@ -1,50 +1,48 @@
 import csv
 import os
 import re
-import shutil
+import tempfile
+
 import numpy as np
 
 from keras_core import callbacks
+from keras_core import initializers
 from keras_core import layers
 from keras_core import testing
 from keras_core.models import Sequential
-from keras_core.testing import test_utils
-from keras_core.utils import np_utils
-
+from keras_core.utils import numerical_utils
 
 TRAIN_SAMPLES = 10
 TEST_SAMPLES = 10
 INPUT_DIM = 3
-NUM_CLASSES = 2
 BATCH_SIZE = 4
 
-class TerminateOnNaNTest(testing.TestCase):
+
+class CSVLoggerTest(testing.TestCase):
     def test_CSVLogger(self):
+        OUTPUT_DIM = 1
         np.random.seed(1337)
-        temp_dir = self.get_temp_dir()
-        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
-        filepath = os.path.join(temp_dir, "log.tsv")
+        temp_dir = tempfile.TemporaryDirectory()
+        filepath = os.path.join(temp_dir.name, "log.tsv")
 
         sep = "\t"
-        (x_train, y_train), (x_test, y_test) = test_utils.get_test_data(
-            train_samples=TRAIN_SAMPLES,
-            test_samples=TEST_SAMPLES,
-            input_shape=(INPUT_DIM,),
-            num_classes=NUM_CLASSES,
-        )
-        y_test = np_utils.to_categorical(y_test)
-        y_train = np_utils.to_categorical(y_train)
+        x_train = np.random.random((TRAIN_SAMPLES, INPUT_DIM))
+        y_train = np.random.random((TRAIN_SAMPLES, OUTPUT_DIM))
+        x_test = np.random.random((TEST_SAMPLES, INPUT_DIM))
+        y_test = np.random.random((TEST_SAMPLES, OUTPUT_DIM))
 
         def make_model():
             np.random.seed(1337)
-            model = Sequential([
-                layers.Dense(2, activation="relu"),
-                layers.Dense(NUM_CLASSES, activation="softmax"),
-            ])
+            model = Sequential(
+                [
+                    layers.Dense(2, activation="relu"),
+                    layers.Dense(OUTPUT_DIM),
+                ]
+            )
             model.compile(
-                loss="categorical_crossentropy",
+                loss="mse",
                 optimizer="sgd",
-                metrics=["accuracy"],
+                metrics=["mse"],
             )
             return model
 
@@ -70,9 +68,7 @@ class TerminateOnNaNTest(testing.TestCase):
 
         # case 2, append data to existing file, skip header
         model = make_model()
-        cbks = [
-            callbacks.CSVLogger(filepath, separator=sep, append=True)
-        ]
+        cbks = [callbacks.CSVLogger(filepath, separator=sep, append=True)]
         model.fit(
             x_train,
             y_train,
@@ -129,3 +125,52 @@ class TerminateOnNaNTest(testing.TestCase):
                     )
                 else:
                     self.assertEqual(row["val_loss"], "NA")
+
+    def test_stop_training_csv(self):
+        # Test that using the CSVLogger callback with the TerminateOnNaN
+        # callback does not result in invalid CSVs.
+        tmpdir = tempfile.TemporaryDirectory()
+        csv_logfile = os.path.join(tmpdir.name, "csv_logger.csv")
+        NUM_CLASSES = 2
+        np.random.seed(1337)
+        x_train = np.random.random((TRAIN_SAMPLES, INPUT_DIM))
+        y_train = np.random.choice(np.arange(NUM_CLASSES), size=TRAIN_SAMPLES)
+        x_test = np.random.random((TEST_SAMPLES, INPUT_DIM))
+        y_test = np.random.choice(np.arange(NUM_CLASSES), size=TEST_SAMPLES)
+
+        y_test = numerical_utils.to_categorical(y_test)
+        y_train = numerical_utils.to_categorical(y_train)
+        model = Sequential()
+        initializer = initializers.Constant(value=1e5)
+        for _ in range(5):
+            model.add(
+                layers.Dense(
+                    2,
+                    activation="relu",
+                    kernel_initializer=initializer,
+                )
+            )
+        model.add(layers.Dense(NUM_CLASSES))
+        model.compile(loss="mean_squared_error", optimizer="sgd")
+
+        history = model.fit(
+            x_train,
+            y_train,
+            batch_size=BATCH_SIZE,
+            validation_data=(x_test, y_test),
+            callbacks=[
+                callbacks.TerminateOnNaN(),
+                callbacks.CSVLogger(csv_logfile),
+            ],
+            epochs=20,
+        )
+        loss = history.history["loss"]
+        self.assertEqual(len(loss), 1)
+        self.assertTrue(np.isnan(loss[0]) or np.isinf(loss[0]))
+
+        values = []
+        with open(csv_logfile) as f:
+            # On Windows, due to \r\n line ends, we may end up reading empty
+            # lines after each line. Skip empty lines.
+            values = [x for x in csv.reader(f) if x]
+        self.assertIn("nan", values[-1], "NaN not logged in CSV Logger.")
