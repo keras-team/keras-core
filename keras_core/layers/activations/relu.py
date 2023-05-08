@@ -60,14 +60,23 @@ class ReLU(Layer):
         self.threshold = threshold
 
     def call(self, inputs):
-        return activations.relu(inputs, negative_slope=self.negative_slope, max_value=self.max_value, threshold=self.threshold)
-    
+        return activations.relu(
+            inputs,
+            negative_slope=self.negative_slope,
+            max_value=self.max_value,
+            threshold=self.threshold,
+        )
+
     def get_config(self):
         config = super().get_config()
-        config.update({"max_value": self.max_value,
-                  "negative_slope": self.negative_slope,
-                  "threshold": self.threshold})
-        
+        config.update(
+            {
+                "max_value": self.max_value,
+                "negative_slope": self.negative_slope,
+                "threshold": self.threshold,
+            }
+        )
+
         return config
 
     def compute_output_shape(self, input_shape):
