@@ -1,4 +1,7 @@
 from keras_core.layers.activations.activation import Activation
+from keras_core.layers.convolutional.conv1d import Conv1D
+from keras_core.layers.convolutional.conv2d import Conv2D
+from keras_core.layers.convolutional.conv3d import Conv3D
 from keras_core.layers.core.dense import Dense
 from keras_core.layers.core.einsum_dense import EinsumDense
 from keras_core.layers.core.embedding import Embedding
@@ -26,6 +29,10 @@ from keras_core.layers.merging.subtract import subtract
 from keras_core.layers.normalization.batch_normalization import (
     BatchNormalization,
 )
+from keras_core.layers.normalization.layer_normalization import (
+    LayerNormalization,
+)
+from keras_core.layers.normalization.unit_normalization import UnitNormalization
 from keras_core.layers.pooling.average_pooling1d import AveragePooling1D
 from keras_core.layers.pooling.average_pooling2d import AveragePooling2D
 from keras_core.layers.pooling.average_pooling3d import AveragePooling3D
@@ -44,6 +51,10 @@ from keras_core.layers.pooling.global_max_pooling3d import GlobalMaxPooling3D
 from keras_core.layers.pooling.max_pooling1d import MaxPooling1D
 from keras_core.layers.pooling.max_pooling2d import MaxPooling2D
 from keras_core.layers.pooling.max_pooling3d import MaxPooling3D
+from keras_core.layers.preprocessing.center_crop import CenterCrop
+from keras_core.layers.preprocessing.normalization import Normalization
+from keras_core.layers.preprocessing.rescaling import Rescaling
+from keras_core.layers.preprocessing.resizing import Resizing
 from keras_core.layers.regularization.activity_regularization import (
     ActivityRegularization,
 )

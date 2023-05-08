@@ -5,10 +5,15 @@ from keras_core.metrics.accuracy_metrics import CategoricalAccuracy
 from keras_core.metrics.accuracy_metrics import SparseCategoricalAccuracy
 from keras_core.metrics.accuracy_metrics import SparseTopKCategoricalAccuracy
 from keras_core.metrics.accuracy_metrics import TopKCategoricalAccuracy
+from keras_core.metrics.confusion_metrics import AUC
 from keras_core.metrics.confusion_metrics import FalseNegatives
 from keras_core.metrics.confusion_metrics import FalsePositives
 from keras_core.metrics.confusion_metrics import Precision
+from keras_core.metrics.confusion_metrics import PrecisionAtRecall
 from keras_core.metrics.confusion_metrics import Recall
+from keras_core.metrics.confusion_metrics import RecallAtPrecision
+from keras_core.metrics.confusion_metrics import SensitivityAtSpecificity
+from keras_core.metrics.confusion_metrics import SpecificityAtSensitivity
 from keras_core.metrics.confusion_metrics import TrueNegatives
 from keras_core.metrics.confusion_metrics import TruePositives
 from keras_core.metrics.hinge_metrics import CategoricalHinge
@@ -37,10 +42,15 @@ ALL_OBJECTS = {
     # Regression
     MeanSquaredError,
     # Classification
+    AUC,
     FalseNegatives,
     FalsePositives,
     Precision,
+    PrecisionAtRecall,
     Recall,
+    RecallAtPrecision,
+    SensitivityAtSpecificity,
+    SpecificityAtSensitivity,
     TrueNegatives,
     TruePositives,
     # Hinge
