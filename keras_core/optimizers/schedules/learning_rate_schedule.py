@@ -122,6 +122,16 @@ class ExponentialDecay(LearningRateSchedule):
     `keras_core.optimizers.schedules.serialize` and
     `keras_core.optimizers.schedules.deserialize`.
 
+    Args:
+        initial_learning_rate: A Python float. The initial learning rate.
+        decay_steps: A Python integer. Must be positive. See the decay
+            computation above.
+        decay_rate: A Python float. The decay rate.
+        staircase: Boolean.  If `True` decay the learning rate at discrete
+            intervals.
+        name: String.  Optional name of the operation.  Defaults to
+            `"ExponentialDecay`".
+
     Returns:
         A 1-arg callable learning rate schedule that takes the current optimizer
         step and outputs the decayed learning rate, a scalar tensor of the
@@ -134,20 +144,8 @@ class ExponentialDecay(LearningRateSchedule):
         decay_steps,
         decay_rate,
         staircase=False,
-        name=None,
+        name="ExponentialDecay",
     ):
-        """Applies exponential decay to the learning rate.
-
-        Args:
-            initial_learning_rate: A Python float. The initial learning rate.
-            decay_steps: A Python integer. Must be positive. See the decay
-                computation above.
-            decay_rate: A Python float. The decay rate.
-            staircase: Boolean.  If `True` decay the learning rate at discrete
-                intervals.
-            name: String.  Optional name of the operation.  Defaults to
-                `"ExponentialDecay`".
-        """
         super().__init__()
         self.initial_learning_rate = initial_learning_rate
         self.decay_steps = decay_steps
@@ -156,18 +154,19 @@ class ExponentialDecay(LearningRateSchedule):
         self.name = name
 
     def __call__(self, step):
-        initial_learning_rate = ops.convert_to_tensor(
-            self.initial_learning_rate
-        )
-        dtype = initial_learning_rate.dtype
-        decay_steps = ops.cast(self.decay_steps, dtype)
-        decay_rate = ops.cast(self.decay_rate, dtype)
+        with ops.name_scope(self.name):
+            initial_learning_rate = ops.convert_to_tensor(
+                self.initial_learning_rate
+            )
+            dtype = initial_learning_rate.dtype
+            decay_steps = ops.cast(self.decay_steps, dtype)
+            decay_rate = ops.cast(self.decay_rate, dtype)
 
-        global_step_recomp = ops.cast(step, dtype)
-        p = global_step_recomp / decay_steps
-        if self.staircase:
-            p = ops.floor(p)
-        return ops.multiply(initial_learning_rate, ops.power(decay_rate, p))
+            global_step_recomp = ops.cast(step, dtype)
+            p = global_step_recomp / decay_steps
+            if self.staircase:
+                p = ops.floor(p)
+            return ops.multiply(initial_learning_rate, ops.power(decay_rate, p))
 
     def get_config(self):
         return {
@@ -206,6 +205,17 @@ class PiecewiseConstantDecay(LearningRateSchedule):
     deserializable using `keras_core.optimizers.schedules.serialize` and
     `keras_core.optimizers.schedules.deserialize`.
 
+    Args:
+        boundaries: A list of Python numbers with strictly increasing
+            entries, and with all elements having the same type as the
+            optimizer step.
+        values: A list of Python numbers that specifies the values for the
+            intervals defined by `boundaries`. It should have one more
+            element than `boundaries`, and all elements should have the same
+            type.
+        name: A string. Optional name of the operation. Defaults to
+            `"PiecewiseConstant"`.
+
     Returns:
         A 1-arg callable learning rate schedule that takes the current optimizer
         step and outputs the decayed learning rate, a scalar tensor of the
@@ -214,26 +224,15 @@ class PiecewiseConstantDecay(LearningRateSchedule):
         The output of the 1-arg function that takes the `step`
         is `values[0]` when `step <= boundaries[0]`,
         `values[1]` when `step > boundaries[0]` and `step <= boundaries[1]`,
-        ..., and values[-1] when `step > boundaries[-1]`.
+        ..., and `values[-1]` when `step > boundaries[-1]`.
+
+
+    Raises:
+        ValueError: if the number of elements in the `boundaries` and `values`
+        lists do not match.
     """
 
-    def __init__(self, boundaries, values, name=None):
-        """Piecewise constant from boundaries and interval values.
-
-        Args:
-            boundaries: A list of Python numbers with strictly increasing
-                entries, and with all elements having the same type as the
-                optimizer step.
-            values: A list of Python numbers that specifies the values for the
-                intervals defined by `boundaries`. It should have one more
-                element than `boundaries`, and all elements should have the same
-                type.
-            name: A string. Optional name of the operation. Defaults to
-                `"PiecewiseConstant"`.
-
-        Raises:
-            ValueError: if the number of elements in the lists do not match.
-        """
+    def __init__(self, boundaries, values, name="PiecewiseConstant"):
         super().__init__()
 
         if len(boundaries) != len(values) - 1:
@@ -249,7 +248,7 @@ class PiecewiseConstantDecay(LearningRateSchedule):
         self.name = name
 
     def __call__(self, step):
-        with ops.name_scope(self.name or "PiecewiseConstant"):
+        with ops.name_scope(self.name):
             boundaries = [ops.convert_to_tensor(x) for x in self.boundaries]
             values = [ops.convert_to_tensor(x) for x in self.values]
             step = ops.convert_to_tensor(step)
@@ -362,6 +361,17 @@ class PolynomialDecay(LearningRateSchedule):
     `keras_core.optimizers.schedules.serialize` and
     `keras_core.optimizers.schedules.deserialize`.
 
+    Args:
+        initial_learning_rate: A Python float. The initial learning rate.
+        decay_steps: A Python integer. Must be positive. See the decay
+            computation above.
+        end_learning_rate: A Python float. The minimal end learning rate.
+        power: A Python float. The power of the polynomial. Defaults to
+            `1.0`.
+        cycle: A boolean, whether it should cycle beyond decay_steps.
+        name: String.  Optional name of the operation. Defaults to
+            `"PolynomialDecay"`.
+
     Returns:
         A 1-arg callable learning rate schedule that takes the current optimizer
         step and outputs the decayed learning rate, a scalar tensor of the
@@ -375,21 +385,8 @@ class PolynomialDecay(LearningRateSchedule):
         end_learning_rate=0.0001,
         power=1.0,
         cycle=False,
-        name=None,
+        name="PolynomialDecay",
     ):
-        """Applies a polynomial decay to the learning rate.
-
-        Args:
-            initial_learning_rate: A Python float. The initial learning rate.
-            decay_steps: A Python integer. Must be positive. See the decay
-                computation above.
-            end_learning_rate: A Python float. The minimal end learning rate.
-            power: A Python float. The power of the polynomial. Defaults to
-                `1.0`.
-            cycle: A boolean, whether it should cycle beyond decay_steps.
-            name: String.  Optional name of the operation. Defaults to
-                `"PolynomialDecay"`.
-        """
         super().__init__()
 
         self.initial_learning_rate = initial_learning_rate
@@ -400,7 +397,7 @@ class PolynomialDecay(LearningRateSchedule):
         self.name = name
 
     def __call__(self, step):
-        with ops.name_scope(self.name or "PolynomialDecay"):
+        with ops.name_scope(self.name):
             initial_learning_rate = ops.convert_to_tensor(
                 self.initial_learning_rate
             )
@@ -496,6 +493,15 @@ class InverseTimeDecay(LearningRateSchedule):
     model.fit(data, labels, epochs=5)
     ```
 
+    Args:
+        initial_learning_rate: A Python float. The initial learning rate.
+        decay_steps: How often to apply decay.
+        decay_rate: A Python number.  The decay rate.
+        staircase: Whether to apply decay in a discrete staircase, as o
+        pposed to continuous, fashion.
+        name: String.  Optional name of the operation.  Defaults to
+            `"InverseTimeDecay"`.
+
     Returns:
         A 1-arg callable learning rate schedule that takes the current optimizer
         step and outputs the decayed learning rate, a scalar tensor of the
@@ -508,19 +514,8 @@ class InverseTimeDecay(LearningRateSchedule):
         decay_steps,
         decay_rate,
         staircase=False,
-        name=None,
+        name="InverseTimeDecay",
     ):
-        """Applies inverse time decay to the initial learning rate.
-
-        Args:
-            initial_learning_rate: A Python float. The initial learning rate.
-            decay_steps: How often to apply decay.
-            decay_rate: A Python number.  The decay rate.
-            staircase: Whether to apply decay in a discrete staircase, as o
-            pposed to continuous, fashion.
-            name: String.  Optional name of the operation.  Defaults to
-                `"InverseTimeDecay"`.
-        """
         super().__init__()
 
         self.initial_learning_rate = initial_learning_rate
@@ -530,7 +525,7 @@ class InverseTimeDecay(LearningRateSchedule):
         self.name = name
 
     def __call__(self, step):
-        with ops.name_scope(self.name or "InverseTimeDecay"):
+        with ops.name_scope(self.name):
             initial_learning_rate = ops.convert_to_tensor(
                 self.initial_learning_rate
             )
@@ -633,6 +628,20 @@ class CosineDecay(LearningRateSchedule):
     deserializable using `keras_core.optimizers.schedules.serialize` and
     `keras_core.optimizers.schedules.deserialize`.
 
+    Args:
+        initial_learning_rate: A Python float. The initial learning rate.
+        decay_steps: A Python int. Number of steps to decay over.
+        alpha: A Python float. Minimum learning rate value for decay as a
+            fraction of `initial_learning_rate`.
+        name: String. Optional name of the operation.  Defaults to
+            `"CosineDecay"`.
+        warmup_target: A Python float. The target learning rate for our
+            warmup phase. Will cast to the `initial_learning_rate` datatype.
+            Setting to `None` will skip warmup and begins decay phase from
+            `initial_learning_rate`. Otherwise scheduler will warmup from
+            `initial_learning_rate` to `warmup_target`.
+        warmup_steps: A Python int. Number of steps to warmup over.
+
     Returns:
         A 1-arg callable learning rate schedule that takes the current optimizer
         step and outputs the decayed learning rate, a scalar tensor of the
@@ -644,26 +653,10 @@ class CosineDecay(LearningRateSchedule):
         initial_learning_rate,
         decay_steps,
         alpha=0.0,
-        name=None,
+        name="CosineDecay",
         warmup_target=None,
         warmup_steps=0,
     ):
-        """Applies cosine decay to the learning rate.
-
-        Args:
-            initial_learning_rate: A Python float. The initial learning rate.
-            decay_steps: A Python int. Number of steps to decay over.
-            alpha: A Python float. Minimum learning rate value for decay as a
-                fraction of `initial_learning_rate`.
-            name: String. Optional name of the operation.  Defaults to
-                `"CosineDecay"`.
-            warmup_target: A Python float. The target learning rate for our
-                warmup phase. Will cast to the `initial_learning_rate` datatype.
-                Setting to `None` will skip warmup and begins decay phase from
-                `initial_learning_rate`. Otherwise scheduler will warmup from
-                `initial_learning_rate` to `warmup_target`.
-            warmup_steps: A Python int. Number of steps to warmup over.
-        """
         super().__init__()
 
         self.initial_learning_rate = initial_learning_rate
@@ -674,7 +667,7 @@ class CosineDecay(LearningRateSchedule):
         self.warmup_target = warmup_target
 
     def _decay_function(self, step, decay_steps, decay_from_lr, dtype):
-        with ops.name_scope(self.name or "CosineDecay"):
+        with ops.name_scope(self.name):
             completed_fraction = step / decay_steps
             pi = ops.array(math.pi, dtype=dtype)
             cosine_decayed = 0.5 * (1.0 + ops.cos(pi * completed_fraction))
@@ -684,13 +677,13 @@ class CosineDecay(LearningRateSchedule):
     def _warmup_function(
         self, step, warmup_steps, warmup_target, initial_learning_rate
     ):
-        with ops.name_scope(self.name or "CosineDecay"):
+        with ops.name_scope(self.name):
             completed_fraction = step / warmup_steps
             total_step_delta = warmup_target - initial_learning_rate
             return total_step_delta * completed_fraction + initial_learning_rate
 
     def __call__(self, step):
-        with ops.name_scope(self.name or "CosineDecay"):
+        with ops.name_scope(self.name):
             initial_learning_rate = ops.convert_to_tensor(
                 self.initial_learning_rate
             )
@@ -779,6 +772,18 @@ class CosineDecayRestarts(LearningRateSchedule):
     deserializable using `keras_core.optimizers.schedules.serialize` and
     `keras_core.optimizers.schedules.deserialize`.
 
+    Args:
+        initial_learning_rate: A Python float. The initial learning rate.
+        first_decay_steps: A Python integer. Number of steps to decay over.
+        t_mul: A Python float. Used to derive the number of iterations in
+            the i-th period.
+        m_mul: A Python float. Used to derive the initial learning rate of
+            the i-th period.
+        alpha: A Python float. Minimum learning rate value as a fraction of
+            the `initial_learning_rate`.
+        name: String. Optional name of the operation. Defaults to
+            `"SGDRDecay"`.
+
     Returns:
         A 1-arg callable learning rate schedule that takes the current optimizer
         step and outputs the decayed learning rate, a scalar tensor of the
@@ -792,22 +797,8 @@ class CosineDecayRestarts(LearningRateSchedule):
         t_mul=2.0,
         m_mul=1.0,
         alpha=0.0,
-        name=None,
+        name="SGDRDecay",
     ):
-        """Applies cosine decay with restarts to the learning rate.
-
-        Args:
-            initial_learning_rate: A Python float. The initial learning rate.
-            first_decay_steps: A Python integer. Number of steps to decay over.
-            t_mul: A Python float. Used to derive the number of iterations in
-                the i-th period.
-            m_mul: A Python float. Used to derive the initial learning rate of
-                the i-th period.
-            alpha: A Python float. Minimum learning rate value as a fraction of
-                the `initial_learning_rate`.
-            name: String. Optional name of the operation. Defaults to
-                `"SGDRDecay"`.
-        """
         super().__init__()
 
         self.initial_learning_rate = initial_learning_rate
@@ -818,7 +809,7 @@ class CosineDecayRestarts(LearningRateSchedule):
         self.name = name
 
     def __call__(self, step):
-        with ops.name_scope(self.name or "SGDRDecay"):
+        with ops.name_scope(self.name):
             initial_learning_rate = ops.convert_to_tensor(
                 self.initial_learning_rate
             )
