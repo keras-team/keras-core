@@ -4,36 +4,30 @@ from keras_core import testing
 from keras_core.layers.activations import prelu
 
 
-class LeakyReLUTest(testing.TestCase):
-    def test_relu(self):
+class PReLUTest(testing.TestCase):
+    def test_prelu(self):
         self.run_layer_test(
             prelu.PReLU,
             init_kwargs={
                 "negative_slope_initializer": "zeros",
                 "negative_slope_regularizer": "L1",
                 "negative_slope_constraint": "MaxNorm",
-                "shared_axes": None,
+                "shared_axes": 1,
             },
             input_shape=(2, 3, 4),
             supports_masking=True,
         )
 
-    def test_leaky_relu_correctness(self):
-        leaky_relu_layer = prelu.PReLU(negative_slope=0.5)
-        input = np.array([-10, -5, 0.0, 5, 10])
-        expected_output = np.array([-5.0, -2.5, 0.0, 5.0, 10.0])
-        result = leaky_relu_layer(input)
+    def test_pelu_correctness(self):
+        prelu_layer = prelu.PReLU(
+            negative_slope_initializer="glorot_uniform",
+            negative_slope_regularizer="l1",
+            negative_slope_constraint="non_neg",
+            shared_axes=None,
+        )
+        test_input = np.random.randn(10, 5)
+        result = prelu_layer(test_input)
+        expected_output = np.maximum(
+            0, test_input
+        ) + prelu_layer.negative_slope.numpy() * np.minimum(0, test_input)
         self.assertAllClose(result, expected_output)
-
-    def test_invalid_usage(self):
-        with self.assertRaisesRegex(
-            ValueError,
-            "The negative_slope value of a Leaky ReLU layer cannot be None, "
-            "Expecting a float. Received negative_slope: None",
-        ):
-            self.run_layer_test(
-                prelu.PReLU,
-                init_kwargs={},
-                input_shape=(2, 3, 4),
-                supports_masking=True,
-            )
