@@ -4,36 +4,34 @@ from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
 
 
-@keras_core_export("keras_core.layers.LeakyReLU")
+@keras_core_export("keras_core.layers.Softmax")
 class Softmax(Layer):
-    """Softmax activation function.
+    """Softmax activation layer.
 
-    Example without mask:
+    Formula:
+    ``` python
+    exp_x = exp(x - max(x))
+    f(x) = exp_x / sum(exp_x)
+    ```
 
-    >>> inp = np.asarray([1., 2., 1.])
-    >>> layer = tf.keras.layers.Softmax()
-    >>> layer(inp).numpy()
-    array([0.21194157, 0.5761169 , 0.21194157], dtype=float32)
-    >>> mask = np.asarray([True, False, True], dtype=bool)
-    >>> layer(inp, mask).numpy()
-    array([0.5, 0. , 0.5], dtype=float32)
-
-    Input shape:
-        Arbitrary. Use the keyword argument `input_shape`
-        (tuple of integers, does not include the samples axis)
-        when using this layer as the first layer in a model.
-
-    Output shape:
-        Same shape as the input.
+    Example:
+    ``` python
+    softmax_layer = Softmax()
+    input = np.array([1.0, 2.0, 1.0])
+    result = softmax_layer(input)
+    # result = [0.21194157, 0.5761169, 0.21194157]
+    ```
 
     Args:
         axis: Integer, or list of Integers, axis along which the softmax
             normalization is applied.
+        **kwargs: Base layer keyword arguments, such as
+            `name` and `dtype`.
+
     Call arguments:
         inputs: The inputs, or logits to the softmax layer.
         mask: A boolean mask of the same shape as `inputs`. The mask
             specifies 1 to keep and 0 to mask. Defaults to `None`.
-
 
     Returns:
         Softmaxed output with the same shape as `inputs`.
@@ -61,9 +59,9 @@ class Softmax(Layer):
         return activations.softmax(inputs, axis=self.axis)
 
     def get_config(self):
-        config = {"axis": self.axis}
-        base_config = super().get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        config = super().get_config()
+        config.update({"axis": self.axis})
+        return config
 
     def compute_output_shape(self, input_shape):
         return input_shape
