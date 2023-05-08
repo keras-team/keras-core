@@ -10,14 +10,14 @@ def get_test_data(
     """Generates test data to train a model on.
 
     Args:
-      train_samples: Integer, how many training samples to generate.
-      test_samples: Integer, how many test samples to generate.
-      input_shape: Tuple of integers, shape of the inputs.
-      num_classes: Integer, number of classes for the data and targets.
-      random_seed: Integer, random seed used by numpy to generate data.
+        train_samples: Integer, how many training samples to generate.
+        test_samples: Integer, how many test samples to generate.
+        input_shape: Tuple of integers, shape of the inputs.
+        num_classes: Integer, number of classes for the data and targets.
+        random_seed: Integer, random seed used by Numpy to generate data.
 
     Returns:
-      A tuple of Numpy arrays: `(x_train, y_train), (x_test, y_test)`.
+        A tuple of Numpy arrays: `(x_train, y_train), (x_test, y_test)`.
     """
     if random_seed is not None:
         np.random.seed(random_seed)
