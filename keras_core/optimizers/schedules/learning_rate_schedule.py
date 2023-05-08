@@ -139,12 +139,10 @@ class ExponentialDecay(LearningRateSchedule):
         """Applies exponential decay to the learning rate.
 
         Args:
-            initial_learning_rate: A scalar `float32` or `float64` tensor or a
-                Python number.  The initial learning rate.
-            decay_steps: A scalar `int32` or `int64` tensor or a Python number.
-                Must be positive.  See the decay computation above.
-            decay_rate: A scalar `float32` or `float64` tensor or a Python
-                number.  The decay rate.
+            initial_learning_rate: A Python float. The initial learning rate.
+            decay_steps: A Python integer. Must be positive. See the decay
+                computation above.
+            decay_rate: A Python float. The decay rate.
             staircase: Boolean.  If `True` decay the learning rate at discrete
                 intervals.
             name: String.  Optional name of the operation.  Defaults to
@@ -223,13 +221,13 @@ class PiecewiseConstantDecay(LearningRateSchedule):
         """Piecewise constant from boundaries and interval values.
 
         Args:
-            boundaries: A list of tensors or `int`s or `float`s with strictly
-                increasing entries, and with all elements having the same type
-                as the optimizer step.
-            values: A list of tensors or `float`s or `int`s that specifies the
-                values for the intervals defined by `boundaries`. It should have
-                one more element than `boundaries`, and all elements should have
-                the same type.
+            boundaries: A list of Python numbers with strictly increasing
+                entries, and with all elements having the same type as the
+                optimizer step.
+            values: A list of Python numbers that specifies the values for the
+                intervals defined by `boundaries`. It should have one more
+                element than `boundaries`, and all elements should have the same
+                type.
             name: A string. Optional name of the operation. Defaults to
                 `"PiecewiseConstant"`.
 
@@ -382,14 +380,12 @@ class PolynomialDecay(LearningRateSchedule):
         """Applies a polynomial decay to the learning rate.
 
         Args:
-            initial_learning_rate: A scalar `float32` or `float64` tensor or a
-                Python number.  The initial learning rate.
-            decay_steps: A scalar `int32` or `int64` tensor or a Python
-                number. Must be positive.  See the decay computation above.
-            end_learning_rate: A scalar `float32` or `float64` tensor or a
-                Python number.  The minimal end learning rate.
-            power: A scalar `float32` or `float64` tensor or a
-                Python number. The power of the polynomial. Defaults to `1.0`.
+            initial_learning_rate: A Python float. The initial learning rate.
+            decay_steps: A Python integer. Must be positive. See the decay
+                computation above.
+            end_learning_rate: A Python float. The minimal end learning rate.
+            power: A Python float. The power of the polynomial. Defaults to
+                `1.0`.
             cycle: A boolean, whether it should cycle beyond decay_steps.
             name: String.  Optional name of the operation. Defaults to
                 `"PolynomialDecay"`.
@@ -460,7 +456,7 @@ class InverseTimeDecay(LearningRateSchedule):
     the training progresses. This schedule applies the inverse decay function
     to an optimizer step, given a provided initial learning rate.
     It requires a `step` value to compute the decayed learning rate. You can
-    just pass a TensorFlow variable that you increment at each training step.
+    just pass a backend variable that you increment at each training step.
 
     The schedule is a 1-arg callable that produces a decayed learning
     rate when passed the current optimizer step. This can be useful for changing
@@ -517,8 +513,7 @@ class InverseTimeDecay(LearningRateSchedule):
         """Applies inverse time decay to the initial learning rate.
 
         Args:
-            initial_learning_rate: A scalar `float32` or `float64` tensor or a
-                Python number.  The initial learning rate.
+            initial_learning_rate: A Python float. The initial learning rate.
             decay_steps: How often to apply decay.
             decay_rate: A Python number.  The decay rate.
             staircase: Whether to apply decay in a discrete staircase, as o
@@ -580,7 +575,7 @@ class CosineDecay(LearningRateSchedule):
     `decay_steps`. If `warmup_target` is None we skip warmup and our decay
     will take our learning rate from `initial_learning_rate` to `alpha`.
     It requires a `step` value to  compute the learning rate. You can
-    just pass a TensorFlow variable that you increment at each training step.
+    just pass a backend variable that you increment at each training step.
 
     The schedule is a 1-arg callable that produces a warmup followed by a
     decayed learning rate when passed the current optimizer step. This can be
@@ -656,23 +651,18 @@ class CosineDecay(LearningRateSchedule):
         """Applies cosine decay to the learning rate.
 
         Args:
-            initial_learning_rate: A scalar `float32` or `float64` tensor or a
-                Python int. The initial learning rate.
-            decay_steps: A scalar `int32` or `int64` tensor or a Python int.
-                Number of steps to decay over.
-            alpha: A scalar `float32` or `float64` tensor or a Python int.
-                Minimum learning rate value for decay as a fraction of
-                `initial_learning_rate`.
+            initial_learning_rate: A Python float. The initial learning rate.
+            decay_steps: A Python int. Number of steps to decay over.
+            alpha: A Python float. Minimum learning rate value for decay as a
+                fraction of `initial_learning_rate`.
             name: String. Optional name of the operation.  Defaults to
                 `"CosineDecay"`.
-            warmup_target: None or a scalar `float32` or `float64` tensor or a
-                Python int. The target learning rate for our warmup phase. Will
-                cast to the `initial_learning_rate` datatype. Setting to `None`
-                will skip warmup and begins decay phase from
+            warmup_target: A Python float. The target learning rate for our
+                warmup phase. Will cast to the `initial_learning_rate` datatype.
+                Setting to `None` will skip warmup and begins decay phase from
                 `initial_learning_rate`. Otherwise scheduler will warmup from
                 `initial_learning_rate` to `warmup_target`.
-            warmup_steps: A scalar `int32` or `int64` tensor or a Python int.
-                Number of steps to warmup over.
+            warmup_steps: A Python int. Number of steps to warmup over.
         """
         super().__init__()
 
@@ -764,7 +754,7 @@ class CosineDecayRestarts(LearningRateSchedule):
     the training progresses. This schedule applies a cosine decay function with
     restarts to an optimizer step, given a provided initial learning rate.
     It requires a `step` value to compute the decayed learning rate. You can
-    just pass a TensorFlow variable that you increment at each training step.
+    just pass a backend variable that you increment at each training step.
 
     The schedule is a 1-arg callable that produces a decayed learning
     rate when passed the current optimizer step. This can be useful for changing
@@ -807,17 +797,14 @@ class CosineDecayRestarts(LearningRateSchedule):
         """Applies cosine decay with restarts to the learning rate.
 
         Args:
-            initial_learning_rate: A scalar `float32` or `float64` Tensor or a
-                Python number. The initial learning rate.
-            first_decay_steps: A scalar `int32` or `int64` tensor or a Python
-                number. Number of steps to decay over.
-            t_mul: A scalar `float32` or `float64` tensor or a Python number.
-                Used to derive the number of iterations in the i-th period.
-            m_mul: A scalar `float32` or `float64` tensor or a Python number.
-                Used to derive the initial learning rate of the i-th period.
-            alpha: A scalar `float32` or `float64` Tensor or a Python number.
-                Minimum learning rate value as a fraction of the
-                initial_learning_rate.
+            initial_learning_rate: A Python float. The initial learning rate.
+            first_decay_steps: A Python integer. Number of steps to decay over.
+            t_mul: A Python float. Used to derive the number of iterations in
+                the i-th period.
+            m_mul: A Python float. Used to derive the initial learning rate of
+                the i-th period.
+            alpha: A Python float. Minimum learning rate value as a fraction of
+                the `initial_learning_rate`.
             name: String. Optional name of the operation. Defaults to
                 `"SGDRDecay"`.
         """
