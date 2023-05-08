@@ -1,19 +1,35 @@
 from keras_core import activations
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
-from keras_core import operations as ops
-from keras_core import backend
 
 
 @keras_core_export("keras_core.layers.ReLU")
 class ReLU(Layer):
-    """Applies an Exponential Linear Unit function to an output.
-    It follows:
+    """Rectified Linear Unit activation function layer.
+
+    Formula:
+    ``` python
+    f(x) = max(x,0)
+    f(x) = max_value if x >= max_value
+    f(x) = x if threshold <= x < max_value
+    f(x) = negative_slope * (x - threshold) otherwise
     ```
-        f(x) = (exp(x) - 1.) for x < 0
-        f(x) = x for x >= 0
+
+    Example:
+    ``` python
+    relu_layer = relu.ReLU(max_value=10, negative_slope=0.5, threshold=0)
+    input = np.array([-10, -5, 0.0, 5, 10])
+    result = relu_layer(input)
+    # result = [-5. , -2.5,  0. ,  5. , 10.]
     ```
+
     Args:
+        max_value: Float >= 0. Maximum activation value. None means unlimited.
+            Defaults to `None`.
+        negative_slope: Float >= 0. Negative slope coefficient.
+            Defaults to `0.`.
+        threshold: Float >= 0. Threshold value for thresholded activation.
+            Defaults to `0.`.
         **kwargs: Base layer keyword arguments, such as
             `name` and `dtype`.
     """
@@ -39,11 +55,9 @@ class ReLU(Layer):
             )
 
         self.supports_masking = True
-        if max_value is not None:
-            max_value = ops.cast(max_value, dtype=backend.floatx())
         self.max_value = max_value
-        self.negative_slope = ops.cast(negative_slope, dtype=backend.floatx())
-        self.threshold = ops.cast(threshold, dtype=backend.floatx())
+        self.negative_slope = negative_slope
+        self.threshold = threshold
 
     def call(self, inputs):
         return activations.relu(inputs, negative_slope=self.negative_slope, max_value=self.max_value, threshold=self.threshold)
