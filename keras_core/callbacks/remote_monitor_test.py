@@ -1,3 +1,4 @@
+import warnings
 from unittest import mock
 
 import numpy as np
@@ -22,9 +23,10 @@ class TerminateOnNaNTest(testing.TestCase):
         monitor = callbacks.RemoteMonitor()
         # This will raise a warning since the default address in unreachable:
         warning_msg = "Could not reach RemoteMonitor root server"
-        with self.assertLogs(level="WARNING") as logs:
+        with warnings.catch_warnings(record=True) as warning_logs:
+            warnings.simplefilter("always")
             monitor.on_epoch_end(0, logs={"loss": 0.0})
-            self.assertTrue(any(warning_msg in log for log in logs.output))
+            self.assertIn(warning_msg, str(warning_logs[-1].message))
 
     def test_RemoteMonitor_np_array(self):
         if requests is None:

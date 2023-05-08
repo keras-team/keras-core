@@ -1,7 +1,7 @@
 import json
+import warnings
 
 import numpy as np
-from absl import logging
 
 from keras_core.api_export import keras_core_export
 from keras_core.callbacks.callback import Callback
@@ -77,6 +77,7 @@ class RemoteMonitor(Callback):
                     headers=self.headers,
                 )
         except requests.exceptions.RequestException:
-            logging.warning(
-                "Could not reach RemoteMonitor root server at " + str(self.root)
+            warnings.warn(
+                f"Could not reach RemoteMonitor root server at {self.root}",
+                stacklevel=2,
             )
