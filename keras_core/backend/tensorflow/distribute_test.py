@@ -2,6 +2,7 @@
 
 import pytest
 import tensorflow as tf
+from tensorflow.python.eager import context
 
 from keras_core import backend
 from keras_core import layers
@@ -19,6 +20,7 @@ class DistributeTest(testing.TestCase):
         super().setUp()
         # Need at least 2 devices for distribution related tests.
         cpus = tf.config.list_physical_devices("CPU")
+        context._reset_context()
         tf.config.set_logical_device_configuration(
             cpus[0],
             [
@@ -34,7 +36,7 @@ class DistributeTest(testing.TestCase):
             dense.build([4, 2])
 
         self.assertIsInstance(dense.kernel, backend.KerasVariable)
-        self.assertIsInstance(dense.kernel.value, 
+        self.assertIsInstance(dense.kernel.value,
                               tf.distribute.DistributedValues)
         self.assertIn('MirroredVariable', dense.kernel.value.__class__.__name__)
 
@@ -52,7 +54,7 @@ class DistributeTest(testing.TestCase):
             model = models.Functional(inputs, output)
 
         self.assertIsInstance(dense.kernel, backend.KerasVariable)
-        self.assertIsInstance(dense.kernel.value, 
+        self.assertIsInstance(dense.kernel.value,
                               tf.distribute.DistributedValues)
 
         def input_fn(ctx):
@@ -61,8 +63,8 @@ class DistributeTest(testing.TestCase):
             else:
                 return tf.zeros([8, 4])
 
-        distributed_inputs = strategy.experimental_distribute_values_from_function(
-            input_fn)
+        distributed_inputs = strategy.\
+            experimental_distribute_values_from_function(input_fn)
 
         @tf.function
         def run_fn(data):
@@ -70,7 +72,7 @@ class DistributeTest(testing.TestCase):
 
         result = strategy.run(run_fn, args=(distributed_inputs,))
 
-        self.assertIsInstance(result, 
+        self.assertIsInstance(result,
                               tf.types.experimental.distributed.PerReplica)
         self.assertLen(result.values, 2)
         self.assertEqual(result.values[0].shape, [8, 2])

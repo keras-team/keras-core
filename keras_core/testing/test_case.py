@@ -32,7 +32,8 @@ class TestCase(unittest.TestCase):
         except AssertionError:
             return
         msg = msg or ""
-        raise AssertionError("The two values are close at all elements. %s" % msg)
+        raise AssertionError(
+            "The two values are close at all elements. %s" % msg)
 
     def assertAlmostEqual(self, x1, x2, decimal=3, msg=None):
         np.testing.assert_almost_equal(x1, x2, decimal=decimal)
