@@ -309,7 +309,7 @@ class PolynomialDecay(LearningRateSchedule):
     in the given `decay_steps`.
 
     It requires a `step` value to compute the decayed learning rate. You
-    can just pass a TensorFlow variable that you increment at each training
+    can just pass a backend variable that you increment at each training
     step.
 
     The schedule is a 1-arg callable that produces a decayed learning rate
