@@ -30,13 +30,13 @@ class UpSampling1D(Layer):
       [ 9. 10. 11.]]]
 
     Args:
-      size: Integer. Upsampling factor.
+        size: Integer. Upsampling factor.
 
     Input shape:
-      3D tensor with shape: `(batch_size, steps, features)`.
+        3D tensor with shape: `(batch_size, steps, features)`.
 
     Output shape:
-      3D tensor with shape: `(batch_size, upsampled_steps, features)`.
+        3D tensor with shape: `(batch_size, upsampled_steps, features)`.
     """
 
     def __init__(self, size=2, **kwargs):
@@ -51,14 +51,9 @@ class UpSampling1D(Layer):
         return [input_shape[0], size, input_shape[2]]
 
     def call(self, inputs):
-        inputs_shape = inputs.shape
-        # For static axis
-        if inputs_shape[1] is not None:
-            return ops.repeat(x=inputs, repeats=self.size, axis=1)
-
-        # TODO(rchao): Add dynamic axis support.
+        return ops.repeat(x=inputs, repeats=self.size, axis=1)
 
     def get_config(self):
         config = {"size": self.size}
         base_config = super().get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        return {**base_config, **config}
