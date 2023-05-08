@@ -5,36 +5,37 @@ from keras_core import regularizers
 from keras_core.api_export import keras_core_export
 from keras_core.layers.input_spec import InputSpec
 from keras_core.layers.layer import Layer
+from keras_core.layers import Wrapper
 
 
 @keras_core_export("keras_core.layers.SpectralNormalization")
-class SpectralNormalization(Layer):
+class SpectralNormalization(Wrapper):
     """Performs spectral normalization on the weights of a target layer.
 
     This wrapper controls the Lipschitz constant of the weights of a layer by
     constraining their spectral norm, which can stabilize the training of GANs.
 
     Args:
-      layer: A `keras.layers.Layer` instance that
-        has either a `kernel` (e.g. `Conv2D`, `Dense`...)
-        or an `embeddings` attribute (`Embedding` layer).
-      power_iterations: int, the number of iterations during normalization.
+        layer: A `keras_core.layers.Layer` instance that
+            has either a `kernel` (e.g. `Conv2D`, `Dense`...)
+            or an `embeddings` attribute (`Embedding` layer).
+        power_iterations: int, the number of iterations during normalization.
 
     Examples:
 
-    Wrap `keras.layers.Conv2D`:
+    Wrap `keras_core.layers.Conv2D`:
     >>> x = np.random.rand(1, 10, 10, 1)
-    >>> conv2d = SpectralNormalization(tf.keras.layers.Conv2D(2, 2))
+    >>> conv2d = SpectralNormalization(keras_core.layers.Conv2D(2, 2))
     >>> y = conv2d(x)
     >>> y.shape
-    TensorShape([1, 9, 9, 2])
+    (1, 9, 9, 2)
 
     Wrap `keras.layers.Dense`:
     >>> x = np.random.rand(1, 10, 10, 1)
-    >>> dense = SpectralNormalization(tf.keras.layers.Dense(10))
+    >>> dense = SpectralNormalization(keras_core.layers.Dense(10))
     >>> y = dense(x)
     >>> y.shape
-    TensorShape([1, 10, 10, 10])
+    (1, 10, 10, 10)
 
     Reference:
 
@@ -53,7 +54,7 @@ class SpectralNormalization(Layer):
     def build(self, input_shape):
         super().build(input_shape)
         self.input_spec = InputSpec(
-            shape=[None] + input_shape[1:]
+            shape=[None] + list(input_shape[1:])
         )
 
         if hasattr(self.layer, "kernel"):
@@ -70,7 +71,7 @@ class SpectralNormalization(Layer):
 
         self.vector_u = self.add_weight(
             shape=(1, self.kernel_shape[-1]),
-            initializer=TruncatedNormal(stddev=0.02),
+            initializer=initializers.TruncatedNormal(stddev=0.02),
             trainable=False,
             name="vector_u",
             dtype=self.kernel.dtype,
@@ -117,7 +118,7 @@ class SpectralNormalization(Layer):
             )
     
     def _l2_normalize(self, x):
-        square_sum = ops.sum(ops.square(x), axis=self.axis, keepdims=True)
+        square_sum = ops.sum(ops.square(x), keepdims=True)
         x_inv_norm = 1 / ops.sqrt(ops.maximum(square_sum, 1e-12))
         return ops.multiply(x, x_inv_norm)
 
