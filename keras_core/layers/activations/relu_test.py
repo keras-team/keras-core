@@ -5,10 +5,6 @@ from keras_core.layers.activations import relu
 
 
 class ReLUTest(testing.TestCase):
-    def test_config(self):
-        relu_layer = relu.ReLU(max_value=10, negative_slope=1, threshold=1)
-        self.run_class_serialization_test(relu_layer)
-
     def test_relu(self):
         self.run_layer_test(
             relu.ReLU,
@@ -21,10 +17,24 @@ class ReLUTest(testing.TestCase):
             supports_masking=True,
         )
 
-    def test_relu_correctness(self):
+    def test_normal_relu_correctness(self):
+        relu_layer = relu.ReLU(max_value=10, negative_slope=0.0, threshold=0)
+        input = np.array([-10, -5, 0.0, 5, 10])
+        expected_output = np.array([0.0, 0.0, 0.0, 5.0, 10.0])
+        result = relu_layer(input)
+        self.assertAllClose(result, expected_output)
+
+    def test_leaky_relu_correctness(self):
         relu_layer = relu.ReLU(max_value=10, negative_slope=0.5, threshold=0)
         input = np.array([-10, -5, 0.0, 5, 10])
         expected_output = np.array([-5.0, -2.5, 0.0, 5.0, 10.0])
+        result = relu_layer(input)
+        self.assertAllClose(result, expected_output)
+
+    def test_threshold_relu_correctness(self):
+        relu_layer = relu.ReLU(max_value=8, negative_slope=0.0, threshold=5)
+        input = np.array([6.0, 7.0, 0.0, 5, 10])
+        expected_output = np.array([6.0, 7.0, 0.0, 0.0, 8.0])
         result = relu_layer(input)
         self.assertAllClose(result, expected_output)
 
@@ -32,7 +42,7 @@ class ReLUTest(testing.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             "max_value of a ReLU layer cannot be a negative "
-            "value. Received: -10",
+            "value. Received max_value: -10",
         ):
             self.run_layer_test(
                 relu.ReLU,
@@ -48,7 +58,7 @@ class ReLUTest(testing.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             "negative_slope of a ReLU layer cannot be a negative "
-            "value. Received: -10",
+            "value. Received negative_slope: -10",
         ):
             self.run_layer_test(
                 relu.ReLU,
@@ -64,7 +74,7 @@ class ReLUTest(testing.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             "threshold of a ReLU layer cannot be a negative "
-            "value. Received: -10",
+            "value. Received threshold: -10",
         ):
             self.run_layer_test(
                 relu.ReLU,

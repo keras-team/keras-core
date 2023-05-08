@@ -27,9 +27,9 @@ class ReLU(Layer):
         max_value: Float >= 0. Maximum activation value. None means unlimited.
             Defaults to `None`.
         negative_slope: Float >= 0. Negative slope coefficient.
-            Defaults to `0.`.
+            Defaults to 0.0.
         threshold: Float >= 0. Threshold value for thresholded activation.
-            Defaults to `0.`.
+            Defaults to 0.0.
         **kwargs: Base layer keyword arguments, such as
             `name` and `dtype`.
     """
@@ -41,17 +41,17 @@ class ReLU(Layer):
         if max_value is not None and max_value < 0.0:
             raise ValueError(
                 "max_value of a ReLU layer cannot be a negative "
-                f"value. Received: {max_value}"
+                f"value. Received max_value: {max_value}"
             )
         if negative_slope is None or negative_slope < 0.0:
             raise ValueError(
                 "negative_slope of a ReLU layer cannot be a negative "
-                f"value. Received: {negative_slope}"
+                f"value. Received negative_slope: {negative_slope}"
             )
         if threshold is None or threshold < 0.0:
             raise ValueError(
                 "threshold of a ReLU layer cannot be a negative "
-                f"value. Received: {threshold}"
+                f"value. Received threshold: {threshold}"
             )
 
         self.supports_masking = True
@@ -76,7 +76,6 @@ class ReLU(Layer):
                 "threshold": self.threshold,
             }
         )
-
         return config
 
     def compute_output_shape(self, input_shape):
