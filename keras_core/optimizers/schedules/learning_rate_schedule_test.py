@@ -11,28 +11,15 @@ from keras_core.optimizers.schedules import learning_rate_schedule
 
 class ExponentialDecayTest(testing.TestCase):
     def test_config(self):
-        ed_schedule = learning_rate_schedule.ExponentialDecay(
-            initial_learning_rate=0.05,
-            decay_steps=10,
-            decay_rate=0.96,
-            staircase=True,
-            name="my_ed",
+        self.run_class_serialization_test(
+            learning_rate_schedule.ExponentialDecay(
+                initial_learning_rate=0.05,
+                decay_steps=10,
+                decay_rate=0.96,
+                staircase=True,
+                name="my_ed",
+            )
         )
-        self.assertEqual(ed_schedule.name, "my_ed")
-        self.assertEqual(ed_schedule.initial_learning_rate, 0.05)
-        self.assertEqual(ed_schedule.decay_steps, 10)
-        self.assertEqual(ed_schedule.decay_rate, 0.96)
-        self.assertTrue(ed_schedule.staircase)
-
-        # Check save and restore config
-        ed_schedule2 = learning_rate_schedule.ExponentialDecay.from_config(
-            ed_schedule.get_config()
-        )
-        self.assertEqual(ed_schedule2.name, "my_ed")
-        self.assertEqual(ed_schedule2.initial_learning_rate, 0.05)
-        self.assertEqual(ed_schedule2.decay_steps, 10)
-        self.assertEqual(ed_schedule2.decay_rate, 0.96)
-        self.assertTrue(ed_schedule2.staircase)
 
     def test_continuous(self):
         step = 5
@@ -78,22 +65,11 @@ class ExponentialDecayTest(testing.TestCase):
 
 class PiecewiseConstantDecayTest(testing.TestCase):
     def test_config(self):
-        pcd_schedule = learning_rate_schedule.PiecewiseConstantDecay(
-            boundaries=[10, 20], values=[1, 2, 3], name="my_pcd"
-        )
-        self.assertEqual(pcd_schedule.name, "my_pcd")
-        self.assertAllClose(pcd_schedule.boundaries, [10, 20])
-        self.assertEqual(pcd_schedule.values, [1, 2, 3])
-
-        # Check save and restore config
-        pcd_schedule2 = (
-            learning_rate_schedule.PiecewiseConstantDecay.from_config(
-                pcd_schedule.get_config()
+        self.run_class_serialization_test(
+            learning_rate_schedule.PiecewiseConstantDecay(
+                boundaries=[10, 20], values=[1, 2, 3], name="my_pcd"
             )
         )
-        self.assertEqual(pcd_schedule2.name, "my_pcd")
-        self.assertAllClose(pcd_schedule2.boundaries, [10, 20])
-        self.assertEqual(pcd_schedule2.values, [1, 2, 3])
 
     def test_piecewise_values(self):
         x = backend.Variable(-999)
@@ -134,31 +110,16 @@ class PiecewiseConstantDecayTest(testing.TestCase):
 
 class LinearDecayTest(testing.TestCase):
     def test_config(self):
-        ld_schedule = learning_rate_schedule.PolynomialDecay(
-            initial_learning_rate=0.1,
-            decay_steps=100,
-            end_learning_rate=0.005,
-            power=1.0,
-            cycle=False,
-            name="my_ld",
+        self.run_class_serialization_test(
+            learning_rate_schedule.PolynomialDecay(
+                initial_learning_rate=0.1,
+                decay_steps=100,
+                end_learning_rate=0.005,
+                power=1.0,
+                cycle=False,
+                name="my_ld",
+            )
         )
-        self.assertEqual(ld_schedule.name, "my_ld")
-        self.assertEqual(ld_schedule.initial_learning_rate, 0.1)
-        self.assertEqual(ld_schedule.decay_steps, 100)
-        self.assertEqual(ld_schedule.end_learning_rate, 0.005)
-        self.assertEqual(ld_schedule.power, 1.0)
-        self.assertFalse(ld_schedule.cycle)
-
-        # Check save and restore config
-        ld_schedule2 = learning_rate_schedule.PolynomialDecay.from_config(
-            ld_schedule.get_config()
-        )
-        self.assertEqual(ld_schedule2.name, "my_ld")
-        self.assertEqual(ld_schedule2.initial_learning_rate, 0.1)
-        self.assertEqual(ld_schedule2.decay_steps, 100)
-        self.assertEqual(ld_schedule2.end_learning_rate, 0.005)
-        self.assertEqual(ld_schedule2.power, 1.0)
-        self.assertFalse(ld_schedule2.cycle)
 
     def test_halfway(self):
         step = 5
@@ -272,28 +233,15 @@ class SqrtDecayTest(testing.TestCase):
 
 class InverseTimeDecayTest(testing.TestCase):
     def test_config(self):
-        itd_schedule = learning_rate_schedule.InverseTimeDecay(
-            initial_learning_rate=0.05,
-            decay_steps=10,
-            decay_rate=0.96,
-            staircase=True,
-            name="my_itd",
+        self.run_class_serialization_test(
+            learning_rate_schedule.InverseTimeDecay(
+                initial_learning_rate=0.05,
+                decay_steps=10,
+                decay_rate=0.96,
+                staircase=True,
+                name="my_itd",
+            )
         )
-        self.assertEqual(itd_schedule.name, "my_itd")
-        self.assertEqual(itd_schedule.initial_learning_rate, 0.05)
-        self.assertEqual(itd_schedule.decay_steps, 10)
-        self.assertEqual(itd_schedule.decay_rate, 0.96)
-        self.assertTrue(itd_schedule.staircase)
-
-        # Check save and restore config
-        itd_schedule2 = learning_rate_schedule.InverseTimeDecay.from_config(
-            itd_schedule.get_config()
-        )
-        self.assertEqual(itd_schedule2.name, "my_itd")
-        self.assertEqual(itd_schedule2.initial_learning_rate, 0.05)
-        self.assertEqual(itd_schedule2.decay_steps, 10)
-        self.assertEqual(itd_schedule2.decay_rate, 0.96)
-        self.assertTrue(itd_schedule2.staircase)
 
     def test_decay(self):
         initial_lr = 0.1
@@ -326,31 +274,16 @@ class InverseTimeDecayTest(testing.TestCase):
 
 class CosineDecayTest(testing.TestCase):
     def test_config(self):
-        cd_schedule = learning_rate_schedule.CosineDecay(
-            initial_learning_rate=0.05,
-            decay_steps=10,
-            alpha=0.1,
-            warmup_target=0.2,
-            warmup_steps=2,
-            name="my_cd",
+        self.run_class_serialization_test(
+            learning_rate_schedule.CosineDecay(
+                initial_learning_rate=0.05,
+                decay_steps=10,
+                alpha=0.1,
+                warmup_target=0.2,
+                warmup_steps=2,
+                name="my_cd",
+            )
         )
-        self.assertEqual(cd_schedule.name, "my_cd")
-        self.assertEqual(cd_schedule.initial_learning_rate, 0.05)
-        self.assertEqual(cd_schedule.decay_steps, 10)
-        self.assertEqual(cd_schedule.alpha, 0.1)
-        self.assertEqual(cd_schedule.warmup_target, 0.2)
-        self.assertEqual(cd_schedule.warmup_steps, 2)
-
-        # Check save and restore config
-        cd_schedule2 = learning_rate_schedule.CosineDecay.from_config(
-            cd_schedule.get_config()
-        )
-        self.assertEqual(cd_schedule2.name, "my_cd")
-        self.assertEqual(cd_schedule2.initial_learning_rate, 0.05)
-        self.assertEqual(cd_schedule2.decay_steps, 10)
-        self.assertEqual(cd_schedule2.alpha, 0.1)
-        self.assertEqual(cd_schedule2.warmup_target, 0.2)
-        self.assertEqual(cd_schedule2.warmup_steps, 2)
 
     def np_cosine_decay(self, step, decay_steps, alpha=0.0):
         step = min(step, decay_steps)
@@ -435,31 +368,16 @@ class CosineDecayTest(testing.TestCase):
 
 class CosineDecayRestartsTest(testing.TestCase):
     def test_config(self):
-        cdr_schedule = learning_rate_schedule.CosineDecayRestarts(
-            initial_learning_rate=0.05,
-            first_decay_steps=10,
-            alpha=0.1,
-            t_mul=3.0,
-            m_mul=4.0,
-            name="my_cdr",
+        self.run_class_serialization_test(
+            learning_rate_schedule.CosineDecayRestarts(
+                initial_learning_rate=0.05,
+                first_decay_steps=10,
+                alpha=0.1,
+                t_mul=3.0,
+                m_mul=4.0,
+                name="my_cdr",
+            )
         )
-        self.assertEqual(cdr_schedule.name, "my_cdr")
-        self.assertEqual(cdr_schedule.initial_learning_rate, 0.05)
-        self.assertEqual(cdr_schedule.first_decay_steps, 10)
-        self.assertEqual(cdr_schedule.alpha, 0.1)
-        self.assertEqual(cdr_schedule._t_mul, 3.0)
-        self.assertEqual(cdr_schedule._m_mul, 4.0)
-
-        # Check save and restore config
-        cdr_schedule2 = learning_rate_schedule.CosineDecayRestarts.from_config(
-            cdr_schedule.get_config()
-        )
-        self.assertEqual(cdr_schedule2.name, "my_cdr")
-        self.assertEqual(cdr_schedule2.initial_learning_rate, 0.05)
-        self.assertEqual(cdr_schedule2.first_decay_steps, 10)
-        self.assertEqual(cdr_schedule2.alpha, 0.1)
-        self.assertEqual(cdr_schedule2._t_mul, 3.0)
-        self.assertEqual(cdr_schedule2._m_mul, 4.0)
 
     def np_cosine_decay_restarts(
         self, step, decay_steps, t_mul=2.0, m_mul=1.0, alpha=0.0
