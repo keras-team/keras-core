@@ -1,4 +1,5 @@
 import json
+
 import numpy as np
 from absl import logging
 
@@ -9,6 +10,7 @@ try:
     import requests
 except ImportError:
     requests = None
+
 
 @keras_core_export("keras_core.callbacks.RemoteMonitor")
 class RemoteMonitor(Callback):
@@ -76,6 +78,5 @@ class RemoteMonitor(Callback):
                 )
         except requests.exceptions.RequestException:
             logging.warning(
-                "Warning: could not reach RemoteMonitor root server at "
-                + str(self.root)
+                "Could not reach RemoteMonitor root server at " + str(self.root)
             )
