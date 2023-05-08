@@ -11,7 +11,7 @@ from keras_core import testing
 
 @pytest.mark.skipif(
     backend.backend() != 'tensorflow',
-    reason="'The distribute test can only run with TF backend.",
+    reason='The distribute test can only run with TF backend.',
 )
 class DistributeTest(testing.TestCase):
 
