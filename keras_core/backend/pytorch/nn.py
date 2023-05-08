@@ -75,7 +75,9 @@ def max_pool(
     padding="valid",
     data_format="channels_last",
 ):
-    raise NotImplementedError("`max_pool` not yet implemeneted for PyTorch Backend")
+    raise NotImplementedError(
+        "`max_pool` not yet implemeneted for PyTorch Backend"
+    )
 
 
 def average_pool(
@@ -85,7 +87,9 @@ def average_pool(
     padding,
     data_format="channels_last",
 ):
-    raise NotImplementedError("`average_pool` not yet implemeneted for PyTorch Backend")
+    raise NotImplementedError(
+        "`average_pool` not yet implemeneted for PyTorch Backend"
+    )
 
 
 def conv(
@@ -107,7 +111,9 @@ def depthwise_conv(
     data_format="channels_last",
     dilation_rate=1,
 ):
-    raise NotImplementedError("`depthwise_conv` not yet implemeneted for PyTorch Backend")
+    raise NotImplementedError(
+        "`depthwise_conv` not yet implemeneted for PyTorch Backend"
+    )
 
 
 def separable_conv(
@@ -146,12 +152,16 @@ def conv_transpose(
     data_format="channels_last",
     dilation_rate=1,
 ):
-    raise NotImplementedError("`conv_transpose` not yet implemeneted for PyTorch backend")
+    raise NotImplementedError(
+        "`conv_transpose` not yet implemeneted for PyTorch backend"
+    )
 
 
 def one_hot(x, num_classes, axis=-1):
     if axis != -1 or axis != x.shape[-1]:
-        raise ValueError("`one_hot` is only implemented for last axis for PyTorch backend")
+        raise ValueError(
+            "`one_hot` is only implemented for last axis for PyTorch backend"
+        )
     return F.one_hot(x, num_classes)
 
 
