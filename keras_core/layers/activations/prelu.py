@@ -30,6 +30,8 @@ class PReLU(Layer):
             and you wish to share parameters across space
             so that each filter only has one set of parameters,
             set `shared_axes=[1, 2]`.
+        **kwargs: Base layer keyword arguments, such as
+            `name` and `dtype`.
     """
 
     def __init__(
