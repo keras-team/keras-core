@@ -18,7 +18,7 @@ class PReLUTest(testing.TestCase):
             supports_masking=True,
         )
 
-    def test_pelu_correctness(self):
+    def test_prelu_correctness(self):
         prelu_layer = prelu.PReLU(
             negative_slope_initializer="glorot_uniform",
             negative_slope_regularizer="l1",

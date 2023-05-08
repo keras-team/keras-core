@@ -9,14 +9,13 @@ from keras_core.layers.layer import Layer
 
 @keras_core_export("keras_core.layers.PReLU")
 class PReLU(Layer):
-    """Parametric Rectified Linear Unit.
+    """Parametric Rectified Linear Unit activation layer.
 
     Formula:
-    ```
+    ``` python
     f(x) = negative_slope * x for x < 0
     f(x) = x for x >= 0
     ```
-
     where `negative_slope` is a learned array with the same shape as x.
 
     Args:
