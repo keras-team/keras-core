@@ -4,7 +4,7 @@ from keras_core import testing
 from keras_core.layers.activations import leaky_relu
 
 
-class ReLUTest(testing.TestCase):
+class LeakyReLUTest(testing.TestCase):
     def test_relu(self):
         self.run_layer_test(
             leaky_relu.LeakyReLU,
