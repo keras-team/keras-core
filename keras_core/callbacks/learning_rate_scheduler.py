@@ -16,10 +16,10 @@ class LearningRateScheduler(Callback):
     the optimizer.
 
     Args:
-      schedule: a function that takes an epoch index (integer, indexed from 0)
-          and current learning rate (float) as inputs and returns a new
-          learning rate as output (float).
-      verbose: integer. 0: quiet, 1: update messages.
+        schedule: A function that takes an epoch index (integer, indexed from 0)
+            and current learning rate (float) as inputs and returns a new
+            learning rate as output (float).
+        verbose: Integer. 0: quiet, 1: log update messages.
 
     Example:
 
@@ -33,13 +33,13 @@ class LearningRateScheduler(Callback):
     >>>
     >>> model = keras_core.models.Sequential([keras_core.layers.Dense(10)])
     >>> model.compile(keras_core.optimizers.SGD(), loss='mse')
-    >>> round(model.optimizer.learning_rate.numpy(), 5)
+    >>> round(model.optimizer.learning_rate, 5)
     0.01
 
     >>> callback = keras_core.callbacks.LearningRateScheduler(scheduler)
     >>> history = model.fit(np.arange(100).reshape(5, 20), np.zeros(5),
     ...                     epochs=15, callbacks=[callback], verbose=0)
-    >>> round(model.optimizer.learning_rate.numpy(), 5)
+    >>> round(model.optimizer.learning_rate, 5)
     0.00607
 
     """
@@ -61,7 +61,6 @@ class LearningRateScheduler(Callback):
         except TypeError:  # Support for old API for backward compatibility
             learning_rate = self.schedule(epoch)
 
-        print(type(learning_rate))
         if not isinstance(learning_rate, (float, np.float32, np.float64)):
             raise ValueError(
                 "The output of the `schedule` function should be a float. "
