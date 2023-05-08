@@ -49,7 +49,7 @@ class LeakyReLU(Layer):
 
     def get_config(self):
         config = super().get_config()
-        config.update({"negative_slope": float(self.negative_slope)})
+        config.update({"negative_slope": self.negative_slope})
         return config
 
     def compute_output_shape(self, input_shape):
