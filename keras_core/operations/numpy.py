@@ -138,6 +138,7 @@ import numpy as np
 from keras_core import backend
 from keras_core.backend import KerasTensor
 from keras_core.backend import any_symbolic_tensors
+from keras_core.operations import operation_utils
 from keras_core.operations.operation import Operation
 
 
@@ -1881,16 +1882,19 @@ def matmul(x1, x2):
 
 
 class Max(Operation):
-    def __init__(self, axis=None, keepdims=False):
+    def __init__(self, axis=None, keepdims=False, initial=None):
         super().__init__()
         if isinstance(axis, int):
             self.axis = [axis]
         else:
             self.axis = axis
         self.keepdims = keepdims
+        self.initial = initial
 
     def call(self, x):
-        return backend.numpy.max(x, axis=self.axis, keepdims=self.keepdims)
+        return backend.numpy.max(
+            x, axis=self.axis, keepdims=self.keepdims, initial=self.initial
+        )
 
     def compute_output_spec(self, x):
         return KerasTensor(
@@ -1899,10 +1903,12 @@ class Max(Operation):
         )
 
 
-def max(x, axis=None, keepdims=False):
+def max(x, axis=None, keepdims=False, initial=None):
     if any_symbolic_tensors((x,)):
-        return Max(axis=axis, keepdims=keepdims).symbolic_call(x)
-    return backend.numpy.max(x, axis=axis, keepdims=keepdims)
+        return Max(axis=axis, keepdims=keepdims, initial=initial).symbolic_call(
+            x
+        )
+    return backend.numpy.max(x, axis=axis, keepdims=keepdims, initial=initial)
 
 
 class Maximum(Operation):
@@ -1961,15 +1967,18 @@ def meshgrid(*x, indexing="xy"):
 
 
 class Min(Operation):
-    def __init__(self, axis=None, keepdims=False):
+    def __init__(self, axis=None, keepdims=False, initial=None):
         if isinstance(axis, int):
             self.axis = [axis]
         else:
             self.axis = axis
         self.keepdims = keepdims
+        self.initial = initial
 
     def call(self, x):
-        return backend.numpy.min(x, axis=self.axis, keepdims=self.keepdims)
+        return backend.numpy.min(
+            x, axis=self.axis, keepdims=self.keepdims, initial=self.initial
+        )
 
     def compute_output_spec(self, x):
         return KerasTensor(
@@ -1978,10 +1987,12 @@ class Min(Operation):
         )
 
 
-def min(x, axis=None, keepdims=False):
+def min(x, axis=None, keepdims=False, initial=None):
     if any_symbolic_tensors((x,)):
-        return Min(axis=axis, keepdims=keepdims).symbolic_call(x)
-    return backend.numpy.min(x, axis=axis, keepdims=keepdims)
+        return Min(axis=axis, keepdims=keepdims, initial=initial).symbolic_call(
+            x
+        )
+    return backend.numpy.min(x, axis=axis, keepdims=keepdims, initial=initial)
 
 
 class Minimum(Operation):
@@ -2336,7 +2347,10 @@ class Reshape(Operation):
         return backend.numpy.reshape(x, self.new_shape)
 
     def compute_output_spec(self, x):
-        return KerasTensor(self.new_shape, dtype=x.dtype)
+        output_shape = operation_utils.compute_reshape_output_shape(
+            x.shape, self.new_shape, "new_shape"
+        )
+        return KerasTensor(output_shape, dtype=x.dtype)
 
 
 def reshape(x, new_shape):

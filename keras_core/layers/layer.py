@@ -34,6 +34,7 @@ from keras_core.layers import input_spec
 from keras_core.metrics.metric import Metric
 from keras_core.operations.operation import Operation
 from keras_core.utils import summary_utils
+from keras_core.utils import traceback_utils
 from keras_core.utils.tracking import Tracker
 
 
@@ -61,7 +62,8 @@ class Layer(Operation):
         self._metrics = []
         self._seed_generators = []
         self._losses = []
-        self._variables = []
+        self._trainable_variables = []
+        self._non_trainable_variables = []
         self._supports_masking = not utils.is_default(self.compute_mask)
         self._build_shapes_dict = None
         self._call_signature_parameters = [
@@ -70,9 +72,14 @@ class Layer(Operation):
 
         self._tracker = Tracker(
             {
-                "variables": (
-                    lambda x: isinstance(x, backend.Variable),
-                    self._variables,
+                "trainable_variables": (
+                    lambda x: isinstance(x, backend.Variable) and x.trainable,
+                    self._trainable_variables,
+                ),
+                "non_trainable_variables": (
+                    lambda x: isinstance(x, backend.Variable)
+                    and not x.trainable,
+                    self._non_trainable_variables,
                 ),
                 "metrics": (lambda x: isinstance(x, Metric), self._metrics),
                 "layers": (
@@ -158,9 +165,16 @@ class Layer(Operation):
         # Will be added to layer.losses
         variable.regularizer = regularizer
         variable.constraint = constraint
-        self._variables.append(variable)
-        # Prevent double-tracking
-        self._tracker.stored_ids["variables"].add(id(variable))
+        if trainable:
+            self._trainable_variables.append(variable)
+            # Prevent double-tracking
+            self._tracker.stored_ids["trainable_variables"].add(id(variable))
+        else:
+            self._non_trainable_variables.append(variable)
+            # Prevent double-tracking
+            self._tracker.stored_ids["non_trainable_variables"].add(
+                id(variable)
+            )
         return variable
 
     def add_weight(self, *args, **kwargs):
@@ -188,12 +202,24 @@ class Layer(Operation):
 
     @property
     def variables(self):
-        # Includes weights, seed generator state, and metric variables.
-        variables = self.weights[:]
+        # Return only weights/rng state/metric variables
+        # of all Layers, recursively.
+        # Also deduplicate them.
+        variables = []
+        seen_ids = set()
+        for v in self._trainable_variables + self._non_trainable_variables:
+            if id(v) not in seen_ids:
+                variables.append(v)
+                seen_ids.add(id(v))
         for m in self._metrics:
             variables.extend(m.variables)
         for sg in self._seed_generators:
             variables.append(sg.state)
+        for layer in self._layers:
+            for v in layer.variables:
+                if id(v) not in seen_ids:
+                    variables.append(v)
+                    seen_ids.add(id(v))
         return variables
 
     @property
@@ -210,7 +236,7 @@ class Layer(Operation):
         # Also deduplicate them.
         weights = []
         seen_ids = set()
-        for w in self._variables:
+        for w in self._trainable_variables + self._non_trainable_variables:
             if id(w) not in seen_ids:
                 weights.append(w)
                 seen_ids.add(id(w))
@@ -277,6 +303,7 @@ class Layer(Operation):
     def compute_mask(self, inputs, previous_mask):
         return previous_mask
 
+    @traceback_utils.filter_traceback
     def __call__(self, *args, **kwargs):
         self._check_super_called()
 
@@ -414,16 +441,60 @@ class Layer(Operation):
     def call(self, *args, **kwargs):
         raise NotImplementedError
 
+    @traceback_utils.filter_traceback
     def stateless_call(
-        self, trainable_variables, non_trainable_variables, *args, **kwargs
+        self,
+        trainable_variables,
+        non_trainable_variables,
+        *args,
+        return_losses=False,
+        **kwargs,
     ):
-        # TODO: also handle losses
+        """Call the layer without any side effects.
 
+        Args:
+            trainable_variables: List of trainable variables of the model.
+            non_trainable_variables: List of non-trainable variables of the model.
+            *args: Positional argumets to be passed to `call()`.
+            return_losses: If `True`, `stateless_call()` will return the list of
+                losses created during `call()` as part of its return values.
+            **kwargs: Keyword arguments to be passed to `call()`.
+
+        Returns:
+            A tuple. By default, returns `(outputs, non_trainable_variables)`.
+                If `return_losses = True`, then returns
+                `(outputs, non_trainable_variables, losses)`.
+
+        Note: `non_trainable_variables` include not only non-trainable weights
+        such as `BatchNormalization` statistics, but also RNG seed state
+        (if there are any random operations part of the layer, such as dropout),
+        and `Metric` state (if there are any metrics attached to the layer).
+        These are all elements of state of the layer.
+
+        Example:
+
+        ```python
+        model = ...
+        data = ...
+        trainable_variables = model.trainable_variables
+        non_trainable_variables = model.non_trainable_variables
+        # Call the model with zero side effects
+        outputs, non_trainable_variables = model.stateless_call(
+            trainable_variables,
+            non_trainable_variables,
+            data,
+        )
+        # Attach the updated state to the model
+        # (until you do this, the model is still in its pre-call state).
+        for ref_var, value in zip(model.non_trainable_variables, non_trainable_variables):
+            ref_var.assign(value)
+        ```
+        """
         self._check_super_called()
 
         if not self.built:
             raise ValueError(
-                "To call stateless_call, {self.__class__.__name__} must be "
+                f"To call stateless_call, {self.__class__.__name__} must be "
                 "built (i.e. its variables must have been already created). "
                 "You can build it by calling it on some data."
             )
@@ -452,7 +523,9 @@ class Layer(Operation):
         mapping = list(trainable_mapping) + list(non_trainable_mapping)
 
         # Call in stateless scope
-        with backend.StatelessScope(state_mapping=mapping) as scope:
+        with backend.StatelessScope(
+            state_mapping=mapping, collect_losses=return_losses
+        ) as scope:
             outputs = self.call(*args, **kwargs)
 
         # Gather updated non-trainable variables
@@ -463,6 +536,9 @@ class Layer(Operation):
                 non_trainable_variables.append(new_v)
             else:
                 non_trainable_variables.append(v)
+
+        if return_losses:
+            return outputs, non_trainable_variables, scope.losses[:]
         return outputs, non_trainable_variables
 
     def compute_output_spec(self, *args, **kwargs):
@@ -479,6 +555,23 @@ class Layer(Operation):
             else:
                 # More than one shape: pass them by name.
                 output_shape = self.compute_output_shape(**shapes_dict)
+            if (
+                isinstance(output_shape, list)
+                and output_shape
+                and isinstance(output_shape[0], (int, type(None)))
+            ):
+                output_shape = tuple(output_shape)
+            if not isinstance(output_shape, (list, tuple, dict)):
+                try:
+                    output_shape = tuple(output_shape)
+                except:
+                    raise ValueError(
+                        "Method `compute_output_shape()` of layer "
+                        f"{self.__class__.__name__} is returning "
+                        "a type that cannot be interpreted as a shape. "
+                        "It should return a shape tuple. "
+                        f"Received: {output_shape}"
+                    )
             if (
                 isinstance(output_shape, tuple)
                 and output_shape
@@ -532,7 +625,7 @@ class Layer(Operation):
         Args:
             store: Dict where the state of the model will be saved.
         """
-        all_vars = self._variables
+        all_vars = self._trainable_variables + self._non_trainable_variables
         for i, v in enumerate(all_vars):
             store[f"{i}"] = np.array(v)
 
@@ -545,7 +638,7 @@ class Layer(Operation):
         Args:
             store: Dict from which the state of the model will be loaded.
         """
-        all_vars = self._variables
+        all_vars = self._trainable_variables + self._non_trainable_variables
         if len(store.keys()) != len(all_vars):
             if len(all_vars) == 0 and not self.built:
                 raise ValueError(
@@ -594,8 +687,8 @@ class Layer(Operation):
         if not self.built:
             raise ValueError(
                 "You tried to call `count_params` "
-                f"on layer '{self.name}'"
-                ", but the layer isn't built. "
+                f"on layer '{self.name}', "
+                "but the layer isn't built. "
                 "You can build it manually via: "
                 f"`layer.build(input_shape)`."
             )
@@ -649,7 +742,9 @@ class Layer(Operation):
                                 "then the build signature should be "
                                 "`def build(self, x1_shape, x2_shape)`. "
                                 "Keras will not build this layer automatically "
-                                "since it does not conform to this."
+                                "since it does not conform to this. "
+                                "Expected the following build keys: "
+                                f"{list(shapes_dict.keys())}"
                             )
             if failure:
                 raise ValueError(
@@ -879,6 +974,9 @@ def get_shapes_dict(call_spec):
     for k, v in call_spec.tensor_arguments_dict.items():
         if k == "mask" or k.startswith("mask_"):
             # Do not include mask tensors in shapes dict
+            continue
+        if k == "kwargs" or k == "args":
+            # Do not include catch-alls in shapes dict
             continue
         if k in call_spec.nested_tensor_argument_names:
             shapes_dict[f"{k}_shape"] = nest.map_structure(

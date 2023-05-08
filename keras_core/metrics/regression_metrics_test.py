@@ -1,4 +1,5 @@
 import numpy as np
+from absl.testing import parameterized
 
 from keras_core import testing
 from keras_core.metrics import regression_metrics as metrics
@@ -223,6 +224,39 @@ class MeanSquaredLogarithmicErrorTest(testing.TestCase):
         self.assertAllClose(0.26082, result, atol=1e-5)
 
 
+class RootMeanSquaredErrorTest(testing.TestCase):
+    def test_config(self):
+        rmse_obj = metrics.RootMeanSquaredError(name="rmse", dtype="int32")
+        self.assertEqual(rmse_obj.name, "rmse")
+        self.assertEqual(rmse_obj._dtype, "int32")
+
+        rmse_obj2 = metrics.RootMeanSquaredError.from_config(
+            rmse_obj.get_config()
+        )
+        self.assertEqual(rmse_obj2.name, "rmse")
+        self.assertEqual(rmse_obj2._dtype, "int32")
+
+    def test_unweighted(self):
+        rmse_obj = metrics.RootMeanSquaredError()
+        y_true = np.array([2, 4, 6])
+        y_pred = np.array([1, 3, 2])
+
+        rmse_obj.update_state(y_true, y_pred)
+        result = rmse_obj.result()
+        # error = [-1, -1, -4], square(error) = [1, 1, 16], mean = 18/3 = 6
+        self.assertAllClose(np.sqrt(6), result, atol=1e-3)
+
+    def test_weighted(self):
+        rmse_obj = metrics.RootMeanSquaredError()
+        y_true = np.array([2, 4, 6])
+        y_pred = np.array([1, 3, 2])
+        y_true = np.array([2, 4, 6, 8])
+        y_pred = np.array([1, 3, 2, 3])
+        sample_weight = np.array([0, 1, 0, 1])
+        result = rmse_obj(y_true, y_pred, sample_weight=sample_weight)
+        self.assertAllClose(np.sqrt(13), result, atol=1e-3)
+
+
 class LogCoshErrorTest(testing.TestCase):
     def setup(self):
         y_true = np.asarray([[1, 9, 2], [-5, -2, 6]], dtype=np.float32)
@@ -263,3 +297,96 @@ class LogCoshErrorTest(testing.TestCase):
         expected_result = np.multiply(self.expected_results, sample_weight)
         expected_result = np.sum(expected_result) / np.sum(sample_weight)
         self.assertAllClose(result, expected_result, atol=1e-3)
+
+
+class R2ScoreTest(parameterized.TestCase, testing.TestCase):
+    def _run_test(
+        self,
+        y_true,
+        y_pred,
+        sample_weights,
+        class_aggregation,
+        num_regressors,
+        reference_result,
+    ):
+        r2 = metrics.R2Score(class_aggregation, num_regressors, dtype="float32")
+        r2.update_state(y_true, y_pred, sample_weights)
+        result = r2.result()
+        self.assertAllClose(result, reference_result, atol=1e-6)
+
+    def test_config(self):
+        r2_obj = metrics.R2Score(
+            class_aggregation=None, num_regressors=2, dtype="float32"
+        )
+        self.assertEqual(r2_obj.class_aggregation, None)
+        self.assertEqual(r2_obj.num_regressors, 2)
+        self.assertEqual(r2_obj.dtype, "float32")
+
+        # Check save and restore config
+        r2_obj2 = metrics.R2Score.from_config(r2_obj.get_config())
+        self.assertEqual(r2_obj2.class_aggregation, None)
+        self.assertEqual(r2_obj2.num_regressors, 2)
+        self.assertEqual(r2_obj2.dtype, "float32")
+
+    @parameterized.parameters(
+        # class_aggregation, num_regressors, result
+        (None, 0, [0.37, -1.295, 0.565]),
+        ("uniform_average", 0, -0.12),
+        ("variance_weighted_average", 0, -0.12),
+    )
+    def test_r2_sklearn_comparison(
+        self, class_aggregation, num_regressors, result
+    ):
+        y_true = [[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]]
+        y_pred = [[0.4, 0.5, 0.6], [0.1, 0.2, 0.3], [0.5, 0.8, 0.2]]
+        self._run_test(
+            y_true,
+            y_pred,
+            None,
+            class_aggregation=class_aggregation,
+            num_regressors=num_regressors,
+            reference_result=result,
+        )
+
+    @parameterized.parameters(
+        # class_aggregation, num_regressors, result
+        (None, 0, [0.17305559, -8.836666, -0.521]),
+        (None, 1, [0.054920673, -10.241904, -0.7382858]),
+        (None, 2, [-0.10259259, -12.115555, -1.0280001]),
+        ("uniform_average", 0, -3.0615367889404297),
+        ("uniform_average", 1, -3.641756534576416),
+        ("uniform_average", 2, -4.415382385253906),
+        ("variance_weighted_average", 0, -1.3710224628448486),
+        ("variance_weighted_average", 1, -1.7097399234771729),
+        ("variance_weighted_average", 2, -2.161363363265991),
+    )
+    def test_r2_tfa_comparison(self, class_aggregation, num_regressors, result):
+        y_true = [[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]]
+        y_pred = [[0.4, 0.9, 1.6], [0.1, 1.2, 0.6], [1.5, 0.8, 0.6]]
+        sample_weights = [0.8, 0.1, 0.4]
+        self._run_test(
+            y_true,
+            y_pred,
+            sample_weights,
+            class_aggregation=class_aggregation,
+            num_regressors=num_regressors,
+            reference_result=result,
+        )
+
+    def test_errors(self):
+        # Bad class_aggregation value
+        with self.assertRaisesRegex(
+            ValueError, "Invalid value for argument `class_aggregation`"
+        ):
+            metrics.R2Score(class_aggregation="wrong")
+
+        # Bad num_regressors value
+        with self.assertRaisesRegex(
+            ValueError, "Invalid value for argument `num_regressors`"
+        ):
+            metrics.R2Score(num_regressors=-1)
+
+        # Bad input shape
+        with self.assertRaisesRegex(ValueError, "expects 2D inputs with shape"):
+            r2 = metrics.R2Score()
+            r2.update_state([0.0, 1.0], [0.0, 1.0])

@@ -8,6 +8,7 @@ from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.backend.common.stateless_scope import StatelessScope
 from keras_core.backend.common.stateless_scope import get_stateless_scope
 from keras_core.backend.common.stateless_scope import in_stateless_scope
+from keras_core.backend.tensorflow import image
 from keras_core.backend.tensorflow import math
 from keras_core.backend.tensorflow import nn
 from keras_core.backend.tensorflow import numpy
@@ -61,6 +62,10 @@ class Variable(KerasVariable, tf.__internal__.types.Tensor):
 
     def numpy(self):  # noqa: F811
         return self.value.numpy()
+
+    @property
+    def shape(self):
+        return tf.TensorShape(super().shape)
 
     # Overload native accessor.
     def __tf_tensor__(self, dtype=None, name=None):
