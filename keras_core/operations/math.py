@@ -45,5 +45,10 @@ def in_top_k(targets, predictions, k):
 
 def logsumexp(x, axis=None, keepdims=False):
     if any_symbolic_tensors((x,)):
-        return logsumexp().symbolic_call(x, axis=axis, keepdims=keepdims)
+        return Logsumexp().symbolic_call(x, axis=axis, keepdims=keepdims)
     return backend.math.logsumexp(x, axis=axis, keepdims=keepdims)
+
+
+class Logsumexp(Operation):
+    def call(self, x, axis=None, keepdims=False):
+        return backend.math.logsumexp(x, axis=axis, keepdims=keepdims)
