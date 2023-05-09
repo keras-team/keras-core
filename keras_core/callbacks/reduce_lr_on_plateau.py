@@ -25,23 +25,23 @@ class ReduceLROnPlateau(Callback):
     ```
 
     Args:
-        monitor: quantity to be monitored.
-        factor: factor by which the learning rate will be reduced.
+        monitor: String. Quantity to be monitored.
+        factor: Float. Factor by which the learning rate will be reduced.
             `new_lr = lr * factor`.
-        patience: number of epochs with no improvement after which learning rate
-            will be reduced.
-        verbose: int. 0: quiet, 1: update messages.
-        mode: one of `{'auto', 'min', 'max'}`. In `'min'` mode,
+        patience: Integer. Number of epochs with no improvement after which
+            learning rate will be reduced.
+        verbose: Integer. 0: quiet, 1: update messages.
+        mode: String. One of `{'auto', 'min', 'max'}`. In `'min'` mode,
             the learning rate will be reduced when the
             quantity monitored has stopped decreasing; in `'max'` mode it will
             be reduced when the quantity monitored has stopped increasing; in
             `'auto'` mode, the direction is automatically inferred from the name
             of the monitored quantity.
-        min_delta: threshold for measuring the new optimum, to only focus on
-            significant changes.
-        cooldown: number of epochs to wait before resuming normal operation
-            after lr has been reduced.
-        min_lr: lower bound on the learning rate.
+        min_delta: Float. Threshold for measuring the new optimum, to only focus
+            on significant changes.
+        cooldown: Integer. Number of epochs to wait before resuming normal
+            operation after lr has been reduced.
+        min_lr: Float. Lower bound on the learning rate.
     """
 
     def __init__(
