@@ -17,7 +17,6 @@ And some more magic:
 """
 import collections
 import inspect
-import warnings
 
 import numpy as np
 from tensorflow import nest
@@ -198,8 +197,12 @@ class Layer(Operation):
             value: Boolean with the desired state for the layer's trainable
                 attribute.
         """
-        for layer in self._layers():
-            layer._trainable = value
+        value = bool(value)
+        self._trainable = value
+        for v in self._trainable_variables:
+            v.trainable = value
+        for layer in self._layers:
+            layer.trainable = value
 
     @property
     def variables(self):
@@ -225,10 +228,14 @@ class Layer(Operation):
 
     @property
     def trainable_variables(self):
+        if not self.trainable:
+            return []
         return [v for v in self.variables if v.trainable]
 
     @property
     def non_trainable_variables(self):
+        if not self.trainable:
+            return self.variables
         return [v for v in self.variables if not v.trainable]
 
     @property
@@ -250,10 +257,14 @@ class Layer(Operation):
 
     @property
     def trainable_weights(self):
+        if not self.trainable:
+            return []
         return [v for v in self.weights if v.trainable]
 
     @property
     def non_trainable_weights(self):
+        if not self.trainable:
+            return self.weights
         return [v for v in self.weights if not v.trainable]
 
     def get_weights(self):
@@ -421,6 +432,8 @@ class Layer(Operation):
                         outputs = super().__call__(*args, **kwargs)
                 else:
                     outputs = super().__call__(*args, **kwargs)
+                if not self.built:
+                    self.built = True
                 # Record activity regularizer loss.
                 if self.activity_regularizer is not None:
                     for output in nest.flatten(outputs):
@@ -751,6 +764,9 @@ class Layer(Operation):
                                 f"{list(shapes_dict.keys())}"
                             )
             if failure:
+                if call_spec.eager:
+                    # Will let the actual eager call do the state-building
+                    return
                 raise ValueError(
                     f"Layer '{self.name}' looks like it has "
                     "unbuilt state, but Keras is not able to "
@@ -773,24 +789,19 @@ class Layer(Operation):
             input_shape = tuple(input_shape)
         if isinstance(input_shape, list):
             input_tensors = [
-                backend.traceable_tensor(shape) for shape in input_shape
+                backend.KerasTensor(shape) for shape in input_shape
             ]
         elif isinstance(input_shape, dict):
             input_tensors = {
-                k: backend.traceable_tensor(shape)
+                k: backend.KerasTensor(shape)
                 for k, shape in input_shape.items()
             }
         else:
-            input_tensors = backend.traceable_tensor(input_shape)
+            input_tensors = backend.KerasTensor(input_shape)
         try:
-            # TODO: make this work without relying on eager tensors.
-            self.call(input_tensors)
+            backend.compute_output_spec(self.call, input_tensors)
             return True
-        except Exception as e:
-            warnings.warn(
-                "Error when attempting to automatically build "
-                f"the layer by tracing it: {e}"
-            )
+        except:
             return False
 
     def _build_by_run_for_kwargs(self, shapes_dict):
@@ -799,18 +810,13 @@ class Layer(Operation):
             # Case: all input keyword arguments were plain tensors.
             input_tensors = {
                 # We strip the `_shape` suffix to recover kwarg names.
-                k[:-6]: backend.traceable_tensor(shape)
+                k[:-6]: backend.KerasTensor(shape)
                 for k, shape in shapes_dict.items()
             }
             try:
-                # TODO: make this work without relying on eager tensors.
-                self.call(**input_tensors)
+                backend.compute_output_spec(self.call, **input_tensors)
                 return True
-            except Exception as e:
-                warnings.warn(
-                    "Error when attempting to automatically build "
-                    f"the layer by tracing it: {e}"
-                )
+            except:
                 return False
         else:
             # Not supported: nested input keyword arguments.
@@ -952,6 +958,12 @@ class CallSpec:
         self.tensor_arguments_names = tensor_arg_names
         self.nested_tensor_argument_names = nested_tensor_arg_names
         self.first_arg = arg_dict[arg_names[0]]
+        if all(
+            backend.is_tensor(x) for x in self.tensor_arguments_dict.values()
+        ):
+            self.eager = True
+        else:
+            self.eager = False
 
 
 def get_arguments_dict(fn, args, kwargs):
