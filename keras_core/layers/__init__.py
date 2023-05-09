@@ -61,9 +61,11 @@ from keras_core.layers.pooling.max_pooling3d import MaxPooling3D
 from keras_core.layers.preprocessing.center_crop import CenterCrop
 from keras_core.layers.preprocessing.discretization import Discretization
 from keras_core.layers.preprocessing.hashing import Hashing
+from keras_core.layers.preprocessing.integer_lookup import IntegerLookup
 from keras_core.layers.preprocessing.normalization import Normalization
 from keras_core.layers.preprocessing.rescaling import Rescaling
 from keras_core.layers.preprocessing.resizing import Resizing
+from keras_core.layers.preprocessing.string_lookup import StringLookup
 from keras_core.layers.preprocessing.text_vectorization import TextVectorization
 from keras_core.layers.regularization.activity_regularization import (
     ActivityRegularization,
@@ -75,6 +77,7 @@ from keras_core.layers.regularization.spatial_dropout import SpatialDropout1D
 from keras_core.layers.regularization.spatial_dropout import SpatialDropout2D
 from keras_core.layers.regularization.spatial_dropout import SpatialDropout3D
 from keras_core.layers.reshaping.flatten import Flatten
+from keras_core.layers.reshaping.permute import Permute
 from keras_core.layers.reshaping.repeat_vector import RepeatVector
 from keras_core.layers.reshaping.reshape import Reshape
 from keras_core.layers.reshaping.up_sampling1d import UpSampling1D
