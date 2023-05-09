@@ -9,18 +9,18 @@ class Attention(Layer):
     """Dot-product attention layer, a.k.a. Luong-style attention.
 
     Inputs are a list with 2 or 3 elements:
-    1. A query tensor of shape `[batch_size, Tq, dim]`.
-    2. A value tensor of shape `[batch_size, Tv, dim]`.
-    3. A optional key tensor of shape `[batch_size, Tv, dim]`. If none supplied,
+    1. A query tensor of shape `(batch_size, Tq, dim)`.
+    2. A value tensor of shape `(batch_size, Tv, dim)`.
+    3. A optional key tensor of shape `(batch_size, Tv, dim)`. If none supplied,
         the value tensor will be used as a key.
 
     The calculation follows the steps:
     1. Calculate attention scores using query and key with shape
-        `[batch_size, Tq, Tv]`.
+        `(batch_size, Tq, Tv)`.
     2. Use scores to calculate a softmax distribution with shape
-        `[batch_size, Tq, Tv]`.
+        `(batch_size, Tq, Tv)`.
     3. Use the softmax distribution to create a linear combination of value
-        with shape `[batch_size, Tq, dim]`.
+        with shape `(batch_size, Tq, dim)`.
 
     Args:
         use_scale: If `True`, will create a scalar variable to scale the
@@ -34,16 +34,16 @@ class Attention(Layer):
 
     Call Args:
         inputs: List of the following tensors:
-            * query: Query `Tensor` of shape `[batch_size, Tq, dim]`.
-            * value: Value `Tensor` of shape `[batch_size, Tv, dim]`.
-            * key: Optional key `Tensor` of shape `[batch_size, Tv, dim]`. If
+            - query: Query `Tensor` of shape `(batch_size, Tq, dim)`.
+            - value: Value `Tensor` of shape `(batch_size, Tv, dim)`.
+            - key: Optional key `Tensor` of shape `(batch_size, Tv, dim)`. If
                 not given, will use `value` for both `key` and `value`, which is
                 the most common case.
         mask: List of the following tensors:
-            * query_mask: A boolean mask `Tensor` of shape `[batch_size, Tq]`.
+            - query_mask: A boolean mask `Tensor` of shape `(batch_size, Tq)`.
                 If given, the output will be zero at the positions where
                 `mask==False`.
-            * value_mask: A boolean mask `Tensor` of shape `[batch_size, Tv]`.
+            - value_mask: A boolean mask `Tensor` of shape `(batch_size, Tv)`.
                 If given, will apply the mask such that values at positions
                  where `mask==False` do not contribute to the result.
         return_attention_scores: bool, it `True`, returns the attention scores
@@ -56,9 +56,9 @@ class Attention(Layer):
             past. Defaults to `False`.
 
     Output:
-        Attention outputs of shape `[batch_size, Tq, dim]`.
-        [Optional] Attention scores after masking and softmax with shape
-            `[batch_size, Tq, Tv]`.
+        Attention outputs of shape `(batch_size, Tq, dim)`.
+        (Optional) Attention scores after masking and softmax with shape
+            `(batch_size, Tq, Tv)`.
     """
 
     def __init__(
@@ -74,8 +74,9 @@ class Attention(Layer):
         self.dropout = dropout
         if self.score_mode not in ["dot", "concat"]:
             raise ValueError(
-                f"Received: score_mode={score_mode}. Acceptable values "
-                'are: ["dot", "concat"]'
+                "Invalid value for argument score_mode. "
+                "Expected one of {'dot', 'concat'}. "
+                f"Received: score_mode={score_mode}"
             )
 
     def build(self, input_shape):
@@ -103,11 +104,11 @@ class Attention(Layer):
         """Calculates attention scores as a query-key dot product.
 
         Args:
-            query: Query tensor of shape `[batch_size, Tq, dim]`.
-            key: Key tensor of shape `[batch_size, Tv, dim]`.
+            query: Query tensor of shape `(batch_size, Tq, dim)`.
+            key: Key tensor of shape `(batch_size, Tv, dim)`.
 
         Returns:
-            Tensor of shape `[batch_size, Tq, Tv]`.
+            Tensor of shape `(batch_size, Tq, Tv)`.
         """
         if self.score_mode == "dot":
             scores = ops.matmul(query, ops.transpose(key, axes=[0, 2, 1]))
@@ -135,8 +136,8 @@ class Attention(Layer):
 
         To use this method in your attention layer, follow the steps:
 
-        * Use `query` tensor of shape `[batch_size, Tq]` and `key` tensor of
-            shape `[batch_size, Tv]` to calculate the attention `scores`.
+        * Use `query` tensor of shape `(batch_size, Tq)` and `key` tensor of
+            shape `(batch_size, Tv)` to calculate the attention `scores`.
         * Pass `scores` and `value` tensors to this method. The method applies
             `scores_mask`, calculates
             `attention_distribution = softmax(scores)`, then returns
@@ -144,10 +145,10 @@ class Attention(Layer):
         * Apply `query_mask` and return the result.
 
         Args:
-            scores: Scores float tensor of shape `[batch_size, Tq, Tv]`.
-            value: Value tensor of shape `[batch_size, Tv, dim]`.
-            scores_mask: A boolean mask `Tensor` of shape `[batch_size, 1, Tv]`
-                or `[batch_size, Tq, Tv]`. If given, scores at positions where
+            scores: Scores float tensor of shape `(batch_size, Tq, Tv)`.
+            value: Value tensor of shape `(batch_size, Tv, dim)`.
+            scores_mask: A boolean mask `Tensor` of shape `(batch_size, 1, Tv)`
+                or `(batch_size, Tq, Tv)`. If given, scores at positions where
                 `scores_mask==False` do not contribute to the result. It must
                 contain at least one `True` value in each line along the last
                 dimension.
@@ -156,9 +157,9 @@ class Attention(Layer):
                 (no dropout).
 
         Returns:
-            Tensor of shape `[batch_size, Tq, dim]`.
+            Tensor of shape `(batch_size, Tq, dim)`.
             Attention scores after masking and softmax with shape
-                `[batch_size, Tq, Tv]`.
+                `(batch_size, Tq, Tv)`.
         """
         if scores_mask is not None:
             padding_mask = ops.logical_not(scores_mask)
@@ -244,7 +245,7 @@ class Attention(Layer):
             raise ValueError(
                 f"{class_name} layer must be called on a list of inputs, "
                 "namely [query, value] or [query, value, key]. "
-                f"Received: {inputs}."
+                f"Received: inputs={inputs}."
             )
         if len(inputs) < 2 or len(inputs) > 3:
             raise ValueError(
@@ -252,16 +253,16 @@ class Attention(Layer):
                 "namely [query, value] or [query, value, key]. "
                 f"Received length: {len(inputs)}."
             )
-        if mask:
+        if mask is not None:
             if not isinstance(mask, list):
                 raise ValueError(
                     f"{class_name} layer mask must be a list, "
-                    f"namely [query_mask, value_mask]. Received: {mask}."
+                    f"namely [query_mask, value_mask]. Received: mask={mask}."
                 )
-            if len(mask) != len(inputs):
+            if len(mask) < 2 or len(mask) > 3:
                 raise ValueError(
-                    f"{class_name} layer mask must have the same structure, "
-                    f"as inputs. Received: inputs={inputs}, mask={mask}."
+                    f"{class_name} layer accepts mask list of length 2 or 3. "
+                    f"Received: inputs={inputs}, mask={mask}."
                 )
 
     def get_config(self):

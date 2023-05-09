@@ -2,7 +2,6 @@ import numpy as np
 
 from keras_core import layers
 from keras_core import testing
-from keras_core.backend.common import keras_tensor
 
 
 class DenseTest(testing.TestCase):
@@ -86,16 +85,15 @@ class DenseTest(testing.TestCase):
 
     def test_attention_errors(self):
         layer = layers.Attention()
-        tensor = keras_tensor.KerasTensor((1, 2))
-        # with self.assertRaisesRegex(ValueError, "must be called on a list"):
-        #     layer(tensor)
+        tensor = np.array([[[1.0, 1.0], [1.0, 1.0]]])
+        with self.assertRaisesRegex(ValueError, "must be called on a list"):
+            layer(tensor)
 
         with self.assertRaisesRegex(ValueError, "length 2 or 3"):
             layer([tensor, tensor, tensor, tensor])
 
-        # with self.assertRaisesRegex(ValueError, "layer mask must be a list"):
-        #     layer([tensor, tensor], mask=tensor)
+        with self.assertRaisesRegex(ValueError, "layer mask must be a list"):
+            layer([tensor, tensor], mask=tensor)
 
-        # with self.assertRaisesRegex(ValueError, "same structure"):
-        #     tensor = tensor
-        #     layer([tensor, tensor], mask=[tensor])
+        with self.assertRaisesRegex(ValueError, "length 2 or 3"):
+            layer([tensor, tensor], mask=[tensor])
