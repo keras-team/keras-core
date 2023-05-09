@@ -1,71 +1,71 @@
 import torch
-import torch.nn.functional as F
+import torch.nn.functional as tnn
 
 from keras_core.backend.config import epsilon
 
 
 def relu(x):
-    return F.relu(x)
+    return tnn.relu(x)
 
 
 def relu6(x):
-    return F.relu6(x)
+    return tnn.relu6(x)
 
 
 def sigmoid(x):
-    return F.sigmoid(x)
+    return tnn.sigmoid(x)
 
 
 def tanh(x):
-    return F.tanh(x)
+    return tnn.tanh(x)
 
 
 def softplus(x):
-    return F.softplus(x)
+    return tnn.softplus(x)
 
 
 def softsign(x):
-    return F.soft_sign(x)
+    return tnn.soft_sign(x)
 
 
 def silu(x):
-    return F.silu(x)
+    return tnn.silu(x)
 
 
 def swish(x):
-    return x * F.sigmoid(x)
+    return x * tnn.sigmoid(x)
 
 
 def log_sigmoid(x):
-    return F.logsigmoid(x)
+    return tnn.logsigmoid(x)
 
 
 def leaky_relu(x, negative_slope=0.2):
-    return F.leaky_relu(x, negative_slope=negative_slope)
+    return tnn.leaky_relu(x, negative_slope=negative_slope)
 
 
 def hard_sigmoid(x):
-    return F.hardsigmoid(x)
+    return tnn.hardsigmoid(x)
 
 
 def elu(x):
-    return F.elu(x)
+    return tnn.elu(x)
 
 
 def selu(x):
-    return F.selu(x)
+    return tnn.selu(x)
 
 
 def gelu(x, approximate=True):
-    return F.gelu(x, approximate)
+    return tnn.gelu(x, approximate)
 
 
 def softmax(x, axis=None):
-    return F.softmax(x, dim=axis)
+    return tnn.softmax(x, dim=axis)
 
 
 def log_softmax(x, axis=-1):
-    return F.log_softmax(x, dim=axis)
+    return tnn.log_softmax(x, dim=axis)
 
 
 def max_pool(
@@ -160,9 +160,11 @@ def conv_transpose(
 def one_hot(x, num_classes, axis=-1):
     if axis != -1 or axis != x.shape[-1]:
         raise ValueError(
-            "`one_hot` is only implemented for last axis for PyTorch backend"
+            "`one_hot` is only implemented for last axis for PyTorch backend. "
+            f"`axis` arg value {axis} should be -1 or last axis of the input "
+            f"tensor with shape {x.shape}."
         )
-    return F.one_hot(x, num_classes)
+    return tnn.one_hot(x, num_classes)
 
 
 def categorical_crossentropy(target, output, from_logits=False, axis=-1):
@@ -183,7 +185,7 @@ def categorical_crossentropy(target, output, from_logits=False, axis=-1):
         )
 
     if from_logits:
-        log_prob = F.log_softmax(output, dim=axis)
+        log_prob = tnn.log_softmax(output, dim=axis)
     else:
         output = output / torch.sum(output, dim=axis, keepdim=True)
         output = torch.clip(output, epsilon(), 1.0 - epsilon())
@@ -211,7 +213,7 @@ def sparse_categorical_crossentropy(target, output, from_logits=False, axis=-1):
             f"target.shape={target.shape}, output.shape={output.shape}"
         )
     if from_logits:
-        log_prob = F.log_softmax(output, dim=axis)
+        log_prob = tnn.log_softmax(output, dim=axis)
     else:
         output = output / torch.sum(output, dim=axis, keepdim=True)
         output = torch.clip(output, epsilon(), 1.0 - epsilon())
@@ -233,7 +235,7 @@ def binary_crossentropy(target, output, from_logits=False):
         )
 
     if from_logits:
-        output = F.sigmoid(output)
+        output = tnn.sigmoid(output)
 
     output = torch.clip(output, epsilon(), 1.0 - epsilon())
     bce = target * torch.log(output)
