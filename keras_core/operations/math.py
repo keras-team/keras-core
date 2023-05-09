@@ -45,5 +45,5 @@ def in_top_k(targets, predictions, k):
 
 def logsumexp(x, axis=None, keepdims=False):
     if any_symbolic_tensors((x,)):
-        return InTopK().symbolic_call(x, axis=axis, keepdims=keepdims)
+        return logsumexp().symbolic_call(x, axis=axis, keepdims=keepdims)
     return backend.math.logsumexp(x, axis=axis, keepdims=keepdims)
