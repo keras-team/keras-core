@@ -6,6 +6,7 @@ from keras_core import losses
 from keras_core import models
 from keras_core import metrics
 from keras_core import optimizers
+from keras_core.utils import rng_utils
 
 
 def test_model_fit():
@@ -19,12 +20,15 @@ def test_model_fit():
         ],
     )
 
+    rng_utils.set_random_seed(1337)
+
     strategy = tf.distribute.MirroredStrategy(['CPU:0', 'CPU:1'])
     with strategy.scope():
         inputs = layers.Input((100,), batch_size=32)
         x = layers.Dense(256, activation="relu")(inputs)
         x = layers.Dense(256, activation="relu")(x)
         x = layers.Dense(256, activation="relu")(x)
+        x = layers.BatchNormalization()(x)
         outputs = layers.Dense(16)(x)
         model = models.Model(inputs, outputs)
 
