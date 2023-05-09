@@ -93,11 +93,15 @@ def truncated_normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
             of `keras_core.backend.SeedGenerator`.
     """
     dtype = dtype or floatx()
-    generator = torch_seed_generator(seed)
+    _ = torch_seed_generator(seed)
     # TODO
+    raise NotImplementedError(
+        "`truncated_normal` not implemented in PyTorch backend."
+    )
 
 
 def dropout(inputs, rate, noise_shape=None, seed=None):
-    generator = torch_seed_generator(seed)
-    # TODO: Should we set via torch.manual_seed(seed)?
+    # TODO: setting seed globally might create side effects.
+    # Need to see how to use `torch_seed_generator`
+    torch.manual_seed(seed)
     return tnn.dropout(inputs, p=rate)

@@ -9,7 +9,6 @@ from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.backend.common.stateless_scope import StatelessScope
 from keras_core.backend.common.stateless_scope import get_stateless_scope
 from keras_core.backend.common.stateless_scope import in_stateless_scope
-
 from keras_core.backend.pytorch import nn
 from keras_core.backend.pytorch import random
 
@@ -109,7 +108,9 @@ class Variable(KerasVariable):
 
 # Shape / dtype inference util
 def compute_output_spec(fn, *args, **kwargs):
-    raise NotImplementedError("`compute_output_spec` not implemented for PyTorch backend")
+    raise NotImplementedError(
+        "`compute_output_spec` not implemented for PyTorch backend"
+    )
 
 
 def traceable_tensor(shape, dtype=None):
