@@ -539,7 +539,10 @@ def reduce_per_replica(values, strategy, reduction):
         elif reduction == "first":
             return strategy.experimental_local_results(v)[0]
         elif reduction == "concat":
-            return concat(strategy.experimental_local_results(v))
+            if _is_tpu_multi_host(strategy):
+                return _tpu_multi_host_concat(v, strategy)
+            else:
+                return concat(strategy.experimental_local_results(v))
         elif reduction == "sum":
             return tf.reduce_sum(strategy.experimental_local_results(v))
         else:
@@ -592,6 +595,20 @@ def concat(tensors, axis=0):
         return tf.concat(tensors, axis=axis)
 
 
+def _tpu_multi_host_concat(v, strategy):
+    """Correctly order TPU PerReplica objects."""
+    replicas = strategy.experimental_local_results(v)
+    # When distributed datasets are created from Tensors / NumPy,
+    # TPUStrategy.experimental_distribute_dataset shards data in
+    # (Replica, Host) order, and TPUStrategy.experimental_local_results returns
+    # it in (Host, Replica) order.
+    num_replicas_per_host = strategy.extended.num_replicas_per_host
+    ordered_replicas = []
+    for replica_id in range(num_replicas_per_host):
+        ordered_replicas += replicas[replica_id::num_replicas_per_host]
+    return concat(ordered_replicas)
+
+
 def _collective_all_reduce_multi_worker(strategy):
     return (
         isinstance(strategy, tf.distribute.MultiWorkerMirroredStrategy)
@@ -606,3 +623,18 @@ def _is_per_replica_instance(obj):
 
 def _is_scalar(x):
     return isinstance(x, (tf.Tensor, tf.Variable)) and x.shape.rank == 0
+
+
+def _is_tpu_multi_host(strategy):
+    return _is_tpu_strategy(strategy) and strategy.extended.num_hosts > 1
+
+
+def _is_tpu_strategy(strategy):
+    return _is_tpu_strategy_class(strategy.__class__)
+
+
+def _is_tpu_strategy_class(clz):
+    is_tpu_strat = lambda k: k.__name__.startswith("TPUStrategy")
+    if is_tpu_strat(clz):
+        return True
+    return any(map(_is_tpu_strategy_class, clz.__bases__))
