@@ -4,7 +4,7 @@ from keras_core import testing
 from keras_core.layers.preprocessing import random_crop
 
 
-class RandomCrop(testing.TestCase):
+class RandomCropTest(testing.TestCase):
     def test_random_crop(self):
         self.run_layer_test(
             random_crop.RandomCrop,
