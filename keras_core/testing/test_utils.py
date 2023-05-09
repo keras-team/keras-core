@@ -1,8 +1,5 @@
 import numpy as np
 
-from keras_core import layers
-from keras_core import models
-
 
 def get_test_data(
     train_samples, test_samples, input_shape, num_classes, random_seed=None
@@ -33,11 +30,3 @@ def get_test_data(
         (x[:train_samples], y[:train_samples]),
         (x[train_samples:], y[train_samples:]),
     )
-
-
-def get_small_sequential_mlp(num_hidden, num_classes, input_dim=None):
-    model = models.Sequential()
-    model.add(layers.Dense(num_hidden, activation="relu"))
-    activation = "sigmoid" if num_classes == 1 else "softmax"
-    model.add(layers.Dense(num_classes, activation=activation))
-    return model

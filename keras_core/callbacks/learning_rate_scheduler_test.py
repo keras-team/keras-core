@@ -1,6 +1,8 @@
 from keras_core import callbacks
+from keras_core import layers
 from keras_core import optimizers
 from keras_core import testing
+from keras_core.models import Sequential
 from keras_core.testing import test_utils
 from keras_core.utils import io_utils
 from keras_core.utils import numerical_utils
@@ -17,10 +19,8 @@ class LearningRateSchedulerTest(testing.TestCase):
         y_test = numerical_utils.to_categorical(y_test)
         y_train = numerical_utils.to_categorical(y_train)
 
-        model = test_utils.get_small_sequential_mlp(
-            num_hidden=5,
-            num_classes=2,
-        )
+        model = Sequential([layers.Dense(5), layers.Dense(2)])
+
         model.compile(
             loss="mse",
             optimizer="sgd",
