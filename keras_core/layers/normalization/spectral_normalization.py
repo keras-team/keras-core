@@ -17,6 +17,7 @@ class SpectralNormalization(Wrapper):
             has either a `kernel` (e.g. `Conv2D`, `Dense`...)
             or an `embeddings` attribute (`Embedding` layer).
         power_iterations: int, the number of iterations during normalization.
+        **kwargs: Base wrapper keyword arguments.
 
     Examples:
 

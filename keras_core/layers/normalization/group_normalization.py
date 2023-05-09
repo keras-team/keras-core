@@ -28,18 +28,19 @@ class GroupNormalization(Layer):
 
     Args:
         groups: Integer, the number of groups for Group Normalization. Can be in
-            the range [1, N] where N is the input dimension. The input dimension
-            must be divisible by the number of groups. Defaults to `32`.
+            the range `[1, N]` where N is the input dimension. The input
+            dimension must be divisible by the number of groups.
+            Defaults to 32.
         axis: Integer or List/Tuple. The axis or axes to normalize across.
             Typically, this is the features axis/axes. The left-out axes are
-            typically the batch axis/axes. `-1` is the last dimension in the
-            input. Defaults to `-1`.
+            typically the batch axis/axes. -1 is the last dimension in the
+            input. Defaults to -1.
         epsilon: Small float added to variance to avoid dividing by zero.
             Defaults to 1e-3.
-        center: If True, add offset of `beta` to normalized tensor. If False,
-            `beta` is ignored. Defaults to `True`.
-        scale: If True, multiply by `gamma`. If False, `gamma` is not used.
-            When the next layer is linear (also e.g. `nn.relu`), this can be
+        center: If `True`, add offset of `beta` to normalized tensor.
+            If `False`, `beta` is ignored. Defaults to `True`.
+        scale: If `True`, multiply by `gamma`. If `False`, `gamma` is not used.
+            When the next layer is linear (also e.g. `relu`), this can be
             disabled since the scaling will be done by the next layer.
             Defaults to `True`.
         beta_initializer: Initializer for the beta weight. Defaults to zeros.
@@ -92,16 +93,8 @@ class GroupNormalization(Layer):
         self.gamma_constraint = constraints.get(gamma_constraint)
 
     def build(self, input_shape):
-        # tf_utils.validate_axis(self.axis, input_shape)
-        # if isinstance(self.axis, int):
-        #     self.axis = [self.axis]
-        # else:
-        #     self.axis = list(self.axis)
-        # for idx, x in enumerate(self.axis):
-        #     if x < 0:
-        #         self.axis[idx] = len(input_shape) + x
-
         dim = input_shape[self.axis]
+
         if dim is None:
             raise ValueError(
                 f"Axis {self.axis} of input tensor should have a defined "
