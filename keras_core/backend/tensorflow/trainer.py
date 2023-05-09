@@ -35,7 +35,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
     @property
     def distribute_reduction_method(self):
         return self._distribute_reduction_method or "auto"
-    
+
     @distribute_reduction_method.setter
     def distribute_reduction_method(self, value):
         self._distribute_reduction_method = value
@@ -104,7 +104,8 @@ class TensorFlowTrainer(base_trainer.Trainer):
         def one_step_on_iterator(iterator):
             """Runs a single training step given a Dataset iterator."""
             data = next(iterator)
-            outputs = self.distribute_strategy.run(one_step_on_data, args=(data,))
+            outputs = self.distribute_strategy.run(
+                one_step_on_data, args=(data,))
             outputs = reduce_per_replica(
                 outputs, self.distribute_strategy,
                 reduction=self.distribute_reduction_method
@@ -136,7 +137,8 @@ class TensorFlowTrainer(base_trainer.Trainer):
         def one_step_on_iterator(iterator):
             """Runs a single test step given a Dataset iterator."""
             data = next(iterator)
-            outputs = self.distribute_strategy.run(one_step_on_data, args=(data,))
+            outputs = self.distribute_strategy.run(
+                one_step_on_data, args=(data,))
             outputs = reduce_per_replica(
                 outputs, self.distribute_strategy,
                 reduction=self.distribute_reduction_method
@@ -168,7 +170,8 @@ class TensorFlowTrainer(base_trainer.Trainer):
         def one_step_on_iterator(iterator):
             """Runs a single predict step given a Dataset iterator."""
             data = next(iterator)
-            outputs = self.distribute_strategy.run(one_step_on_data, args=(data,))
+            outputs = self.distribute_strategy.run(
+                one_step_on_data, args=(data,))
             outputs = reduce_per_replica(
                 outputs, self.distribute_strategy,
                 reduction=self.distribute_reduction_method
@@ -521,7 +524,7 @@ def reduce_per_replica(values, strategy, reduction):
     """
 
     if reduction == "auto":
-        reduction = "sum" # Ignore TPU strategy which should default to "first"
+        reduction = "sum"  # Ignore TPU strategy which should default to "first"
 
     def _reduce(v):
         """Reduce a single `PerReplica` object."""
