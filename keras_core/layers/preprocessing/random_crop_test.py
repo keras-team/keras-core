@@ -36,7 +36,7 @@ class RandomCrop(testing.TestCase):
             supports_masking=False,
         )
 
-    def test_predicting_with_mock_longer_height(self):
+    def test_predicting_with_longer_height(self):
         self.run_layer_test(
             random_crop.RandomCrop,
             init_kwargs={
@@ -48,7 +48,7 @@ class RandomCrop(testing.TestCase):
             supports_masking=False,
         )
 
-    def test_predicting_with_mock_longer_width(self):
+    def test_predicting_with_longer_width(self):
         self.run_layer_test(
             random_crop.RandomCrop,
             init_kwargs={
