@@ -1,7 +1,7 @@
-import numpy as np
-from absl import logging
+import warnings
 
-from keras_core import backend
+import numpy as np
+
 from keras_core.api_export import keras_core_export
 from keras_core.callbacks.callback import Callback
 from keras_core.utils import io_utils
@@ -21,7 +21,7 @@ class ReduceLROnPlateau(Callback):
     ```python
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
                                   patience=5, min_lr=0.001)
-    model.fit(X_train, Y_train, callbacks=[reduce_lr])
+    model.fit(x_train, y_train, callbacks=[reduce_lr])
     ```
 
     Args:
@@ -40,7 +40,7 @@ class ReduceLROnPlateau(Callback):
         min_delta: Float. Threshold for measuring the new optimum, to only focus
             on significant changes.
         cooldown: Integer. Number of epochs to wait before resuming normal
-            operation after lr has been reduced.
+            operation after the learning rate has been reduced.
         min_lr: Float. Lower bound on the learning rate.
     """
 
@@ -62,7 +62,7 @@ class ReduceLROnPlateau(Callback):
         if factor >= 1.0:
             raise ValueError(
                 "ReduceLROnPlateau does not support a factor >= 1.0. "
-                f"Got {factor}"
+                f"Received factor={factor}"
             )
 
         self.factor = factor
@@ -80,11 +80,11 @@ class ReduceLROnPlateau(Callback):
 
     def _reset(self):
         """Resets wait counter and cooldown counter."""
-        if self.mode not in ["auto", "min", "max"]:
-            logging.warning(
-                "Learning rate reduction mode %s is unknown, "
+        if self.mode not in {"auto", "min", "max"}:
+            warnings.warn(
+                f"Learning rate reduction mode {self.mode} is unknown, "
                 "fallback to auto mode.",
-                self.mode,
+                stacklevel=2,
             )
             self.mode = "auto"
         if self.mode == "min" or (
@@ -103,19 +103,17 @@ class ReduceLROnPlateau(Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
-        logs["lr"] = backend.Variable(
-            self.model.optimizer.learning_rate
-        ).numpy()
+        logs["lr"] = float(np.array(self.model.optimizer.learning_rate))
         current = logs.get(self.monitor)
 
         if current is None:
-            logging.warning(
-                "Learning rate reduction is conditioned on metric `%s` "
-                "which is not available. Available metrics are: %s",
-                self.monitor,
-                ",".join(list(logs.keys())),
+            print("tacos")
+            warnings.warn(
+                "Learning rate reduction is conditioned on metric "
+                f"`{self.monitor}` which is not available. Available metrics "
+                f"are: {','.join(list(logs.keys()))}.",
+                stacklevel=2,
             )
-
         else:
             if self.in_cooldown():
                 self.cooldown_counter -= 1
@@ -127,9 +125,7 @@ class ReduceLROnPlateau(Callback):
             elif not self.in_cooldown():
                 self.wait += 1
                 if self.wait >= self.patience:
-                    old_lr = backend.Variable(
-                        self.model.optimizer.learning_rate
-                    ).numpy()
+                    old_lr = float(np.array(self.model.optimizer.learning_rate))
                     if old_lr > np.float32(self.min_lr):
                         new_lr = old_lr * self.factor
                         new_lr = max(new_lr, self.min_lr)

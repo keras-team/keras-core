@@ -8,7 +8,7 @@ from keras_core.utils import io_utils
 from keras_core.utils import numerical_utils
 
 
-class LearningRateSchedulerTest(testing.TestCase):
+class ReduceLROnPlateauTest(testing.TestCase):
     def setUp(self):
         (x_train, y_train), (x_test, y_test) = test_utils.get_test_data(
             train_samples=10,
