@@ -34,8 +34,8 @@ class GroupNormalization(Layer):
             Typically, this is the features axis/axes. The left-out axes are
             typically the batch axis/axes. `-1` is the last dimension in the
             input. Defaults to `-1`.
-        epsilon: Small float added to variance to avoid dividing by zero. Defaults
-            to 1e-3
+        epsilon: Small float added to variance to avoid dividing by zero.
+            Defaults to 1e-3.
         center: If True, add offset of `beta` to normalized tensor. If False,
             `beta` is ignored. Defaults to `True`.
         scale: If True, multiply by `gamma`. If False, `gamma` is not used.
@@ -48,15 +48,17 @@ class GroupNormalization(Layer):
             default.
         gamma_regularizer: Optional regularizer for the gamma weight. None by
             default.
-        beta_constraint: Optional constraint for the beta weight. None by default.
+        beta_constraint: Optional constraint for the beta weight.
+            None by default.
         gamma_constraint: Optional constraint for the gamma weight. None by
-            default.  Input shape: Arbitrary. Use the keyword argument `input_shape`
-            (tuple of integers, does not include the samples axis) when using this
-            layer as the first layer in a model.  Output shape: Same shape as input.
+            default.  Input shape: Arbitrary. Use the keyword argument
+            `input_shape` (tuple of integers, does not include the samples
+            axis) when using this layer as the first layer in a model.
+            Output shape: Same shape as input.
         **kwargs: Base layer keyword arguments (e.g. `name` and `dtype`).
 
     Reference:
-    
+
     - [Yuxin Wu & Kaiming He, 2018](https://arxiv.org/abs/1803.08494)
     """
 
@@ -177,8 +179,12 @@ class GroupNormalization(Layer):
         axis = -2 if self.axis == -1 else self.axis - 1
         group_reduction_axes.pop(axis)
 
-        mean = ops.mean(reshaped_inputs, axis=group_reduction_axes, keepdims=True)
-        variance = ops.var(reshaped_inputs, axis=group_reduction_axes, keepdims=True)
+        mean = ops.mean(
+            reshaped_inputs, axis=group_reduction_axes, keepdims=True
+        )
+        variance = ops.var(
+            reshaped_inputs, axis=group_reduction_axes, keepdims=True
+        )
 
         gamma, beta = self._get_reshaped_weights(input_shape)
 
@@ -188,9 +194,9 @@ class GroupNormalization(Layer):
             inv *= gamma
 
         x = beta - mean * inv if beta is not None else -mean * inv
-        normalized_inputs = reshaped_inputs * ops.cast(inv, reshaped_inputs.dtype) + ops.cast(
-            x, reshaped_inputs.dtype
-        )
+        normalized_inputs = reshaped_inputs * ops.cast(
+            inv, reshaped_inputs.dtype
+        ) + ops.cast(x, reshaped_inputs.dtype)
 
         normalized_inputs = ops.cast(normalized_inputs, reshaped_inputs.dtype)
 

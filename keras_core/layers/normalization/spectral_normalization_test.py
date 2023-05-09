@@ -1,10 +1,7 @@
 import numpy as np
 
-from keras_core import layers
-from keras_core import operations as ops
-from keras_core import regularizers
-from keras_core import constraints
 from keras_core import initializers
+from keras_core import layers
 from keras_core import testing
 
 
@@ -21,7 +18,8 @@ class SpectralNormalizationTest(testing.TestCase):
         images = np.ones((1, 2, 2, 1))
         sn_wrapper = layers.SpectralNormalization(
             layers.Conv2D(
-                1, (2, 2), kernel_initializer=initializers.Constant(value=1)),
+                1, (2, 2), kernel_initializer=initializers.Constant(value=1)
+            ),
         )
 
         result = sn_wrapper(images, training=False)

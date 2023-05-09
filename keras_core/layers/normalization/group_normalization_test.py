@@ -1,9 +1,8 @@
 import numpy as np
 
-from keras_core import layers
-from keras_core import operations as ops
-from keras_core import regularizers
 from keras_core import constraints
+from keras_core import layers
+from keras_core import regularizers
 from keras_core import testing
 
 
@@ -45,9 +44,7 @@ class GroupNormalizationTest(testing.TestCase):
             groups=4, axis=-1, scale=False, center=False
         )
 
-        inputs = np.array(
-            [[[-1.0, 1.0, 0, 2.0], [1.0, 3.0, -4, -2.0]]]
-        )
+        inputs = np.array([[[-1.0, 1.0, 0, 2.0], [1.0, 3.0, -4, -2.0]]])
 
         expected_instance_norm_output = np.array(
             [[[-1.0, -1.0, 1.0, 1.0], [1.0, 1.0, -1.0, -1.0]]]
@@ -67,9 +64,7 @@ class GroupNormalizationTest(testing.TestCase):
             groups=2, axis=1, scale=False, center=False
         )
 
-        inputs = np.array(
-            [[-1.0, -1.0, 1.0, 1.0, 2.0, 2.0, 0, -2.0]]
-        )
+        inputs = np.array([[-1.0, -1.0, 1.0, 1.0, 2.0, 2.0, 0, -2.0]])
 
         expected_output_1_group = np.array(
             [[-0.898, -0.898, 0.539, 0.539, 1.257, 1.257, -0.180, -1.616]],
@@ -97,9 +92,7 @@ class GroupNormalizationTest(testing.TestCase):
             groups=2, axis=2, scale=False, center=False
         )
 
-        inputs = np.array(
-            [[[-1.0, -1.0, 2.0, 2.0], [1.0, 1.0, 0, -2.0]]]
-        )
+        inputs = np.array([[[-1.0, -1.0, 2.0, 2.0], [1.0, 1.0, 0, -2.0]]])
 
         expected_output_1_group = np.array(
             [[[-0.898, -0.898, 1.257, 1.257], [0.539, 0.539, -0.180, -1.616]]]
