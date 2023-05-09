@@ -168,11 +168,11 @@ class Attention(Layer):
             max_value = 65504.0 if scores.dtype == "float16" else 1.0e9
             scores -= max_value * ops.cast(padding_mask, dtype=scores.dtype)
 
-        weights = ops.softmax(scores)
-        if training and self.rate > 0:
+        weights = ops.softmax(scores, axis=-1)
+        if training and self.dropout > 0:
             weights = backend.random.dropout(
                 weights,
-                self.rate,
+                self.dropout,
                 noise_shape=self.noise_shape,
                 seed=self.seed_generator,
             )
