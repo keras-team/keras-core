@@ -10,13 +10,12 @@ from keras_core.utils import numerical_utils
 
 class LearningRateSchedulerTest(testing.TestCase):
     def setUp(self):
-        (x_train, y_train), (x_test, y_test) = test_utils.get_test_data(
+        (x_train, y_train), _ = test_utils.get_test_data(
             train_samples=10,
             test_samples=10,
             input_shape=(3,),
             num_classes=2,
         )
-        y_test = numerical_utils.to_categorical(y_test)
         y_train = numerical_utils.to_categorical(y_train)
 
         model = Sequential([layers.Dense(5), layers.Dense(2)])
@@ -28,9 +27,7 @@ class LearningRateSchedulerTest(testing.TestCase):
 
         self.model = model
         self.x_train = x_train
-        self.x_test = x_test
         self.y_train = y_train
-        self.y_test = y_test
 
     def test_updates_learning_rate(self):
         lr_scheduler = callbacks.LearningRateScheduler(
