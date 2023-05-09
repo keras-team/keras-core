@@ -266,6 +266,4 @@ class F1ScoreTest(testing.TestCase):
 
         fbeta.update_state(y_true, y_pred)
         f1.update_state(y_true, y_pred)
-        self.assertAllClose(
-            fbeta.result(), f1.result(), atol=1e-6
-        )
+        self.assertAllClose(fbeta.result(), f1.result(), atol=1e-6)

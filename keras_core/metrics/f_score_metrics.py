@@ -172,7 +172,9 @@ class FBetaScore(Metric):
         y_pred = ops.cast(y_pred, dtype=self.dtype)
         y_true = ops.cast(y_true, dtype=self.dtype)
         if sample_weight is not None:
-            sample_weight = ops.convert_to_tensor(sample_weight, dtype=self.dtype)
+            sample_weight = ops.convert_to_tensor(
+                sample_weight, dtype=self.dtype
+            )
 
         def _weighted_sum(val, sample_weight):
             if sample_weight is not None:
