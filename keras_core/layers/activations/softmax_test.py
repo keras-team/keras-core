@@ -28,8 +28,10 @@ class SoftmaxTest(testing.TestCase):
     def test_softmax_correctness_with_mask(self):
         softmax_layer = softmax.Softmax(axis=(1, 0))
         input = np.array([[1.0, 2.0, 1.0], [1.0, 2.0, 1.0]])
-        expected_output = np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
-        result = softmax_layer(input, mask=0.0)
+        expected_output = np.array(
+            [[0.21194154, 0.0, 0.21194154], [0.0, 0.57611686, 0.0]]
+        )
+        result = softmax_layer(input, mask=[[1.0, 0.0, 1.0], [0.0, 1.0, 0.0]])
         self.assertAllClose(result, expected_output)
 
     def test_softmax_correctness_with_axis(self):

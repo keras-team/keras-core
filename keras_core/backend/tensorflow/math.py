@@ -16,5 +16,5 @@ def in_top_k(targets, predictions, k):
     return tf.math.in_top_k(targets, predictions, k)
 
 
-def log_sum_exp(x, axis=None, keepdims=False):
+def logsumexp(x, axis=None, keepdims=False):
     return tf.math.reduce_logsumexp(x, axis=axis, keepdims=keepdims)

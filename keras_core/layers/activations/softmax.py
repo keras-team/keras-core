@@ -50,7 +50,7 @@ class Softmax(Layer):
             if len(self.axis) > 1:
                 return backend.numpy.exp(
                     inputs
-                    - backend.math.log_sum_exp(
+                    - backend.math.logsumexp(
                         inputs, axis=self.axis, keepdims=True
                     )
                 )
