@@ -634,7 +634,8 @@ def _is_tpu_strategy(strategy):
 
 
 def _is_tpu_strategy_class(clz):
-    is_tpu_strat = lambda k: k.__name__.startswith("TPUStrategy")
+    def is_tpu_strat(k):
+        return k.__name__.startswith("TPUStrategy")
     if is_tpu_strat(clz):
         return True
     return any(map(_is_tpu_strategy_class, clz.__bases__))
