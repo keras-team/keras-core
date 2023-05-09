@@ -10,6 +10,7 @@ class FBetaScore(Metric):
     """Computes F-Beta score.
 
     Formula:
+
     ```python
     b2 = beta ** 2
     f_beta_score = (1 + b2) * (precision * recall) / (precision * b2 + recall)
@@ -134,7 +135,7 @@ class FBetaScore(Metric):
             )
         num_classes = y_pred_shape[-1]
         if self.average != "micro":
-            init_shape = (num_classes)
+            init_shape = num_classes
         else:
             init_shape = ()
 
@@ -152,8 +153,6 @@ class FBetaScore(Metric):
         self.intermediate_weights = _add_zeros_variable("intermediate_weights")
         self._built = True
 
-
-
     def update_state(self, y_true, y_pred, sample_weight=None):
         y_true = ops.convert_to_tensor(y_true, dtype=self.dtype)
         y_pred = ops.convert_to_tensor(y_pred, dtype=self.dtype)
@@ -164,50 +163,55 @@ class FBetaScore(Metric):
             threshold = ops.max(y_pred, axis=-1, keepdims=True)
             # make sure [0, 0, 0] doesn't become [1, 1, 1]
             # Use abs(x) > eps, instead of x != 0 to check for zero
-            y_pred = ops.logical_and(y_pred >= threshold, ops.abs(y_pred) > 1e-9)
+            y_pred = ops.logical_and(
+                y_pred >= threshold, ops.abs(y_pred) > 1e-9
+            )
         else:
             y_pred = y_pred > self.threshold
 
         y_pred = ops.cast(y_pred, dtype=self.dtype)
+        y_true = ops.cast(y_true, dtype=self.dtype)
 
         def _weighted_sum(val, sample_weight):
             if sample_weight is not None:
                 val = ops.multiply(val, ops.expand_dims(sample_weight, 1))
             return ops.sum(val, axis=self.axis)
 
-        self.true_positives.assign(self.true_positives +
-            _weighted_sum(y_pred * y_true, sample_weight)
+        self.true_positives.assign(
+            self.true_positives + _weighted_sum(y_pred * y_true, sample_weight)
         )
-        self.false_positives.assign(self.false_positives +
-            _weighted_sum(y_pred * (1 - y_true), sample_weight)
+        self.false_positives.assign(
+            self.false_positives
+            + _weighted_sum(y_pred * (1 - y_true), sample_weight)
         )
-        self.false_negatives.assign(self.false_negatives +
-            _weighted_sum((1 - y_pred) * y_true, sample_weight)
+        self.false_negatives.assign(
+            self.false_negatives
+            + _weighted_sum((1 - y_pred) * y_true, sample_weight)
         )
-        self.intermediate_weights.assign(self.intermediate_weights +
-            _weighted_sum(y_true, sample_weight)
+        self.intermediate_weights.assign(
+            self.intermediate_weights + _weighted_sum(y_true, sample_weight)
         )
 
     def result(self):
         precision = ops.divide(
-            self.true_positives, 
-            self.true_positives + self.false_positives + backend.epsilon()
+            self.true_positives,
+            self.true_positives + self.false_positives + backend.epsilon(),
         )
         recall = ops.divide(
             self.true_positives,
-            self.true_positives + self.false_negatives + backend.epsilon()
+            self.true_positives + self.false_negatives + backend.epsilon(),
         )
 
         precision = ops.convert_to_tensor(precision, dtype=self.dtype)
         recall = ops.convert_to_tensor(recall, dtype=self.dtype)
 
         mul_value = precision * recall
-        add_value = ((self.beta ** 2) * precision) + recall
+        add_value = ((self.beta**2) * precision) + recall
         mean = ops.divide(mul_value, add_value + backend.epsilon())
-        f1_score = mean * (1 + (self.beta ** 2))
+        f1_score = mean * (1 + (self.beta**2))
 
         if self.average == "weighted":
-            weights =ops.divide(
+            weights = ops.divide(
                 self.intermediate_weights,
                 ops.sum(self.intermediate_weights) + backend.epsilon(),
             )
@@ -277,7 +281,7 @@ class F1Score(FBetaScore):
 
     Example:
 
-    >>> metric = tf.keras.metrics.F1Score(threshold=0.5)
+    >>> metric = keras_core.metrics.F1Score(threshold=0.5)
     >>> y_true = np.array([[1, 1, 1],
     ...                    [1, 0, 0],
     ...                    [1, 1, 0]], np.int32)

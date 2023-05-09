@@ -16,7 +16,9 @@ class FBetaScoreTest(parameterized.TestCase, testing.TestCase):
         threshold,
         reference_result,
     ):
-        fbeta = f_score_metrics.FBetaScore(average, beta, threshold, dtype="float32")
+        fbeta = f_score_metrics.FBetaScore(
+            average, beta, threshold, dtype="float32"
+        )
         fbeta.update_state(y_true, y_pred, sample_weights)
         result = fbeta.result()
         self.assertAllClose(result, reference_result, atol=1e-6)
@@ -241,22 +243,26 @@ class F1ScoreTest(testing.TestCase):
         f1 = f_score_metrics.F1Score()
         fbeta = f_score_metrics.FBetaScore(beta=1.0)
 
-        y_true = np.array([
-            [1, 0, 0],
-            [0, 1, 0],
-            [0, 0, 1],
-            [1, 0, 0],
-            [1, 0, 0],
-            [0, 0, 1],
-        ], dtype="float32")
-        y_pred = np.array([
-            [0.9, 0.1, 0],
-            [0.2, 0.6, 0.2],
-            [0, 0, 1],
-            [0.4, 0.3, 0.3],
-            [0, 0.9, 0.1],
-            [0, 0, 1],
-        ], dtype="float32")
+        y_true = np.array(
+            [
+                [1, 0, 0],
+                [0, 1, 0],
+                [0, 0, 1],
+                [1, 0, 0],
+                [1, 0, 0],
+                [0, 0, 1],
+            ]
+        )
+        y_pred = np.array(
+            [
+                [0.9, 0.1, 0],
+                [0.2, 0.6, 0.2],
+                [0, 0, 1],
+                [0.4, 0.3, 0.3],
+                [0, 0.9, 0.1],
+                [0, 0, 1],
+            ]
+        )
 
         fbeta.update_state(y_true, y_pred)
         f1.update_state(y_true, y_pred)
