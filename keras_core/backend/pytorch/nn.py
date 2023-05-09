@@ -76,7 +76,7 @@ def max_pool(
     data_format="channels_last",
 ):
     raise NotImplementedError(
-        "`max_pool` not yet implemeneted for PyTorch Backend"
+        "`max_pool` not yet implemented for PyTorch Backend"
     )
 
 
@@ -88,7 +88,7 @@ def average_pool(
     data_format="channels_last",
 ):
     raise NotImplementedError(
-        "`average_pool` not yet implemeneted for PyTorch Backend"
+        "`average_pool` not yet implemented for PyTorch Backend"
     )
 
 
@@ -100,7 +100,7 @@ def conv(
     data_format="channels_last",
     dilation_rate=1,
 ):
-    raise NotImplementedError("`conv` not yet implemeneted for PyTorch Backend")
+    raise NotImplementedError("`conv` not yet implemented for PyTorch Backend")
 
 
 def depthwise_conv(
@@ -112,7 +112,7 @@ def depthwise_conv(
     dilation_rate=1,
 ):
     raise NotImplementedError(
-        "`depthwise_conv` not yet implemeneted for PyTorch Backend"
+        "`depthwise_conv` not yet implemented for PyTorch Backend"
     )
 
 
@@ -153,7 +153,7 @@ def conv_transpose(
     dilation_rate=1,
 ):
     raise NotImplementedError(
-        "`conv_transpose` not yet implemeneted for PyTorch backend"
+        "`conv_transpose` not yet implemented for PyTorch backend"
     )
 
 
@@ -235,9 +235,6 @@ def binary_crossentropy(target, output, from_logits=False):
         )
 
     if from_logits:
-        output = tnn.sigmoid(output)
-
-    output = torch.clip(output, epsilon(), 1.0 - epsilon())
-    bce = target * torch.log(output)
-    bce += (1.0 - target) * torch.log(1.0 - output)
-    return -bce
+        return tnn.binary_cross_entropy_with_logits(output, target)
+    else:
+        return tnn.binary_cross_entropy(output, target)
