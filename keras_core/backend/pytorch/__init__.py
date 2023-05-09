@@ -25,9 +25,7 @@ def convert_to_tensor(x, dtype=None):
 
 
 def is_tensor(x):
-    if isinstance(x, torch.Tensor):
-        return True
-    return False
+    return torch.is_tensor(x)
 
 
 def shape(x):
@@ -35,11 +33,13 @@ def shape(x):
 
 
 def cast(x, dtype):
-    return convert_to_tensor(x, dtype=dtype)
+    return x.to(dtype)
 
 
 def cond(pred, true_fn, false_fn):
-    return torch.where(pred, true_fn, false_fn)
+    if pred:
+        return true_fn
+    return false_fn
 
 
 def name_scope(name):
@@ -53,7 +53,7 @@ def vectorized_map(function, elements):
 
 class Variable(KerasVariable):
     def _initialize(self, value):
-        self._value = torch.as_tensor(value, dtype=self._dtype)
+        self._value = convert_to_tensor(value, dtype=self._dtype)
 
     def assign(self, value):
         value = convert_to_tensor(value, dtype=self.dtype)
@@ -69,11 +69,8 @@ class Variable(KerasVariable):
             scope = get_stateless_scope()
             scope.add_update((self, value))
         else:
-            if isinstance(value, torch.Tensor) and value.dtype == self.dtype:
-                # Avoid a memory copy
-                self._value = value
-            else:
-                self._value = torch.as_tensor(value, dtype=self.dtype)
+            # torch `as_tensor` by default, doesn't copy if tensor is same type
+            self._value = convert_to_tensor(value, dtype=self.dtype)
 
     @property
     def value(self):
@@ -88,7 +85,7 @@ class Variable(KerasVariable):
             # during shape inference in a scratch graph
             # (anything else would be a bug, to be fixed.)
             return self._maybe_autocast(
-                torch.as_tensor(
+                convert_to_tensor(
                     self._initializer(self._shape, dtype=self._dtype),
                     dtype=self._dtype,
                 )
