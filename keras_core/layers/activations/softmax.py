@@ -15,12 +15,11 @@ class Softmax(Layer):
     ```
 
     Example:
-    ``` python
-    softmax_layer = Softmax()
-    input = np.array([1.0, 2.0, 1.0])
-    result = softmax_layer(input)
-    # result = [0.21194157, 0.5761169, 0.21194157]
-    ```
+    >>>softmax_layer = Softmax()
+    >>>input = np.array([1.0, 2.0, 1.0])
+    >>>result = softmax_layer(input)
+    [0.21194157, 0.5761169, 0.21194157]
+
 
     Args:
         axis: Integer, or list of Integers, axis along which the softmax
