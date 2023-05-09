@@ -209,7 +209,7 @@ class GroupNormalization(Layer):
 
     def _create_broadcast_shape(self, input_shape):
 
-        broadcast_shape = [1] * tuple(input_shape)[0]
+        broadcast_shape = [1] * len(input_shape)
 
         broadcast_shape[self.axis] = input_shape[self.axis] // self.groups
         broadcast_shape.insert(self.axis, self.groups)

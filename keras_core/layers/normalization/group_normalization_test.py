@@ -7,7 +7,7 @@ from keras_core import constraints
 from keras_core import testing
 
 
-class LayerNormalizationTest(testing.TestCase):
+class GroupNormalizationTest(testing.TestCase):
     def test_groupnorm(self):
         self.run_layer_test(
             layers.GroupNormalization,
@@ -44,14 +44,13 @@ class LayerNormalizationTest(testing.TestCase):
         instance_norm_layer = layers.GroupNormalization(
             groups=4, axis=-1, scale=False, center=False
         )
-        instance_norm_layer.build(input_shape=(2, 4))
 
         inputs = np.array(
-            [[-1.0, 1.0, 0, 2.0], [1.0, 3.0, -4, -2.0]]
+            [[[-1.0, 1.0, 0, 2.0], [1.0, 3.0, -4, -2.0]]]
         )
 
         expected_instance_norm_output = np.array(
-            [[-1.0, -1.0, 1.0, 1.0], [1.0, 1.0, -1.0, -1.0]]
+            [[[-1.0, -1.0, 1.0, 1.0], [1.0, 1.0, -1.0, -1.0]]]
         )
 
         self.assertAllClose(
@@ -67,8 +66,6 @@ class LayerNormalizationTest(testing.TestCase):
         layer_with_2_groups = layers.GroupNormalization(
             groups=2, axis=1, scale=False, center=False
         )
-        layer_with_1_group.build(input_shape=(8,))
-        layer_with_2_groups.build(input_shape=(8,))
 
         inputs = np.array(
             [[-1.0, -1.0, 1.0, 1.0, 2.0, 2.0, 0, -2.0]]
@@ -85,6 +82,37 @@ class LayerNormalizationTest(testing.TestCase):
 
         expected_output_2_groups = np.array(
             [[-1.0, -1.0, 1.0, 1.0, 0.904, 0.904, -0.301, -1.507]]
+        )
+        self.assertAllClose(
+            layer_with_2_groups(inputs),
+            expected_output_2_groups,
+            atol=1e-3,
+        )
+
+    def test_correctness_2d(self):
+        layer_with_1_group = layers.GroupNormalization(
+            groups=1, axis=-1, scale=False, center=False
+        )
+        layer_with_2_groups = layers.GroupNormalization(
+            groups=2, axis=2, scale=False, center=False
+        )
+
+        inputs = np.array(
+            [[[-1.0, -1.0, 2.0, 2.0], [1.0, 1.0, 0, -2.0]]]
+        )
+
+        expected_output_1_group = np.array(
+            [[[-0.898, -0.898, 1.257, 1.257], [0.539, 0.539, -0.180, -1.616]]]
+        )
+
+        self.assertAllClose(
+            layer_with_1_group(inputs),
+            expected_output_1_group,
+            atol=1e-3,
+        )
+
+        expected_output_2_groups = np.array(
+            [[[-1.0, -1.0, 0.904, 0.904], [1.0, 1.0, -0.301, -1.507]]]
         )
         self.assertAllClose(
             layer_with_2_groups(inputs),
