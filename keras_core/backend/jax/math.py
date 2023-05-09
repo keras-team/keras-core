@@ -23,7 +23,7 @@ def in_top_k(targets, predictions, k):
     return jax.numpy.any(mask, axis=1)
 
 
-def log_sum_exp(x, axis=None, keepdims=False):
+def logsumexp(x, axis=None, keepdims=False):
     max_x = jnp.max(x, axis=axis, keepdims=True)
     result = (
         jnp.log(jnp.sum(jnp.exp(x - max_x), axis=axis, keepdims=keepdims))
