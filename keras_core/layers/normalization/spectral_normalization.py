@@ -27,7 +27,7 @@ class SpectralNormalization(Wrapper):
     >>> y.shape
     (1, 9, 9, 2)
 
-    Wrap `keras.layers.Dense`:
+    Wrap `keras_core.layers.Dense`:
     >>> x = np.random.rand(1, 10, 10, 1)
     >>> dense = SpectralNormalization(keras_core.layers.Dense(10))
     >>> y = dense(x)
