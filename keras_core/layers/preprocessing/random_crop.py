@@ -43,10 +43,10 @@ class RandomCrop(Layer):
     def __init__(self, height, width, seed=None, name=None, **kwargs):
         super().__init__()
         self.layer = tf.keras.layers.RandomCrop(
-            height = height,
-            width = width,
-            seed = seed,
-            name = name,
+            height=height,
+            width=width,
+            seed=seed,
+            name=name,
         )
         self.supports_masking = False
 
