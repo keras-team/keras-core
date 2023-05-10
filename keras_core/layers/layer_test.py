@@ -278,6 +278,8 @@ class LayerTest(testing.TestCase):
         x._keras_mask = backend.numpy.ones((4,))
         layer(x)
 
+        layer(backend.numpy.ones((4, 4)), mask=backend.numpy.ones((4,)))
+
         class NestedInputMaskedLayer(layers.Layer):
             def __init__(self):
                 super().__init__()
@@ -296,6 +298,11 @@ class LayerTest(testing.TestCase):
         x2 = backend.numpy.ones((4, 4))
         x2._keras_mask = backend.numpy.ones((4,))
         layer([x1, x2])
+
+        layer(
+            [backend.numpy.ones((4, 4)), backend.numpy.ones((4, 4))],
+            mask=[backend.numpy.ones((4,)), backend.numpy.ones((4,))],
+        )
 
         class PositionalInputsMaskedLayer(layers.Layer):
             def __init__(self):
@@ -400,3 +407,75 @@ class LayerTest(testing.TestCase):
             self.assertAllClose(ref_v, v)
         for ref_loss, loss in zip(layer1.losses, losses):
             self.assertAllClose(ref_loss, loss)
+
+    def test_trainable_setting(self):
+        class NonTrainableWeightsLayer(layers.Layer):
+            def build(self, _):
+                self.w1 = self.add_weight(
+                    shape=(),
+                    initializer="ones",
+                    trainable=True,
+                )
+                self.w2 = self.add_weight(
+                    shape=(),
+                    initializer="ones",
+                    trainable=False,
+                )
+                self.seed = backend.random.SeedGenerator(123)
+
+            def call(self, inputs):
+                return inputs
+
+        class NestedNonTrainableWeightsLayer(layers.Layer):
+            def build(self, _):
+                self.w1 = self.add_weight(
+                    shape=(),
+                    initializer="ones",
+                    trainable=True,
+                )
+                self.w2 = self.add_weight(
+                    shape=(),
+                    initializer="ones",
+                    trainable=False,
+                )
+                self.nested = NonTrainableWeightsLayer()
+                self.nested.build(None)
+
+            def call(self, inputs):
+                return inputs
+
+        layer = NestedNonTrainableWeightsLayer()
+        layer.build(None)
+        self.assertEqual(len(layer.trainable_weights), 2)
+        self.assertEqual(len(layer.trainable_variables), 2)
+        self.assertEqual(len(layer.non_trainable_weights), 2)
+        self.assertEqual(len(layer.non_trainable_variables), 3)
+
+        layer.trainable = False
+        self.assertEqual(len(layer.trainable_weights), 0)
+        self.assertEqual(len(layer.trainable_variables), 0)
+        self.assertEqual(len(layer.non_trainable_weights), 4)
+        self.assertEqual(len(layer.non_trainable_variables), 5)
+        self.assertFalse(layer.w1.trainable)
+        self.assertFalse(layer.nested.w1.trainable)
+
+        layer.trainable = True
+        self.assertEqual(len(layer.trainable_weights), 2)
+        self.assertEqual(len(layer.trainable_variables), 2)
+        self.assertEqual(len(layer.non_trainable_weights), 2)
+        self.assertEqual(len(layer.non_trainable_variables), 3)
+        self.assertTrue(layer.w1.trainable)
+        self.assertTrue(layer.nested.w1.trainable)
+
+        layer = NestedNonTrainableWeightsLayer(trainable=False)
+        layer.build(None)
+        self.assertEqual(len(layer.trainable_weights), 0)
+        self.assertEqual(len(layer.trainable_variables), 0)
+        self.assertEqual(len(layer.non_trainable_weights), 4)
+        self.assertEqual(len(layer.non_trainable_variables), 5)
+
+        layer.trainable = True
+        self.assertEqual(len(layer.trainable_weights), 2)
+        self.assertEqual(len(layer.trainable_variables), 2)
+        self.assertEqual(len(layer.non_trainable_weights), 2)
+        self.assertEqual(len(layer.non_trainable_variables), 3)
