@@ -15,9 +15,9 @@ def normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
         stddev: Floats, defaults to 1. Standard deviation of the random values
             to generate.
         dtype: Optional dtype of the tensor. Only floating point types are
-            supported. If not specified, `keras.backend.floatx()` is used,
+            supported. If not specified, `keras_core.backend.floatx()` is used,
             which defaults to `float32` unless you configured it otherwise (via
-            `keras.backend.set_floatx(float_dtype)`).
+            `keras_core.backend.set_floatx(float_dtype)`).
         seed: A Python integer or instance of
             `keras_core.backend.SeedGenerator`.
             Used to make the behavior of the initializer
@@ -43,7 +43,7 @@ def uniform(shape, minval=0.0, maxval=1.0, dtype=None, seed=None):
         maxval: Floats, defaults to 1. Upper bound of the range of
             random values to generate (exclusive).
         dtype: Optional dtype of the tensor. Only floating point types are
-            supported. If not specified, `keras.backend.floatx()` is used,
+            supported. If not specified, `keras_core.backend.floatx()` is used,
             which defaults to `float32` unless you configured it otherwise (via
             `keras.backend.set_floatx(float_dtype)`)
         seed: A Python integer or instance of
@@ -70,9 +70,9 @@ def truncated_normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
         stddev: Floats, defaults to 1. Standard deviation of the random values
             to generate.
         dtype: Optional dtype of the tensor. Only floating point types are
-            supported. If not specified, `keras.backend.floatx()` is used,
+            supported. If not specified, `keras_core.backend.floatx()` is used,
             which defaults to `float32` unless you configured it otherwise (via
-            `keras.backend.set_floatx(float_dtype)`)
+            `keras_core.backend.set_floatx(float_dtype)`)
         seed: A Python integer or instance of
             `keras_core.backend.SeedGenerator`.
             Used to make the behavior of the initializer
