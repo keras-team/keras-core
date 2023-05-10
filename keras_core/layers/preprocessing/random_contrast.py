@@ -86,11 +86,6 @@ class RandomContrast(Layer):
             return inputs
 
     def _adjust_constrast(self, inputs, contrast_factor):
-        # For each channel, this Op computes the mean of the image pixels in the
-        # channel and then adjusts each component `x` of each pixel to
-        # `(x - mean) * contrast_factor + mean`.
-
-        # `contrast_factor` must be in the interval `(-inf, inf)`.
         # reduce mean on height
         inp_mean = np.mean(inputs, axis=-3, keepdims=True)
         # reduce mean on width
