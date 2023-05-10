@@ -14,7 +14,7 @@ from keras_core.backend.common.stateless_scope import in_stateless_scope
 from keras_core.backend.numpy import math
 # from keras_core.backend.numpy import nn
 # from keras_core.backend.numpy import numpy
-# from keras_core.backend.numpy import random
+from keras_core.backend.numpy import random
 from keras_core.utils.naming import auto_name
 
 DYNAMIC_SHAPES_OK = False  # Dynamic shapes NG
