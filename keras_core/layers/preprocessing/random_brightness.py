@@ -1,5 +1,3 @@
-import numpy as np
-
 from keras_core import operations as ops
 from keras_core.api_export import keras_core_export
 from keras_core.backend import random
@@ -13,12 +11,6 @@ class RandomBrightness(Layer):
     This layer will randomly increase/reduce the brightness for the input RGB
     images. At inference time, the output will be identical to the input.
     Call the layer with `training=True` to adjust the brightness of the input.
-
-    Note that different brightness adjustment factors
-    will be apply to each the images in the batch.
-
-    For an overview and full list of preprocessing layers, see the preprocessing
-    [guide](https://www.tensorflow.org/guide/keras/preprocessing_layers).
 
     Args:
         factor: Float or a list/tuple of 2 floats between -1.0 and 1.0. The
@@ -60,7 +52,7 @@ class RandomBrightness(Layer):
     output = random_bright(image, training=True)
 
     # output will be int64 with 25.5 added to each channel and round down.
-    numpy.array([[[26.5, 27.5, 28.5]
+    >>> array([[[26.5, 27.5, 28.5]
                 [29.5, 30.5, 31.5]]
                [[32.5, 33.5, 34.5]
                 [35.5, 36.5, 37.5]]],
@@ -80,19 +72,19 @@ class RandomBrightness(Layer):
         super().__init__(**kwargs)
         self._set_factor(factor)
         self._set_value_range(value_range)
-        if seed is not None:
-            self._seed = seed
-        else:
-            self._seed = random.draw_seed(random.SeedGenerator(seed))
+        self._seed = seed
+        self._generator = random.SeedGenerator(seed)
 
     def _set_value_range(self, value_range):
         if not isinstance(value_range, (tuple, list)):
             raise ValueError(
-                self._VALUE_RANGE_VALIDATION_ERROR + f"Got {value_range}"
+                self._VALUE_RANGE_VALIDATION_ERROR
+                + f"Received: value_range={value_range}"
             )
         if len(value_range) != 2:
             raise ValueError(
-                self._VALUE_RANGE_VALIDATION_ERROR + f"Got {value_range}"
+                self._VALUE_RANGE_VALIDATION_ERROR
+                + f"Received: value_range={value_range}"
             )
         self._value_range = sorted(value_range)
 
@@ -100,7 +92,7 @@ class RandomBrightness(Layer):
         if isinstance(factor, (tuple, list)):
             if len(factor) != 2:
                 raise ValueError(
-                    self._FACTOR_VALIDATION_ERROR + f"Got {factor}"
+                    self._FACTOR_VALIDATION_ERROR + f"Received: factor={factor}"
                 )
             self._check_factor_range(factor[0])
             self._check_factor_range(factor[1])
@@ -110,12 +102,15 @@ class RandomBrightness(Layer):
             factor = abs(factor)
             self._factor = [-factor, factor]
         else:
-            raise ValueError(self._FACTOR_VALIDATION_ERROR + f"Got {factor}")
+            raise ValueError(
+                self._FACTOR_VALIDATION_ERROR + f"Received: factor={factor}"
+            )
 
     def _check_factor_range(self, input_number):
         if input_number > 1.0 or input_number < -1.0:
             raise ValueError(
-                self._FACTOR_VALIDATION_ERROR + f"Got {input_number}"
+                self._FACTOR_VALIDATION_ERROR
+                + f"Received: input_number={input_number}"
             )
 
     def call(self, inputs, training=True):
@@ -135,12 +130,15 @@ class RandomBrightness(Layer):
             rgb_delta_shape = [images.shape[0], 1, 1, 1]
         else:
             raise ValueError(
-                "Expected the input image to be rank 3 or 4. Got "
+                "Expected the input image to be rank 3 or 4. Received "
                 f"inputs.shape = {images.shape}"
             )
-        np.random.seed(self._seed)
-        rgb_delta = np.random.uniform(
-            low=self._factor[0], high=self._factor[1], size=rgb_delta_shape
+
+        rgb_delta = ops.random.uniform(
+            minval=self._factor[0],
+            maxval=self._factor[1],
+            shape=rgb_delta_shape,
+            seed=self._generator,
         )
         rgb_delta = rgb_delta * (self._value_range[1] - self._value_range[0])
         rgb_delta = ops.cast(rgb_delta, images.dtype)

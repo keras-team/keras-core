@@ -1,5 +1,3 @@
-import numpy as np
-
 from keras_core import operations as ops
 from keras_core.api_export import keras_core_export
 from keras_core.backend import random
@@ -21,11 +19,6 @@ class RandomContrast(Layer):
     Input pixel values can be of any range (e.g. `[0., 1.)` or `[0, 255]`) and
     in integer or floating point dtype.
     By default, the layer will output floats.
-    The output value will be clipped to the range `[0, 255]`, the valid
-    range of RGB colors.
-
-    For an overview and full list of preprocessing layers, see the preprocessing
-    [guide](https://www.tensorflow.org/guide/keras/preprocessing_layers).
 
     Input shape:
         3D (unbatched) or 4D (batched) tensor with shape:
@@ -60,19 +53,19 @@ class RandomContrast(Layer):
                 "greater than 1."
                 f"Received: factor={factor}"
             )
-        if seed is not None:
-            self.seed = seed
-        else:
-            self.seed = random.draw_seed(random.SeedGenerator(seed))
+        self.seed = seed
+        self.generator = random.SeedGenerator(seed)
 
     def call(self, inputs, training=True):
         inputs = ops.cast(inputs, self.compute_dtype)
 
         def random_contrasted_inputs(inputs):
 
-            np.random.seed(self.seed)
-            factor = np.random.uniform(
-                low=1.0 - self.lower, high=1.0 + self.upper
+            factor = ops.random.uniform(
+                shape=(),
+                minval=1.0 - self.lower,
+                maxval=1.0 + self.upper,
+                seed=self.generator,
             )
 
             outputs = self._adjust_constrast(inputs, factor)
@@ -87,9 +80,9 @@ class RandomContrast(Layer):
 
     def _adjust_constrast(self, inputs, contrast_factor):
         # reduce mean on height
-        inp_mean = np.mean(inputs, axis=-3, keepdims=True)
+        inp_mean = ops.mean(inputs, axis=-3, keepdims=True)
         # reduce mean on width
-        inp_mean = np.mean(inp_mean, axis=-2, keepdims=True)
+        inp_mean = ops.mean(inp_mean, axis=-2, keepdims=True)
 
         outputs = (inputs - inp_mean) * contrast_factor + inp_mean
         return outputs
