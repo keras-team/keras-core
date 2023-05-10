@@ -58,9 +58,7 @@ class RandomContrast(Layer):
 
     def call(self, inputs, training=True):
         inputs = ops.cast(inputs, self.compute_dtype)
-
-        def random_contrasted_inputs(inputs):
-
+        if training:
             factor = ops.random.uniform(
                 shape=(),
                 minval=1.0 - self.lower,
@@ -72,9 +70,6 @@ class RandomContrast(Layer):
             outputs = ops.clip(outputs, 0, 255)
             ops.reshape(outputs, inputs.shape)
             return outputs
-
-        if training:
-            return random_contrasted_inputs(inputs)
         else:
             return inputs
 
