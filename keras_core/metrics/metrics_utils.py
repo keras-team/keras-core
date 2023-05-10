@@ -601,11 +601,11 @@ def confusion_matrix(
 ):
     """Computes the confusion matrix from predictions and labels.
 
-    The matrix columns represent the prediction labels and the rows represent the
-    real labels. The confusion matrix is always a 2-D array of shape `[n, n]`,
-    where `n` is the number of valid labels for a given classification task. Both
-    prediction and labels must be 1-D arrays of the same shape in order for this
-    function to work.
+    The matrix columns represent the prediction labels and the rows represent
+    the real labels. The confusion matrix is always a 2-D array of shape
+    `[n, n]`, where `n` is the number of valid labels for a given classification
+    task. Both prediction and labels must be 1-D arrays of the same shape in
+    order for this function to work.
 
     If `num_classes` is `None`, then `num_classes` will be set to one plus the
     maximum value in either predictions or labels. Class labels are expected to
@@ -660,14 +660,6 @@ def confusion_matrix(
         weights = ops.cast(weights, dtype)
 
     indices = ops.stack([labels, predictions], axis=1)
-    values = (
-        ops.ones_like(predictions, dtype) if weights is None else weights
-    )
+    values = ops.ones_like(predictions, dtype) if weights is None else weights
     confusion_matrix = ops.zeros((num_classes, num_classes), dtype=dtype)
-    return ops.convert_to_tensor(np.array([[0.2, 0.3],[0.4, 0.1]]),dtype=dtype)
-    return confusion_matrix
-    """return ops.scatter_nd(
-        indices=indices,
-        updates=values,
-        shape=ops.cast(shape, dtype=dtype),
-    )"""
+    return ops.put(confusion_matrix, indices, values)

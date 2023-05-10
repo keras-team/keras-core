@@ -253,9 +253,7 @@ class IoU(_IoUBase):
         sum_over_col = ops.cast(
             ops.sum(self.total_cm, axis=1), dtype=self.dtype
         )
-        true_positives = ops.cast(
-            ops.diag(self.total_cm), dtype=self.dtype
-        )
+        true_positives = ops.cast(ops.diag(self.total_cm), dtype=self.dtype)
 
         # sum_over_row + sum_over_col =
         #     2 * true_positives + false_positives + false_negatives.
