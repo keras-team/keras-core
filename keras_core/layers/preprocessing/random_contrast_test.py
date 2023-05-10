@@ -5,7 +5,7 @@ from keras_core import testing
 
 
 class RandomContrastTest(testing.TestCase):
-    def test_random_contrast(self):
+    def test_layer(self):
         self.run_layer_test(
             layers.RandomContrast,
             init_kwargs={
@@ -17,7 +17,7 @@ class RandomContrastTest(testing.TestCase):
             expected_output_shape=(8, 3, 4, 3),
         )
 
-    def test_random_contrast_full(self):
+    def test_random_contrast(self):
         seed = 9809
         np.random.seed(seed)
         inputs = np.random.random((12, 8, 16, 3))
