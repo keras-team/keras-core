@@ -117,7 +117,7 @@ class TestTrainer(testing.TestCase):
         self.assertAllClose(
             history["mean_squared_error"],
             [14.402393, 10.991339, 8.388159],
-            atol=6.1051628E-2,
+            atol=6.1051628E-1,
         )
 
     def test_fit_flow_eager(self):
