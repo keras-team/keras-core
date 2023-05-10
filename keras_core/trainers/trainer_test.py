@@ -89,7 +89,7 @@ class TestTrainer(testing.TestCase):
         # And those weights are tracked at the model level
         self.assertEqual(len(model.metrics_variables), 6)
 
-    def _test_fit_flow(self, run_eagerly, jit_compile):
+    def _test_fit_flow(self, run_eagerly, jit_compile, use_steps_per_epoch):
         model = ExampleModel(units=3)
         epochs = 3
         batch_size = 20
@@ -106,9 +106,10 @@ class TestTrainer(testing.TestCase):
             jit_compile=jit_compile,
         )
         history = model.fit(
-            x, y,
+            x,
+            y,
             batch_size=batch_size,
-            steps_per_epoch=steps_per_epoch,
+            steps_per_epoch=steps_per_epoch if use_steps_per_epoch else None,
             epochs=epochs,
         )
         history = history.history
@@ -117,17 +118,38 @@ class TestTrainer(testing.TestCase):
         self.assertAllClose(
             history["mean_squared_error"],
             [14.402393, 10.991339, 8.388159],
-            atol=6.1051628E-1,
+            atol=6.1051628e-1,
         )
 
     def test_fit_flow_eager(self):
-        self._test_fit_flow(run_eagerly=True, jit_compile=False)
+        self._test_fit_flow(
+            run_eagerly=True, jit_compile=False, use_steps_per_epoch=False
+        )
 
     def test_fit_flow_graph_fn(self):
-        self._test_fit_flow(run_eagerly=False, jit_compile=False)
+        self._test_fit_flow(
+            run_eagerly=False, jit_compile=False, use_steps_per_epoch=False
+        )
 
     def test_fit_flow_jit(self):
-        self._test_fit_flow(run_eagerly=False, jit_compile=True)
+        self._test_fit_flow(
+            run_eagerly=False, jit_compile=True, use_steps_per_epoch=False
+        )
+
+    def test_fit_steps_per_epoch_flow_eager(self):
+        self._test_fit_flow(
+            run_eagerly=True, jit_compile=False, use_steps_per_epoch=True
+        )
+
+    def test_fit_steps_per_epoch_flow_graph_fn(self):
+        self._test_fit_flow(
+            run_eagerly=False, jit_compile=False, use_steps_per_epoch=True
+        )
+
+    def test_fit_steps_per_epoch_flow_jit(self):
+        self._test_fit_flow(
+            run_eagerly=False, jit_compile=True, use_steps_per_epoch=True
+        )
 
     def _test_evaluate_flow(self, run_eagerly, jit_compile):
         model = ExampleModel(units=3)
