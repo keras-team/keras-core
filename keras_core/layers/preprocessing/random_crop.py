@@ -41,11 +41,14 @@ class RandomCrop(Layer):
     """
 
     def __init__(self, height, width, seed=None, name=None, **kwargs):
-        super().__init__(name=name)
+        super().__init__()
         self.layer = tf.keras.layers.RandomCrop(
             height=height,
             width=width,
+            seed=seed,
+            name=name,
         )
+        self.supports_masking = False
 
     def call(self, inputs, training=True):
         if not isinstance(inputs, (tf.Tensor, np.ndarray, list, tuple)):
