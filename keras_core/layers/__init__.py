@@ -1,4 +1,5 @@
 from keras_core.layers.activations.activation import Activation
+from keras_core.layers.attention.attention import Attention
 from keras_core.layers.convolutional.conv1d import Conv1D
 from keras_core.layers.convolutional.conv2d import Conv2D
 from keras_core.layers.convolutional.conv3d import Conv3D
@@ -63,6 +64,7 @@ from keras_core.layers.preprocessing.discretization import Discretization
 from keras_core.layers.preprocessing.hashing import Hashing
 from keras_core.layers.preprocessing.integer_lookup import IntegerLookup
 from keras_core.layers.preprocessing.normalization import Normalization
+from keras_core.layers.preprocessing.random_crop import RandomCrop
 from keras_core.layers.preprocessing.rescaling import Rescaling
 from keras_core.layers.preprocessing.resizing import Resizing
 from keras_core.layers.preprocessing.string_lookup import StringLookup
