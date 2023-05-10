@@ -105,10 +105,12 @@ class TensorFlowTrainer(base_trainer.Trainer):
             """Runs a single training step given a Dataset iterator."""
             data = next(iterator)
             outputs = self.distribute_strategy.run(
-                one_step_on_data, args=(data,))
+                one_step_on_data, args=(data,)
+            )
             outputs = reduce_per_replica(
-                outputs, self.distribute_strategy,
-                reduction=self.distribute_reduction_method
+                outputs,
+                self.distribute_strategy,
+                reduction=self.distribute_reduction_method,
             )
             return outputs
 
@@ -138,10 +140,12 @@ class TensorFlowTrainer(base_trainer.Trainer):
             """Runs a single test step given a Dataset iterator."""
             data = next(iterator)
             outputs = self.distribute_strategy.run(
-                one_step_on_data, args=(data,))
+                one_step_on_data, args=(data,)
+            )
             outputs = reduce_per_replica(
-                outputs, self.distribute_strategy,
-                reduction=self.distribute_reduction_method
+                outputs,
+                self.distribute_strategy,
+                reduction=self.distribute_reduction_method,
             )
             return outputs
 
@@ -171,10 +175,12 @@ class TensorFlowTrainer(base_trainer.Trainer):
             """Runs a single predict step given a Dataset iterator."""
             data = next(iterator)
             outputs = self.distribute_strategy.run(
-                one_step_on_data, args=(data,))
+                one_step_on_data, args=(data,)
+            )
             outputs = reduce_per_replica(
-                outputs, self.distribute_strategy,
-                reduction=self.distribute_reduction_method
+                outputs,
+                self.distribute_strategy,
+                reduction=self.distribute_reduction_method,
             )
             return outputs
 
@@ -237,6 +243,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
             steps_per_epoch=steps_per_epoch,
             shuffle=shuffle,
             class_weight=class_weight,
+            distribute_strategy=self.distribute_strategy,
         )
 
         # Container that configures and calls callbacks.
@@ -279,6 +286,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
                         y=val_y,
                         sample_weight=val_sample_weight,
                         batch_size=validation_batch_size or batch_size,
+                        distribute_strategy=self.distribute_strategy,
                     )
                 val_logs = self.evaluate(
                     x=val_x,
@@ -340,6 +348,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 batch_size=batch_size,
                 steps_per_epoch=steps,
                 shuffle=False,
+                distribute_strategy=self.distribute_strategy,
             )
 
         # Container that configures and calls callbacks.
@@ -379,6 +388,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
             batch_size=batch_size,
             steps_per_epoch=steps,
             shuffle=False,
+            distribute_strategy=self.distribute_strategy,
         )
 
         # Container that configures and calls callbacks.
@@ -422,20 +432,23 @@ class TensorFlowTrainer(base_trainer.Trainer):
 
 
 class TFEpochIterator(EpochIterator):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, distribute_strategy=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._distribute_strategy = distribute_strategy
         self._steps_seen = 0
 
     def enumerate_epoch(self):
         if self.steps_per_epoch:
             if not self._current_iterator:
                 self._current_iterator = iter(
-                    self.data_adapter.get_tf_dataset()
-                )
+                    self._distribute_strategy.experimental_distribute_dataset(
+                        self.data_adapter.get_tf_dataset()))
             for step in range(self.steps_per_epoch):
                 yield step, self._current_iterator
         else:
-            iterator = iter(self.data_adapter.get_tf_dataset())
+            iterator = iter(
+                self._distribute_strategy.experimental_distribute_dataset(
+                    self.data_adapter.get_tf_dataset()))
             if self.num_batches:
                 for step in range(self.num_batches):
                     yield step, iterator
@@ -636,6 +649,7 @@ def _is_tpu_strategy(strategy):
 def _is_tpu_strategy_class(clz):
     def is_tpu_strat(k):
         return k.__name__.startswith("TPUStrategy")
+
     if is_tpu_strat(clz):
         return True
     return any(map(_is_tpu_strategy_class, clz.__bases__))
