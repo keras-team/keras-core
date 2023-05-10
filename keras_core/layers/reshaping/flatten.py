@@ -2,10 +2,12 @@ import math
 
 from keras_core import backend
 from keras_core import operations as ops
+from keras_core.api_export import keras_core_export
 from keras_core.layers.input_spec import InputSpec
 from keras_core.layers.layer import Layer
 
 
+@keras_core_export("keras_core.layers.Flatten")
 class Flatten(Layer):
     """Flattens the input. Does not affect the batch size.
 
@@ -32,9 +34,7 @@ class Flatten(Layer):
 
     def __init__(self, data_format=None, name=None, dtype=None):
         super().__init__(name=name, dtype=dtype)
-        self.data_format = (
-            backend.image_data_format() if data_format is None else data_format
-        )
+        self.data_format = backend.standardize_data_format(data_format)
         self.input_spec = InputSpec(min_ndim=1)
         self._channels_first = self.data_format == "channels_first"
 
