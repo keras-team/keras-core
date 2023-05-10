@@ -41,7 +41,7 @@ class Conv3DTranspose(BaseConvTranspose):
             config file at `~/.keras/keras.json`. If you never set it, then it
             will be `"channels_last"`.
         dilation_rate: int or tuple/list of 1 integers, specifying the dilation
-            rate to use for dilated convolution.
+            rate to use for dilated transposed convolution.
         activation: Activation function. If `None`, no activation is applied.
         use_bias: bool, if `True`, bias will be added to the output.
         kernel_initializer: Initializer for the convolution kernel. If `None`,
@@ -85,10 +85,10 @@ class Conv3DTranspose(BaseConvTranspose):
         ValueError: when both `strides > 1` and `dilation_rate > 1`.
 
     References:
-      - [A guide to convolution arithmetic for deep
-        learning](https://arxiv.org/abs/1603.07285v1)
-      - [Deconvolutional
-        Networks](https://www.matthewzeiler.com/mattzeiler/deconvolutionalnetworks.pdf)
+    - [A guide to convolution arithmetic for deep learning](
+        https://arxiv.org/abs/1603.07285v1)
+    - [Deconvolutional Networks](
+        https://www.matthewzeiler.com/mattzeiler/deconvolutionalnetworks.pdf)
 
     Examples:
 

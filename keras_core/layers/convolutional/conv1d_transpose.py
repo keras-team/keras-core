@@ -83,9 +83,9 @@ class Conv1DTranspose(BaseConvTranspose):
         ValueError: when both `strides > 1` and `dilation_rate > 1`.
 
     References:
-      - [A guide to convolution arithmetic for deep learning](
+    - [A guide to convolution arithmetic for deep learning](
         https://arxiv.org/abs/1603.07285v1)
-      - [Deconvolutional Networks](
+    - [Deconvolutional Networks](
         https://www.matthewzeiler.com/mattzeiler/deconvolutionalnetworks.pdf)
 
     Examples:

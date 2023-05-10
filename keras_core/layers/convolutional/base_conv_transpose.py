@@ -92,7 +92,7 @@ class BaseConvTranspose(Layer):
         super().__init__(
             trainable=trainable,
             name=name,
-            activity_regularizer=regularizers.get(activity_regularizer),
+            activity_regularizer=activity_regularizer,
             **kwargs,
         )
         self.rank = rank
@@ -131,13 +131,13 @@ class BaseConvTranspose(Layer):
 
         if not all(self.kernel_size):
             raise ValueError(
-                "The argument `kernel_size` cannot contain 0(s). Received: "
+                "The argument `kernel_size` cannot contain 0. Received: "
                 f"{self.kernel_size}"
             )
 
         if not all(self.strides):
             raise ValueError(
-                "The argument `strides` cannot contains 0(s). Received: "
+                "The argument `strides` cannot contains 0. Received: "
                 f"{self.strides}"
             )
 
