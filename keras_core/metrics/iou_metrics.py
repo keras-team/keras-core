@@ -3,6 +3,7 @@ from keras_core import initializers
 from keras_core import operations as ops
 from keras_core.api_export import keras_core_export
 from keras_core.metrics.metric import Metric
+from keras_core.metrics.metrics_utils import confusion_matrix
 
 
 class _IoUBase(Metric):
@@ -54,29 +55,19 @@ class _IoUBase(Metric):
         sparse_y_pred=True,
         axis=-1,
     ):
-        super().__init__(name=name, dtype=dtype)
+        # defaulting to float32 to avoid issues with confusion matrix
+        super().__init__(name=name, dtype=dtype or "float32")
         self.num_classes = num_classes
         self.ignore_class = ignore_class
         self.sparse_y_true = sparse_y_true
         self.sparse_y_pred = sparse_y_pred
         self.axis = axis
-        self._built = False
 
-    def _build(self, y_true_shape, y_pred_shape):
-        init_shape = self.num_classes
-
-        def _add_zeros_variable(name):
-            return self.add_variable(
-                name=name,
-                shape=init_shape,
-                initializer=initializers.Zeros(),
-                dtype=self.dtype,
-            )
-
-        self.true_positives = _add_zeros_variable("true_positives")
-        self.false_positives = _add_zeros_variable("false_positives")
-        self.false_negatives = _add_zeros_variable("false_negatives")
-        self._built = True
+        self.total_cm = self.add_variable(
+            name="total_confusion_matrix",
+            shape=(num_classes, num_classes),
+            initializer=initializers.Zeros(),
+        )
 
     def update_state(self, y_true, y_pred, sample_weight=None):
         """Accumulates the confusion matrix statistics.
@@ -100,25 +91,20 @@ class _IoUBase(Metric):
         y_true = ops.convert_to_tensor(y_true, dtype=self.dtype)
         y_pred = ops.convert_to_tensor(y_pred, dtype=self.dtype)
 
-        # Add batch dimension
-        if len(y_true.shape) == 1:
-            y_true = ops.expand_dims(y_true, 0)
-        if len(y_pred.shape) == 1:
-            y_pred = ops.expand_dims(y_pred, 0)
+        # Flatten the input if its rank > 1.
+        if len(y_pred.shape) > 1:
+            y_pred = ops.reshape(y_pred, [-1])
 
-        if not self._built:
-            self._build(y_true.shape, y_pred.shape)
+        if len(y_true.shape) > 1:
+            y_true = ops.reshape(y_true, [-1])
 
         if sample_weight is None:
             sample_weight = 1
 
-        sample_weight = ops.convert_to_tensor(
-                sample_weight, dtype=self.dtype
-            )
+        sample_weight = ops.convert_to_tensor(sample_weight, dtype=self.dtype)
 
-        if len(sample_weight.shape) == 1:
-            # Make sure there's a classes dimension
-            sample_weight = ops.expand_dims(sample_weight, axis=1)
+        if len(sample_weight.shape) > 1:
+            sample_weight = ops.reshape(sample_weight, [-1])
 
         sample_weight = ops.broadcast_to(sample_weight, y_true.shape)
 
@@ -136,24 +122,20 @@ class _IoUBase(Metric):
         y_true = ops.cast(y_true, dtype=self.dtype)
         sample_weight = ops.cast(sample_weight, dtype=self.dtype)
 
-        def _weighted_sum(val, sample_weight):
-            return ops.sum(val * sample_weight, axis=self.axis)
+        current_cm = confusion_matrix(
+            y_true,
+            y_pred,
+            self.num_classes,
+            weights=sample_weight,
+            dtype=self.dtype,
+        )
 
-        self.true_positives.assign(
-            self.true_positives + _weighted_sum(y_pred * y_true, sample_weight)
-        )
-        self.false_positives.assign(
-            self.false_positives
-            + _weighted_sum(y_pred * (1 - y_true), sample_weight)
-        )
-        self.false_negatives.assign(
-            self.false_negatives
-            + _weighted_sum((1 - y_pred) * y_true, sample_weight)
-        )
+        return self.total_cm.assign(self.total_cm + current_cm)
 
     def reset_state(self):
-        for v in self.variables:
-            v.assign(ops.zeros(v.shape, dtype=v.dtype))
+        self.total_cm.assign(
+            ops.zeros(self.total_cm.shape, dtype=self.total_cm.dtype)
+        )
 
 
 @keras_core_export("keras_core.metrics.IoU")
@@ -265,19 +247,27 @@ class IoU(_IoUBase):
 
     def result(self):
         """Compute the intersection-over-union via the confusion matrix."""
-        denominator = (
-            2 * self.true_positives
-            + self.false_positives
-            + self.false_negatives
+        sum_over_row = ops.cast(
+            ops.sum(self.total_cm, axis=0), dtype=self.dtype
+        )
+        sum_over_col = ops.cast(
+            ops.sum(self.total_cm, axis=1), dtype=self.dtype
+        )
+        true_positives = ops.cast(
+            ops.diag(self.total_cm), dtype=self.dtype
         )
 
+        # sum_over_row + sum_over_col =
+        #     2 * true_positives + false_positives + false_negatives.
+        denominator = sum_over_row + sum_over_col - true_positives
+
         target_class_ids = ops.convert_to_tensor(
-            self.target_class_ids, dtype=self.dtype
+            self.target_class_ids, dtype="int32"
         )
 
         # Only keep the target classes
         true_positives = ops.take_along_axis(
-            self.true_positives, target_class_ids, axis=-1
+            true_positives, target_class_ids, axis=-1
         )
         denominator = ops.take_along_axis(
             denominator, target_class_ids, axis=-1
