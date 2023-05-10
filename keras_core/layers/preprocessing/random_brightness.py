@@ -32,8 +32,8 @@ class RandomBrightness(Layer):
         value_range: Optional list/tuple of 2 floats
             for the lower and upper limit
             of the values of the input data.
-            To make no change, use [0.0, 1.0], e.g., if the image input
-            has been scaled before this layer. Defaults to [0.0, 255.0].
+            To make no change, use `[0.0, 1.0]`, e.g., if the image input
+            has been scaled before this layer. Defaults to `[0.0, 255.0]`.
             The brightness adjustment will be scaled to this range, and the
             output values will be clipped to this range.
         seed: optional integer, for fixed RNG behavior.
@@ -60,7 +60,7 @@ class RandomBrightness(Layer):
     output = random_bright(image, training=True)
 
     # output will be int64 with 25.5 added to each channel and round down.
-    np.array([[[26.5, 27.5, 28.5]
+    numpy.array([[[26.5, 27.5, 28.5]
                 [29.5, 30.5, 31.5]]
                [[32.5, 33.5, 34.5]
                 [35.5, 36.5, 37.5]]],
@@ -139,13 +139,13 @@ class RandomBrightness(Layer):
                 f"inputs.shape = {images.shape}"
             )
         np.random.seed(self._seed)
-        rgb_delta = np.random.uniform(low=self._factor[0], high=self._factor[1])
+        rgb_delta = np.random.uniform(
+            low=self._factor[0], high=self._factor[1], size=rgb_delta_shape
+        )
         rgb_delta = rgb_delta * (self._value_range[1] - self._value_range[0])
         rgb_delta = ops.cast(rgb_delta, images.dtype)
         images += rgb_delta
-        return ops.clip(
-            images, self._value_range[0], self._value_range[1]
-        )
+        return ops.clip(images, self._value_range[0], self._value_range[1])
 
     def compute_output_shape(self, input_shape):
         return input_shape
