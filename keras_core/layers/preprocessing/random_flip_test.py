@@ -1,4 +1,3 @@
-import numpy as np
 from absl.testing import parameterized
 
 from keras_core import layers
