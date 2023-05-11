@@ -6,6 +6,8 @@ from keras_core.layers.convolutional.conv2d import Conv2D
 from keras_core.layers.convolutional.conv2d_transpose import Conv2DTranspose
 from keras_core.layers.convolutional.conv3d import Conv3D
 from keras_core.layers.convolutional.conv3d_transpose import Conv3DTranspose
+from keras_core.layers.convolutional.depthwise_conv1d import DepthwiseConv1D
+from keras_core.layers.convolutional.depthwise_conv2d import DepthwiseConv2D
 from keras_core.layers.core.dense import Dense
 from keras_core.layers.core.einsum_dense import EinsumDense
 from keras_core.layers.core.embedding import Embedding
@@ -67,7 +69,10 @@ from keras_core.layers.preprocessing.discretization import Discretization
 from keras_core.layers.preprocessing.hashing import Hashing
 from keras_core.layers.preprocessing.integer_lookup import IntegerLookup
 from keras_core.layers.preprocessing.normalization import Normalization
+from keras_core.layers.preprocessing.random_brightness import RandomBrightness
+from keras_core.layers.preprocessing.random_contrast import RandomContrast
 from keras_core.layers.preprocessing.random_crop import RandomCrop
+from keras_core.layers.preprocessing.random_translation import RandomTranslation
 from keras_core.layers.preprocessing.rescaling import Rescaling
 from keras_core.layers.preprocessing.resizing import Resizing
 from keras_core.layers.preprocessing.string_lookup import StringLookup
