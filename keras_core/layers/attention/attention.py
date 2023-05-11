@@ -80,6 +80,7 @@ class Attention(Layer):
             )
 
     def build(self, input_shape):
+        self._validate_inputs(input_shape)
         self.scale = None
         self.concat_score_weight = None
         if self.use_scale:
@@ -208,7 +209,7 @@ class Attention(Layer):
         return_attention_scores=False,
         use_causal_mask=False,
     ):
-        self._validate_call_args(inputs=inputs, mask=mask)
+        self._validate_inputs(inputs=inputs, mask=mask)
         q = inputs[0]
         v = inputs[1]
         k = inputs[2] if len(inputs) > 2 else v
@@ -230,7 +231,7 @@ class Attention(Layer):
         return result
 
     def compute_mask(self, inputs, mask=None):
-        self._validate_call_args(inputs=inputs, mask=mask)
+        self._validate_inputs(inputs=inputs, mask=mask)
         if mask is None or mask[0] is None:
             return None
         return ops.convert_to_tensor(mask[0])
@@ -238,7 +239,7 @@ class Attention(Layer):
     def compute_output_shape(self, input_shape):
         return input_shape[0]
 
-    def _validate_call_args(self, inputs, mask):
+    def _validate_inputs(self, inputs, mask=None):
         """Validates arguments of the call method."""
         class_name = self.__class__.__name__
         if not isinstance(inputs, list):
