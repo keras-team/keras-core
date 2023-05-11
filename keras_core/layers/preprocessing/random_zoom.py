@@ -63,10 +63,8 @@ class RandomZoom(Layer):
     Example:
 
     >>> input_img = np.random.random((32, 224, 224, 3))
-    >>> layer = tf.keras.layers.RandomZoom(.5, .2)
+    >>> layer = keras_core.layers.RandomZoom(.5, .2)
     >>> out_img = layer(input_img)
-    >>> out_img.shape
-    TensorShape([32, 224, 224, 3])
 
     Input shape:
         3D (unbatched) or 4D (batched) tensor with shape:
