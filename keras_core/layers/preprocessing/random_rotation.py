@@ -71,9 +71,10 @@ class RandomRotation(Layer):
         interpolation="bilinear",
         seed=None,
         fill_value=0.0,
+        name=None,
         **kwargs,
     ):
-        super().__init__()
+        super().__init__(**kwargs)
         self.seed = seed or backend.random.make_default_seed()
         self.layer = tf.keras.layers.RandomRotation(
             factor=factor,
@@ -81,6 +82,7 @@ class RandomRotation(Layer):
             interpolation=interpolation,
             seed=self.seed,
             fill_value=fill_value,
+            name=name
             **kwargs,
         )
 
