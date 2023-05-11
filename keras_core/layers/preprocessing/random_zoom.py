@@ -83,9 +83,10 @@ class RandomZoom(Layer):
         interpolation="bilinear",
         seed=None,
         fill_value=0.0,
+        name=None,
         **kwargs,
     ):
-        super().__init__()
+        super().__init__(**kwargs)
         self.seed = seed or backend.random.make_default_seed()
         self.layer = tf.keras.layers.RandomZoom(
             height_factor=height_factor,
@@ -93,6 +94,7 @@ class RandomZoom(Layer):
             fill_mode=fill_mode,
             interpolation=interpolation,
             seed=self.seed,
+            name=name,
             fill_value=fill_value,
             **kwargs,
         )
