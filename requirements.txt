@@ -5,6 +5,7 @@ black>=22
 flake8
 isort
 pytest
+pytest-cov
 pandas
 absl-py
 requests
