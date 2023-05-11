@@ -4,6 +4,7 @@ import tensorflow as tf
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
+from keras_core import utils
 
 HORIZONTAL = "horizontal"
 VERTICAL = "vertical"
@@ -43,9 +44,12 @@ class RandomFlip(Layer):
         self, mode=HORIZONTAL_AND_VERTICAL, seed=None, name=None, **kwargs
     ):
         super().__init__(name=name)
+        self.seed = seed or backend.random.make_default_seed()
         self.layer = tf.keras.layers.RandomFlip(
             mode=mode,
             name=name,
+            seed=self.seed,
+            **kwargs,
         )
 
     def call(self, inputs, training=True):
@@ -60,4 +64,6 @@ class RandomFlip(Layer):
         return tuple(self.layer.compute_output_shape(input_shape))
 
     def get_config(self):
-        return self.layer.get_config()
+        config = self.layer.get_config()
+        config.update({"seed": self.seed})
+        return config
