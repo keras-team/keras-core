@@ -86,7 +86,9 @@ class ReLU(ops.Operation):
         clip_max = max_value is not None
         if threshold != 0:
             # computes x for x > threshold else 0
-            x = x * backend.cast(backend.greater(x, threshold), dtype=x.dtype)
+            x = x * backend.cast(
+                backend.numpy.greater(x, threshold), dtype=x.dtype
+            )
         elif max_value == 6:
             # if no threshold, then can use nn.relu6 native op for performance
             x = backend.nn.relu6(x)
@@ -149,7 +151,14 @@ def softmax(x, axis=-1):
         x : Input tensor.
         axis: Integer, axis along which the softmax is applied.
     """
-    return ops.softmax(x, axis=axis)
+    output = ops.softmax(x, axis=axis)
+    # Cache the logits to use for crossentropy loss.
+    try:
+        output._keras_logits = x
+    except AttributeError:
+        # We're dealing with a C-type.
+        pass
+    return output
 
 
 @keras_core_export("keras_core.activations.elu")
@@ -322,7 +331,11 @@ def sigmoid(x):
     """
     output = ops.sigmoid(x)
     # Cache the logits to use for crossentropy loss.
-    output._keras_logits = x
+    try:
+        output._keras_logits = x
+    except AttributeError:
+        # We're dealing with a C-type.
+        pass
     return output
 
 
@@ -407,10 +420,15 @@ def mish(x):
 
 
 @keras_core_export("keras_core.activations.log_softmax")
-def log_softmax(x):
+def log_softmax(x, axis=-1):
     """Log-Softmax activation function.
 
+    Each input vector is handled independently.
+    The `axis` argument sets which axis of the input the function
+    is applied along.
+
     Args:
-        x: Input tensor.
+        x : Input tensor.
+        axis: Integer, axis along which the softmax is applied.
     """
-    return ops.log_softmax(x)
+    return ops.log_softmax(x, axis=axis)

@@ -17,7 +17,6 @@ And some more magic:
 """
 import collections
 import inspect
-import warnings
 
 import numpy as np
 from tensorflow import nest
@@ -34,6 +33,7 @@ from keras_core.layers import input_spec
 from keras_core.metrics.metric import Metric
 from keras_core.operations.operation import Operation
 from keras_core.utils import summary_utils
+from keras_core.utils import traceback_utils
 from keras_core.utils.tracking import Tracker
 
 
@@ -48,6 +48,7 @@ class Layer(Operation):
         autocast=True,
         name=None,
     ):
+        self._lock = False
         super().__init__(name=name)
         self.activity_regularizer = regularizers.get(activity_regularizer)
 
@@ -61,8 +62,10 @@ class Layer(Operation):
         self._metrics = []
         self._seed_generators = []
         self._losses = []
-        self._variables = []
+        self._trainable_variables = []
+        self._non_trainable_variables = []
         self._supports_masking = not utils.is_default(self.compute_mask)
+        self._allow_non_tensor_positional_args = False
         self._build_shapes_dict = None
         self._call_signature_parameters = [
             p.name for p in inspect.signature(self.call).parameters.values()
@@ -70,9 +73,14 @@ class Layer(Operation):
 
         self._tracker = Tracker(
             {
-                "variables": (
-                    lambda x: isinstance(x, backend.Variable),
-                    self._variables,
+                "trainable_variables": (
+                    lambda x: isinstance(x, backend.Variable) and x.trainable,
+                    self._trainable_variables,
+                ),
+                "non_trainable_variables": (
+                    lambda x: isinstance(x, backend.Variable)
+                    and not x.trainable,
+                    self._non_trainable_variables,
                 ),
                 "metrics": (lambda x: isinstance(x, Metric), self._metrics),
                 "layers": (
@@ -158,9 +166,16 @@ class Layer(Operation):
         # Will be added to layer.losses
         variable.regularizer = regularizer
         variable.constraint = constraint
-        self._variables.append(variable)
-        # Prevent double-tracking
-        self._tracker.stored_ids["variables"].add(id(variable))
+        if trainable:
+            self._trainable_variables.append(variable)
+            # Prevent double-tracking
+            self._tracker.stored_ids["trainable_variables"].add(id(variable))
+        else:
+            self._non_trainable_variables.append(variable)
+            # Prevent double-tracking
+            self._tracker.stored_ids["non_trainable_variables"].add(
+                id(variable)
+            )
         return variable
 
     def add_weight(self, *args, **kwargs):
@@ -183,25 +198,45 @@ class Layer(Operation):
             value: Boolean with the desired state for the layer's trainable
                 attribute.
         """
-        for layer in self._layers():
-            layer._trainable = value
+        value = bool(value)
+        self._trainable = value
+        for v in self._trainable_variables:
+            v.trainable = value
+        for layer in self._layers:
+            layer.trainable = value
 
     @property
     def variables(self):
-        # Includes weights, seed generator state, and metric variables.
-        variables = self.weights[:]
+        # Return only weights/rng state/metric variables
+        # of all Layers, recursively.
+        # Also deduplicate them.
+        variables = []
+        seen_ids = set()
+        for v in self._trainable_variables + self._non_trainable_variables:
+            if id(v) not in seen_ids:
+                variables.append(v)
+                seen_ids.add(id(v))
         for m in self._metrics:
             variables.extend(m.variables)
         for sg in self._seed_generators:
             variables.append(sg.state)
+        for layer in self._layers:
+            for v in layer.variables:
+                if id(v) not in seen_ids:
+                    variables.append(v)
+                    seen_ids.add(id(v))
         return variables
 
     @property
     def trainable_variables(self):
+        if not self.trainable:
+            return []
         return [v for v in self.variables if v.trainable]
 
     @property
     def non_trainable_variables(self):
+        if not self.trainable:
+            return self.variables
         return [v for v in self.variables if not v.trainable]
 
     @property
@@ -210,7 +245,7 @@ class Layer(Operation):
         # Also deduplicate them.
         weights = []
         seen_ids = set()
-        for w in self._variables:
+        for w in self._trainable_variables + self._non_trainable_variables:
             if id(w) not in seen_ids:
                 weights.append(w)
                 seen_ids.add(id(w))
@@ -223,10 +258,14 @@ class Layer(Operation):
 
     @property
     def trainable_weights(self):
+        if not self.trainable:
+            return []
         return [v for v in self.weights if v.trainable]
 
     @property
     def non_trainable_weights(self):
+        if not self.trainable:
+            return self.weights
         return [v for v in self.weights if not v.trainable]
 
     def get_weights(self):
@@ -277,6 +316,7 @@ class Layer(Operation):
     def compute_mask(self, inputs, previous_mask):
         return previous_mask
 
+    @traceback_utils.filter_traceback
     def __call__(self, *args, **kwargs):
         self._check_super_called()
 
@@ -306,14 +346,17 @@ class Layer(Operation):
 
         ##########################################################
         # 2. Enforce that only tensors can be passed positionally.
-        for arg in nest.flatten(args):
-            if not isinstance(arg, KerasTensor) and not backend.is_tensor(arg):
-                raise ValueError(
-                    "Only input tensors may be passed as "
-                    "positional arguments. The following argument value "
-                    f"should be passed as a keyword argument: {arg} "
-                    f"(of type {type(arg)})"
-                )
+        if not self._allow_non_tensor_positional_args:
+            for arg in nest.flatten(args):
+                if not isinstance(arg, KerasTensor) and not backend.is_tensor(
+                    arg
+                ):
+                    raise ValueError(
+                        "Only input tensors may be passed as "
+                        "positional arguments. The following argument value "
+                        f"should be passed as a keyword argument: {arg} "
+                        f"(of type {type(arg)})"
+                    )
 
         # Caches info about `call()` signature, args, kwargs.
         call_spec = CallSpec(self.call, args, kwargs)
@@ -390,6 +433,8 @@ class Layer(Operation):
                         outputs = super().__call__(*args, **kwargs)
                 else:
                     outputs = super().__call__(*args, **kwargs)
+                if not self.built:
+                    self.built = True
                 # Record activity regularizer loss.
                 if self.activity_regularizer is not None:
                     for output in nest.flatten(outputs):
@@ -414,6 +459,7 @@ class Layer(Operation):
     def call(self, *args, **kwargs):
         raise NotImplementedError
 
+    @traceback_utils.filter_traceback
     def stateless_call(
         self,
         trainable_variables,
@@ -597,7 +643,7 @@ class Layer(Operation):
         Args:
             store: Dict where the state of the model will be saved.
         """
-        all_vars = self._variables
+        all_vars = self._trainable_variables + self._non_trainable_variables
         for i, v in enumerate(all_vars):
             store[f"{i}"] = np.array(v)
 
@@ -610,7 +656,7 @@ class Layer(Operation):
         Args:
             store: Dict from which the state of the model will be loaded.
         """
-        all_vars = self._variables
+        all_vars = self._trainable_variables + self._non_trainable_variables
         if len(store.keys()) != len(all_vars):
             if len(all_vars) == 0 and not self.built:
                 raise ValueError(
@@ -659,8 +705,8 @@ class Layer(Operation):
         if not self.built:
             raise ValueError(
                 "You tried to call `count_params` "
-                f"on layer '{self.name}'"
-                ", but the layer isn't built. "
+                f"on layer '{self.name}', "
+                "but the layer isn't built. "
                 "You can build it manually via: "
                 f"`layer.build(input_shape)`."
             )
@@ -714,9 +760,14 @@ class Layer(Operation):
                                 "then the build signature should be "
                                 "`def build(self, x1_shape, x2_shape)`. "
                                 "Keras will not build this layer automatically "
-                                "since it does not conform to this."
+                                "since it does not conform to this. "
+                                "Expected the following build keys: "
+                                f"{list(shapes_dict.keys())}"
                             )
             if failure:
+                if call_spec.eager:
+                    # Will let the actual eager call do the state-building
+                    return
                 raise ValueError(
                     f"Layer '{self.name}' looks like it has "
                     "unbuilt state, but Keras is not able to "
@@ -739,24 +790,19 @@ class Layer(Operation):
             input_shape = tuple(input_shape)
         if isinstance(input_shape, list):
             input_tensors = [
-                backend.traceable_tensor(shape) for shape in input_shape
+                backend.KerasTensor(shape) for shape in input_shape
             ]
         elif isinstance(input_shape, dict):
             input_tensors = {
-                k: backend.traceable_tensor(shape)
+                k: backend.KerasTensor(shape)
                 for k, shape in input_shape.items()
             }
         else:
-            input_tensors = backend.traceable_tensor(input_shape)
+            input_tensors = backend.KerasTensor(input_shape)
         try:
-            # TODO: make this work without relying on eager tensors.
-            self.call(input_tensors)
+            backend.compute_output_spec(self.call, input_tensors)
             return True
-        except Exception as e:
-            warnings.warn(
-                "Error when attempting to automatically build "
-                f"the layer by tracing it: {e}"
-            )
+        except:
             return False
 
     def _build_by_run_for_kwargs(self, shapes_dict):
@@ -765,18 +811,13 @@ class Layer(Operation):
             # Case: all input keyword arguments were plain tensors.
             input_tensors = {
                 # We strip the `_shape` suffix to recover kwarg names.
-                k[:-6]: backend.traceable_tensor(shape)
+                k[:-6]: backend.KerasTensor(shape)
                 for k, shape in shapes_dict.items()
             }
             try:
-                # TODO: make this work without relying on eager tensors.
-                self.call(**input_tensors)
+                backend.compute_output_spec(self.call, **input_tensors)
                 return True
-            except Exception as e:
-                warnings.warn(
-                    "Error when attempting to automatically build "
-                    f"the layer by tracing it: {e}"
-                )
+            except:
                 return False
         else:
             # Not supported: nested input keyword arguments.
@@ -795,17 +836,22 @@ class Layer(Operation):
         )
 
     def __setattr__(self, name, value):
-        # Track Variables, Layers, Metrics
+        # Prevent users from attaching state to the
+        # layer before `super()` is called -- since that
+        # state would silently not be tracked.
+        if name != "_lock":
+            self._check_super_called()
+        # Track Variables, Layers, Metrics, SeedGenerators.
         if hasattr(self, "_tracker"):
             value = self._tracker.track(value)
         return super().__setattr__(name, value)
 
     def _check_super_called(self):
-        if not hasattr(self, "_tracker"):
+        if getattr(self, "_lock", True):
             raise RuntimeError(
                 f"In layer '{self.__class__.__name__}', you forgot to call "
-                "`super().__init__()` in the `__init__()` method. "
-                "Go add it!"
+                "`super().__init__()` as the first statement "
+                "in the `__init__()` method. Go add it!"
             )
 
     def _assert_input_compatibility(self, arg_0):
@@ -918,6 +964,12 @@ class CallSpec:
         self.tensor_arguments_names = tensor_arg_names
         self.nested_tensor_argument_names = nested_tensor_arg_names
         self.first_arg = arg_dict[arg_names[0]]
+        if all(
+            backend.is_tensor(x) for x in self.tensor_arguments_dict.values()
+        ):
+            self.eager = True
+        else:
+            self.eager = False
 
 
 def get_arguments_dict(fn, args, kwargs):
@@ -944,6 +996,9 @@ def get_shapes_dict(call_spec):
     for k, v in call_spec.tensor_arguments_dict.items():
         if k == "mask" or k.startswith("mask_"):
             # Do not include mask tensors in shapes dict
+            continue
+        if k == "kwargs" or k == "args":
+            # Do not include catch-alls in shapes dict
             continue
         if k in call_spec.nested_tensor_argument_names:
             shapes_dict[f"{k}_shape"] = nest.map_structure(

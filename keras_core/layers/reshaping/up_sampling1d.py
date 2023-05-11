@@ -1,8 +1,16 @@
 from keras_core import operations as ops
+<<<<<<< HEAD
+=======
+from keras_core.api_export import keras_core_export
+>>>>>>> main
 from keras_core.layers.input_spec import InputSpec
 from keras_core.layers.layer import Layer
 
 
+<<<<<<< HEAD
+=======
+@keras_core_export("keras_core.layers.UpSampling1D")
+>>>>>>> main
 class UpSampling1D(Layer):
     """Upsampling layer for 1D inputs.
 

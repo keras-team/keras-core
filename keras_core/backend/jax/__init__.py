@@ -11,6 +11,7 @@ from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.backend.common.stateless_scope import StatelessScope
 from keras_core.backend.common.stateless_scope import get_stateless_scope
 from keras_core.backend.common.stateless_scope import in_stateless_scope
+from keras_core.backend.jax import image
 from keras_core.backend.jax import math
 from keras_core.backend.jax import nn
 from keras_core.backend.jax import numpy
@@ -95,10 +96,7 @@ class Variable(KerasVariable):
             # in during shape inference with JAX tracer objects
             # (anything else would be a bug, to be fixed.)
             return self._maybe_autocast(
-                jnp.array(
-                    self._initializer(self._shape, dtype=self._dtype),
-                    dtype=self._dtype,
-                )
+                self._initializer(self._shape, dtype=self._dtype)
             )
         return self._maybe_autocast(self._value)
 
@@ -157,19 +155,7 @@ def compute_output_spec(fn, *args, **kwargs):
                 return KerasTensor(x.shape, x.dtype)
             return x
 
-        return nest.map_structure(convert_jax_spec_to_keras_tensor, jax_out)
-
-
-def traceable_tensor(shape, dtype=None):
-    """Create a "traceable tensor".
-
-    That's a tensor that can be passed as input
-    to a stateful backend-native function to
-    create state during the trace.
-    """
-    shape = list(shape)
-    dtype = dtype or "float32"
-    for i, x in enumerate(shape):
-        if x is None:
-            shape[i] = 1
-    return jnp.ones(shape, dtype=dtype)
+        output_shape = nest.map_structure(
+            convert_jax_spec_to_keras_tensor, jax_out
+        )
+    return output_shape

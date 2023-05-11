@@ -7,10 +7,16 @@ import numpy as np
 from tensorflow import nest
 
 from keras_core import operations as ops
+from keras_core.utils import traceback_utils
 
 
 class TestCase(unittest.TestCase):
     maxDiff = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if traceback_utils.is_traceback_filtering_enabled():
+            traceback_utils.disable_traceback_filtering()
 
     def get_temp_dir(self):
         temp_dir = tempfile.mkdtemp()
@@ -19,6 +25,18 @@ class TestCase(unittest.TestCase):
 
     def assertAllClose(self, x1, x2, atol=1e-6, rtol=1e-6, msg=None):
         np.testing.assert_allclose(x1, x2, atol=atol, rtol=rtol)
+
+    def assertNotAllClose(self, x1, x2, atol=1e-6, rtol=1e-6, msg=None):
+        try:
+            self.assertAllClose(x1, x2, atol=atol, rtol=rtol, msg=msg)
+        except AssertionError:
+            return
+        msg = msg or ""
+        raise AssertionError(
+            f"The two values are close at all elements. \n"
+            f"{msg}.\n"
+            f"Values: {x1}"
+        )
 
     def assertAlmostEqual(self, x1, x2, decimal=3, msg=None):
         np.testing.assert_almost_equal(x1, x2, decimal=decimal)
@@ -64,7 +82,7 @@ class TestCase(unittest.TestCase):
         self,
         layer_cls,
         init_kwargs,
-        input_shape,
+        input_shape=None,
         input_dtype="float32",
         input_data=None,
         call_kwargs=None,
