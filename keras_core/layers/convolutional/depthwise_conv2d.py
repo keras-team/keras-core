@@ -1,27 +1,41 @@
 from keras_core.api_export import keras_core_export
-from keras_core.layers.convolutional.base_conv import BaseConv
-
-
-@keras_core_export(
-    ["keras_core.layers.Conv1D", "keras_core.layers.Convolution1D"]
+from keras_core.layers.convolutional.base_depthwise_conv import (
+    BaseDepthwiseConv,
 )
-class Conv1D(BaseConv):
-    """1D convolution layer (e.g. temporal convolution).
 
-    This layer creates a convolution kernel that is convolved with the layer
-    input over a single spatial (or temporal) dimension to produce a tensor of
-    outputs. If `use_bias` is True, a bias vector is created and added to the
-    outputs. Finally, if `activation` is not `None`, it is applied to the
-    outputs as well.
+
+@keras_core_export("keras_core.layers.DepthwiseConv2D")
+class DepthwiseConv2D(BaseDepthwiseConv):
+    """2D depthwise convolution layer.
+
+    Depthwise convolution is a type of convolution in which each input channel
+    is convolved with a different kernel (called a depthwise kernel). You can
+    understand depthwise convolution as the first step in a depthwise separable
+    convolution.
+
+    It is implemented via the following steps:
+
+    - Split the input into individual channels.
+    - Convolve each channel with an individual depthwise kernel with
+      `depth_multiplier` output channels.
+    - Concatenate the convolved outputs along the channels axis.
+
+    Unlike a regular 2D convolution, depthwise convolution does not mix
+    information across different input channels.
+
+    The `depth_multiplier` argument determines how many filters are applied to
+    one input channel. As such, it controls the amount of output channels that
+    are generated per input channel in the depthwise step.
 
     Args:
-        filters: int, the dimension of the output space (the number of filters
-            in the convolution).
-        kernel_size: int or tuple/list of 1 integer, specifying the size of the
-            convolution window.
-        strides: int or tuple/list of 1 integer, specifying the stride length
-            of the convolution. `stride value != 1` is incompatible with
-            `dilation_rate != 1`.
+        depth_multiplier: The number of depthwise convolution output channels
+            for each input channel. The total number of depthwise convolution
+            output channels will be equal to `input_channel * depth_multiplier`.
+        kernel_size: int or tuple/list of 2 integer, specifying the size of the
+            depthwise convolution window.
+        strides: int or tuple/list of 2 integer, specifying the stride length
+            of the depthwise convolution. `stride value != 1` is incompatible
+            with `dilation_rate != 1`.
         padding: string, either `"valid"` or `"same"` (case-insensitive).
             `"valid"` means no padding. `"same"` results in padding evenly to
             the left/right or up/down of the input such that output has the same
@@ -33,13 +47,8 @@ class Conv1D(BaseConv):
             `(batch, features, steps)`. It defaults to the `image_data_format`
             value found in your Keras config file at `~/.keras/keras.json`.
             If you never set it, then it will be `"channels_last"`.
-        dilation_rate: int or tuple/list of 1 integers, specifying the dilation
+        dilation_rate: int or tuple/list of 2 integers, specifying the dilation
             rate to use for dilated convolution.
-        groups: A positive int specifying the number of groups in which the
-            input is split along the channel axis. Each group is convolved
-            separately with `filters // groups` filters. The output is the
-            concatenation of all the `groups` results along the channel axis.
-            Input channels and `filters` must both be divisible by `groups`.
         activation: Activation function. If `None`, no activation is applied.
         use_bias: bool, if `True`, bias will be added to the output.
         kernel_initializer: Initializer for the convolution kernel. If `None`,
@@ -60,41 +69,41 @@ class Conv1D(BaseConv):
 
     Input shape:
     - If `data_format="channels_last"`:
-        A 3D tensor with shape: `(batch_shape, steps, channels)`
+        A 4D tensor with shape: `(batch_size, height, width, channels)`
     - If `data_format="channels_first"`:
-        A 3D tensor with shape: `(batch_shape, channels, steps)`
+        A 4D tensor with shape: `(batch_size, channels, height, width)`
 
     Output shape:
     - If `data_format="channels_last"`:
-        A 3D tensor with shape: `(batch_shape, new_steps, channels)`
+        A 4D tensor with shape:
+        `(batch_size, new_height, new_width, channels * depth_multiplier)`
     - If `data_format="channels_first"`:
-        A 3D tensor with shape: `(batch_shape, channels, new_steps)`
+        A 4D tensor with shape:
+        `(batch_size, channels * depth_multiplier, new_height, new_width)`
 
     Returns:
-        A 3D tensor representing `activation(conv1d(inputs, kernel) + bias)`.
+        A 4D tensor representing
+        `activation(depthwise_conv2d(inputs, kernel) + bias)`.
 
     Raises:
         ValueError: when both `strides > 1` and `dilation_rate > 1`.
 
     Examples:
 
-    >>> # The inputs are 128-length vectors with 10 timesteps, and the
-    >>> # batch size is 4.
-    >>> x = np.random.rand(4, 10, 128)
-    >>> y = keras_core.layers.Conv1D(32, 3, activation='relu')(x)
+    >>> x = np.random.rand(4, 10, 10, 12)
+    >>> y = keras_core.layers.DepthwiseConv2D(3, 3, activation='relu')(x)
     >>> print(y.shape)
-    (4, 8, 32)
+    (4, 8, 8, 36)
     """
 
     def __init__(
         self,
-        filters,
+        depth_multiplier,
         kernel_size,
         strides=1,
         padding="valid",
         data_format="channels_last",
         dilation_rate=1,
-        groups=1,
         activation=None,
         use_bias=True,
         kernel_initializer="glorot_uniform",
@@ -107,14 +116,13 @@ class Conv1D(BaseConv):
         **kwargs
     ):
         super().__init__(
-            rank=1,
-            filters=filters,
+            rank=2,
+            depth_multiplier=depth_multiplier,
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
             data_format=data_format,
             dilation_rate=dilation_rate,
-            groups=groups,
             activation=activation,
             use_bias=use_bias,
             kernel_initializer=kernel_initializer,
