@@ -101,16 +101,20 @@ class Optimizer:
 
     def build(self, variables):
         for i, variable in enumerate(variables):
-            self._trainable_variables_indices[id(variable)] = i
+            self._trainable_variables_indices[self._var_key(variable)] = i
         self._trainable_variables = variables[:]
         self.built = True
+
+    def _var_key(self, variable):
+        # Helper function to get a stable ID and the variable instance mapping.
+        return id(variable)
 
     @property
     def variables(self):
         return self._variables[:]
 
     def _get_variable_index(self, variable):
-        return self._trainable_variables_indices[id(variable)]
+        return self._trainable_variables_indices[self._var_key(variable)]
 
     def add_variable(
         self,
@@ -130,7 +134,7 @@ class Optimizer:
         )
         self._variables.append(variable)
         # Prevent double-tracking
-        self._tracker.stored_ids["variables"].add(id(variable))
+        self._tracker.stored_ids["variables"].add(self._var_key(variable))
         return variable
 
     def add_variable_from_reference(self, reference_variable, name=None):
@@ -148,7 +152,7 @@ class Optimizer:
 
     def _check_variables_are_known(self, variables):
         for v in variables:
-            if id(v) not in self._trainable_variables_indices:
+            if self._var_key(v) not in self._trainable_variables_indices:
                 raise ValueError(
                     f"Unknown variable: {v}. This optimizer can only "
                     "be called for the variables it was originally built with. "
@@ -215,15 +219,19 @@ class Optimizer:
             self._apply_weight_decay(trainable_variables)
 
             # Apply gradient updates.
-            learning_rate = self._get_current_learning_rate()
-            for grad, var in zip(grads, trainable_variables):
-                self.update_step(grad, var, learning_rate)
-            self.iterations.assign(self.iterations + 1)
+            self._internal_apply_gradients(list(zip(grads, trainable_variables)))
 
             # Apply variable constraints after applying gradients.
             for variable in trainable_variables:
                 if getattr(variable, "constraint", None) is not None:
                     variable.assign(variable.constraint(variable))
+            return self.iterations
+
+    def _internal_apply_gradients(self, grads_and_vars):
+        learning_rate = self._get_current_learning_rate()
+        for grad, var in grads_and_vars:
+            self.update_step(grad, var, learning_rate)
+        self.iterations.assign(self.iterations + 1)
 
     def stateless_apply(self, grads, trainable_variables, optimizer_variables):
         self._check_super_called()
@@ -396,7 +404,7 @@ class Optimizer:
 
         if var_list:
             self._exclude_from_weight_decay = [
-                id(variable) for variable in var_list
+                self._var_key(variable) for variable in var_list
             ]
         else:
             self._exclude_from_weight_decay = []
@@ -409,7 +417,7 @@ class Optimizer:
         exclude_from_weight_decay_names = getattr(
             self, "_exclude_from_weight_decay_names", []
         )
-        variable_id = id(variable)
+        variable_id = self._var_key(variable)
         for exclude_id in exclude_from_weight_decay:
             if variable_id == exclude_id:
                 return False

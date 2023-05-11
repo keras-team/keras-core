@@ -1,8 +1,15 @@
+from keras_core import backend
 from keras_core import operations as ops
 from keras_core.optimizers import optimizer
 
+if backend.backend() == 'tensorflow':
+    from keras_core.backend.tensorflow import optimizer as tf_optimizer
+    Optimizer = tf_optimizer.TFOptimizer
+else:
+    Optimizer = optimizer.Optimizer
 
-class SGD(optimizer.Optimizer):
+
+class SGD(Optimizer):
     """Gradient descent (with momentum) optimizer.
 
     Update rule for parameter `w` with gradient `g` when `momentum` is 0:
