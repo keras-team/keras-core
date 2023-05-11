@@ -525,8 +525,3 @@ def sum(x, axis=None, keepdims=False):
 
 def eye(N, M=None, k=0, dtype="float32"):
     return jnp.eye(N, M=M, k=k, dtype=dtype)
-
-
-def put(x, indices, values):
-    key = tuple(jnp.moveaxis(indices, -1, 0))
-    return x.at[key].add(values)

@@ -92,7 +92,6 @@ pad
 percentile
 power
 prod
-put
 ravel
 real
 reciprocal
@@ -3187,17 +3186,3 @@ class Eye(Operation):
 
 def eye(N, M=None, k=0, dtype="float32"):
     return backend.numpy.eye(N, M=M, k=k, dtype=dtype)
-
-
-class Put(Operation):
-    def call(self, x, indices, values):
-        return backend.numpy.put(x, indices, values)
-
-    def compute_output_spec(self, x, indices, values):
-        return KerasTensor(x.shape, dtype=x.dtype)
-
-
-def put(x, indices, values):
-    if any_symbolic_tensors((x,)):
-        return Put().symbolic_call(x, indices, values)
-    return backend.numpy.put(x, indices, values)

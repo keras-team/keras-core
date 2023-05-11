@@ -565,7 +565,3 @@ def sum(x, axis=None, keepdims=False):
 
 def eye(N, M=None, k=0, dtype="float32"):
     return tfnp.eye(N, M=M, k=k, dtype=dtype)
-
-
-def put(x, indices, values):
-    return tf.tensor_scatter_nd_update(x, indices, values)
