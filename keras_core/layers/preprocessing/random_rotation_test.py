@@ -12,7 +12,7 @@ class RandomRotationTest(testing.TestCase, parameterized.TestCase):
         ("random_rotate_3", 0.3),
         ("random_rotate_tuple_factor", (-0.5, 0.4)),
     )
-    def test_random_translation(self, factor):
+    def test_random_rotation(self, factor):
         self.run_layer_test(
             layers.RandomRotation,
             init_kwargs={
