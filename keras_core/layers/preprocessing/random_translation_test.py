@@ -12,7 +12,7 @@ class RandomTranslationTest(testing.TestCase, parameterized.TestCase):
         ("random_translate_3_by_2", 0.3, 0.2),
         ("random_translate_tuple_factor", (-0.5, 0.4), (0.2, 0.3)),
     )
-    def test_random_flip(self, height_factor, width_factor):
+    def test_random_translation(self, height_factor, width_factor):
         self.run_layer_test(
             layers.RandomTranslation,
             init_kwargs={
