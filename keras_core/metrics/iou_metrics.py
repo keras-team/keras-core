@@ -36,10 +36,10 @@ class _IoUBase(Metric):
             segmentation maps. By default (`ignore_class=None`), all classes are
             considered.
         sparse_y_true: Whether labels are encoded using integers or
-            dense floating point vectors. If `False`, the `tf.argmax` function
+            dense floating point vectors. If `False`, the `argmax` function
             is used to determine each sample's most likely associated label.
         sparse_y_pred: Whether predictions are encoded using integers or
-            dense floating point vectors. If `False`, the `tf.argmax` function
+            dense floating point vectors. If `False`, the `argmax` function
             is used to determine each sample's most likely associated label.
         axis: (Optional) -1 is the dimension containing the logits.
             Defaults to `-1`.
@@ -174,10 +174,10 @@ class IoU(_IoUBase):
             segmentation maps. By default (`ignore_class=None`), all classes are
               considered.
         sparse_y_true: Whether labels are encoded using integers or
-            dense floating point vectors. If `False`, the `tf.argmax` function
+            dense floating point vectors. If `False`, the `argmax` function
             is used to determine each sample's most likely associated label.
         sparse_y_pred: Whether predictions are encoded using integers or
-            dense floating point vectors. If `False`, the `tf.argmax` function
+            dense floating point vectors. If `False`, the `argmax` function
             is used to determine each sample's most likely associated label.
         axis: (Optional) -1 is the dimension containing the logits.
             Defaults to `-1`.
@@ -451,10 +451,10 @@ class MeanIoU(IoU):
             segmentation maps. By default (`ignore_class=None`), all classes are
             considered.
         sparse_y_true: Whether labels are encoded using integers or
-            dense floating point vectors. If `False`, the `tf.argmax` function
+            dense floating point vectors. If `False`, the `argmax` function
             is used to determine each sample's most likely associated label.
         sparse_y_pred: Whether predictions are encoded using integers or
-            dense floating point vectors. If `False`, the `tf.argmax` function
+            dense floating point vectors. If `False`, the `argmax` function
             is used to determine each sample's most likely associated label.
         axis: (Optional) The dimension containing the logits. Defaults to `-1`.
 
@@ -567,7 +567,7 @@ class OneHotIoU(IoU):
             segmentation maps. By default (`ignore_class=None`), all classes are
             considered.
         sparse_y_pred: Whether predictions are encoded using integers or
-            dense floating point vectors. If `False`, the `tf.argmax` function
+            dense floating point vectors. If `False`, the `argmax` function
             is used to determine each sample's most likely associated label.
         axis: (Optional) The dimension containing the logits. Defaults to `-1`.
 
@@ -575,8 +575,8 @@ class OneHotIoU(IoU):
 
     Standalone usage:
 
-    >>> y_true = tf.constant([[0, 0, 1], [1, 0, 0], [0, 1, 0], [1, 0, 0]])
-    >>> y_pred = tf.constant([[0.2, 0.3, 0.5], [0.1, 0.2, 0.7], [0.5, 0.3, 0.1],
+    >>> y_true = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0], [1, 0, 0]])
+    >>> y_pred = np.array([[0.2, 0.3, 0.5], [0.1, 0.2, 0.7], [0.5, 0.3, 0.1],
     ...                       [0.1, 0.4, 0.5]])
     >>> sample_weight = [0.1, 0.2, 0.3, 0.4]
     >>> m = keras_core.metrics.OneHotIoU(num_classes=3, target_class_ids=[0, 2])
@@ -682,7 +682,7 @@ class OneHotMeanIoU(MeanIoU):
             segmentation maps. By default (`ignore_class=None`), all classes are
             considered.
         sparse_y_pred: Whether predictions are encoded using natural numbers or
-            probability distribution vectors. If `False`, the `tf.argmax`
+            probability distribution vectors. If `False`, the `argmax`
             function will be used to determine each sample's most likely
             associated label.
         axis: (Optional) The dimension containing the logits. Defaults to `-1`.
@@ -691,8 +691,8 @@ class OneHotMeanIoU(MeanIoU):
 
     Standalone usage:
 
-    >>> y_true = tf.constant([[0, 0, 1], [1, 0, 0], [0, 1, 0], [1, 0, 0]])
-    >>> y_pred = tf.constant([[0.2, 0.3, 0.5], [0.1, 0.2, 0.7], [0.5, 0.3, 0.1],
+    >>> y_true = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0], [1, 0, 0]])
+    >>> y_pred = np.array([[0.2, 0.3, 0.5], [0.1, 0.2, 0.7], [0.5, 0.3, 0.1],
     ...                       [0.1, 0.4, 0.5]])
     >>> sample_weight = [0.1, 0.2, 0.3, 0.4]
     >>> m = keras_core.metrics.OneHotMeanIoU(num_classes=3)

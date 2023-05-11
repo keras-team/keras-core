@@ -603,7 +603,7 @@ def confusion_matrix(
 
     The matrix columns represent the prediction labels and the rows represent
     the real labels. The confusion matrix is always a 2-D array of shape
-    `[n, n]`, where `n` is the number of valid labels for a given classification
+    `(n, n)`, where `n` is the number of valid labels for a given classification
     task. Both prediction and labels must be 1-D arrays of the same shape in
     order for this function to work.
 
@@ -618,30 +618,30 @@ def confusion_matrix(
     For example:
 
     ```python
-      tf.math.confusion_matrix([1, 2, 4], [2, 2, 4]) ==>
-          [[0 0 0 0 0]
-           [0 0 1 0 0]
-           [0 0 1 0 0]
-           [0 0 0 0 0]
-           [0 0 0 0 1]]
+    keras_core.metrics.metrics_utils.confusion_matrix([1, 2, 4], [2, 2, 4]) ==>
+        [[0 0 0 0 0]
+        [0 0 1 0 0]
+        [0 0 1 0 0]
+        [0 0 0 0 0]
+        [0 0 0 0 1]]
     ```
 
     Note that the possible labels are assumed to be `[0, 1, 2, 3, 4]`,
     resulting in a 5x5 confusion matrix.
 
     Args:
-      labels: 1-D `Tensor` of real labels for the classification task.
-      predictions: 1-D `Tensor` of predictions for a given classification.
-      num_classes: The possible number of labels the classification task can
-                   have. If this value is not provided, it will be calculated
-                   using both predictions and labels array.
-      weights: An optional `Tensor` whose shape matches `predictions`.
-      dtype: Data type of the confusion matrix.
+        labels: 1-D tensor of real labels for the classification task.
+        predictions: 1-D tensor of predictions for a given classification.
+        num_classes: The possible number of labels the classification task can
+                    have. If this value is not provided, it will be calculated
+                    using both predictions and labels array.
+        weights: An optional tensor whose shape matches `predictions`.
+        dtype: Data type of the confusion matrix.
 
     Returns:
-      A `Tensor` of type `dtype` with shape `[n, n]` representing the confusion
-      matrix, where `n` is the number of possible labels in the classification
-      task.
+        A tensor of type `dtype` with shape `(n, n)` representing the confusion
+        matrix, where `n` is the number of possible labels in the classification
+        task.
     """
     labels = ops.convert_to_tensor(labels, dtype)
     predictions = ops.convert_to_tensor(predictions, dtype)
