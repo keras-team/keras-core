@@ -5,10 +5,6 @@ from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
 
-HORIZONTAL = "horizontal"
-VERTICAL = "vertical"
-HORIZONTAL_AND_VERTICAL = "horizontal_and_vertical"
-
 
 @keras_core_export("keras_core.layers.RandomTranslation")
 class RandomTranslation(Layer):
