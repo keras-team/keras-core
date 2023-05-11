@@ -21,9 +21,6 @@ class RandomRotation(Layer):
     of integer or floating point dtype.
     By default, the layer will output floats.
 
-    For an overview and full list of preprocessing layers, see the preprocessing
-    [guide](https://www.tensorflow.org/guide/keras/preprocessing_layers).
-
     Input shape:
         3D (unbatched) or 4D (batched) tensor with shape:
         `(..., height, width, channels)`, in `"channels_last"` format
@@ -77,11 +74,12 @@ class RandomRotation(Layer):
         **kwargs,
     ):
         super().__init__()
+        self.seed = seed or backend.random.make_default_seed()
         self.layer = tf.keras.layers.RandomRotation(
             factor=factor,
             fill_mode=fill_mode,
             interpolation=interpolation,
-            seed=seed,
+            seed=self.seed,
             fill_value=fill_value,
             **kwargs,
         )
@@ -98,4 +96,6 @@ class RandomRotation(Layer):
         return tuple(self.layer.compute_output_shape(input_shape))
 
     def get_config(self):
-        return self.layer.get_config()
+        config = self.layer.get_config()
+        config.update({"seed": self.seed})
+        return config
