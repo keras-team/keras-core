@@ -38,7 +38,7 @@ jobs:
           pip install -e "." --progress-bar off --upgrade
       - name: Test with pytest
         run: |
-          pytest keras_core --cov=keras_core --cov-report xml:coverage.xml
+          pytest keras_core --cov=keras_core
 
   format:
     name: Check the code format
