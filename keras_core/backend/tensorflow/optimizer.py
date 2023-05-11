@@ -9,7 +9,7 @@ class TFOptimizer(optimizers.Optimizer):
 
     The major behavior change for this class is for tf.distribute.
 
-    It will override methods from base Keras core Optimizer, 
+    It will override methods from base Keras core Optimizer,
     which provide distribute speciific functionality, eg variable
     creation, loss reduction, etc.
     """
@@ -23,9 +23,9 @@ class TFOptimizer(optimizers.Optimizer):
             colocate_var = reference_variable.value
         else:
             colocate_var = reference_variable
-        
+
         with self._distribution_strategy.extended.colocate_vars_with(
-            colocate_var):
+                colocate_var):
             return super().add_variable_from_reference(
                 reference_variable, name=name)
 
@@ -75,7 +75,7 @@ class TFOptimizer(optimizers.Optimizer):
         )
 
     def _distributed_apply_gradients_fn(
-        self, distribution, grads_and_vars, **kwargs):
+            self, distribution, grads_and_vars, **kwargs):
         """`apply_gradients` using a `DistributionStrategy`."""
 
         def apply_grad_to_update_var(var, grad):
