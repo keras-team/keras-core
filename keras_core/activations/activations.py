@@ -426,7 +426,7 @@ def log_softmax(x, axis=-1):
     Each input vector is handled independently.
     The `axis` argument sets which axis of the input the function
     is applied along.
-    
+
     Args:
         x : Input tensor.
         axis: Integer, axis along which the softmax is applied.

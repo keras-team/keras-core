@@ -674,11 +674,17 @@ class NNOpsCorrectnessTest(testing.TestCase):
         x = np.array([[1, 2, 3], [1, 2, 3]], dtype=np.float32)
         self.assertAllClose(
             knn.log_softmax(x),
-            [[-3.100753, -2.100753, -1.100753], [-3.100753, -2.100753, -1.100753]],
+            [
+                [-3.100753, -2.100753, -1.100753],
+                [-3.100753, -2.100753, -1.100753],
+            ],
         )
         self.assertAllClose(
             knn.log_softmax(x, axis=0),
-            [[-0.693147, -0.693147, -0.693147], [-0.693147, -0.693147, -0.693147]],
+            [
+                [-0.693147, -0.693147, -0.693147],
+                [-0.693147, -0.693147, -0.693147],
+            ],
         )
         self.assertAllClose(
             knn.log_softmax(x, axis=-1),
