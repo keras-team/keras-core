@@ -48,13 +48,13 @@ class SeparableConv2D(BaseSeparableConv):
         activation: Activation function. If `None`, no activation is applied.
         use_bias: bool, if `True`, bias will be added to the output.
         depthwise_initializer: An initializer for the depthwise convolution
-            kernel. If None, then the default initializer ('glorot_uniform')
+            kernel. If None, then the default initializer ('"glorot_uniform"')
             will be used.
         pointwise_initializer: An initializer for the pointwise convolution
-            kernel. If None, then the default initializer ('glorot_uniform')
+            kernel. If None, then the default initializer ('"glorot_uniform"')
             will be used.
         bias_initializer: An initializer for the bias vector. If None, the
-            default initializer ('zeros') will be used.
+            default initializer ('"zeros"') will be used.
         depthwise_regularizer: Optional regularizer for the depthwise
             convolution kernel.
         pointwise_regularizer: Optional regularizer for the pointwise
@@ -65,8 +65,7 @@ class SeparableConv2D(BaseSeparableConv):
             depthwise kernel after being updated by an `Optimizer` (e.g. used
             for norm constraints or value constraints for layer weights). The
             function must take as input the unprojected variable and must return
-            the projected variable (which must have the same shape). Constraints
-            are not safe to use when doing asynchronous distributed training.
+            the projected variable (which must have the same shape).
         pointwise_constraint: Optional projection function to be applied to the
             pointwise kernel after being updated by an `Optimizer`.
         bias_constraint: Optional projection function to be applied to the

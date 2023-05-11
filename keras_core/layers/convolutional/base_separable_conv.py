@@ -27,12 +27,12 @@ class BaseSeparableConv(Layer):
             output channels will be equal to `input_channel * depth_multiplier`.
         filters: int, the dimensionality of the output space (i.e. the number
             of filters in the pointwise convolution).
-        kernel_size: int or tuple/list of N integers (N=`rank`), specifying the
-            size of the depthwise convolution window.
-        strides: int or tuple/list of N integers, specifying the stride length
-            of the depthwise convolution. If only one int is specified, the same
-            stride size will be used for all dimensions. `stride value != 1` is
-            incompatible with `dilation_rate != 1`.
+        kernel_size: int or tuple/list of `rank` integers, specifying the size
+            of the depthwise convolution window.
+        strides: int or tuple/list of `rank` integers, specifying the stride
+            length of the depthwise convolution. If only one int is specified,
+            the same stride size will be used for all dimensions.
+            `stride value != 1` is incompatible with `dilation_rate != 1`.
         padding: string, either `"valid"` or `"same"` (case-insensitive).
             `"valid"` means no padding. `"same"` results in padding evenly to
             the left/right or up/down of the input such that output has the same
@@ -44,19 +44,19 @@ class BaseSeparableConv(Layer):
             `(batch, features, steps)`. It defaults to the `image_data_format`
             value found in your Keras config file at `~/.keras/keras.json`.
             If you never set it, then it will be `"channels_last"`.
-        dilation_rate: int or tuple/list of N integers, specifying the dilation
-            rate to use for dilated convolution. If only one int is specified,
-            the same dilation rate will be used for all dimensions.
+        dilation_rate: int or tuple/list of `rank` integers, specifying the
+            dilation rate to use for dilated convolution. If only one int is
+            specified, the same dilation rate will be used for all dimensions.
         activation: Activation function. If `None`, no activation is applied.
         use_bias: bool, if `True`, bias will be added to the output.
         depthwise_initializer: An initializer for the depthwise convolution
-            kernel. If None, then the default initializer ('glorot_uniform')
+            kernel. If None, then the default initializer ('"glorot_uniform"')
             will be used.
         pointwise_initializer: An initializer for the pointwise convolution
-            kernel. If None, then the default initializer ('glorot_uniform')
+            kernel. If None, then the default initializer ('"glorot_uniform"')
             will be used.
         bias_initializer: An initializer for the bias vector. If None, the
-            default initializer ('zeros') will be used.
+            default initializer ('"zeros"') will be used.
         depthwise_regularizer: Optional regularizer for the depthwise
             convolution kernel.
         pointwise_regularizer: Optional regularizer for the pointwise
@@ -67,8 +67,7 @@ class BaseSeparableConv(Layer):
             depthwise kernel after being updated by an `Optimizer` (e.g. used
             for norm constraints or value constraints for layer weights). The
             function must take as input the unprojected variable and must return
-            the projected variable (which must have the same shape). Constraints
-            are not safe to use when doing asynchronous distributed training.
+            the projected variable (which must have the same shape).
         pointwise_constraint: Optional projection function to be applied to the
             pointwise kernel after being updated by an `Optimizer`.
         bias_constraint: Optional projection function to be applied to the
@@ -155,14 +154,14 @@ class BaseSeparableConv(Layer):
 
         if not all(self.kernel_size):
             raise ValueError(
-                "The argument `kernel_size` cannot contain 0(s). Received: "
-                f"{self.kernel_size}"
+                "The argument `kernel_size` cannot contain 0. Received: "
+                f"kernel_size={self.kernel_size}."
             )
 
         if not all(self.strides):
             raise ValueError(
                 "The argument `strides` cannot contains 0(s). Received: "
-                f"{self.strides}"
+                f"strides={self.strides}"
             )
 
         if max(self.strides) > 1 and max(self.dilation_rate) > 1:
