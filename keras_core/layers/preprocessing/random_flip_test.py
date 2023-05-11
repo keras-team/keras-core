@@ -1,9 +1,9 @@
+import numpy as np
 from absl.testing import parameterized
 
+from keras_core import backend
 from keras_core import layers
 from keras_core import testing
-from keras_core import backend
-import numpy as np
 from keras_core import utils
 
 
@@ -25,14 +25,29 @@ class RandomFlipTest(testing.TestCase, parameterized.TestCase):
         )
 
     def test_random_flip_horizontal(self):
-        utils.set_random_seed(1337)
+        utils.set_random_seed(0)
+        self.run_layer_test(
+            layers.RandomFlip,
+            init_kwargs={
+                "mode": "horizontal",
+                "seed": 42,
+            },
+            input_data=np.asarray([[[2, 3, 4], [5, 6, 7]]]),
+            expected_output=backend.convert_to_tensor([[[5, 6, 7], [2, 3, 4]]]),
+            supports_masking=False,
+        )
+
+    def test_random_flip_vertical(self):
+        utils.set_random_seed(0)
         self.run_layer_test(
             layers.RandomFlip,
             init_kwargs={
                 "mode": "vertical",
-                "seed": 1234
+                "seed": 42,
             },
-            input_data=np.asarray([[[2, 3, 4], [5, 6, 7]]]),
-            expected_output=backend.convert_to_tensor([[[4, 3, 2], [7, 6, 5]]]),
+            input_data=np.asarray([[[2, 3, 4]], [[5, 6, 7]]]),
+            expected_output=backend.convert_to_tensor(
+                [[[5, 6, 7]], [[2, 3, 4]]]
+            ),
             supports_masking=False,
         )

@@ -2,9 +2,9 @@ import numpy as np
 import tensorflow as tf
 
 from keras_core import backend
+from keras_core import utils
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
-from keras_core import utils
 
 HORIZONTAL = "horizontal"
 VERTICAL = "vertical"
