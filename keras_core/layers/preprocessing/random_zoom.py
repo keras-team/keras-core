@@ -88,12 +88,13 @@ class RandomZoom(Layer):
         **kwargs,
     ):
         super().__init__()
+        self.seed = seed or backend.random.make_default_seed()
         self.layer = tf.keras.layers.RandomZoom(
             height_factor=height_factor,
             width_factor=width_factor,
             fill_mode=fill_mode,
             interpolation=interpolation,
-            seed=seed,
+            seed=self.seed,
             fill_value=fill_value,
             **kwargs,
         )
@@ -110,4 +111,6 @@ class RandomZoom(Layer):
         return tuple(self.layer.compute_output_shape(input_shape))
 
     def get_config(self):
-        return self.layer.get_config()
+        config = self.layer.get_config()
+        config.update({"seed": self.seed})
+        return config
