@@ -6,6 +6,9 @@ def add(x1, x2):
 
 
 def bincount(x, weights=None, minlength=0):
+    if len(x.shape) == 2:
+        bincounts = [jnp.bincount(arr, weights=weights, minlength=minlength) for arr in list(x)]
+        return np.stack(bincounts)
     return jnp.bincount(x, weights=weights, minlength=minlength)
 
 
