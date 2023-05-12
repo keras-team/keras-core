@@ -821,7 +821,7 @@ class Layer(Operation):
             # Case: all input keyword arguments were plain tensors.
             input_tensors = {
                 # We strip the `_shape` suffix to recover kwarg names.
-                k[:-6]: backend.KerasTensor(shape)
+                k.removesuffix("_shape"): backend.KerasTensor(shape)
                 for k, shape in shapes_dict.items()
             }
             try:
@@ -1043,7 +1043,7 @@ def check_build_signature(build_fn, shapes_dict):
             param.KEYWORD_ONLY,
         ):
             expected_names.append(name)
-    if set(expected_names) != set(shapes_dict.keys()):
+    if not set(shapes_dict.keys()).issubset(set(expected_names)):
         comma_separated = ", ".join(shapes_dict.keys())
         raise ValueError(
             "For a `call()` method with more than one tensor argument, "
