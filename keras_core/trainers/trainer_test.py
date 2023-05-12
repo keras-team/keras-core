@@ -232,13 +232,15 @@ class TestTrainer(testing.TestCase):
                 assert batch == self.batches[self.count]
                 self.count += 1
 
+        x = np.ones((100, 4))
+        y = np.ones((100, 1))
         model = ExampleModel(units=1)
         model.compile(loss="mse", optimizer="adam", steps_per_execution=3)
         step_count = StepCount()
-        model.fit(
-            x=np.ones((100, 4)),
-            y=np.ones((100, 1)),
-            batch_size=16,
-            callbacks=[step_count],
-        )
-        assert step_count.count == 3
+        model.fit(x=x, y=y, batch_size=16, callbacks=[step_count])
+        self.assertEqual(step_count.count, 3)
+
+        model_2 = ExampleModel(units=1)
+        model_2.compile(loss="mse", optimizer="adam", steps_per_execution=1)
+        model_2.fit(x=x, y=y, batch_size=16)
+        self.assertAllClose(model.get_weights(), model_2.get_weights())
