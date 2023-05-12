@@ -435,3 +435,43 @@ def smart_resize(
     if isinstance(x, np.ndarray):
         return np.array(img)
     return img
+
+
+def resize_images(
+    x, height_factor, width_factor, data_format, interpolation="nearest"
+):
+    """Resizes the images contained in a 4D tensor.
+
+    Args:
+        x: Tensor or variable to resize.
+        height_factor: Positive integer.
+        width_factor: Positive integer.
+        data_format: One of `"channels_first"`, `"channels_last"`.
+        interpolation: A string, one of `"area"`, `"bicubic"`, `"bilinear"`,
+          `"gaussian"`, `"lanczos3"`, `"lanczos5"`, `"mitchellcubic"`,
+          `"nearest"`.
+
+    Returns:
+        A tensor.
+
+    Raises:
+        ValueError: in case of incorrect value for
+          `data_format` or `interpolation`.
+    """
+    if data_format == "channels_first":
+        rows, cols = 2, 3
+    elif data_format == "channels_last":
+        rows, cols = 1, 2
+    else:
+        raise ValueError(f"Invalid `data_format` argument: {data_format}")
+
+    new_shape = x.shape[rows : cols + 1]
+    new_shape *= np.array([height_factor, width_factor])
+
+    if data_format == "channels_first":
+        x = ops.transpose(x, [0, 2, 3, 1])
+    x = ops.image.resize(x, new_shape, method=interpolation)
+    if data_format == "channels_first":
+        x = ops.transpose(x, [0, 3, 1, 2])
+
+    return x
