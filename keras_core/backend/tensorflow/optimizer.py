@@ -5,12 +5,12 @@ from keras_core import optimizers
 
 
 class TFOptimizer(optimizers.Optimizer):
-    """A class for Tensorflow speciific opitmizer logic.
+    """A class for Tensorflow specific opitmizer logic.
 
     The major behavior change for this class is for tf.distribute.
 
     It will override methods from base Keras core Optimizer,
-    which provide distribute speciific functionality, eg variable
+    which provide distribute specific functionality, eg variable
     creation, loss reduction, etc.
     """
 
@@ -32,7 +32,6 @@ class TFOptimizer(optimizers.Optimizer):
     def _var_key(self, variable):
         if isinstance(variable, backend.Variable):
             variable = variable.value   # Convert to tf.Variable
-        print(f"variable name is {variable.name} and type is {type(variable)}")
         if hasattr(variable, "_distributed_container"):
             variable = variable._distributed_container()
         elif (

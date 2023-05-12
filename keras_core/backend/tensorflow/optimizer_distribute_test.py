@@ -42,7 +42,7 @@ class OptimizerDistributeTest(testing.TestCase):
 
     def test_single_step(self):
         with self.strategy.scope():
-            optimizer = SGD(learning_rate=0.5)
+            optimizer = SGD(learning_rate=0.5, momentum=0.06,)
             grads = tf.constant([1.0, 6.0, 7.0, 2.0])
             vars = backend.Variable([1.0, 2.0, 3.0, 4.0]).value
                 
