@@ -1,8 +1,7 @@
 from keras_core import operations as ops
 from keras_core.api_export import keras_core_export
-from keras_core.layers.layer import Layer
 from keras_core.layers.input_spec import InputSpec
-
+from keras_core.layers.layer import Layer
 
 
 @keras_core_export("keras_core.layers.CategoryEncoding")
@@ -85,15 +84,12 @@ class CategoryEncoding(Layer):
         in `"multi_hot"` or `"one_hot"` modes.
     """
 
-    def __init__(
-        self, num_tokens=None, output_mode="multi_hot", **kwargs
-    ):
+    def __init__(self, num_tokens=None, output_mode="multi_hot", **kwargs):
         # max_tokens is an old name for the num_tokens arg we continue to
         # support because of usage.
         if "max_tokens" in kwargs:
             num_tokens = kwargs["max_tokens"]
             del kwargs["max_tokens"]
-
 
         super().__init__(**kwargs)
 
@@ -129,7 +125,7 @@ class CategoryEncoding(Layer):
 
     def compute_output_signature(self, input_spec):
         output_shape = self.compute_output_shape(input_spec.shape)
-        return InputSpec(shape=output_shape, dtype=tf.int64)
+        return InputSpec(shape=output_shape, dtype="int64")
 
     def get_config(self):
         config = {
@@ -188,17 +184,18 @@ class CategoryEncoding(Layer):
         # In all cases, we should uprank scalar input to a single sample.
         if len(inputs.shape) == 0:
             inputs = ops.expand_dims(inputs, -1)
-        # One hot will unprank only if the final output dimension is not already 1.
-        # if output_mode == "one_hot":
-        #     if inputs.shape[-1] != 1:
-        #         inputs = ops.expand_dims(inputs, -1)
+        # One hot will uprank only if the final output dimension
+        # is not already 1.
+        if output_mode == "one_hot":
+            if len(inputs.shape) > 1 and inputs.shape[-1] != 1:
+                inputs = ops.expand_dims(inputs, -1)
 
         # TODO(b/190445202): remove output rank restriction.
         if len(inputs.shape) > 2:
             raise ValueError(
-                "When output_mode is not `'int'`, maximum supported output rank "
-                f"is 2. Received output_mode {output_mode} and input shape "
-                f"{original_shape}, "
+                "When output_mode is not `'int'`, maximum supported "
+                f"output rank is 2. Received output_mode {output_mode} "
+                f"and input shape {original_shape}, "
                 f"which would result in output rank {inputs.shape.rank}."
             )
 
@@ -210,7 +207,9 @@ class CategoryEncoding(Layer):
             if output_mode == "multi_hot":
                 bincounts = ops.sum(bincounts, axis=0)
         else:
-            bincounts = ops.bincount(inputs, minlength=depth, weights=count_weights)
+            bincounts = ops.bincount(
+                inputs, minlength=depth, weights=count_weights
+            )
 
         if output_mode != "tf_idf":
             return bincounts
@@ -218,7 +217,8 @@ class CategoryEncoding(Layer):
         if idf_weights is None:
             raise ValueError(
                 "When output mode is `'tf_idf'`, idf_weights must be provided. "
-                f"Received: output_mode={output_mode} and idf_weights={idf_weights}"
+                f"Received: output_mode={output_mode} "
+                f"and idf_weights={idf_weights}"
             )
 
         return ops.multiply(bincounts, idf_weights)

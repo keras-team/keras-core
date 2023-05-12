@@ -641,7 +641,9 @@ class Bincount(Operation):
         self.minlength = minlength
 
     def call(self, x):
-        return backend.numpy.bincount(x, weights=self.weights, minlength=self.minlength)
+        return backend.numpy.bincount(
+            x, weights=self.weights, minlength=self.minlength
+        )
 
     def compute_output_spec(self, x):
         out_shape = backend.numpy.amax(x) + 1

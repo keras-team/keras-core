@@ -2323,7 +2323,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         )
 
     def test_bincount(self):
-        x = np.array([1,1,2,3,2,4,4,5])
+        x = np.array([1, 1, 2, 3, 2, 4, 4, 5])
         self.assertAllClose(
             np.array(knp.bincount(x)),
             np.bincount(x),
