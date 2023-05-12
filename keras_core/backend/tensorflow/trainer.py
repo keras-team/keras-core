@@ -114,12 +114,15 @@ class TensorFlowTrainer(base_trainer.Trainer):
             )
             return outputs
 
+        def train_function(iterator):
+            """Runs a training execution with multiple steps."""
+            for _ in tf.range(self.steps_per_execution):
+                outputs = one_step_on_iterator(iterator)
+            return outputs
+
         if not self.run_eagerly:
-            train_function = tf.function(
-                one_step_on_iterator, reduce_retracing=True
-            )
-        else:
-            train_function = one_step_on_iterator
+            train_function = tf.function(train_function, reduce_retracing=True)
+
         self.train_function = train_function
 
     def make_test_function(self, force=False):
@@ -243,6 +246,8 @@ class TensorFlowTrainer(base_trainer.Trainer):
             steps_per_epoch=steps_per_epoch,
             shuffle=shuffle,
             class_weight=class_weight,
+            distribute_strategy=self.distribute_strategy,
+            steps_per_execution=self.steps_per_execution,
         )
 
         # Container that configures and calls callbacks.
@@ -285,6 +290,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
                         y=val_y,
                         sample_weight=val_sample_weight,
                         batch_size=validation_batch_size or batch_size,
+                        distribute_strategy=self.distribute_strategy,
                     )
                 val_logs = self.evaluate(
                     x=val_x,
@@ -346,6 +352,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 batch_size=batch_size,
                 steps_per_epoch=steps,
                 shuffle=False,
+                distribute_strategy=self.distribute_strategy,
             )
 
         # Container that configures and calls callbacks.
@@ -385,6 +392,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
             batch_size=batch_size,
             steps_per_epoch=steps,
             shuffle=False,
+            distribute_strategy=self.distribute_strategy,
         )
 
         # Container that configures and calls callbacks.
@@ -428,27 +436,38 @@ class TensorFlowTrainer(base_trainer.Trainer):
 
 
 class TFEpochIterator(EpochIterator):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, distribute_strategy=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._distribute_strategy = distribute_strategy
         self._steps_seen = 0
 
     def enumerate_epoch(self):
         if self.steps_per_epoch:
             if not self._current_iterator:
                 self._current_iterator = iter(
-                    self.data_adapter.get_tf_dataset()
+                    self._distribute_strategy.experimental_distribute_dataset(
+                        self.data_adapter.get_tf_dataset()
+                    )
                 )
-            for step in range(self.steps_per_epoch):
+            for step in range(
+                0, self.steps_per_epoch, self.steps_per_execution
+            ):
                 yield step, self._current_iterator
         else:
-            iterator = iter(self.data_adapter.get_tf_dataset())
+            iterator = iter(
+                self._distribute_strategy.experimental_distribute_dataset(
+                    self.data_adapter.get_tf_dataset()
+                )
+            )
             if self.num_batches:
-                for step in range(self.num_batches):
+                for step in range(
+                    0, self.num_batches, self.steps_per_execution
+                ):
                     yield step, iterator
             else:
                 step = -1
                 while True:
-                    step += 1
+                    step += self.steps_per_execution
                     self._steps_seen = step + 1
                     yield step, iterator
         self.data_adapter.on_epoch_end()

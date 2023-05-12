@@ -48,6 +48,7 @@ class Layer(Operation):
         autocast=True,
         name=None,
     ):
+        self._lock = False
         super().__init__(name=name)
         self.activity_regularizer = regularizers.get(activity_regularizer)
 
@@ -572,6 +573,8 @@ class Layer(Operation):
             else:
                 # More than one shape: pass them by name.
                 output_shape = self.compute_output_shape(**shapes_dict)
+
+            print("output_shape", output_shape)
             if (
                 isinstance(output_shape, list)
                 and output_shape
@@ -595,9 +598,22 @@ class Layer(Operation):
                 and isinstance(output_shape[0], (int, type(None)))
             ):
                 return KerasTensor(output_shape, dtype=self.compute_dtype)
-            return nest.map_structure(
-                lambda s: KerasTensor(s, dtype=self.compute_dtype), output_shape
-            )
+            # Case: nested. Could be a tuple/list of shapes, or a dict of shapes.
+            if isinstance(output_shape, list):
+                return [
+                    KerasTensor(s, dtype=self.compute_dtype)
+                    for s in output_shape
+                ]
+            if isinstance(output_shape, tuple):
+                return tuple(
+                    KerasTensor(s, dtype=self.compute_dtype)
+                    for s in output_shape
+                )
+            if isinstance(output_shape, dict):
+                return {
+                    name: KerasTensor(s, dtype=self.compute_dtype)
+                    for name, s in output_shape.items()
+                }
 
     @utils.default
     def compute_output_shape(self, *args, **kwargs):
@@ -835,17 +851,22 @@ class Layer(Operation):
         )
 
     def __setattr__(self, name, value):
-        # Track Variables, Layers, Metrics
+        # Prevent users from attaching state to the
+        # layer before `super()` is called -- since that
+        # state would silently not be tracked.
+        if name != "_lock":
+            self._check_super_called()
+        # Track Variables, Layers, Metrics, SeedGenerators.
         if hasattr(self, "_tracker"):
             value = self._tracker.track(value)
         return super().__setattr__(name, value)
 
     def _check_super_called(self):
-        if not hasattr(self, "_tracker"):
+        if getattr(self, "_lock", True):
             raise RuntimeError(
                 f"In layer '{self.__class__.__name__}', you forgot to call "
-                "`super().__init__()` in the `__init__()` method. "
-                "Go add it!"
+                "`super().__init__()` as the first statement "
+                "in the `__init__()` method. Go add it!"
             )
 
     def _assert_input_compatibility(self, arg_0):

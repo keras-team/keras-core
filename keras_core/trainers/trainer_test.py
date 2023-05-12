@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from keras_core import backend
 from keras_core import initializers
@@ -7,6 +8,7 @@ from keras_core import losses
 from keras_core import metrics
 from keras_core import optimizers
 from keras_core import testing
+from keras_core.callbacks.callback import Callback
 
 if backend.backend() == "jax":
     from keras_core.backend.jax.trainer import JAXTrainer as Trainer
@@ -89,12 +91,14 @@ class TestTrainer(testing.TestCase):
         # And those weights are tracked at the model level
         self.assertEqual(len(model.metrics_variables), 6)
 
-    def _test_fit_flow(self, run_eagerly, jit_compile):
+    def _test_fit_flow(self, run_eagerly, jit_compile, use_steps_per_epoch):
         model = ExampleModel(units=3)
-        x = np.ones((100, 4))
-        y = np.zeros((100, 3))
-        batch_size = 16
         epochs = 3
+        batch_size = 20
+        steps_per_epoch = 7
+        dataset_size = batch_size * (steps_per_epoch - 2)
+        x = np.ones((dataset_size, 4))
+        y = np.zeros((dataset_size, 3))
 
         model.compile(
             optimizer=optimizers.SGD(),
@@ -103,22 +107,51 @@ class TestTrainer(testing.TestCase):
             run_eagerly=run_eagerly,
             jit_compile=jit_compile,
         )
-        history = model.fit(x, y, batch_size=batch_size, epochs=epochs)
+        history = model.fit(
+            x,
+            y,
+            batch_size=batch_size,
+            steps_per_epoch=steps_per_epoch if use_steps_per_epoch else None,
+            epochs=epochs,
+        )
         history = history.history
         self.assertIn("loss", history)
         self.assertIn("mean_squared_error", history)
         self.assertAllClose(
-            history["mean_squared_error"], [13.938, 9.547, 6.539], atol=1e-2
+            history["mean_squared_error"],
+            [14.402393, 10.991339, 8.388159],
+            atol=6.1051628e-1,
         )
 
     def test_fit_flow_eager(self):
-        self._test_fit_flow(run_eagerly=True, jit_compile=False)
+        self._test_fit_flow(
+            run_eagerly=True, jit_compile=False, use_steps_per_epoch=False
+        )
 
     def test_fit_flow_graph_fn(self):
-        self._test_fit_flow(run_eagerly=False, jit_compile=False)
+        self._test_fit_flow(
+            run_eagerly=False, jit_compile=False, use_steps_per_epoch=False
+        )
 
     def test_fit_flow_jit(self):
-        self._test_fit_flow(run_eagerly=False, jit_compile=True)
+        self._test_fit_flow(
+            run_eagerly=False, jit_compile=True, use_steps_per_epoch=False
+        )
+
+    def test_fit_steps_per_epoch_flow_eager(self):
+        self._test_fit_flow(
+            run_eagerly=True, jit_compile=False, use_steps_per_epoch=True
+        )
+
+    def test_fit_steps_per_epoch_flow_graph_fn(self):
+        self._test_fit_flow(
+            run_eagerly=False, jit_compile=False, use_steps_per_epoch=True
+        )
+
+    def test_fit_steps_per_epoch_flow_jit(self):
+        self._test_fit_flow(
+            run_eagerly=False, jit_compile=True, use_steps_per_epoch=True
+        )
 
     def _test_evaluate_flow(self, run_eagerly, jit_compile):
         model = ExampleModel(units=3)
@@ -182,3 +215,32 @@ class TestTrainer(testing.TestCase):
 
     def test_predict_flow_jit(self):
         self._test_predict_flow(run_eagerly=False, jit_compile=True)
+
+    # TODO: Remove the skipif when implemented steps_per_execution for JAX.
+    @pytest.mark.skipif(
+        backend.backend() != "tensorflow",
+        reason="JAX does not support steps_per_execution yet",
+    )
+    def test_steps_per_execution_steps_count(self):
+        class StepCount(Callback):
+            def __init__(self):
+                super().__init__()
+                self.count = 0
+                self.batches = [0, 3, 6]
+
+            def on_batch_begin(self, batch, logs=None):
+                assert batch == self.batches[self.count]
+                self.count += 1
+
+        x = np.ones((100, 4))
+        y = np.ones((100, 1))
+        model = ExampleModel(units=1)
+        model.compile(loss="mse", optimizer="adam", steps_per_execution=3)
+        step_count = StepCount()
+        model.fit(x=x, y=y, batch_size=16, callbacks=[step_count])
+        self.assertEqual(step_count.count, 3)
+
+        model_2 = ExampleModel(units=1)
+        model_2.compile(loss="mse", optimizer="adam", steps_per_execution=1)
+        model_2.fit(x=x, y=y, batch_size=16)
+        self.assertAllClose(model.get_weights(), model_2.get_weights())

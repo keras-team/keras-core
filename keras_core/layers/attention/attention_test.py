@@ -4,7 +4,7 @@ from keras_core import layers
 from keras_core import testing
 
 
-class DenseTest(testing.TestCase):
+class AttentionTest(testing.TestCase):
     def test_attention_basics(self):
         # No scale, no concat.
         self.run_layer_test(
