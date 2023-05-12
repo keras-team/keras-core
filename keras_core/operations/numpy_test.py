@@ -2322,6 +2322,17 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
             np.average(x, axis=1, weights=weights_1d),
         )
 
+    def test_bincount(self):
+        x = np.array([1,1,2,3,2,4,4,5])
+        self.assertAllClose(
+            np.array(knp.bincount(x)),
+            np.bincount(x),
+        )
+        self.assertAllClose(
+            np.array(knp.Bincount()(x)),
+            np.bincount(x),
+        )
+
     def test_broadcast_to(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         self.assertAllClose(

@@ -6,6 +6,10 @@ def add(x1, x2):
     return tfnp.add(x1, x2)
 
 
+def bincount(x, weights=None, minlength=0):
+    return tf.math.bincount(x, weights=weights, minlength=minlength)
+
+
 def einsum(subscripts, *operands, **kwargs):
     return tfnp.einsum(subscripts, *operands, **kwargs)
 

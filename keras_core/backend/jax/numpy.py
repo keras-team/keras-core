@@ -5,6 +5,10 @@ def add(x1, x2):
     return jnp.add(x1, x2)
 
 
+def bincount(x, weights=None, minlength=0):
+    return jnp.bincount(x, weights=weights, minlength=minlength)
+
+
 def einsum(subscripts, *operands, **kwargs):
     return jnp.einsum(subscripts, *operands, **kwargs)
 
