@@ -49,7 +49,7 @@ class RandomCrop(Layer):
     """
 
     def __init__(self, height, width, seed=None, name=None, **kwargs):
-        super().__init__()
+        super().__init__(name=name, **kwargs)
         self.seed = seed or backend.random.make_default_seed()
         self.layer = tf.keras.layers.RandomCrop(
             height=height,
