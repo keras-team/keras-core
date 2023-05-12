@@ -10,7 +10,8 @@ else:
     Optimizer = base_optimizer.Optimizer
 
 
-keras_core_export(["keras_core.optimizers.Optimizer"])(Optimizer)
+keras_core_export([
+    "keras_core.Optimizer", "keras_core.optimizers.Optimizer"])(Optimizer)
 
 
 base_optimizer_keyword_args = base_optimizer.base_optimizer_keyword_args
