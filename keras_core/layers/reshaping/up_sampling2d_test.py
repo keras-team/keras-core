@@ -36,8 +36,7 @@ class UpSampling2dTest(testing.TestCase):
                         data_format=data_format,
                     )
                     layer.build(inputs.shape)
-                    output = layer(backend.Variable(inputs))
-                    np_output = output.numpy()
+                    np_output = layer(inputs=backend.Variable(inputs))
                     if data_format == "channels_first":
                         assert np_output.shape[2] == length_row * input_num_row
                         assert np_output.shape[3] == length_col * input_num_col
@@ -91,8 +90,7 @@ class UpSampling2dTest(testing.TestCase):
                         data_format=data_format,
                     )
                     layer.build(inputs.shape)
-                    outputs = layer(backend.Variable(inputs))
-                    np_output = outputs.numpy()
+                    np_output = layer(inputs=backend.Variable(inputs))
                     if data_format == "channels_first":
                         self.assertEqual(
                             np_output.shape[2], length_row * input_num_row
