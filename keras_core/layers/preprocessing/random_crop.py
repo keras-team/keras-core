@@ -24,6 +24,14 @@ class RandomCrop(Layer):
     of integer or floating point dtype. By default, the layer will output
     floats.
 
+    **Note:** This layer wraps `tf.keras.layers.RandomCrop`. It cannot
+    be used as part of the compiled computation graph of a model with
+    any backend other than TensorFlow.
+    It can however be used with any backend when running eagerly.
+    It can also always be used as part of an input preprocessing pipeline
+    with any backend (outside the model itself), which is how we recommend
+    to use this layer.
+
     Input shape:
         3D (unbatched) or 4D (batched) tensor with shape:
         `(..., height, width, channels)`, in `"channels_last"` format.
@@ -41,11 +49,12 @@ class RandomCrop(Layer):
     """
 
     def __init__(self, height, width, seed=None, name=None, **kwargs):
-        super().__init__()
+        super().__init__(name=name, **kwargs)
+        self.seed = seed or backend.random.make_default_seed()
         self.layer = tf.keras.layers.RandomCrop(
             height=height,
             width=width,
-            seed=seed,
+            seed=self.seed,
             name=name,
         )
         self.supports_masking = False
@@ -62,4 +71,6 @@ class RandomCrop(Layer):
         return tuple(self.layer.compute_output_shape(input_shape))
 
     def get_config(self):
-        return self.layer.get_config()
+        config = self.layer.get_config()
+        config.update({"seed": self.seed})
+        return config
