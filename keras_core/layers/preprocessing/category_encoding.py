@@ -163,7 +163,6 @@ class CategoryEncoding(Layer):
             inputs,
             output_mode=self.output_mode,
             depth=depth,
-            dtype=self.compute_dtype,
             count_weights=count_weights,
         )
 
@@ -172,15 +171,9 @@ class CategoryEncoding(Layer):
         inputs,
         output_mode,
         depth,
-        dtype="float32",
         count_weights=None,
-        idf_weights=None,
     ):
-        """Encodes categoical inputs according to output_mode."""
-        if output_mode == "int":
-            return ops.cast(inputs, dtype)
 
-        original_shape = inputs.shape
         # In all cases, we should uprank scalar input to a single sample.
         if len(inputs.shape) == 0:
             inputs = ops.expand_dims(inputs, -1)
@@ -195,14 +188,14 @@ class CategoryEncoding(Layer):
             raise ValueError(
                 "When output_mode is not `'int'`, maximum supported "
                 f"output rank is 2. Received output_mode {output_mode} "
-                f"and input shape {original_shape}, "
+                f"and input shape {inputs.shape}, "
                 f"which would result in output rank {inputs.shape.rank}."
             )
 
         binary_output = output_mode in ("multi_hot", "one_hot")
+        inputs = ops.cast(inputs, "int32")
 
         if binary_output:
-            inputs = ops.cast(inputs, "int32")
             bincounts = ops.one_hot(inputs, num_classes=depth)
             if output_mode == "multi_hot":
                 bincounts = ops.sum(bincounts, axis=0)
@@ -211,14 +204,4 @@ class CategoryEncoding(Layer):
                 inputs, minlength=depth, weights=count_weights
             )
 
-        if output_mode != "tf_idf":
-            return bincounts
-
-        if idf_weights is None:
-            raise ValueError(
-                "When output mode is `'tf_idf'`, idf_weights must be provided. "
-                f"Received: output_mode={output_mode} "
-                f"and idf_weights={idf_weights}"
-            )
-
-        return ops.multiply(bincounts, idf_weights)
+        return bincounts
