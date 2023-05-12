@@ -86,7 +86,7 @@ class RandomZoom(Layer):
         name=None,
         **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__(name=name, **kwargs)
         self.seed = seed or backend.random.make_default_seed()
         self.layer = tf.keras.layers.RandomZoom(
             height_factor=height_factor,
