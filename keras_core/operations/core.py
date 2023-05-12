@@ -9,14 +9,12 @@ from keras_core.operations.operation import Operation
 
 
 class Scatter(Operation):
-    def call(self, x, indices, values):
-        return backend.core.scatter(x, indices, values)
+    def call(self, indices, values, shape):
+        return backend.core.scatter(indices, values, shape)
 
-    def compute_output_spec(self, x, indices, values):
-        return KerasTensor(x.shape, dtype=x.dtype)
+    def compute_output_spec(self, indices, values, shape):
+        return KerasTensor(shape, dtype=values.dtype)
 
 
-def scatter(x, indices, values):
-    if any_symbolic_tensors((x,)):
-        return Scatter().symbolic_call(x, indices, values)
-    return backend.core.scatter(x, indices, values)
+def scatter(indices, values, shape):
+    return backend.core.scatter(indices, values, shape)
