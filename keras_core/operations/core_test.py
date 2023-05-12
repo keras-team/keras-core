@@ -1,7 +1,26 @@
 import numpy as np
+import pytest
 
+from keras_core import backend
 from keras_core import testing
+from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.operations import core
+
+
+@pytest.mark.skipif(
+    not backend.DYNAMIC_SHAPES_OK,
+    reason="Backend does not support dynamic shapes",
+)
+class CoreOpsDynamicShapeTest(testing.TestCase):
+    pass
+
+class CoreOpsStaticShapeTest(testing.TestCase):
+    def test_scatter(self):
+        # Requires dtype
+        indices = np.array([[0]], dtype="int32")
+        values = np.array([0], dtype="int32")
+        shape = (8,)
+        self.assertEqual(core.scatter(indices, values, shape).shape, (8,))
 
 
 class CoreOpsCorrectnessTest(testing.TestCase):
