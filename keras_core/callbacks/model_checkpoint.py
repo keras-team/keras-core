@@ -1,9 +1,10 @@
 import os
 import re
-from absl import logging
-import numpy as np
+import warnings
 
+import numpy as np
 from tensorflow.io import gfile
+
 from keras_core.api_export import keras_core_export
 from keras_core.callbacks.callback import Callback
 from keras_core.utils import file_utils
@@ -125,15 +126,14 @@ class ModelCheckpoint(Callback):
         self.save_best_only = save_best_only
         self.save_weights_only = save_weights_only
         self.save_freq = save_freq
-        self.epochs_since_last_save = 0
         self._batches_seen_since_last_saving = 0
         self._last_batch_seen = 0
         self.best = initial_value_threshold
 
         if mode not in ["auto", "min", "max"]:
-            logging.warning(
-                "ModelCheckpoint mode %s is unknown, fallback to auto mode.",
-                mode,
+            warnings.warn(
+                f"ModelCheckpoint mode {mode} is unknown, "
+                "fallback to auto mode."
             )
             mode = "auto"
 
@@ -169,8 +169,6 @@ class ModelCheckpoint(Callback):
         self._current_epoch = epoch
 
     def on_epoch_end(self, epoch, logs=None):
-        self.epochs_since_last_save += 1
-
         if self.save_freq == "epoch":
             self._save_model(epoch=epoch, batch=None, logs=logs)
 
@@ -178,7 +176,6 @@ class ModelCheckpoint(Callback):
         """Handles batch-level saving logic, supports steps_per_execution."""
         if self.save_freq == "epoch":
             return False
-
         if batch <= self._last_batch_seen:  # New epoch.
             add_batches = batch + 1  # batches are zero-indexed.
         else:
@@ -202,80 +199,67 @@ class ModelCheckpoint(Callback):
         """
         logs = logs or {}
 
-        if (
-            isinstance(self.save_freq, int)
-            or self.epochs_since_last_save >= self.period
-        ):
-            self.epochs_since_last_save = 0
-            filepath = self._get_file_path(epoch, batch, logs)
+        filepath = self._get_file_path(epoch, batch, logs)
+        # Create host directory if it doesn't exist.
+        dirname = os.path.dirname(filepath)
+        if dirname and not gfile.exists(dirname):
+            gfile.makedirs(dirname)
 
-            # Create host directory if it doesn't exist.
-            dirname = os.path.dirname(filepath)
-            if dirname and not gfile.exists(dirname):
-                gfile.makedirs(dirname)
-
-            try:
-                if self.save_best_only:
-                    current = logs.get(self.monitor)
-                    if current is None:
-                        logging.warning(
-                            "Can save best model only with %s available, "
-                            "skipping.",
-                            self.monitor,
-                        )
-                    else:
-                        if self.monitor_op(current, self.best):
-                            if self.verbose > 0:
-                                io_utils.print_msg(
-                                    f"\nEpoch {epoch + 1}: {self.monitor} "
-                                    "improved "
-                                    f"from {self.best:.5f} to {current:.5f}, "
-                                    f"saving model to {filepath}"
-                                )
-                            self.best = current
-                            if self.save_weights_only:
-                                self.model.save_weights(
-                                    filepath,
-                                    overwrite=True
-                                )
-                            else:
-                                self.model.save(
-                                    filepath,
-                                    overwrite=True
-                                )
-                        else:
-                            if self.verbose > 0:
-                                io_utils.print_msg(
-                                    f"\nEpoch {epoch + 1}: "
-                                    f"{self.monitor} did not improve "
-                                    f"from {self.best:.5f}"
-                                )
+        try:
+            if self.save_best_only:
+                current = logs.get(self.monitor)
+                if current is None:
+                    warnings.warn(
+                        f"Can save best model only with {self.monitor} "
+                        "available, skipping.",
+                    )
                 else:
-                    if self.verbose > 0:
-                        io_utils.print_msg(
-                            f"\nEpoch {epoch + 1}: saving model to {filepath}"
-                        )
-                    if self.save_weights_only:
-                        self.model.save_weights(filepath, overwrite=True)
+                    if self.monitor_op(current, self.best):
+                        if self.verbose > 0:
+                            io_utils.print_msg(
+                                f"\nEpoch {epoch + 1}: {self.monitor} "
+                                "improved "
+                                f"from {self.best:.5f} to {current:.5f}, "
+                                f"saving model to {filepath}"
+                            )
+                        self.best = current
+                        if self.save_weights_only:
+                            self.model.save_weights(filepath, overwrite=True)
+                        else:
+                            self.model.save(filepath, overwrite=True)
                     else:
-                        self.model.save(filepath, overwrite=True)
-            except IsADirectoryError:  # h5py 3.x
+                        if self.verbose > 0:
+                            io_utils.print_msg(
+                                f"\nEpoch {epoch + 1}: "
+                                f"{self.monitor} did not improve "
+                                f"from {self.best:.5f}"
+                            )
+            else:
+                if self.verbose > 0:
+                    io_utils.print_msg(
+                        f"\nEpoch {epoch + 1}: saving model to {filepath}"
+                    )
+                if self.save_weights_only:
+                    self.model.save_weights(filepath, overwrite=True)
+                else:
+                    self.model.save(filepath, overwrite=True)
+        except IsADirectoryError:  # h5py 3.x
+            raise IOError(
+                "Please specify a non-directory filepath for "
+                "ModelCheckpoint. Filepath used is an existing "
+                f"directory: {filepath}"
+            )
+        except IOError as e:  # h5py 2.x
+            # `e.errno` appears to be `None` so checking the content of
+            # `e.args[0]`.
+            if "is a directory" in str(e.args[0]).lower():
                 raise IOError(
                     "Please specify a non-directory filepath for "
                     "ModelCheckpoint. Filepath used is an existing "
-                    f"directory: {filepath}"
+                    f"directory: f{filepath}"
                 )
-            except IOError as e:  # h5py 2.x
-                # `e.errno` appears to be `None` so checking the content of
-                # `e.args[0]`.
-                if "is a directory" in str(e.args[0]).lower():
-                    raise IOError(
-                        "Please specify a non-directory filepath for "
-                        "ModelCheckpoint. Filepath used is an existing "
-                        f"directory: f{filepath}"
-                    )
-                # Re-throw the error for any other causes.
-                raise e
+            # Re-throw the error for any other causes.
+            raise e
 
     def _get_file_path(self, epoch, batch, logs):
         """Returns the file path for checkpoint."""
