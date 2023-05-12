@@ -3,9 +3,8 @@ import jax.numpy as jnp
 import numpy as np
 from jax import lax
 from jax import nn as jnn
-
 from keras_core.backend.config import epsilon
-
+from keras_core.backend.jax.rnn import rnn
 
 def relu(x):
     return jnn.relu(x)

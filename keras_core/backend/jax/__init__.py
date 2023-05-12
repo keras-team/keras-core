@@ -17,6 +17,7 @@ from keras_core.backend.jax import nn
 from keras_core.backend.jax import numpy
 from keras_core.backend.jax import random
 from keras_core.utils.naming import auto_name
+from keras_core.backend.jax.rnn import rnn
 
 DYNAMIC_SHAPES_OK = False  # Dynamic shapes NG
 

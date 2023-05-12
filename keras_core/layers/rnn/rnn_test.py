@@ -69,8 +69,8 @@ class TwoStatesRNNCell(layers.Layer):
 
 
 @pytest.mark.skipif(
-    backend.backend() != "tensorflow",
-    reason="Only implemented for TF for now.",
+    not (backend.backend() in ["tensorflow", "jax"]),
+    reason="Only implemented for TF and jax for now.",
 )
 class RNNTest(testing.TestCase):
     def test_compute_output_shape_single_state(self):
