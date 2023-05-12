@@ -1,5 +1,10 @@
 import jax
+from jax import lax
 import tensorflow as tf
+from jax import numpy as jnp
+
+def _jax_unstack(x, axis=0):
+  return [lax.index_in_dim(x, i, axis, keepdims=False) for i in range(x.shape[axis])]
 
 def _with_rank_at_least(input, rank):
     """Returns a shape based on `self` with at least the given rank.
@@ -98,7 +103,7 @@ def rnn(
         # Swap the batch and timestep dim for the incoming tensor.
         axes = list(range(len(input_t.shape)))
         axes[0], axes[1] = 1, 0
-        return jax.transpose(input_t, axes)
+        return jnp.transpose(input_t, axes)
 
     if not time_major:
         inputs = tf.nest.map_structure(swap_batch_timestep, inputs)
@@ -139,9 +144,9 @@ def rnn(
             )
         rank_diff = len(input_t.shape) - len(mask_t.shape)
         for _ in range(rank_diff):
-            mask_t = tf.expand_dims(mask_t, -1)
-        multiples = [1] * fixed_dim + input_t.shape.as_list()[fixed_dim:]
-        return tf.tile(mask_t, multiples)
+            mask_t = mask_t[..., None]
+        multiples = [1] * fixed_dim + input_t.shape[fixed_dim:]
+        return jnp.tile(mask_t, multiples)
 
     if unroll:
         if not time_steps:
@@ -156,7 +161,7 @@ def rnn(
         # individually.  The result of this will be a tuple of lists, each of
         # the item in tuple is list of the tensor with shape (batch, feature)
         def _process_single_input_t(input_t):
-            input_t = tf.unstack(input_t)  # unstack for time_step dim
+            input_t = _jax_unstack(input_t)  # unstack for time_step dim
             if go_backwards:
                 input_t.reverse()
             return input_t
@@ -173,7 +178,7 @@ def rnn(
             return tf.nest.pack_sequence_as(inputs, inp)
 
         if mask is not None:
-            mask_list = tf.unstack(mask)
+            mask_list = _jax_unstack(mask)
             if go_backwards:
                 mask_list.reverse()
 
@@ -186,11 +191,11 @@ def rnn(
                 tiled_mask_t = _expand_mask(mask_t, output)
 
                 if not successive_outputs:
-                    prev_output = tf.zeros_like(output)
+                    prev_output = jnp.zeros_like(output)
                 else:
                     prev_output = successive_outputs[-1]
 
-                output = tf.where(tiled_mask_t, output, prev_output)
+                output = jnp.where(tiled_mask_t, output, prev_output)
 
                 flat_states = tf.nest.flatten(states)
                 flat_new_states = tf.nest.flatten(new_states)
@@ -198,7 +203,7 @@ def rnn(
                     _expand_mask(mask_t, s) for s in flat_states
                 )
                 flat_final_states = tuple(
-                    tf.where(m, s, ps)
+                    jnp.where(m, s, ps)
                     for m, s, ps in zip(
                         tiled_mask_t, flat_new_states, flat_states
                     )
@@ -213,18 +218,18 @@ def rnn(
                     successive_states = [states]
             last_output = successive_outputs[-1]
             new_states = successive_states[-1]
-            outputs = tf.stack(successive_outputs)
+            outputs = jnp.stack(successive_outputs)
 
             if zero_output_for_mask:
-                last_output = tf.where(
+                last_output = jnp.where(
                     _expand_mask(mask_list[-1], last_output),
                     last_output,
-                    tf.zeros_like(last_output),
+                    jnp.zeros_like(last_output),
                 )
                 outputs = tf.where(
                     _expand_mask(mask, outputs, fixed_dim=2),
                     outputs,
-                    tf.zeros_like(outputs),
+                    jnp.zeros_like(outputs),
                 )
 
         else:  # mask is None
@@ -241,7 +246,7 @@ def rnn(
                     successive_states = [states]
             last_output = successive_outputs[-1]
             new_states = successive_states[-1]
-            outputs = tf.stack(successive_outputs)
+            outputs = jnp.stack(successive_outputs)
 
     else:  # Unroll == False
         states = tuple(initial_states)
@@ -250,17 +255,9 @@ def rnn(
         # will be flattened first, and tensor array will be created one per
         # flattened tensor.
         input_ta = tuple(
-            tf.TensorArray(
-                dtype=inp.dtype,
-                size=time_steps_t,
-                tensor_array_name=f"input_ta_{i}",
-            )
-            for i, inp in enumerate(flatted_inputs)
-        )
-        input_ta = tuple(
-            ta.unstack(input_)
+            _jax_unstack(input_)
             if not go_backwards
-            else ta.unstack(tf.reverse(input_, [0]))
+            else _jax_unstack(jnp.flip(input_, axis=0))
             for ta, input_ in zip(input_ta, flatted_inputs)
         )
 
@@ -287,7 +284,7 @@ def rnn(
             for i, out in enumerate(tf.nest.flatten(output_time_zero))
         )
 
-        time = tf.constant(0, dtype="int32", name="time")
+        time = 0
 
         if input_length is None:
             max_iterations = time_steps_t
@@ -302,15 +299,12 @@ def rnn(
         }
         if mask is not None:
             if go_backwards:
-                mask = tf.reverse(mask, [0])
+                mask = jnp.flip(mask, axis=0)
 
-            mask_ta = tf.TensorArray(
-                dtype=tf.bool, size=time_steps_t, tensor_array_name="mask_ta"
-            )
-            mask_ta = mask_ta.unstack(mask)
+            mask_ta = _jax_unstack(mask)
 
             def masking_fn(time):
-                return mask_ta.read(time)
+                return mask_ta[time]
 
             def compute_masked_output(mask_t, flat_out, flat_mask):
                 tiled_mask_t = tuple(
@@ -322,22 +316,19 @@ def rnn(
                     for m, o, fm in zip(tiled_mask_t, flat_out, flat_mask)
                 )
 
-        elif isinstance(input_length, tf.Tensor):
+        elif isinstance(input_length, jnp.array):
             if go_backwards:
-                max_len = tf.reduce_max(input_length, axis=0)
-                rev_input_length = tf.subtract(max_len - 1, input_length)
-
+                max_len = input_length.max(axis=0)
+                rev_input_length = (max_len - 1) - input_length
                 def masking_fn(time):
-                    return tf.less(rev_input_length, time)
-
+                    return rev_input_length < time
             else:
-
                 def masking_fn(time):
-                    return tf.greater(input_length, time)
+                    return input_length > time
 
             def compute_masked_output(mask_t, flat_out, flat_mask):
                 return tuple(
-                    tf.where(mask_t, o, zo)
+                    jnp.where(mask_t, o, zo)
                     for (o, zo) in zip(flat_out, flat_mask)
                 )
 
@@ -348,7 +339,7 @@ def rnn(
             # Mask for the T output will be base on the output of T - 1. In the
             # case T = 0, a zero filled tensor will be used.
             flat_zero_output = tuple(
-                tf.zeros_like(o) for o in tf.nest.flatten(output_time_zero)
+                jnp.zeros_like(o) for o in tf.nest.flatten(output_time_zero)
             )
 
             def _step(time, output_ta_t, prev_output, *states):
@@ -363,7 +354,7 @@ def rnn(
                 Returns:
                     Tuple: `(time + 1, output_ta_t, output) + tuple(new_states)`
                 """
-                current_input = tuple(ta.read(time) for ta in input_ta)
+                current_input = tuple(ta[time] for ta in input_ta)
                 # maybe set shape.
                 current_input = tf.nest.pack_sequence_as(inputs, current_input)
                 mask_t = masking_fn(time)
