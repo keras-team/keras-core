@@ -41,7 +41,7 @@ def test_model_fit():
 
     with strategy.scope():
         model.compile(
-            optimizer=optimizers.SGD(learning_rate=0.001),
+            optimizer=optimizers.SGD(learning_rate=0.001, momentum=0.01),
             loss=losses.MeanSquaredError(),
             metrics=[metrics.MeanSquaredError()],
             # TODO(scottzhu): Find out where is the variable that is not created eagerly
