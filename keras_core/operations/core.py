@@ -4,7 +4,6 @@ scatter
 
 from keras_core import backend
 from keras_core.backend import KerasTensor
-from keras_core.backend import any_symbolic_tensors
 from keras_core.operations.operation import Operation
 
 
