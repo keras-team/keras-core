@@ -263,10 +263,6 @@ class TensorBoard(Callback):
             self._writers["val"] = tf.summary.create_file_writer(self._val_dir)
         return self._writers["val"]
 
-    def _get_log_write_dir(self):
-        """For multi-worker, only chief should write, others write to '/tmp'."""
-        return self.log_dir
-
     def _write_keras_model_train_graph(self):
         """Writes Keras model train_function graph to TensorBoard."""
         with self._train_writer.as_default():
@@ -297,11 +293,11 @@ class TensorBoard(Callback):
     def _configure_embeddings(self):
         """Configure the Projector for embeddings."""
         # TODO(omalleyt): Add integration tests.
-        from keras.layers import core
-        from keras.protobuf import projector_config_pb2
+        from layers import core
+        from protobuf import projector_config_pb2
 
         # isort: off
-        from google3.net.proto2.python.public import text_format
+        from google.protobuf import text_format
 
         config = projector_config_pb2.ProjectorConfig()
         for layer in self.model.layers:
@@ -328,7 +324,7 @@ class TensorBoard(Callback):
         ):
             raise ValueError(
                 "Unrecognized `Embedding` layer names passed to "
-                "`keras.callbacks.TensorBoard` `embeddings_metadata` "
+                "`keras_core.callbacks.TensorBoard` `embeddings_metadata` "
                 f"argument: {self.embeddings_metadata.keys()}"
             )
 
