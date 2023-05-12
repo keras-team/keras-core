@@ -6,14 +6,12 @@ import numpy as np
 from keras_core import backend
 from keras_core import initializers
 from keras_core import operations as ops
-# from keras_core.api_export import keras_core_export
 from keras_core.optimizers.schedules import learning_rate_schedule
 from keras_core.saving import serialization_lib
 from keras_core.utils.naming import auto_name
 from keras_core.utils.tracking import Tracker
 
 
-# @keras_core_export(["keras_core.Optimizer", "keras_core.optimizers.Optimizer"])
 class Optimizer:
     def __init__(
         self,
@@ -219,7 +217,8 @@ class Optimizer:
             self._apply_weight_decay(trainable_variables)
 
             # Apply gradient updates.
-            self._internal_apply_gradients(list(zip(grads, trainable_variables)))
+            self._internal_apply_gradients(
+                list(zip(grads, trainable_variables)))
 
             # Apply variable constraints after applying gradients.
             for variable in trainable_variables:
