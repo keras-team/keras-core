@@ -1,5 +1,6 @@
 tensorflow
 jax[cpu]
+torch
 namex
 black>=22
 flake8
