@@ -258,7 +258,7 @@ def rnn(
             _jax_unstack(input_)
             if not go_backwards
             else _jax_unstack(jnp.flip(input_, axis=0))
-            for ta, input_ in zip(input_ta, flatted_inputs)
+            for input_ in flatted_inputs
         )
 
         # Get the time(0) input and compute the output for that, the output will
@@ -289,7 +289,7 @@ def rnn(
         if input_length is None:
             max_iterations = time_steps_t
         else:
-            max_iterations = tf.reduce_max(input_length)
+            max_iterations = jnp.max(input_length)
 
         while_loop_kwargs = {
             "cond": lambda time, *_: time < time_steps_t,
@@ -312,11 +312,11 @@ def rnn(
                     for o in flat_out
                 )
                 return tuple(
-                    tf.where(m, o, fm)
+                    jnp.where(m, o, fm)
                     for m, o, fm in zip(tiled_mask_t, flat_out, flat_mask)
                 )
 
-        elif isinstance(input_length, jnp.array):
+        elif isinstance(input_length, jnp.ndarray):
             if go_backwards:
                 max_len = input_length.max(axis=0)
                 rev_input_length = (max_len - 1) - input_length
@@ -412,7 +412,7 @@ def rnn(
                 Returns:
                     Tuple: `(time + 1,output_ta_t) + tuple(new_states)`
                 """
-                current_input = tuple(ta.read(time) for ta in input_ta)
+                current_input = tuple(ta[time] for ta in input_ta)
                 current_input = tf.nest.pack_sequence_as(inputs, current_input)
                 output, new_states = step_function(
                     current_input, tuple(states) + tuple(constants)
@@ -445,20 +445,6 @@ def rnn(
 
         outputs = tf.nest.pack_sequence_as(output_time_zero, outputs)
         last_output = tf.nest.pack_sequence_as(output_time_zero, last_output)
-
-    # static shape inference
-    def set_shape(output_):
-        if isinstance(output_, tf.Tensor):
-            shape = output_.shape.as_list()
-            if return_all_outputs:
-                shape[0] = time_steps
-            else:
-                shape[0] = 1
-            shape[1] = batch
-            output_.set_shape(shape)
-        return output_
-
-    outputs = tf.nest.map_structure(set_shape, outputs)
 
     if not time_major:
         outputs = tf.nest.map_structure(swap_batch_timestep, outputs)
