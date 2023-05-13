@@ -13,6 +13,7 @@ class TorchDatasetAdapter(DataAdapter):
                 f"Expected argument `dataset` to be an instance of"
                 f"`torch.utils.data.DataLoader`. Received: {dataset}"
             )
+        self._dataset = dataset
         self._batch_size = dataset.batch_size
         self._size = len(dataset)
         self._partial_batch_size = (
