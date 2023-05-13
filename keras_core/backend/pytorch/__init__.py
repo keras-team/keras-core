@@ -9,6 +9,11 @@ from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.backend.common.stateless_scope import StatelessScope
 from keras_core.backend.common.stateless_scope import get_stateless_scope
 from keras_core.backend.common.stateless_scope import in_stateless_scope
+from keras_core.backend.pytorch import image
+from keras_core.backend.pytorch import math
+from keras_core.backend.pytorch import nn
+from keras_core.backend.pytorch import numpy
+from keras_core.backend.pytorch import random
 
 
 def convert_to_tensor(x, dtype=None):

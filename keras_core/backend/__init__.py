@@ -1,6 +1,9 @@
 import json
 import os
 
+import numpy as np
+import torch
+
 from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.backend.common.keras_tensor import any_symbolic_tensors
 from keras_core.backend.common.keras_tensor import is_keras_tensor
