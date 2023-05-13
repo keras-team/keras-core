@@ -51,6 +51,8 @@ from keras_core.trainers.data_adapters import tf_dataset_adapter
 
 
 class StepBuffer:
+    """A buffer to store the data for multiple steps to yield together."""
+
     def __init__(self, steps_per_exeuction):
         self.data = []
         self.step = 0
@@ -66,6 +68,11 @@ class StepBuffer:
         return len(self.data) == 0
 
     def run_yield(self, step):
+        """Yield the step and data.
+
+        The data is a list of batches. The length of the list is the same
+        as the value of steps_per_execution.
+        """
         yield self.step, self.data
         self.data = []
         self.step = step + 1
