@@ -38,67 +38,6 @@ def rnn(
     zero_output_for_mask=False,
     return_all_outputs=True,
 ):
-    """Iterates over the time dimension of a tensor.
-
-    Args:
-        step_function: RNN step function.
-            Args;
-                `input`; Tensor with shape `(samples, ...)` (no time dimension),
-                    representing input for the batch of samples at a certain
-                    time step.
-                `states`; List of tensors.
-            Returns;
-                `output`; Tensor with shape `(samples, output_dim)`
-                    (no time dimension).
-                `new_states`; List of tensors, same length and shapes
-                    as 'states'. The first state in the list must be the
-                    output tensor at the previous timestep.
-        inputs: Tensor of temporal data of shape `(samples, time, ...)`
-            (at least 3D), or nested tensors, and each of which has shape
-            `(samples, time, ...)`.
-        initial_states: Tensor with shape `(samples, state_size)`
-            (no time dimension), containing the initial values for the states
-            used in the step function. In the case that state_size is in a
-            nested shape, the shape of initial_states will also follow the
-            nested structure.
-        go_backwards: Boolean. If `True`, do the iteration over the time
-            dimension in reverse order and return the reversed sequence.
-        mask: Binary tensor with shape `(samples, time, 1)`,
-            with a zero for every element that is masked.
-        constants: List of constant values passed at each step.
-        unroll: Whether to unroll the RNN or to use a symbolic `while_loop`.
-        input_length: An integer or a 1-D Tensor, depending on whether
-            the time dimension is fixed-length or not. In case of variable
-            length input, it is used for masking in case there's no mask
-            specified.
-        time_major: Boolean. If `True`, the inputs and outputs will be in shape
-            `(timesteps, batch, ...)`, whereas in the False case, it will be
-            `(batch, timesteps, ...)`. Using `time_major = True` is a bit more
-            efficient because it avoids transposes at the beginning and end of
-            the RNN calculation. However, most TensorFlow data is batch-major,
-            so by default this function accepts input and emits output in
-            batch-major form.
-        zero_output_for_mask: Boolean. If `True`, the output for masked timestep
-            will be zeros, whereas in the `False` case, output from previous
-            timestep is returned.
-        return_all_outputs: Boolean. If `True`, return the recurrent outputs for
-            all timesteps in the sequence. If `False`, only return the output
-            for the last timestep (which consumes less memory).
-
-    Returns:
-        A tuple, `(last_output, outputs, new_states)`.
-            - `last_output`: the latest output of the rnn,
-                with shape `(samples, ...)`.
-            - `outputs`:
-                - If `return_all_outputs=True`: a tensor with shape
-                  `(samples, time, ...)` where each entry `outputs[s, t]` is the
-                  output of the step function at time `t` for sample `s`
-                - Else, a tensor equal to `last_output` with shape
-                  `(samples, 1, ...)`
-            - `new_states`: list of tensors, latest states returned by
-                the step function, of shape `(samples, ...)`.
-    """
-
     def swap_batch_timestep(input_t):
         # Swap the batch and timestep dim for the incoming tensor.
         axes = list(range(len(input_t.shape)))
@@ -226,7 +165,7 @@ def rnn(
                     last_output,
                     jnp.zeros_like(last_output),
                 )
-                outputs = tf.where(
+                outputs = jnp.where(
                     _expand_mask(mask, outputs, fixed_dim=2),
                     outputs,
                     jnp.zeros_like(outputs),
@@ -275,12 +214,7 @@ def rnn(
 
         output_ta_size = time_steps_t if return_all_outputs else 1
         output_ta = tuple(
-            tf.TensorArray(
-                dtype=out.dtype,
-                size=output_ta_size,
-                element_shape=out.shape,
-                tensor_array_name=f"output_ta_{i}",
-            )
+            [[jnp.zeros(out.shape)] * time_steps_t]
             for i, out in enumerate(tf.nest.flatten(output_time_zero))
         )
 
@@ -291,12 +225,6 @@ def rnn(
         else:
             max_iterations = jnp.max(input_length)
 
-        while_loop_kwargs = {
-            "cond": lambda time, *_: time < time_steps_t,
-            "maximum_iterations": max_iterations,
-            "parallel_iterations": 32,
-            "swap_memory": True,
-        }
         if mask is not None:
             if go_backwards:
                 mask = jnp.flip(mask, axis=0)
@@ -343,17 +271,6 @@ def rnn(
             )
 
             def _step(time, output_ta_t, prev_output, *states):
-                """RNN step function.
-
-                Args:
-                    time: Current timestep value.
-                    output_ta_t: TensorArray.
-                    prev_output: tuple of outputs from time - 1.
-                    *states: List of states.
-
-                Returns:
-                    Tuple: `(time + 1, output_ta_t, output) + tuple(new_states)`
-                """
                 current_input = tuple(ta[time] for ta in input_ta)
                 # maybe set shape.
                 current_input = tf.nest.pack_sequence_as(inputs, current_input)
@@ -392,27 +309,18 @@ def rnn(
                     new_states
                 )
 
-            final_outputs = tf.while_loop(
-                body=_step,
-                loop_vars=(time, output_ta, flat_zero_output) + states,
-                **while_loop_kwargs,
+            final_outputs = lax.while_loop(
+                body_fun=_step,
+                init_val=(time, output_ta, flat_zero_output) + states,
+                cond_fun=lambda args: args[0] < time_steps_t
             )
             # Skip final_outputs[2] which is the output for final timestep.
             new_states = final_outputs[3:]
         else:
-
-            def _step(time, output_ta_t, *states):
-                """RNN step function.
-
-                Args:
-                    time: Current timestep value.
-                    output_ta_t: TensorArray.
-                    *states: List of states.
-
-                Returns:
-                    Tuple: `(time + 1,output_ta_t) + tuple(new_states)`
-                """
+            def _step(inputs):
+                time, output_ta_t, *state = inputs[0], inputs[1], inputs[2:]
                 current_input = tuple(ta[time] for ta in input_ta)
+
                 current_input = tf.nest.pack_sequence_as(inputs, current_input)
                 output, new_states = step_function(
                     current_input, tuple(states) + tuple(constants)
@@ -430,17 +338,16 @@ def rnn(
                     initial_states, flat_new_state
                 )
                 return (time + 1, output_ta_t) + tuple(new_states)
-
-            final_outputs = tf.while_loop(
-                body=_step,
-                loop_vars=(time, output_ta) + states,
-                **while_loop_kwargs,
+            final_outputs = lax.while_loop(
+                body_fun=_step,
+                init_val=(time, output_ta) + states,
+                cond_fun=lambda args: args[0] < time_steps_t
             )
             new_states = final_outputs[2:]
 
         output_ta = final_outputs[1]
 
-        outputs = tuple(o.stack() for o in output_ta)
+        outputs = tuple(jnp.stack(o) for o in output_ta)
         last_output = tuple(o[-1] for o in outputs)
 
         outputs = tf.nest.pack_sequence_as(output_time_zero, outputs)
