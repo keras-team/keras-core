@@ -179,7 +179,9 @@ class JAXTrainer(base_trainer.Trainer):
 
             @jax.jit
             def train_step(state, data):
-                return _train_multi_step(state, data)
+                if self.steps_per_execution > 1:
+                    return _train_multi_step(state, data)
+                return _train_step(state, data[0])
 
         else:
             train_step = _train_multi_step
@@ -393,7 +395,9 @@ class JAXTrainer(base_trainer.Trainer):
 
             @jax.jit
             def test_step(state, data):
-                return _test_multi_step(state, data)
+                if self.steps_per_execution > 1:
+                    return _test_multi_step(state, data)
+                return _test_step(state, data[0])
 
         else:
             test_step = _test_multi_step
@@ -485,9 +489,15 @@ class JAXTrainer(base_trainer.Trainer):
             def predict_step(
                 trainable_variables, non_trainable_variables, data
             ):
-                return _predict_multi_step(
-                    trainable_variables, non_trainable_variables, data
-                )
+                if self.steps_per_execution > 1:
+                    return _predict_multi_step(
+                        trainable_variables, non_trainable_variables, data
+                    )
+                return [
+                    self.stateless_call(
+                        trainable_variables, non_trainable_variables, data[0]
+                    )
+                ]
 
         else:
             predict_step = _predict_multi_step
