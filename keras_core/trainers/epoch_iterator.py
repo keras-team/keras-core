@@ -50,6 +50,27 @@ from keras_core.trainers.data_adapters import py_dataset_adapter
 from keras_core.trainers.data_adapters import tf_dataset_adapter
 
 
+class StepBuffer:
+    def __init__(self, steps_per_exeuction):
+        self.data = []
+        self.step = 0
+        self.steps_per_execution = steps_per_exeuction
+
+    def should_yield(self):
+        return len(self.data) == self.steps_per_execution
+
+    def append(self, data):
+        self.data.append(data)
+
+    def empty(self):
+        return len(self.data) == 0
+
+    def run_yield(self, step):
+        yield self.step, self.data
+        self.data = []
+        self.step = step + 1
+
+
 class EpochIterator:
     def __init__(
         self,
@@ -142,27 +163,20 @@ class EpochIterator:
         return iterator
 
     def enumerate_epoch(self, return_type="np"):
+        buffer = StepBuffer(self.steps_per_execution)
         if self.steps_per_epoch:
             if not self._current_iterator:
                 self._current_iterator = self._get_iterator(return_type)
                 self._insufficient_data = False
-
-            data_buffer = []
-            last_step = 0
-            step_count = 0
 
             for step in range(self.steps_per_epoch):
                 if self._insufficient_data:
                     break
                 try:
                     data = next(self._current_iterator)
-                    step_count += 1
-                    data_buffer.append(data)
-                    if step_count == self.steps_per_execution:
-                        yield last_step, data_buffer
-                        data_buffer = []
-                        last_step = step + 1
-                        step_count = 0
+                    buffer.append(data)
+                    if buffer.should_yield():
+                        yield from buffer.run_yield(step)
                 except (StopIteration, tf.errors.OutOfRangeError):
                     warnings.warn(
                         "Your input ran out of data; interrupting epoch. "
@@ -174,27 +188,19 @@ class EpochIterator:
                     )
                     self._current_iterator = None
                     self._insufficient_data = True
-            if len(data_buffer) > 0:
-                yield last_step, data_buffer
+            if not buffer.empty():
+                yield from buffer.run_yield(step)
         else:
-            data_buffer = []
-            last_step = 0
-            step_count = 0
-
             for step, data in enumerate(self._get_iterator(return_type)):
-                step_count += 1
-                data_buffer.append(data)
-                if step_count == self.steps_per_execution:
-                    yield last_step, data_buffer
-                    data_buffer = []
-                    last_step = step + 1
-                    step_count = 0
-            if len(data_buffer) > 0:
-                yield last_step, data_buffer
+                buffer.append(data)
+                if buffer.should_yield():
+                    yield from buffer.run_yield(step)
+            if not buffer.empty():
+                yield from buffer.run_yield(step)
             if not self._num_batches:
                 # Infer the number of batches returned by the data_adater.
                 # Assumed static.
-                self._num_batches = last_step + 1
+                self._num_batches = step + 1
         self.data_adapter.on_epoch_end()
 
     @property
