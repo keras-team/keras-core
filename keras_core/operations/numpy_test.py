@@ -2336,13 +2336,15 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_bincount(self):
         x = np.array([1, 1, 2, 3, 2, 4, 4, 5])
+        weights = np.array([0, 0, 3, 2, 1, 1, 4, 2])
+        minlength = 3
         self.assertAllClose(
-            np.array(knp.bincount(x)),
-            np.bincount(x),
+            np.array(knp.bincount(x, weights=weights, minlength=minlength)),
+            np.bincount(x, weights=weights, minlength=minlength),
         )
         self.assertAllClose(
-            np.array(knp.Bincount()(x)),
-            np.bincount(x),
+            np.array(knp.Bincount(weights=weights, minlength=minlength)(x)),
+            np.bincount(x, weights=weights, minlength=minlength),
         )
 
     def test_broadcast_to(self):
