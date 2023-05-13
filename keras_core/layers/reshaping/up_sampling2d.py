@@ -1,6 +1,7 @@
+from keras_core import backend
 from keras_core.layers.input_spec import InputSpec
 from keras_core.layers.layer import Layer
-from keras_core.utils import conv_utils
+from keras_core.utils import argument_validation
 from keras_core.utils import image_utils
 
 
@@ -32,43 +33,42 @@ class UpSampling2D(Layer):
 
     Args:
       size: Int, or tuple of 2 integers.
-        The upsampling factors for rows and columns.
+          The upsampling factors for rows and columns.
       data_format: A string,
-        one of `channels_last` (default) or `channels_first`.
-        The ordering of the dimensions in the inputs.
-        `channels_last` corresponds to inputs with shape
-        `(batch_size, height, width, channels)` while `channels_first`
-        corresponds to inputs with shape
-        `(batch_size, channels, height, width)`.
-        When unspecified, uses
-        `image_data_format` value found in your Keras config file at
-         `~/.keras/keras.json` (if exists) else 'channels_last'.
-        Defaults to 'channels_last'.
-      interpolation: A string, one of `"area"`, `"bicubic"`, `"bilinear"`,
-        `"gaussian"`, `"lanczos3"`, `"lanczos5"`, `"mitchellcubic"`,
-        `"nearest"`.
+          one of `channels_last` (default) or `channels_first`.
+          The ordering of the dimensions in the inputs.
+          `channels_last` corresponds to inputs with shape
+          `(batch_size, height, width, channels)` while `channels_first`
+          corresponds to inputs with shape
+          `(batch_size, channels, height, width)`.
+          When unspecified, uses
+          `image_data_format` value found in your Keras config file at
+          `~/.keras/keras.json` (if exists) else `"channels_last"`.
+          Defaults to `"channels_last"`.
+      interpolation: A string, one of `"bicubic"`, `"bilinear"`, `"lanczos3"`,
+          `"lanczos5"`, `"nearest"`.
 
     Input shape:
       4D tensor with shape:
       - If `data_format` is `"channels_last"`:
-          `(batch_size, rows, cols, channels)`
+            `(batch_size, rows, cols, channels)`
       - If `data_format` is `"channels_first"`:
-          `(batch_size, channels, rows, cols)`
+            `(batch_size, channels, rows, cols)`
 
     Output shape:
       4D tensor with shape:
       - If `data_format` is `"channels_last"`:
-          `(batch_size, upsampled_rows, upsampled_cols, channels)`
+            `(batch_size, upsampled_rows, upsampled_cols, channels)`
       - If `data_format` is `"channels_first"`:
-          `(batch_size, channels, upsampled_rows, upsampled_cols)`
+            `(batch_size, channels, upsampled_rows, upsampled_cols)`
     """
 
     def __init__(
         self, size=(2, 2), data_format=None, interpolation="nearest", **kwargs
     ):
         super().__init__(**kwargs)
-        self.data_format = conv_utils.normalize_data_format(data_format)
-        self.size = conv_utils.normalize_tuple(size, 2, "size")
+        self.data_format = backend.config.standardize_data_format(data_format)
+        self.size = argument_validation.normalize_tuple(size, 2, "size")
         self.interpolation = interpolation.lower()
         self.input_spec = InputSpec(ndim=4)
 

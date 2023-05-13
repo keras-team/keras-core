@@ -132,3 +132,15 @@ class UpSampling2dTest(testing.TestCase):
                 ]
             ),
         )
+
+    def test_upsampling_2d_various_interpolation_methods(self):
+        input_shape = (2, 2, 1, 3)
+        x = np.arange(np.prod(input_shape)).reshape(input_shape)
+        for interpolation in [
+            "bicubic",
+            "bilinear",
+            "lanczos3",
+            "lanczos5",
+            "nearest",
+        ]:
+            layers.UpSampling2D(size=(1, 2), interpolation=interpolation)(x)
