@@ -50,34 +50,6 @@ from keras_core.trainers.data_adapters import py_dataset_adapter
 from keras_core.trainers.data_adapters import tf_dataset_adapter
 
 
-class StepBuffer:
-    """A buffer to store the data for multiple steps to yield together."""
-
-    def __init__(self, steps_per_exeuction):
-        self.data = []
-        self.step = 0
-        self.steps_per_execution = steps_per_exeuction
-
-    def should_yield(self):
-        return len(self.data) == self.steps_per_execution
-
-    def append(self, data):
-        self.data.append(data)
-
-    def empty(self):
-        return len(self.data) == 0
-
-    def run_yield(self, step):
-        """Yield the step and data.
-
-        The data is a list of batches. The length of the list is the same
-        as the value of steps_per_execution.
-        """
-        yield self.step, self.data
-        self.data = []
-        self.step = step + 1
-
-
 class EpochIterator:
     def __init__(
         self,
@@ -170,7 +142,7 @@ class EpochIterator:
         return iterator
 
     def enumerate_epoch(self, return_type="np"):
-        buffer = StepBuffer(self.steps_per_execution)
+        buffer = []
         if self.steps_per_epoch:
             if not self._current_iterator:
                 self._current_iterator = self._get_iterator(return_type)
@@ -182,8 +154,9 @@ class EpochIterator:
                 try:
                     data = next(self._current_iterator)
                     buffer.append(data)
-                    if buffer.should_yield():
-                        yield from buffer.run_yield(step)
+                    if len(buffer) == self.steps_per_execution:
+                        yield step - len(buffer) + 1, buffer
+                        buffer = []
                 except (StopIteration, tf.errors.OutOfRangeError):
                     warnings.warn(
                         "Your input ran out of data; interrupting epoch. "
@@ -195,15 +168,16 @@ class EpochIterator:
                     )
                     self._current_iterator = None
                     self._insufficient_data = True
-            if not buffer.empty():
-                yield from buffer.run_yield(step)
+            if buffer:
+                yield step - len(buffer) + 1, buffer
         else:
             for step, data in enumerate(self._get_iterator(return_type)):
                 buffer.append(data)
-                if buffer.should_yield():
-                    yield from buffer.run_yield(step)
-            if not buffer.empty():
-                yield from buffer.run_yield(step)
+                if len(buffer) == self.steps_per_execution:
+                    yield step - len(buffer) + 1, buffer
+                    buffer = []
+            if buffer:
+                yield step - len(buffer) + 1, buffer
             if not self._num_batches:
                 # Infer the number of batches returned by the data_adater.
                 # Assumed static.
