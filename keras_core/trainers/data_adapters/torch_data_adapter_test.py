@@ -32,8 +32,8 @@ class TestTorchDataLoaderAdapter(testing.TestCase):
 
         self.assertEqual(adapter.num_batches, 3)
         self.assertEqual(adapter.batch_size, 16)
-        self.assertEqual(adapter.has_partial_batch, None)
-        self.assertEqual(adapter.partial_batch_size, None)
+        self.assertEqual(adapter.has_partial_batch, True)
+        self.assertEqual(adapter.partial_batch_size, 2)
 
         gen = adapter.get_numpy_iterator()
         for i, batch in enumerate(gen):
@@ -75,8 +75,8 @@ class TestTorchDataLoaderAdapter(testing.TestCase):
 
         self.assertEqual(adapter.num_batches, 3)
         self.assertEqual(adapter.batch_size, 16)
-        self.assertEqual(adapter.has_partial_batch, None)
-        self.assertEqual(adapter.partial_batch_size, None)
+        self.assertEqual(adapter.has_partial_batch, True)
+        self.assertEqual(adapter.partial_batch_size, 2)
 
         gen = adapter.get_numpy_iterator()
         for i, batch in enumerate(gen):
