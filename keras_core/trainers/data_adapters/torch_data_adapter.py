@@ -6,18 +6,13 @@ from keras_core.trainers.data_adapters.data_adapter import DataAdapter
 class TorchDataLoaderAdapter(DataAdapter):
     """Adapter that handles `torch.utils.data.DataLoader`."""
 
-    def __init__(self, dataloader, class_weight=None):
+    def __init__(self, dataloader):
         import torch
 
         if not isinstance(dataloader, torch.utils.data.DataLoader):
             raise ValueError(
                 f"Expected argument `dataloader` to be an instance of"
                 f"`torch.utils.data.DataLoader`. Received: {dataloader}"
-            )
-        if class_weight:
-            raise ValueError(
-                "`class_weight` is not supported at "
-                "the moment in `TorchDataLoaderAdapter`."
             )
 
         self._dataloader = dataloader
@@ -26,7 +21,7 @@ class TorchDataLoaderAdapter(DataAdapter):
 
         # If DataLoader is created using an instance of `TensorDataset`
         # then the `num_samples` property for the corresponding sampler
-        # doesn't exist. In that case we will set partail batch size
+        # doesn't exist. In that case we will set partial batch size
         # to `None`.
         try:
             self._partial_batch_size = (
