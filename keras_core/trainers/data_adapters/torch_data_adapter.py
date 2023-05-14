@@ -18,17 +18,9 @@ class TorchDataLoaderAdapter(DataAdapter):
         self._dataloader = dataloader
         self._batch_size = dataloader.batch_size
         self._size = len(dataloader)
-
-        # If DataLoader is created using an instance of `TensorDataset`
-        # then the `num_samples` property for the corresponding sampler
-        # doesn't exist. In that case we will set partial batch size
-        # to `None`.
-        try:
-            self._partial_batch_size = (
-                self._size * self._batch_size - dataloader.sampler.num_samples
+        self._partial_batch_size = (
+                len(dataloader.dataset) % self._batch_size
             )
-        except:
-            self._partial_batch_size = None
 
     def get_numpy_iterator(self):
         for batch in self._dataloader:
