@@ -8,5 +8,5 @@ pytest
 pandas
 absl-py
 requests
---find-links https://download.pytorch.org/whl/torch_stable.html
+--find-links https://download.pytorch.org/whl/whl/cpu
 torch>=2.0.1
