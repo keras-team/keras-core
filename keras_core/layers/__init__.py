@@ -67,6 +67,7 @@ from keras_core.layers.pooling.global_max_pooling3d import GlobalMaxPooling3D
 from keras_core.layers.pooling.max_pooling1d import MaxPooling1D
 from keras_core.layers.pooling.max_pooling2d import MaxPooling2D
 from keras_core.layers.pooling.max_pooling3d import MaxPooling3D
+from keras_core.layers.preprocessing.category_encoding import CategoryEncoding
 from keras_core.layers.preprocessing.center_crop import CenterCrop
 from keras_core.layers.preprocessing.discretization import Discretization
 from keras_core.layers.preprocessing.hashing import Hashing
