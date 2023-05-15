@@ -175,7 +175,7 @@ class ModelCheckpoint(Callback):
         if self.save_freq != "epoch" and not isinstance(self.save_freq, int):
             raise ValueError(
                 f"Unrecognized save_freq: {self.save_freq}. "
-                "Expected save_freq are 'epoch' or integer"
+                "Expected save_freq are 'epoch' or integer values"
             )
 
     def on_train_batch_end(self, batch, logs=None):
