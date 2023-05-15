@@ -65,7 +65,4 @@ class CoreOpsCorrectnessTest(testing.TestCase):
         # Duplicate indices
         indices = np.array([[0], [0]])
         values = np.array([1, 1])
-        self.assertAllClose(
-            core.scatter(indices, values, (1,)),
-            [2]
-        )
+        self.assertAllClose(core.scatter(indices, values, (1,)), [2])
