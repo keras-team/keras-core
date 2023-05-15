@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
@@ -65,6 +66,21 @@ class TestTorchDataLoaderAdapter(testing.TestCase):
                 self.assertEqual(tuple(bx.shape), (2, 4))
                 self.assertEqual(tuple(by.shape), (2, 2))
 
+        ds = adapter.get_tf_dataset()
+        for i, batch in enumerate(ds):
+            self.assertEqual(len(batch), 2)
+            bx, by = batch
+            self.assertTrue(isinstance(bx, tf.Tensor))
+            self.assertTrue(isinstance(by, tf.Tensor))
+            self.assertEqual(bx.dtype, by.dtype)
+            self.assertEqual(bx.dtype, tf.float32)
+            if i < 2:
+                self.assertEqual(tuple(bx.shape), (16, 4))
+                self.assertEqual(tuple(by.shape), (16, 2))
+            else:
+                self.assertEqual(tuple(bx.shape), (2, 4))
+                self.assertEqual(tuple(by.shape), (2, 2))
+
     def test_with_torchdataset(self):
         x = torch.normal(2, 3, size=(34, 4))
         y = torch.normal(1, 3, size=(34, 2))
@@ -101,6 +117,21 @@ class TestTorchDataLoaderAdapter(testing.TestCase):
             self.assertTrue(isinstance(by, torch.Tensor))
             self.assertEqual(bx.dtype, by.dtype)
             self.assertEqual(bx.dtype, torch.float32)
+            if i < 2:
+                self.assertEqual(tuple(bx.shape), (16, 4))
+                self.assertEqual(tuple(by.shape), (16, 2))
+            else:
+                self.assertEqual(tuple(bx.shape), (2, 4))
+                self.assertEqual(tuple(by.shape), (2, 2))
+
+        ds = adapter.get_tf_dataset()
+        for i, batch in enumerate(ds):
+            self.assertEqual(len(batch), 2)
+            bx, by = batch
+            self.assertTrue(isinstance(bx, tf.Tensor))
+            self.assertTrue(isinstance(by, tf.Tensor))
+            self.assertEqual(bx.dtype, by.dtype)
+            self.assertEqual(bx.dtype, tf.float32)
             if i < 2:
                 self.assertEqual(tuple(bx.shape), (16, 4))
                 self.assertEqual(tuple(by.shape), (16, 2))
