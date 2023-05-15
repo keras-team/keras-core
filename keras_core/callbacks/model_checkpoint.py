@@ -25,7 +25,7 @@ class ModelCheckpoint(Callback):
     - Whether to only keep the model that has achieved the "best performance" so
       far, or whether to save the model at the end of every epoch regardless of
       performance.
-    - Definition of 'best'; which quantity to monitor and whether it should be
+    - Definition of "best"; which quantity to monitor and whether it should be
       maximized or minimized.
     - The frequency it should save at. Currently, the callback supports saving
       at the end of every epoch, or after a fixed number of training batches.
@@ -67,8 +67,8 @@ class ModelCheckpoint(Callback):
         monitor: The metric name to monitor. Typically the metrics are set by
             the `Model.compile` method. Note:
 
-            * Prefix the name with `"val_`" to monitor validation metrics.
-            * Use `"loss"` or "`val_loss`" to monitor the model's total loss.
+            * Prefix the name with `"val_"` to monitor validation metrics.
+            * Use `"loss"` or `"val_loss"` to monitor the model's total loss.
             * If you specify metrics as strings, like `"accuracy"`, pass the
                 same string (with or without the `"val_"` prefix).
             * If you pass `metrics.Metric` objects, `monitor` should be set to
@@ -77,7 +77,6 @@ class ModelCheckpoint(Callback):
                 contents of the `history.history` dictionary returned by
                 `history = model.fit()`
             * Multi-output models set additional prefixes on the metric names.
-
         verbose: Verbosity mode, 0 or 1. Mode 0 is silent, and mode 1
             displays messages when the callback takes an action.
         save_best_only: if `save_best_only=True`, it only saves when the model
@@ -85,24 +84,24 @@ class ModelCheckpoint(Callback):
             quantity monitored will not be overwritten. If `filepath` doesn't
             contain formatting options like `{epoch}` then `filepath` will be
             overwritten by each new better model.
-        mode: one of {'auto', 'min', 'max'}. If `save_best_only=True`, the
+        mode: one of {`"auto"`, `"min"`, `"max"`}. If `save_best_only=True`, the
             decision to overwrite the current save file is made based on either
             the maximization or the minimization of the monitored quantity.
-            For `val_acc`, this should be `max`, for `val_loss` this should be
-            `min`, etc. In `auto` mode, the mode is set to `max` if the
-            quantities monitored are 'acc' or start with 'fmeasure' and are set
-            to `min` for the rest of the quantities.
+            For `val_acc`, this should be `"max"`, for `val_loss` this should be
+            `"min"`, etc. In `"auto"` mode, the mode is set to `"max"` if the
+            quantities monitored are `"acc"` or start with `"fmeasure"` and are
+            set to `"min"` for the rest of the quantities.
         save_weights_only: if True, then only the model's weights will be saved
             (`model.save_weights(filepath)`), else the full model is saved
             (`model.save(filepath)`).
-        save_freq: `'epoch'` or integer. When using `'epoch'`, the callback
+        save_freq: `"epoch"` or integer. When using `"epoch"`, the callback
             saves the model after each epoch. When using integer, the callback
             saves the model at end of this many batches. If the `Model` is
             compiled with `steps_per_execution=N`, then the saving criteria will
             be checked every Nth batch. Note that if the saving isn't aligned to
             epochs, the monitored metric may potentially be less reliable (it
             could reflect as little as 1 batch, since the metrics get reset
-            every epoch). Defaults to `'epoch'`.
+            every epoch). Defaults to `"epoch"`.
         initial_value_threshold: Floating point initial "best" value of the
             metric to be monitored. Only applies if `save_best_value=True`. Only
             overwrites the model weights already saved if the performance of
@@ -112,11 +111,11 @@ class ModelCheckpoint(Callback):
     def __init__(
         self,
         filepath,
-        monitor: str = "val_loss",
-        verbose: int = 0,
-        save_best_only: bool = False,
-        save_weights_only: bool = False,
-        mode: str = "auto",
+        monitor="val_loss",
+        verbose=0,
+        save_best_only=False,
+        save_weights_only=False,
+        mode="auto",
         save_freq="epoch",
         initial_value_threshold=None,
     ):
@@ -133,8 +132,9 @@ class ModelCheckpoint(Callback):
 
         if mode not in ["auto", "min", "max"]:
             warnings.warn(
-                f"ModelCheckpoint mode {mode} is unknown, "
-                "fallback to auto mode."
+                f"ModelCheckpoint mode '{mode}' is unknown, "
+                "fallback to auto mode.",
+                stacklevel=2,
             )
             mode = "auto"
 
@@ -159,7 +159,7 @@ class ModelCheckpoint(Callback):
         if self.save_freq != "epoch" and not isinstance(self.save_freq, int):
             raise ValueError(
                 f"Unrecognized save_freq: {self.save_freq}. "
-                'Expected save_freq are "epoch" or integer'
+                "Expected save_freq are 'epoch' or integer"
             )
 
     def on_train_batch_end(self, batch, logs=None):
@@ -195,7 +195,7 @@ class ModelCheckpoint(Callback):
         Args:
             epoch: the epoch this iteration is in.
             batch: the batch this iteration is in. `None` if the `save_freq`
-              is set to `epoch`.
+                is set to `epoch`.
             logs: the `logs` dict passed in to `on_batch_end` or `on_epoch_end`.
         """
         logs = logs or {}
@@ -213,6 +213,7 @@ class ModelCheckpoint(Callback):
                     warnings.warn(
                         f"Can save best model only with {self.monitor} "
                         "available, skipping.",
+                        stacklevel=2,
                     )
                 else:
                     if self.monitor_op(current, self.best):

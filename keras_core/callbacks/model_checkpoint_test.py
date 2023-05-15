@@ -27,18 +27,21 @@ class ModelCheckpointTest(testing.TestCase):
         if h5py is None:
             return  # Skip test if models cannot be saved.
 
-        model = Sequential(
-            [
-                layers.Dense(NUM_HIDDEN, activation="relu"),
-                layers.Dense(NUM_CLASSES, activation="softmax"),
-            ]
-        )
-        model.compile(
-            loss="categorical_crossentropy",
-            optimizer="sgd",
-            metrics=[metrics.Accuracy("acc")],
-        )
+        def get_model():
+            model = Sequential(
+                [
+                    layers.Dense(NUM_HIDDEN, activation="relu"),
+                    layers.Dense(NUM_CLASSES, activation="softmax"),
+                ]
+            )
+            model.compile(
+                loss="categorical_crossentropy",
+                optimizer="sgd",
+                metrics=[metrics.Accuracy("acc")],
+            )
+            return model
 
+        model = get_model()
         temp_dir = self.get_temp_dir()
 
         # Save model to a subdir inside the temp_dir so we can test
@@ -173,7 +176,7 @@ class ModelCheckpointTest(testing.TestCase):
                 mode="unknown",
             )
             self.assertIn(
-                "ModelCheckpoint mode unknown is unknown",
+                "ModelCheckpoint mode 'unknown' is unknown",
                 str(warning_logs[-1].message),
             )
 
