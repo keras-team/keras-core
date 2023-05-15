@@ -662,5 +662,6 @@ def confusion_matrix(
     values = ops.ones_like(predictions, dtype) if weights is None else weights
     indices = ops.cast(indices, dtype="int64")
     values = ops.cast(values, dtype=dtype)
+    num_classes = ops.cast(num_classes, "int64")
     confusion_matrix = ops.scatter(indices, values, (num_classes, num_classes))
     return confusion_matrix

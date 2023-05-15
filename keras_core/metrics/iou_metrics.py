@@ -127,7 +127,7 @@ class _IoUBase(Metric):
             y_pred,
             self.num_classes,
             weights=sample_weight,
-            dtype="float32", # Important for weight assignment
+            dtype="float32",
         )
 
         return self.total_cm.assign(self.total_cm + current_cm)
