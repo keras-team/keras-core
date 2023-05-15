@@ -195,7 +195,7 @@ class ModelCheckpoint(Callback):
         Args:
             epoch: the epoch this iteration is in.
             batch: the batch this iteration is in. `None` if the `save_freq`
-                is set to `epoch`.
+                is set to `"epoch"`.
             logs: the `logs` dict passed in to `on_batch_end` or `on_epoch_end`.
         """
         logs = logs or {}
