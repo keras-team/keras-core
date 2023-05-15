@@ -656,10 +656,11 @@ def confusion_matrix(
         num_classes = ops.cast(num_classes, dtype)
 
     if weights is not None:
-        weights = ops.convert_to_tensor(weights)
-        weights = ops.cast(weights, dtype)
+        weights = ops.convert_to_tensor(weights, dtype)
 
     indices = ops.stack([labels, predictions], axis=1)
     values = ops.ones_like(predictions, dtype) if weights is None else weights
-    confusion_matrix = ops.zeros((num_classes, num_classes), dtype=dtype)
-    return ops.put(confusion_matrix, indices, values)
+    indices = ops.cast(indices, dtype="int64")
+    values = ops.cast(values, dtype=dtype)
+    confusion_matrix = ops.scatter(indices, values, (num_classes, num_classes))
+    return confusion_matrix
