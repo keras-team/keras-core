@@ -1,9 +1,13 @@
 import os
 import warnings
 
+import pytest
+
 from keras_core import callbacks
 from keras_core import layers
 from keras_core import metrics
+from keras_core import models
+from keras_core import saving
 from keras_core import testing
 from keras_core.models import Sequential
 from keras_core.testing import test_utils
@@ -23,10 +27,11 @@ BATCH_SIZE = 5
 
 
 class ModelCheckpointTest(testing.TestCase):
-    def test_ModelCheckpoint(self):
-        if h5py is None:
-            return  # Skip test if models cannot be saved.
-
+    @pytest.mark.skipif(
+        h5py is None,
+        reason="`h5py` is a required dependency for `ModelCheckpoint` tests.",
+    )
+    def test_model_checkpoint_options(self):
         def get_model():
             model = Sequential(
                 [
@@ -435,3 +440,97 @@ class ModelCheckpointTest(testing.TestCase):
             verbose=0,
         )
         self.assertFalse(os.path.exists(filepath))
+
+    @pytest.mark.skipif(
+        h5py is None,
+        reason="`h5py` is a required dependency for `ModelCheckpoint` tests.",
+    )
+    def test_model_checkpoint_loading(self):
+        def get_model():
+            inputs = layers.Input(shape=(INPUT_DIM,), batch_size=2)
+            x = layers.Dense(NUM_HIDDEN, activation="relu")(inputs)
+            outputs = layers.Dense(NUM_CLASSES, activation="softmax")(x)
+            functional_model = models.Model(inputs, outputs)
+            functional_model.compile(
+                loss="categorical_crossentropy",
+                optimizer="sgd",
+                metrics=[metrics.Accuracy("acc")],
+            )
+            return functional_model
+
+        (x_train, y_train), (x_test, y_test) = test_utils.get_test_data(
+            train_samples=TRAIN_SAMPLES,
+            test_samples=TEST_SAMPLES,
+            input_shape=(INPUT_DIM,),
+            num_classes=NUM_CLASSES,
+        )
+        y_test = numerical_utils.to_categorical(y_test)
+        y_train = numerical_utils.to_categorical(y_train)
+
+        # Model Checkpoint load model (default)
+        model = get_model()
+        temp_dir = self.get_temp_dir()
+        filepath = os.path.join(temp_dir, "checkpoint.model.keras")
+        mode = "auto"
+        monitor = "val_loss"
+        save_best_only = True
+
+        cbks = [
+            callbacks.ModelCheckpoint(
+                filepath,
+                monitor=monitor,
+                save_best_only=save_best_only,
+                mode=mode,
+            )
+        ]
+        model.fit(
+            x_train,
+            y_train,
+            batch_size=BATCH_SIZE,
+            validation_data=(x_test, y_test),
+            callbacks=cbks,
+            epochs=1,
+            verbose=0,
+        )
+        ref_weights = model.get_weights()
+        self.assertTrue(os.path.exists(filepath))
+        new_model = saving.load_model(filepath)
+        new_weights = new_model.get_weights()
+        self.assertEqual(len(ref_weights), len(new_weights))
+        for ref_w, w in zip(ref_weights, new_weights):
+            self.assertAllClose(ref_w, w)
+
+        # Model Checkpoint load model weights
+        model = get_model()
+        temp_dir = self.get_temp_dir()
+        filepath = os.path.join(temp_dir, "checkpoint.weights.h5")
+        mode = "auto"
+        monitor = "val_loss"
+        save_best_only = True
+
+        cbks = [
+            callbacks.ModelCheckpoint(
+                filepath,
+                monitor=monitor,
+                save_best_only=save_best_only,
+                save_weights_only=True,
+                mode=mode,
+            )
+        ]
+        model.fit(
+            x_train,
+            y_train,
+            batch_size=BATCH_SIZE,
+            validation_data=(x_test, y_test),
+            callbacks=cbks,
+            epochs=1,
+            verbose=0,
+        )
+        ref_weights = model.get_weights()
+        self.assertTrue(os.path.exists(filepath))
+        new_model = get_model()
+        new_model.load_weights(filepath)
+        new_weights = new_model.get_weights()
+        self.assertEqual(len(ref_weights), len(new_weights))
+        for ref_w, w in zip(ref_weights, new_weights):
+            self.assertAllClose(ref_w, w)

@@ -38,8 +38,22 @@ class ModelCheckpoint(Callback):
                   metrics=['accuracy'])
 
     EPOCHS = 10
-    checkpoint_filepath = '/tmp/checkpoint'
-    model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+    checkpoint_filepath = '/tmp/ckpt/checkpoint.model.keras'
+    model_checkpoint_callback = keras_core.callbacks.ModelCheckpoint(
+        filepath=checkpoint_filepath,
+        monitor='val_accuracy',
+        mode='max',
+        save_best_only=True)
+
+    # Model is saved at the end of every epoch, if it's the best seen so far.
+    model.fit(epochs=EPOCHS, callbacks=[model_checkpoint_callback])
+
+    # The model (that are considered the best) can be loaded as -
+    keras_core.models.load_model(checkpoint_filepath)
+
+    # Alternatively, one could checkpoint just the model weights as -
+    checkpoint_filepath = '/tmp/ckpt/checkpoint.weights.h5'
+    model_checkpoint_callback = keras_core.callbacks.ModelCheckpoint(
         filepath=checkpoint_filepath,
         save_weights_only=True,
         monitor='val_accuracy',
@@ -60,15 +74,15 @@ class ModelCheckpoint(Callback):
             can contain named formatting options, which will be filled the
             value of `epoch` and keys in `logs` (passed in `on_epoch_end`).
             The `filepath` name needs to end with `".weights.h5"` when
-            `save_weights_only=True` or should end with `".keras"`.
+            `save_weights_only=True` or should end with `".keras"` when
+            checkpoint saving the whole model (default)".
             For example:
-            if `filepath` is `{epoch:02d}-{val_loss:.2f}.weights.h5`, then the
+            if `filepath` is `{epoch:02d}-{val_loss:.2f}.keras`, then the
             model checkpoints will be saved with the epoch number and the
             validation loss in the filename. The directory of the filepath
             should not be reused by any other callbacks to avoid conflicts.
         monitor: The metric name to monitor. Typically the metrics are set by
             the `Model.compile` method. Note:
-
             * Prefix the name with `"val_"` to monitor validation metrics.
             * Use `"loss"` or `"val_loss"` to monitor the model's total loss.
             * If you specify metrics as strings, like `"accuracy"`, pass the
@@ -308,16 +322,16 @@ class ModelCheckpoint(Callback):
         This utility function is best demonstrated via an example:
 
         ```python
-        file_pattern = 'f.batch{batch:02d}epoch{epoch:02d}.h5'
+        file_pattern = 'f.batch{batch:02d}epoch{epoch:02d}.keras'
         test_dir = self.get_temp_dir()
         path_pattern = os.path.join(test_dir, file_pattern)
         file_paths = [
             os.path.join(test_dir, file_name) for file_name in
-            ['f.batch03epoch02.h5',
-             'f.batch02epoch02.h5', 'f.batch01epoch01.h5']
+            ['f.batch03epoch02.keras',
+             'f.batch02epoch02.keras', 'f.batch01epoch01.keras']
         ]
         for file_path in file_paths:
-          # Write something to each of the files
+            # Write something to each of the files
         self.assertEqual(
             _get_most_recently_modified_file_matching_pattern(path_pattern),
             file_paths[-1])
