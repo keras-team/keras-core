@@ -25,9 +25,7 @@ import namex
 package = "keras_core"
 build_directory = "tmp_build_dir"
 dist_directory = "dist"
-to_copy = [
-    "setup.py",
-]
+to_copy = ["setup.py", "README.md"]
 
 
 def ignore_files(_, filenames):
@@ -40,7 +38,8 @@ def build():
 
     whl_path = None
     try:
-        # Copy sources (`keras_core/` directory and setup files) to build directory
+        # Copy sources (`keras_core/` directory and setup files) to build
+        # directory
         root_path = pathlib.Path(__file__).parent.resolve()
         os.chdir(root_path)
         os.mkdir(build_directory)
