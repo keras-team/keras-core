@@ -17,6 +17,7 @@ from keras_core.backend.pytorch import random
 
 DYNAMIC_SHAPES_OK = True
 
+
 def convert_to_tensor(x, dtype=None):
     # TODO: Need to address device placement arg of `as_tensor`
     if dtype is not None:

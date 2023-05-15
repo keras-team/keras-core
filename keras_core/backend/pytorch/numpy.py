@@ -1,10 +1,8 @@
-import numpy as np
 import torch
 
 
 def add(x1, x2):
-    pass
-    # return tfnp.add(x1, x2)
+    return torch.add(x1, x2)
 
 
 def einsum(subscripts, *operands, **kwargs):
@@ -617,7 +615,7 @@ def tril(x, k=0):
 
 def triu(x, k=0):
     pass
-    return tfnp.triu(x, k=k)
+    # return tfnp.triu(x, k=k)
 
 
 def vdot(x1, x2):
