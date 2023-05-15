@@ -119,6 +119,7 @@ class JAXTrainer(base_trainer.Trainer):
         )
 
         def _train_step(state, data):
+            data = data[0]
             (
                 trainable_variables,
                 non_trainable_variables,
@@ -172,22 +173,22 @@ class JAXTrainer(base_trainer.Trainer):
 
         def _train_multi_step(state, data):
             for single_step_data in data:
-                logs, state = _train_step(state, single_step_data)
+                logs, state = _train_step(state, [single_step_data])
             return logs, state
 
         if self.steps_per_execution > 1:
-            train_function = _train_multi_step
+            _train_function = _train_multi_step
         else:
-            train_function = _train_step
+            _train_function = _train_step
 
         if not self.run_eagerly and self.jit_compile:
 
             @jax.jit
             def train_step(state, data):
-                return train_function(state, data[0])
+                return _train_function(state, data)
 
         else:
-            train_step = train_function
+            train_step = _train_function
 
         self.stop_training = False
         callbacks.on_train_begin()
@@ -345,6 +346,7 @@ class JAXTrainer(base_trainer.Trainer):
             )
 
         def _test_step(state, data):
+            data = data[0]
             (
                 trainable_variables,
                 non_trainable_variables,
@@ -384,6 +386,7 @@ class JAXTrainer(base_trainer.Trainer):
             metrics_variables = new_metrics_variables
 
             state = (
+                trainable_variables,
                 non_trainable_variables,
                 metrics_variables,
             )
@@ -391,7 +394,7 @@ class JAXTrainer(base_trainer.Trainer):
 
         def _test_multi_step(state, data):
             for single_step_data in data:
-                logs, state = _test_step(state, single_step_data)
+                logs, state = _test_step(state, [single_step_data])
             return logs, state
 
         if self.steps_per_execution > 1:
@@ -403,7 +406,7 @@ class JAXTrainer(base_trainer.Trainer):
 
             @jax.jit
             def test_step(state, data):
-                return _test_function(state, data[0])
+                return _test_function(state, data)
 
         else:
             test_step = _test_function
@@ -427,7 +430,7 @@ class JAXTrainer(base_trainer.Trainer):
             logs, state = test_step(state, data)
             # Note that trainable variables are not returned since they're
             # immutable here.
-            non_trainable_variables, metrics_variables = state
+            _, non_trainable_variables, metrics_variables = state
 
             callbacks.on_test_batch_end(step, logs)
 
@@ -487,14 +490,14 @@ class JAXTrainer(base_trainer.Trainer):
         def _predict_multi_step(
             trainable_variables, non_trainable_variables, data
         ):
-            return [
-                _predict_step(
+            outputs = []
+            for single_step_data in data:
+                outputs += _predict_step(
                     trainable_variables,
                     non_trainable_variables,
                     [single_step_data],
                 )
-                for single_step_data in data
-            ]
+            return outputs
 
         if self.steps_per_execution > 1:
             _predict_function = _predict_multi_step
