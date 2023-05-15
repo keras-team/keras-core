@@ -59,6 +59,8 @@ class ModelCheckpoint(Callback):
             filepath = os.path.join(working_dir, 'ckpt', file_name). `filepath`
             can contain named formatting options, which will be filled the
             value of `epoch` and keys in `logs` (passed in `on_epoch_end`).
+            The `filepath` name needs to end with `".weights.h5"` when
+            `save_weights_only=True` or should end with `".keras"`.
             For example:
             if `filepath` is `{epoch:02d}-{val_loss:.2f}.weights.h5`, then the
             model checkpoints will be saved with the epoch number and the
