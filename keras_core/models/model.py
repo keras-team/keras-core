@@ -16,7 +16,11 @@ if backend.backend() == "tensorflow":
     )
 elif backend.backend() == "jax":
     from keras_core.backend.jax.trainer import JAXTrainer as Trainer
+elif backend.backend() == "pytorch":
+    from keras_core.backend.pytorch.trainer import PyTorchTrainer as Trainer
 else:
+    # We should really just throw here because the interpreter will for us
+    # otherwise
     Trainer = None
 
 
