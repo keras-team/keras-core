@@ -191,7 +191,6 @@ class TestTrainer(testing.TestCase):
         x = np.ones((100, 4))
         batch_size = 16
         outputs = model.predict(x, batch_size=batch_size)
-        print(outputs.shape)
         self.assertAllClose(outputs, 4 * np.ones((100, 3)))
 
         # Test with output struct

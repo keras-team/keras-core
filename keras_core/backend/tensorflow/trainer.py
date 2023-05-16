@@ -200,13 +200,15 @@ class TensorFlowTrainer(base_trainer.Trainer):
             return [outputs]
 
         def mutli_step_on_iterator(iterator):
-            return [
-                one_step_on_iterator(iterator)
-                for _ in tf.range(self.steps_per_execution)
-            ]
+            outputs = []
+            for _ in tf.range(self.steps_per_execution):
+                outputs += one_step_on_iterator(iterator)
+            return outputs
 
         if self.steps_per_execution > 1:
-            predict_function = mutli_step_on_iterator
+            # TODO(haifengj): Use multi_step_on_iterator.
+            # predict_function = mutli_step_on_iterator
+            predict_function = one_step_on_iterator
         else:
             predict_function = one_step_on_iterator
 
