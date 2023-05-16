@@ -95,6 +95,7 @@ def append(
 
 
 def arange(start, stop=None, step=None, dtype=None):
+    dtype = to_torch_dtype(dtype)
     if stop is None:
         return torch.arange(start, step=step, dtype=dtype)
     step = step or 1
@@ -130,6 +131,7 @@ def argsort(x, axis=-1):
 
 
 def array(x, dtype=None):
+    dtype = to_torch_dtype(dtype)
     pass
     # return tfnp.array(x, dtype=dtype)
 
@@ -208,6 +210,7 @@ def dot(x, y):
 
 
 def empty(shape, dtype="float32"):
+    dtype = to_torch_dtype(dtype)
     return torch.empty(size=shape, dtype=dtype)
 
 
@@ -236,10 +239,12 @@ def floor(x):
 
 
 def full(shape, fill_value, dtype=None):
+    dtype = to_torch_dtype(dtype)
     return torch.full(size=shape, fill_value=fill_value, dtype=dtype)
 
 
 def full_like(x, fill_value, dtype=None):
+    dtype = to_torch_dtype(dtype)
     return torch.full_like(input=x, fill_value=fill_value, dtype=dtype)
 
 
@@ -256,6 +261,7 @@ def hstack(xs):
 
 
 def identity(n, dtype="float32"):
+    dtype = to_torch_dtype(dtype)
     pass
     # return tfnp.identity(n, dtype=dtype)
 
@@ -296,17 +302,18 @@ def linspace(
         "torch.linspace does not support an `axis` argument. "
         f"Received axis={axis}"
         )
-    step = abs(stop - start)/num
+        dtype = to_torch_dtype(dtype)
+    steps = abs(stop - start)/num
     linspace = torch.linspace(
        start=start,
        end=stop,
-       step=step,
+       steps=steps,
        dtype=dtype,
     )
     if endpoint is False:
         return linspace[:-1]
     if retstep is True:
-        return (linspace, step)
+        return (linspace, steps)
     return linspace
 
 
@@ -348,6 +355,7 @@ def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
         "torch.logspace does not support an `axis` argument. "
         f"Received axis={axis}"
         )
+    dtype = to_torch_dtype(dtype)
     steps = abs(stop - start)/num
     logspace = torch.logspace(
        start=start,
@@ -411,6 +419,7 @@ def not_equal(x1, x2):
 
 
 def ones_like(x, dtype=None):
+    dtype = to_torch_dtype(dtype)
     return torch.ones_like(x, dtype=dtype)
 
 
@@ -423,6 +432,7 @@ def pad(x, pad_width, mode="constant"):
 
 
 def prod(x, axis=None, keepdims=False, dtype=None):
+    dtype = to_torch_dtype(dtype)
     if axis is None:
         return torch.prod(x, dtype=dtype)
     return torch.prod(x, dim=axis, keepdim=keepdims, dtype=dtype)
@@ -520,6 +530,7 @@ def trace(x, offset=None, axis1=None, axis2=None):
 
 
 def tri(N, M=None, k=0, dtype="float32"):
+    dtype = to_torch_dtype(dtype)
     pass
     # return tfnp.tri(N, M=M, k=k, dtype=dtype)
 
@@ -594,4 +605,5 @@ def eye(N, M=None, k=None, dtype="float32"):
             "Argument not supported by "
             f"`torch.eye`: k={k}"
         )
+    dtype = to_torch_dtype(dtype)
     return torch.eye(n=N, m=M, dtype=dtype)
