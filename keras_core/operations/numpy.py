@@ -137,12 +137,14 @@ import re
 import numpy as np
 
 from keras_core import backend
+from keras_core.api_export import keras_core_export
 from keras_core.backend import KerasTensor
 from keras_core.backend import any_symbolic_tensors
 from keras_core.operations import operation_utils
 from keras_core.operations.operation import Operation
 
 
+@keras_core_export("keras_core.operations.broadcast_shapes")
 def broadcast_shapes(shape1, shape2):
     # Broadcast input shapes to a unified shape.
     # Convert to list for mutability.
@@ -174,6 +176,7 @@ def broadcast_shapes(shape1, shape2):
     return output_shape
 
 
+@keras_core_export("keras_core.operations.reduce_shape")
 def reduce_shape(shape, axis=None, keepdims=False):
     shape = list(shape)
     if axis is None:
@@ -194,6 +197,7 @@ def reduce_shape(shape, axis=None, keepdims=False):
         return output_shape
 
 
+@keras_core_export("keras_core.operations.shape_equal")
 def shape_equal(shape1, shape2, axis=None, allow_none=True):
     """Check if two shapes are equal.
 
@@ -231,6 +235,7 @@ class Absolute(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.absolute")
 def absolute(x):
     if any_symbolic_tensors((x,)):
         return Absolute().symbolic_call(x)
@@ -241,6 +246,7 @@ class Abs(Absolute):
     pass
 
 
+@keras_core_export("keras_core.operations.abs")
 def abs(x):
     return absolute(x)
 
@@ -256,6 +262,7 @@ class Add(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.add")
 def add(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Add().symbolic_call(x1, x2)
@@ -289,6 +296,7 @@ class All(Operation):
         )
 
 
+@keras_core_export("keras_core.operations.all")
 def all(x, axis=None, keepdims=False):
     if any_symbolic_tensors((x,)):
         return All(axis=axis, keepdims=keepdims).symbolic_call(x)
@@ -322,6 +330,7 @@ class Any(Operation):
         )
 
 
+@keras_core_export("keras_core.operations.any")
 def any(x, axis=None, keepdims=False):
     if any_symbolic_tensors((x,)):
         return Any(axis=axis, keepdims=keepdims).symbolic_call(x)
@@ -350,6 +359,7 @@ class Amax(Operation):
         )
 
 
+@keras_core_export("keras_core.operations.amax")
 def amax(x, axis=None, keepdims=False):
     if any_symbolic_tensors((x,)):
         return All(axis=axis, keepdims=keepdims).symbolic_call(x)
@@ -374,6 +384,7 @@ class Amin(Operation):
         )
 
 
+@keras_core_export("keras_core.operations.amin")
 def amin(x, axis=None, keepdims=False):
     if any_symbolic_tensors((x,)):
         return All(axis=axis, keepdims=keepdims).symbolic_call(x)
@@ -410,6 +421,7 @@ class Append(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.append")
 def append(
     x1,
     x2,
@@ -437,6 +449,7 @@ class Arange(Operation):
         return KerasTensor(output_shape, dtype=dtype)
 
 
+@keras_core_export("keras_core.operations.arange")
 def arange(start, stop=None, step=None, dtype=None):
     if stop is None:
         start, stop = 0, start
@@ -453,6 +466,7 @@ class Arccos(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.arccos")
 def arccos(x):
     if any_symbolic_tensors((x,)):
         return Arccos().symbolic_call(x)
@@ -467,6 +481,7 @@ class Arcsin(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.arcsin")
 def arcsin(x):
     if any_symbolic_tensors((x,)):
         return Arcsin().symbolic_call(x)
@@ -481,6 +496,7 @@ class Arctan(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.arctan")
 def arctan(x):
     if any_symbolic_tensors((x,)):
         return Arctan().symbolic_call(x)
@@ -498,6 +514,7 @@ class Arctan2(Operation):
         return KerasTensor(outputs_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.arctan2")
 def arctan2(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Arctan2().symbolic_call(x1, x2)
@@ -520,6 +537,7 @@ class Argmax(Operation):
         )
 
 
+@keras_core_export("keras_core.operations.argmax")
 def argmax(x, axis=None):
     if any_symbolic_tensors((x,)):
         return Argmax(axis=axis).symbolic_call(x)
@@ -542,6 +560,7 @@ class Argmin(Operation):
         )
 
 
+@keras_core_export("keras_core.operations.argmin")
 def argmin(x, axis=None):
     if any_symbolic_tensors((x,)):
         return Argmin(axis=axis).symbolic_call(x)
@@ -562,6 +581,7 @@ class Argsort(Operation):
         return KerasTensor(x.shape, dtype="int32")
 
 
+@keras_core_export("keras_core.operations.argsort")
 def argsort(x, axis=-1):
     if any_symbolic_tensors((x,)):
         return Argsort(axis=axis).symbolic_call(x)
@@ -576,6 +596,7 @@ class Array(Operation):
         return KerasTensor(x.shape, dtype=dtype)
 
 
+@keras_core_export("keras_core.operations.array")
 def array(x, dtype=None):
     if any_symbolic_tensors((x,)):
         return Array().symbolic_call(x, dtype=dtype)
@@ -628,6 +649,7 @@ class Average(Operation):
             )
 
 
+@keras_core_export("keras_core.operations.average")
 def average(x, axis=None, weights=None):
     if any_symbolic_tensors((x,)):
         return Average(axis=axis).symbolic_call(x, weights=weights)
@@ -650,6 +672,7 @@ class Bincount(Operation):
         return KerasTensor(out_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.bincount")
 def bincount(x, weights=None, minlength=0):
     if any_symbolic_tensors((x,)):
         return Bincount(weights=weights, minlength=minlength).symbolic_call(x)
@@ -670,6 +693,7 @@ class BroadcastTo(Operation):
         return KerasTensor(self.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.broadcast_to")
 def broadcast_to(x, shape):
     if any_symbolic_tensors((x,)):
         return BroadcastTo(shape=shape).symbolic_call(x)
@@ -684,6 +708,7 @@ class Ceil(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.ceil")
 def ceil(x):
     if any_symbolic_tensors((x,)):
         return Ceil().symbolic_call(x)
@@ -703,6 +728,7 @@ class Clip(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.clip")
 def clip(x, x_min, x_max):
     if any_symbolic_tensors((x,)):
         return Clip(x_min, x_max).symbolic_call(x)
@@ -741,6 +767,7 @@ class Concatenate(Operation):
         return KerasTensor(output_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.concatenate")
 def concatenate(xs, axis=0):
     if any_symbolic_tensors(xs):
         return Concatenate(axis=axis).symbolic_call(xs)
@@ -755,6 +782,7 @@ class Conjugate(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.conjugate")
 def conjugate(x):
     if any_symbolic_tensors((x,)):
         return Conjugate().symbolic_call(x)
@@ -765,6 +793,7 @@ class Conj(Conjugate):
     pass
 
 
+@keras_core_export("keras_core.operations.conj")
 def conj(x):
     return conjugate(x)
 
@@ -777,6 +806,7 @@ class Copy(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.copy")
 def copy(x):
     if any_symbolic_tensors((x,)):
         return Copy().symbolic_call(x)
@@ -791,6 +821,7 @@ class Cos(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.cos")
 def cos(x):
     if any_symbolic_tensors((x,)):
         return Cos().symbolic_call(x)
@@ -815,6 +846,7 @@ class CountNonzero(Operation):
         )
 
 
+@keras_core_export("keras_core.operations.count_nonzero")
 def count_nonzero(x, axis=None):
     if any_symbolic_tensors((x,)):
         return CountNonzero(axis=axis).symbolic_call(x)
@@ -868,6 +900,7 @@ class Cross(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.cross")
 def cross(x1, x2, axisa=-1, axisb=-1, axisc=-1, axis=None):
     if any_symbolic_tensors((x1, x2)):
         return Cross(
@@ -901,6 +934,7 @@ class Cumprod(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.cumprod")
 def cumprod(x, axis=None):
     if any_symbolic_tensors((x,)):
         return Cumprod(axis=axis).symbolic_call(x)
@@ -925,6 +959,7 @@ class Cumsum(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.cumsum")
 def cumsum(x, axis=None):
     if any_symbolic_tensors((x,)):
         return Cumsum(axis=axis).symbolic_call(x)
@@ -968,6 +1003,7 @@ class Diag(Operation):
         return KerasTensor(output_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.diag")
 def diag(x, k=0):
     if any_symbolic_tensors((x,)):
         return Diag(k=k).symbolic_call(x)
@@ -1016,6 +1052,7 @@ class Diagonal(Operation):
         return KerasTensor(output_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.diagonal")
 def diagonal(x, offset=0, axis1=0, axis2=1):
     if any_symbolic_tensors((x,)):
         return Diagonal(
@@ -1067,6 +1104,7 @@ class Dot(Operation):
         )
 
 
+@keras_core_export("keras_core.operations.dot")
 def dot(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Dot().symbolic_call(x1, x2)
@@ -1246,6 +1284,7 @@ class Einsum(Operation):
         return KerasTensor(output_shape, dtype=dtype)
 
 
+@keras_core_export("keras_core.operations.einsum")
 def einsum(subscripts, *operands):
     if any_symbolic_tensors(operands):
         return Einsum(subscripts).symbolic_call(*operands)
@@ -1260,6 +1299,7 @@ class Empty(Operation):
         return KerasTensor(shape, dtype=dtype)
 
 
+@keras_core_export("keras_core.operations.empty")
 def empty(shape, dtype="float32"):
     return backend.numpy.empty(shape, dtype=dtype)
 
@@ -1275,6 +1315,7 @@ class Equal(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.equal")
 def equal(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Equal().symbolic_call(x1, x2)
@@ -1289,6 +1330,7 @@ class Exp(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.exp")
 def exp(x):
     if any_symbolic_tensors((x,)):
         return Exp().symbolic_call(x)
@@ -1318,6 +1360,7 @@ class ExpandDims(Operation):
         return KerasTensor(output_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.expand_dims")
 def expand_dims(x, axis):
     if any_symbolic_tensors((x,)):
         return ExpandDims(axis=axis).symbolic_call(x)
@@ -1332,6 +1375,7 @@ class Expm1(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.expm1")
 def expm1(x):
     if any_symbolic_tensors((x,)):
         return Expm1().symbolic_call(x)
@@ -1350,6 +1394,7 @@ class Flip(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.flip")
 def flip(x, axis=None):
     if any_symbolic_tensors((x,)):
         return Flip(axis=axis).symbolic_call(x)
@@ -1364,6 +1409,7 @@ class Floor(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.floor")
 def floor(x):
     if any_symbolic_tensors((x,)):
         return Floor().symbolic_call(x)
@@ -1378,6 +1424,7 @@ class Full(Operation):
         return KerasTensor(shape, dtype=dtype)
 
 
+@keras_core_export("keras_core.operations.full")
 def full(shape, fill_value, dtype=None):
     return backend.numpy.full(shape, fill_value, dtype=dtype)
 
@@ -1390,6 +1437,7 @@ class FullLike(Operation):
         return KerasTensor(x.shape, dtype=dtype)
 
 
+@keras_core_export("keras_core.operations.full_like")
 def full_like(x, fill_value, dtype=None):
     if any_symbolic_tensors((x,)):
         return FullLike().symbolic_call(x, fill_value, dtype=dtype)
@@ -1427,6 +1475,7 @@ class GetItem(Operation):
         return KerasTensor(x.shape[1:], dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.get_item")
 def get_item(x, key):
     if any_symbolic_tensors((x,)):
         return GetItem().symbolic_call(x, key)
@@ -1450,6 +1499,7 @@ class Greater(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.greater")
 def greater(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Greater().symbolic_call(x1, x2)
@@ -1467,6 +1517,7 @@ class GreaterEqual(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.greater_equal")
 def greater_equal(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return GreaterEqual().symbolic_call(x1, x2)
@@ -1497,6 +1548,7 @@ class Hstack(Operation):
         return KerasTensor(output_shape)
 
 
+@keras_core_export("keras_core.operations.hstack")
 def hstack(xs):
     if any_symbolic_tensors((xs,)):
         return Hstack().symbolic_call(xs)
@@ -1511,6 +1563,7 @@ class Identity(Operation):
         return KerasTensor([n, n], dtype=dtype)
 
 
+@keras_core_export("keras_core.operations.identity")
 def identity(n, dtype="float32"):
     return backend.numpy.identity(n, dtype=dtype)
 
@@ -1523,6 +1576,7 @@ class Imag(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.imag")
 def imag(x):
     if any_symbolic_tensors((x,)):
         return Imag().symbolic_call(x)
@@ -1540,6 +1594,7 @@ class Isclose(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.isclose")
 def isclose(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Isclose().symbolic_call(x1, x2)
@@ -1554,6 +1609,7 @@ class Isfinite(Operation):
         return KerasTensor(x.shape, dtype="bool")
 
 
+@keras_core_export("keras_core.operations.isfinite")
 def isfinite(x):
     if any_symbolic_tensors((x,)):
         return Isfinite().symbolic_call(x)
@@ -1568,6 +1624,7 @@ class Isinf(Operation):
         return KerasTensor(x.shape, dtype="bool")
 
 
+@keras_core_export("keras_core.operations.isinf")
 def isinf(x):
     if any_symbolic_tensors((x,)):
         return Isinf().symbolic_call(x)
@@ -1582,6 +1639,7 @@ class Isnan(Operation):
         return KerasTensor(x.shape, dtype="bool")
 
 
+@keras_core_export("keras_core.operations.isnan")
 def isnan(x):
     if any_symbolic_tensors((x,)):
         return Isnan().symbolic_call(x)
@@ -1599,6 +1657,7 @@ class Less(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.less")
 def less(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Less().symbolic_call(x1, x2)
@@ -1616,6 +1675,7 @@ class LessEqual(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.less_equal")
 def less_equal(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return LessEqual().symbolic_call(x1, x2)
@@ -1669,6 +1729,7 @@ class Linspace(Operation):
         return KerasTensor(output_shape, dtype=dtype)
 
 
+@keras_core_export("keras_core.operations.linspace")
 def linspace(
     start, stop, num=50, endpoint=True, retstep=False, dtype=None, axis=0
 ):
@@ -1693,6 +1754,7 @@ class Log(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.log")
 def log(x):
     if any_symbolic_tensors((x,)):
         return Log().symbolic_call(x)
@@ -1707,6 +1769,7 @@ class Log10(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.log10")
 def log10(x):
     if any_symbolic_tensors((x,)):
         return Log10().symbolic_call(x)
@@ -1721,6 +1784,7 @@ class Log1p(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.log1p")
 def log1p(x):
     if any_symbolic_tensors((x,)):
         return Log1p().symbolic_call(x)
@@ -1735,6 +1799,7 @@ class Log2(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.log2")
 def log2(x):
     if any_symbolic_tensors((x,)):
         return Log2().symbolic_call(x)
@@ -1752,6 +1817,7 @@ class Logaddexp(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.logaddexp")
 def logaddexp(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Logaddexp().symbolic_call(x1, x2)
@@ -1769,6 +1835,7 @@ class LogicalAnd(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.logical_and")
 def logical_and(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return LogicalAnd().symbolic_call(x1, x2)
@@ -1783,6 +1850,7 @@ class LogicalNot(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.logical_not")
 def logical_not(x):
     if any_symbolic_tensors((x,)):
         return LogicalNot().symbolic_call(x)
@@ -1800,6 +1868,7 @@ class LogicalOr(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.logical_or")
 def logical_or(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return LogicalOr().symbolic_call(x1, x2)
@@ -1849,6 +1918,7 @@ class Logspace(Operation):
         return KerasTensor(output_shape, dtype=dtype)
 
 
+@keras_core_export("keras_core.operations.logspace")
 def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
     if any_symbolic_tensors((start, stop)):
         return Logspace(num, endpoint, base, dtype, axis)(start, stop)
@@ -1895,6 +1965,7 @@ class Matmul(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.matmul")
 def matmul(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Matmul().symbolic_call(x1, x2)
@@ -1926,6 +1997,7 @@ class Max(Operation):
         )
 
 
+@keras_core_export("keras_core.operations.max")
 def max(x, axis=None, keepdims=False, initial=None):
     if any_symbolic_tensors((x,)):
         return Max(axis=axis, keepdims=keepdims, initial=initial).symbolic_call(
@@ -1945,6 +2017,7 @@ class Maximum(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.maximum")
 def maximum(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Maximum().symbolic_call(x1, x2)
@@ -1983,6 +2056,7 @@ class Meshgrid(Operation):
         return [KerasTensor(output_shape) for _ in range(len(x))]
 
 
+@keras_core_export("keras_core.operations.meshgrid")
 def meshgrid(*x, indexing="xy"):
     if any_symbolic_tensors(x):
         return Meshgrid(indexing=indexing).symbolic_call(*x)
@@ -2010,6 +2084,7 @@ class Min(Operation):
         )
 
 
+@keras_core_export("keras_core.operations.min")
 def min(x, axis=None, keepdims=False, initial=None):
     if any_symbolic_tensors((x,)):
         return Min(axis=axis, keepdims=keepdims, initial=initial).symbolic_call(
@@ -2029,6 +2104,7 @@ class Minimum(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.minimum")
 def minimum(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Minimum().symbolic_call(x1, x2)
@@ -2046,6 +2122,7 @@ class Mod(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.mod")
 def mod(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Mod().symbolic_call(x1, x2)
@@ -2096,6 +2173,7 @@ class Moveaxis(Operation):
         return KerasTensor(output_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.moveaxis")
 def moveaxis(x, source, destination):
     if any_symbolic_tensors((x,)):
         return Moveaxis(source, destination).symbolic_call(x)
@@ -2107,6 +2185,7 @@ class NanToNum(Operation):
         return backend.numpy.nan_to_num(x)
 
 
+@keras_core_export("keras_core.operations.nan_to_num")
 def nan_to_num(x):
     return backend.numpy.nan_to_num(x)
 
@@ -2121,6 +2200,7 @@ class Ndim(Operation):
         return KerasTensor([len(x.shape)])
 
 
+@keras_core_export("keras_core.operations.ndim")
 def ndim(x):
     if any_symbolic_tensors((x,)):
         return Ndim().symbolic_call(x)
@@ -2132,6 +2212,7 @@ class Nonzero(Operation):
         return backend.numpy.nonzero(x)
 
 
+@keras_core_export("keras_core.operations.nonzero")
 def nonzero(x):
     return backend.numpy.nonzero(x)
 
@@ -2147,6 +2228,7 @@ class NotEqual(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.not_equal")
 def not_equal(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return NotEqual().symbolic_call(x1, x2)
@@ -2163,6 +2245,7 @@ class OnesLike(Operation):
         return KerasTensor(x.shape, dtype=dtype)
 
 
+@keras_core_export("keras_core.operations.ones_like")
 def ones_like(x, dtype=None):
     if any_symbolic_tensors((x,)):
         return OnesLike().symbolic_call(x, dtype=dtype)
@@ -2179,6 +2262,7 @@ class ZerosLike(Operation):
         return KerasTensor(x.shape, dtype=dtype)
 
 
+@keras_core_export("keras_core.operations.zeros_like")
 def zeros_like(x, dtype=None):
     if any_symbolic_tensors((x,)):
         return ZerosLike().symbolic_call(x, dtype=dtype)
@@ -2204,6 +2288,7 @@ class Outer(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.outer")
 def outer(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Outer().symbolic_call(x1, x2)
@@ -2257,6 +2342,7 @@ class Pad(Operation):
         return KerasTensor(output_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.pad")
 def pad(x, pad_width, mode="constant"):
     if any_symbolic_tensors((x,)):
         return Pad(pad_width, mode=mode).symbolic_call(x)
@@ -2288,6 +2374,7 @@ class Prod(Operation):
         )
 
 
+@keras_core_export("keras_core.operations.prod")
 def prod(x, axis=None, keepdims=False, dtype=None):
     if any_symbolic_tensors((x,)):
         return Prod(axis=axis, keepdims=keepdims, dtype=dtype).symbolic_call(x)
@@ -2308,6 +2395,7 @@ class Ravel(Operation):
         return KerasTensor(output_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.ravel")
 def ravel(x):
     if any_symbolic_tensors((x,)):
         return Ravel().symbolic_call(x)
@@ -2322,6 +2410,7 @@ class Real(Operation):
         return KerasTensor(x.shape)
 
 
+@keras_core_export("keras_core.operations.real")
 def real(x):
     if any_symbolic_tensors((x,)):
         return Real().symbolic_call(x)
@@ -2336,6 +2425,7 @@ class Reciprocal(Operation):
         return KerasTensor(x.shape)
 
 
+@keras_core_export("keras_core.operations.reciprocal")
 def reciprocal(x):
     if any_symbolic_tensors((x,)):
         return Reciprocal().symbolic_call(x)
@@ -2373,6 +2463,7 @@ class Repeat(Operation):
         return KerasTensor(output_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.repeat")
 def repeat(x, repeats, axis=None):
     if any_symbolic_tensors((x,)):
         return Repeat(repeats, axis=axis).symbolic_call(x)
@@ -2394,6 +2485,7 @@ class Reshape(Operation):
         return KerasTensor(output_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.reshape")
 def reshape(x, new_shape):
     if any_symbolic_tensors((x,)):
         return Reshape(new_shape).symbolic_call(x)
@@ -2413,6 +2505,7 @@ class Roll(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.roll")
 def roll(x, shift, axis=None):
     if any_symbolic_tensors((x,)):
         return Roll(shift, axis=axis).symbolic_call(x)
@@ -2431,6 +2524,7 @@ class Round(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.round")
 def round(x, decimals=0):
     if any_symbolic_tensors((x,)):
         return Round(decimals).symbolic_call(x)
@@ -2445,6 +2539,7 @@ class Sign(Operation):
         return KerasTensor(x.shape, dtype="int32")
 
 
+@keras_core_export("keras_core.operations.sign")
 def sign(x):
     if any_symbolic_tensors((x,)):
         return Sign().symbolic_call(x)
@@ -2459,6 +2554,7 @@ class Sin(Operation):
         return KerasTensor(x.shape)
 
 
+@keras_core_export("keras_core.operations.sin")
 def sin(x):
     if any_symbolic_tensors((x,)):
         return Sin().symbolic_call(x)
@@ -2473,6 +2569,7 @@ class Size(Operation):
         return KerasTensor([], dtype="int32")
 
 
+@keras_core_export("keras_core.operations.size")
 def size(x):
     if any_symbolic_tensors((x,)):
         return Size().symbolic_call(x)
@@ -2491,6 +2588,7 @@ class Sort(Operation):
         return KerasTensor(x.shape, x.dtype)
 
 
+@keras_core_export("keras_core.operations.sort")
 def sort(x, axis=-1):
     if any_symbolic_tensors((x,)):
         return Sort(axis=axis).symbolic_call(x)
@@ -2540,6 +2638,7 @@ class Split(Operation):
         return outputs
 
 
+@keras_core_export("keras_core.operations.split")
 def split(x, indices_or_sections, axis=0):
     if any_symbolic_tensors((x,)):
         return Split(indices_or_sections, axis=axis).symbolic_call(x)
@@ -2575,6 +2674,7 @@ class Stack(Operation):
         return KerasTensor(output_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.stack")
 def stack(x, axis=0):
     if any_symbolic_tensors((x,)):
         return Stack(axis=axis).symbolic_call(x)
@@ -2599,6 +2699,7 @@ class Std(Operation):
         )
 
 
+@keras_core_export("keras_core.operations.std")
 def std(x, axis=None, keepdims=False):
     if any_symbolic_tensors((x,)):
         return Std(axis=axis, keepdims=keepdims).symbolic_call(x)
@@ -2623,6 +2724,7 @@ class Swapaxes(Operation):
         return KerasTensor(x_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.swapaxes")
 def swapaxes(x, axis1, axis2):
     if any_symbolic_tensors((x,)):
         return Swapaxes(axis1, axis2).symbolic_call(x)
@@ -2652,6 +2754,7 @@ class Take(Operation):
         return KerasTensor(output_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.take")
 def take(x, indices, axis=None):
     if any_symbolic_tensors((x, indices)):
         return Take(axis=axis).symbolic_call(x, indices)
@@ -2692,6 +2795,7 @@ class TakeAlongAxis(Operation):
         return KerasTensor(output_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.take_along_axis")
 def take_along_axis(x, indices, axis=None):
     if any_symbolic_tensors((x, indices)):
         return TakeAlongAxis(axis=axis).symbolic_call(x, indices)
@@ -2706,6 +2810,7 @@ class Tan(Operation):
         return KerasTensor(x.shape)
 
 
+@keras_core_export("keras_core.operations.tan")
 def tan(x):
     if any_symbolic_tensors((x,)):
         return Tan().symbolic_call(x)
@@ -2753,6 +2858,7 @@ class Tensordot(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.tensordot")
 def tensordot(x1, x2, axes=2):
     if any_symbolic_tensors((x1, x2)):
         return Tensordot(axes=axes).symbolic_call(x1, x2)
@@ -2784,6 +2890,7 @@ class Tile(Operation):
         return KerasTensor(output_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.tile")
 def tile(x, repeats):
     if any_symbolic_tensors((x,)):
         return Tile(
@@ -2812,6 +2919,7 @@ class Trace(Operation):
         return KerasTensor(output_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.trace")
 def trace(x, offset=0, axis1=0, axis2=1):
     if any_symbolic_tensors((x,)):
         return Trace(offset, axis1, axis2).symbolic_call(x)
@@ -2828,6 +2936,7 @@ class Tri(Operation):
         return KerasTensor((N, M), dtype=dtype)
 
 
+@keras_core_export("keras_core.operations.tri")
 def tri(N, M=None, k=0, dtype="float32"):
     return backend.numpy.tri(N, M=M, k=k, dtype=dtype)
 
@@ -2844,6 +2953,7 @@ class Tril(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.tril")
 def tril(x, k=0):
     if any_symbolic_tensors((x,)):
         return Tril(k=k).symbolic_call(x)
@@ -2862,6 +2972,7 @@ class Triu(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.triu")
 def triu(x, k=0):
     if any_symbolic_tensors((x,)):
         return Triu(k=k).symbolic_call(x)
@@ -2876,6 +2987,7 @@ class Vdot(Operation):
         return KerasTensor([], dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.vdot")
 def vdot(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Vdot().symbolic_call(x1, x2)
@@ -2906,6 +3018,7 @@ class Vstack(Operation):
         return KerasTensor(output_shape)
 
 
+@keras_core_export("keras_core.operations.vstack")
 def vstack(xs):
     if any_symbolic_tensors((xs,)):
         return Vstack().symbolic_call(xs)
@@ -2925,6 +3038,7 @@ class Where(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.where")
 def where(condition, x1, x2):
     if any_symbolic_tensors((condition, x1, x2)):
         return Where().symbolic_call(condition, x1, x2)
@@ -2942,6 +3056,7 @@ class Subtract(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.subtract")
 def subtract(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Subtract().symbolic_call(x1, x2)
@@ -2959,6 +3074,7 @@ class Multiply(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.multiply")
 def multiply(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Multiply().symbolic_call(x1, x2)
@@ -2976,6 +3092,7 @@ class Divide(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.divide")
 def divide(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Divide().symbolic_call(x1, x2)
@@ -2993,6 +3110,7 @@ class TrueDivide(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.true_divide")
 def true_divide(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return TrueDivide().symbolic_call(x1, x2)
@@ -3010,6 +3128,7 @@ class Power(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
+@keras_core_export("keras_core.operations.power")
 def power(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return Power().symbolic_call(x1, x2)
@@ -3024,6 +3143,7 @@ class Negative(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.negative")
 def negative(x):
     if any_symbolic_tensors((x,)):
         return Negative().symbolic_call(x)
@@ -3038,6 +3158,7 @@ class Square(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.square")
 def square(x):
     if any_symbolic_tensors((x,)):
         return Square().symbolic_call(x)
@@ -3053,6 +3174,7 @@ class Sqrt(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.sqrt")
 def sqrt(x):
     if any_symbolic_tensors((x,)):
         return Sqrt().symbolic_call(x)
@@ -3083,6 +3205,7 @@ class Squeeze(Operation):
             return KerasTensor(input_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.squeeze")
 def squeeze(x, axis=None):
     if any_symbolic_tensors((x,)):
         return Squeeze().symbolic_call(x, axis=axis)
@@ -3113,6 +3236,7 @@ class Transpose(Operation):
         return KerasTensor(output_shape, dtype=x.dtype)
 
 
+@keras_core_export("keras_core.operations.transpose")
 def transpose(x, axes=None):
     if any_symbolic_tensors((x,)):
         return Transpose(axes=axes).symbolic_call(x)
@@ -3137,6 +3261,7 @@ class Mean(Operation):
         )
 
 
+@keras_core_export("keras_core.operations.mean")
 def mean(x, axis=None, keepdims=False):
     if any_symbolic_tensors((x,)):
         return Mean(axis=axis, keepdims=keepdims).symbolic_call(x)
@@ -3161,6 +3286,7 @@ class Var(Operation):
         )
 
 
+@keras_core_export("keras_core.operations.var")
 def var(x, axis=None, keepdims=False):
     if any_symbolic_tensors((x,)):
         return Var(axis=axis, keepdims=keepdims).symbolic_call(x)
@@ -3185,6 +3311,7 @@ class Sum(Operation):
         )
 
 
+@keras_core_export("keras_core.operations.sum")
 def sum(x, axis=None, keepdims=False):
     if any_symbolic_tensors((x,)):
         return Sum(axis=axis, keepdims=keepdims).symbolic_call(x)
@@ -3199,6 +3326,7 @@ class Zeros(Operation):
         return KerasTensor(shape, dtype=dtype)
 
 
+@keras_core_export("keras_core.operations.zeros")
 def zeros(shape, dtype="float32"):
     return backend.numpy.zeros(shape, dtype=dtype)
 
@@ -3211,6 +3339,7 @@ class Ones(Operation):
         return KerasTensor(shape, dtype=dtype)
 
 
+@keras_core_export("keras_core.operations.ones")
 def ones(shape, dtype="float32"):
     return backend.numpy.ones(shape, dtype=dtype)
 
@@ -3225,5 +3354,6 @@ class Eye(Operation):
         return KerasTensor((N, M), dtype=dtype)
 
 
+@keras_core_export("keras_core.operations.eye")
 def eye(N, M=None, k=0, dtype="float32"):
     return backend.numpy.eye(N, M=M, k=k, dtype=dtype)
