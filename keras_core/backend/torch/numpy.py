@@ -12,7 +12,7 @@ def _make_torch_val(inputs):
     if isinstance(inputs, (list, tuple)):
         # list/tuple of individual values
         return tuple(
-            [torch.tensor(val) for val in inputs if not isinstance(val, torch.Tensor) else val]
+            [torch.tensor(val) if not isinstance(val, torch.Tensor)  else val for val in inputs]
         )
     return torch.tensor(inputs)  # individual value
 
