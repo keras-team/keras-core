@@ -2,6 +2,22 @@ import torch
 from keras_core.backend.torch.core import to_torch_dtype
 
 
+def _make_torch_val(inputs):
+    # This helper converts individual values (int, bool, etc.)
+    # to a individual torch tensor for compatibility.
+    # All numpy.ndarrays still need to be passed
+    # as Torch Tensors.
+    if isinstance(inputs, torch.Tensor):
+        return inputs
+    if isinstance(inputs, (list, tuple)):
+        # list/tuple of individual values
+        return tuple(
+            [torch.tensor(val) for val in inputs if not isinstance(val, torch.Tensor) else val]
+        )
+    return torch.tensor(inputs)  # individual value
+
+
+
 def add(x1, x2):
     return torch.add(x1, x2)
 
@@ -115,7 +131,7 @@ def arctan(x):
 
 
 def arctan2(x1, x2):
-    return torch.arctan2(x)
+    return torch.arctan2(x1, x2)
 
 
 def argmax(x, axis=None):

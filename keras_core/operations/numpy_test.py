@@ -10,6 +10,20 @@ from keras_core.operations import numpy as knp
 # TODO: remove reliance on this (or alternatively, turn it on by default).
 np_config.enable_numpy_behavior()
 
+if backend.backend() == "torch":
+    import torch
+
+def _to_backend_tensor(inputs):
+    if backend.backend() == "torch":
+        if isinstance(inputs, (int, bool)):
+            return torch.tensor(inputs)
+        if isinstance(inputs, (list, tuple)):
+            inputs = [torch.from_numpy(input) for input in inputs]
+            return tuple(inputs)
+        else:
+            return torch.from_numpy(inputs)
+    return inputs
+
 
 @pytest.mark.skipif(
     not backend.DYNAMIC_SHAPES_OK,
@@ -1560,6 +1574,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [3, 2, 1]])
         z = np.array([[[1, 2, 3], [3, 2, 1]]])
+        x, y, z = _to_backend_tensor([x, y, z])
         self.assertAllClose(np.array(knp.add(x, y)), np.add(x, y))
         self.assertAllClose(np.array(knp.add(x, z)), np.add(x, z))
 
@@ -1570,6 +1585,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [3, 2, 1]])
         z = np.array([[[1, 2, 3], [3, 2, 1]]])
+        x, y, z = _to_backend_tensor([x, y, z])
         self.assertAllClose(np.array(knp.subtract(x, y)), np.subtract(x, y))
         self.assertAllClose(np.array(knp.subtract(x, z)), np.subtract(x, z))
 
@@ -1580,6 +1596,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [3, 2, 1]])
         z = np.array([[[1, 2, 3], [3, 2, 1]]])
+        x, y, z = _to_backend_tensor([x, y, z])
         self.assertAllClose(np.array(knp.multiply(x, y)), np.multiply(x, y))
         self.assertAllClose(np.array(knp.multiply(x, z)), np.multiply(x, z))
 
@@ -1590,6 +1607,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         x = np.ones([2, 3, 4, 5])
         y = np.ones([2, 3, 5, 6])
         z = np.ones([5, 6])
+        x, y, z = _to_backend_tensor([x, y, z])
         self.assertAllClose(np.array(knp.matmul(x, y)), np.matmul(x, y))
         self.assertAllClose(np.array(knp.matmul(x, z)), np.matmul(x, z))
 
@@ -1600,6 +1618,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [3, 2, 1]])
         z = np.array([[[1, 2, 3], [3, 2, 1]]])
+        x, y, z = _to_backend_tensor([x, y, z])
         self.assertAllClose(np.array(knp.power(x, y)), np.power(x, y))
         self.assertAllClose(np.array(knp.power(x, z)), np.power(x, z))
 
@@ -1610,6 +1629,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [3, 2, 1]])
         z = np.array([[[1, 2, 3], [3, 2, 1]]])
+        x, y, z = _to_backend_tensor([x, y, z])
         self.assertAllClose(np.array(knp.divide(x, y)), np.divide(x, y))
         self.assertAllClose(np.array(knp.divide(x, z)), np.divide(x, z))
 
@@ -1620,6 +1640,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [3, 2, 1]])
         z = np.array([[[1, 2, 3], [3, 2, 1]]])
+        x, y, z = _to_backend_tensor([x, y, z])
         self.assertAllClose(
             np.array(knp.true_divide(x, y)), np.true_divide(x, y)
         )
@@ -1638,6 +1659,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [3, 2, 1]])
         z = np.array([[[1, 2, 3], [3, 2, 1]], [[4, 5, 6], [3, 2, 1]]])
+        x, y, z = _to_backend_tensor([x, y, z])
         self.assertAllClose(np.array(knp.append(x, y)), np.append(x, y))
         self.assertAllClose(
             np.array(knp.append(x, y, axis=1)), np.append(x, y, axis=1)
@@ -1653,6 +1675,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
     def test_arctan2(self):
         x = np.array([[1.0, 2.0, 3.0], [3.0, 2.0, 1.0]])
         y = np.array([[4.0, 5.0, 6.0], [3.0, 2.0, 1.0]])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.arctan2(x, y)), np.arctan2(x, y))
 
         self.assertAllClose(np.array(knp.Arctan2()(x, y)), np.arctan2(x, y))
@@ -1663,6 +1686,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         y1 = np.ones([2, 1, 4, 3])
         y2 = np.ones([1, 5, 4, 3])
         y3 = np.ones([1, 5, 4, 2])
+        x1, x2, y1, y2, y3 = _to_backend_tensor([x1, x2, y1, y2, y3])
         self.assertAllClose(np.array(knp.cross(x1, y1)), np.cross(x1, y1))
         self.assertAllClose(np.array(knp.cross(x1, y2)), np.cross(x1, y2))
         self.assertAllClose(np.array(knp.cross(x1, y3)), np.cross(x1, y3))
@@ -1676,6 +1700,8 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
     def test_einsum(self):
         x = np.arange(24).reshape([2, 3, 4])
         y = np.arange(24).reshape([2, 4, 3])
+        x, y = _to_backend_tensor([x, y])
+        num = _to_backend_tensor(5)
         self.assertAllClose(
             np.array(knp.einsum("ijk,lkj->il", x, y)),
             np.einsum("ijk,lkj->il", x, y),
@@ -1689,7 +1715,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
             np.einsum("i..., j...k->...ijk", x, y),
         )
         self.assertAllClose(
-            np.array(knp.einsum(",ijk", 5, y)), np.einsum(",ijk", 5, y)
+            np.array(knp.einsum(",ijk", num, y)), np.einsum(",ijk", num, y)
         )
 
         self.assertAllClose(
@@ -1705,26 +1731,29 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
             np.einsum("i...,j...k->...ijk", x, y),
         )
         self.assertAllClose(
-            np.array(knp.Einsum(",ijk")(5, y)), np.einsum(",ijk", 5, y)
+            np.array(knp.Einsum(",ijk")(num, y)), np.einsum(",ijk", num, y)
         )
 
     def test_full_like(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.full_like(x, 2)), np.full_like(x, 2))
-        self.assertAllClose(
-            np.array(knp.full_like(x, np.ones([2, 3]))),
-            np.full_like(x, np.ones([2, 3])),
-        )
+        if backend.backend() != "torch":
+            self.assertAllClose(
+                np.array(knp.full_like(x, np.ones([2, 3]))),
+                np.full_like(x, np.ones([2, 3])),
+            )
         self.assertAllClose(
             np.array(knp.full_like(x, 2, dtype="float32")),
             np.full_like(x, 2, dtype="float32"),
         )
 
         self.assertAllClose(np.array(knp.FullLike()(x, 2)), np.full_like(x, 2))
-        self.assertAllClose(
-            np.array(knp.FullLike()(x, np.ones([2, 3]))),
-            np.full_like(x, np.ones([2, 3])),
-        )
+        if backend.backend() != "torch":
+            self.assertAllClose(
+                np.array(knp.FullLike()(x, np.ones([2, 3]))),
+                np.full_like(x, np.ones([2, 3])),
+            )
         self.assertAllClose(
             np.array(knp.FullLike()(x, 2, dtype="float32")),
             np.full_like(x, 2, dtype="float32"),
@@ -1733,6 +1762,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
     def test_greater(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [3, 2, 1]])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.greater(x, y)), np.greater(x, y))
         self.assertAllClose(np.array(knp.greater(x, 2)), np.greater(x, 2))
         self.assertAllClose(np.array(knp.greater(2, x)), np.greater(2, x))
@@ -1744,6 +1774,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
     def test_greater_equal(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [3, 2, 1]])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(
             np.array(knp.greater_equal(x, y)),
             np.greater_equal(x, y),
@@ -1773,6 +1804,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
     def test_isclose(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [3, 2, 1]])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.isclose(x, y)), np.isclose(x, y))
         self.assertAllClose(np.array(knp.isclose(x, 2)), np.isclose(x, 2))
         self.assertAllClose(np.array(knp.isclose(2, x)), np.isclose(2, x))
@@ -1784,6 +1816,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
     def test_less(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [3, 2, 1]])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.less(x, y)), np.less(x, y))
         self.assertAllClose(np.array(knp.less(x, 2)), np.less(x, 2))
         self.assertAllClose(np.array(knp.less(2, x)), np.less(2, x))
@@ -1795,6 +1828,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
     def test_less_equal(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [3, 2, 1]])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.less_equal(x, y)), np.less_equal(x, y))
         self.assertAllClose(np.array(knp.less_equal(x, 2)), np.less_equal(x, 2))
         self.assertAllClose(np.array(knp.less_equal(2, x)), np.less_equal(2, x))
@@ -1827,6 +1861,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
 
         start = np.zeros([2, 3, 4])
         stop = np.ones([2, 3, 4])
+        start, stop = _to_backend_tensor(start, stop)
         self.assertAllClose(
             np.array(knp.linspace(start, stop, 5, retstep=True)[0]),
             np.linspace(start, stop, 5, retstep=True)[0],
@@ -1872,6 +1907,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
     def test_logical_and(self):
         x = np.array([[True, False], [True, True]])
         y = np.array([[False, False], [True, False]])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(
             np.array(knp.logical_and(x, y)), np.logical_and(x, y)
         )
@@ -1895,6 +1931,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
     def test_logical_or(self):
         x = np.array([[True, False], [True, True]])
         y = np.array([[False, False], [True, False]])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.logical_or(x, y)), np.logical_or(x, y))
         self.assertAllClose(
             np.array(knp.logical_or(x, True)), np.logical_or(x, True)
@@ -1931,6 +1968,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
 
         start = np.zeros([2, 3, 4])
         stop = np.ones([2, 3, 4])
+        start, stop = _to_backend_tensor([start, stop])
         self.assertAllClose(
             np.array(knp.logspace(start, stop, 5, base=10)),
             np.logspace(start, stop, 5, base=10),
@@ -1952,6 +1990,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
     def test_maximum(self):
         x = np.array([[1, 2], [3, 4]])
         y = np.array([[5, 6], [7, 8]])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.maximum(x, y)), np.maximum(x, y))
         self.assertAllClose(np.array(knp.maximum(x, 1)), np.maximum(x, 1))
         self.assertAllClose(np.array(knp.maximum(1, x)), np.maximum(1, x))
@@ -1963,6 +2002,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
     def test_minimum(self):
         x = np.array([[1, 2], [3, 4]])
         y = np.array([[5, 6], [7, 8]])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.minimum(x, y)), np.minimum(x, y))
         self.assertAllClose(np.array(knp.minimum(x, 1)), np.minimum(x, 1))
         self.assertAllClose(np.array(knp.minimum(1, x)), np.minimum(1, x))
@@ -1974,6 +2014,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
     def test_mod(self):
         x = np.array([[1, 2], [3, 4]])
         y = np.array([[5, 6], [7, 8]])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.mod(x, y)), np.mod(x, y))
         self.assertAllClose(np.array(knp.mod(x, 1)), np.mod(x, 1))
         self.assertAllClose(np.array(knp.mod(1, x)), np.mod(1, x))
@@ -1985,6 +2026,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
     def test_not_equal(self):
         x = np.array([[1, 2], [3, 4]])
         y = np.array([[5, 6], [7, 8]])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.not_equal(x, y)), np.not_equal(x, y))
         self.assertAllClose(np.array(knp.not_equal(x, 1)), np.not_equal(x, 1))
         self.assertAllClose(np.array(knp.not_equal(1, x)), np.not_equal(1, x))
@@ -1996,17 +2038,20 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
     def test_outer(self):
         x = np.array([1, 2, 3])
         y = np.array([4, 5, 6])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.outer(x, y)), np.outer(x, y))
         self.assertAllClose(np.array(knp.Outer()(x, y)), np.outer(x, y))
 
         x = np.ones([2, 3, 4])
         y = np.ones([2, 3, 4, 5, 6])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.outer(x, y)), np.outer(x, y))
         self.assertAllClose(np.array(knp.Outer()(x, y)), np.outer(x, y))
 
     def test_take(self):
         x = np.arange(24).reshape([1, 2, 3, 4])
         indices = np.array([0, 1])
+        x, indices = _to_backend_tensor([x, indices])
         self.assertAllClose(np.array(knp.take(x, indices)), np.take(x, indices))
         self.assertAllClose(np.array(knp.take(x, 0)), np.take(x, 0))
         self.assertAllClose(
@@ -2024,6 +2069,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
     def test_take_along_axis(self):
         x = np.arange(24).reshape([1, 2, 3, 4])
         indices = np.ones([1, 4, 1, 1], dtype=np.int32)
+        x, indices = _to_backend_tensor([x, indices])
         self.assertAllClose(
             np.array(knp.take_along_axis(x, indices, axis=1)),
             np.take_along_axis(x, indices, axis=1),
@@ -2047,6 +2093,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
     def test_tensordot(self):
         x = np.arange(24).reshape([1, 2, 3, 4])
         y = np.arange(24).reshape([3, 4, 1, 2])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(
             np.array(knp.tensordot(x, y, axes=2)), np.tensordot(x, y, axes=2)
         )
@@ -2066,12 +2113,14 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
     def test_vdot(self):
         x = np.array([1, 2, 3])
         y = np.array([4, 5, 6])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.vdot(x, y)), np.vdot(x, y))
         self.assertAllClose(np.array(knp.Vdot()(x, y)), np.vdot(x, y))
 
     def test_where(self):
         x = np.array([1, 2, 3])
         y = np.array([4, 5, 6])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(
             np.array(knp.where(x > 1, x, y)), np.where(x > 1, x, y)
         )
@@ -2083,6 +2132,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
 class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
     def test_mean(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.mean(x)), np.mean(x))
         self.assertAllClose(np.array(knp.mean(x, axis=1)), np.mean(x, axis=1))
         self.assertAllClose(
@@ -2099,6 +2149,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_all(self):
         x = np.array([[True, False, True], [True, True, True]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.all(x)), np.all(x))
         self.assertAllClose(np.array(knp.all(x, axis=1)), np.all(x, axis=1))
         self.assertAllClose(
@@ -2115,6 +2166,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_any(self):
         x = np.array([[True, False, True], [True, True, True]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.any(x)), np.any(x))
         self.assertAllClose(np.array(knp.any(x, axis=1)), np.any(x, axis=1))
         self.assertAllClose(
@@ -2131,6 +2183,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_var(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.var(x)), np.var(x))
         self.assertAllClose(np.array(knp.var(x, axis=1)), np.var(x, axis=1))
         self.assertAllClose(
@@ -2147,6 +2200,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_sum(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.sum(x)), np.sum(x))
         self.assertAllClose(np.array(knp.sum(x, axis=1)), np.sum(x, axis=1))
         self.assertAllClose(
@@ -2163,6 +2217,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_amax(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.amax(x)), np.amax(x))
         self.assertAllClose(np.array(knp.amax(x, axis=1)), np.amax(x, axis=1))
         self.assertAllClose(
@@ -2179,6 +2234,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_amin(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.amin(x)), np.amin(x))
         self.assertAllClose(np.array(knp.amin(x, axis=1)), np.amin(x, axis=1))
         self.assertAllClose(
@@ -2195,30 +2251,35 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_square(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.square(x)), np.square(x))
 
         self.assertAllClose(np.array(knp.Square()(x)), np.square(x))
 
     def test_negative(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.negative(x)), np.negative(x))
 
         self.assertAllClose(np.array(knp.Negative()(x)), np.negative(x))
 
     def test_abs(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.abs(x)), np.abs(x))
 
         self.assertAllClose(np.array(knp.Abs()(x)), np.abs(x))
 
     def test_absolute(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.absolute(x)), np.absolute(x))
 
         self.assertAllClose(np.array(knp.Absolute()(x)), np.absolute(x))
 
     def test_squeeze(self):
         x = np.ones([1, 2, 3, 4, 5])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.squeeze(x)), np.squeeze(x))
         self.assertAllClose(
             np.array(knp.squeeze(x, axis=0)), np.squeeze(x, axis=0)
@@ -2231,6 +2292,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_transpose(self):
         x = np.ones([1, 2, 3, 4, 5])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.transpose(x)), np.transpose(x))
         self.assertAllClose(
             np.array(knp.transpose(x, axes=(1, 0, 3, 2, 4))),
@@ -2245,18 +2307,21 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_arcos(self):
         x = np.array([[1, 0.5, -0.7], [0.9, 0.2, -1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.arccos(x)), np.arccos(x))
 
         self.assertAllClose(np.array(knp.Arccos()(x)), np.arccos(x))
 
     def test_arcsin(self):
         x = np.array([[1, 0.5, -0.7], [0.9, 0.2, -1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.arcsin(x)), np.arcsin(x))
 
         self.assertAllClose(np.array(knp.Arcsin()(x)), np.arcsin(x))
 
     def test_argmax(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.argmax(x)), np.argmax(x))
         self.assertAllClose(
             np.array(knp.argmax(x, axis=1)), np.argmax(x, axis=1)
@@ -2269,6 +2334,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_argmin(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.argmin(x)), np.argmin(x))
         self.assertAllClose(
             np.array(knp.argmin(x, axis=1)), np.argmin(x, axis=1)
@@ -2281,6 +2347,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_argsort(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.argsort(x)), np.argsort(x))
         self.assertAllClose(
             np.array(knp.argsort(x, axis=1)), np.argsort(x, axis=1)
@@ -2301,6 +2368,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_array(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.array(x)), np.array(x))
         self.assertAllClose(np.array(knp.Array()(x)), np.array(x))
 
@@ -2308,6 +2376,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         weights = np.ones([2, 3])
         weights_1d = np.ones([3])
+        x, weights, weights_1d = _to_backend_tensor([x, weights, weights_1d])
         self.assertAllClose(np.array(knp.average(x)), np.average(x))
         self.assertAllClose(
             np.array(knp.average(x, axis=1)), np.average(x, axis=1)
@@ -2338,6 +2407,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         x = np.array([1, 1, 2, 3, 2, 4, 4, 5])
         weights = np.array([0, 0, 3, 2, 1, 1, 4, 2])
         minlength = 3
+        x, weights = _to_backend_tensor([x, weights])
         self.assertAllClose(
             np.array(knp.bincount(x, weights=weights, minlength=minlength)),
             np.bincount(x, weights=weights, minlength=minlength),
@@ -2349,6 +2419,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_broadcast_to(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(
             np.array(knp.broadcast_to(x, [2, 2, 3])),
             np.broadcast_to(x, [2, 2, 3]),
@@ -2361,11 +2432,13 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_ceil(self):
         x = np.array([[1.2, 2.1, -2.5], [2.4, -11.9, -5.5]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.ceil(x)), np.ceil(x))
         self.assertAllClose(np.array(knp.Ceil()(x)), np.ceil(x))
 
     def test_clip(self):
         x = np.array([[1.2, 2.1, -2.5], [2.4, -11.9, -5.5]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.clip(x, -2, 2)), np.clip(x, -2, 2))
         self.assertAllClose(np.array(knp.clip(x, -2, 2)), np.clip(x, -2, 2))
 
@@ -2376,6 +2449,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [6, 5, 4]])
         z = np.array([[7, 8, 9], [9, 8, 7]])
+        x, y, z = _to_backend_tensor([x, y, z])
         self.assertAllClose(
             np.array(knp.concatenate([x, y], axis=0)),
             np.concatenate([x, y], axis=0),
@@ -2404,26 +2478,31 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_conjugate(self):
         x = np.array([[1 + 2j, 2 + 3j], [3 + 4j, 4 + 5j]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.conjugate(x)), np.conjugate(x))
         self.assertAllClose(np.array(knp.Conjugate()(x)), np.conjugate(x))
 
     def test_conj(self):
         x = np.array([[1 + 2j, 2 + 3j], [3 + 4j, 4 + 5j]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.conj(x)), np.conj(x))
         self.assertAllClose(np.array(knp.Conj()(x)), np.conj(x))
 
     def test_copy(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.copy(x)), np.copy(x))
         self.assertAllClose(np.array(knp.Copy()(x)), np.copy(x))
 
     def test_cos(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.cos(x)), np.cos(x))
         self.assertAllClose(np.array(knp.Cos()(x)), np.cos(x))
 
     def test_count_nonzero(self):
         x = np.array([[0, 2, 3], [3, 2, 0]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.count_nonzero(x)), np.count_nonzero(x))
         self.assertAllClose(
             np.array(knp.count_nonzero(x, axis=1)),
@@ -2441,6 +2520,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_cumprod(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.cumprod(x)), np.cumprod(x))
         self.assertAllClose(
             np.array(knp.cumprod(x, axis=0)),
@@ -2463,6 +2543,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_cumsum(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.cumsum(x)), np.cumsum(x))
         self.assertAllClose(
             np.array(knp.cumsum(x, axis=0)),
@@ -2485,6 +2566,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_diag(self):
         x = np.array([1, 2, 3])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.diag(x)), np.diag(x))
         self.assertAllClose(np.array(knp.diag(x, k=1)), np.diag(x, k=1))
         self.assertAllClose(np.array(knp.diag(x, k=-1)), np.diag(x, k=-1))
@@ -2494,6 +2576,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(np.array(knp.Diag(k=-1)(x)), np.diag(x, k=-1))
 
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.diag(x)), np.diag(x))
         self.assertAllClose(np.array(knp.diag(x, k=1)), np.diag(x, k=1))
         self.assertAllClose(np.array(knp.diag(x, k=-1)), np.diag(x, k=-1))
@@ -2504,6 +2587,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_diagonal(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.diagonal(x)), np.diagonal(x))
         self.assertAllClose(
             np.array(knp.diagonal(x, offset=1)),
@@ -2522,6 +2606,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         )
 
         x = np.ones([2, 3, 4, 5])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.diagonal(x)), np.diagonal(x))
         self.assertAllClose(
             np.array(knp.diagonal(x, offset=1, axis1=2, axis2=3)),
@@ -2536,6 +2621,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         x = np.arange(24).reshape([2, 3, 4])
         y = np.arange(12).reshape([4, 3])
         z = np.arange(4)
+        x, y, z = _to_backend_tensor([x, y, z])
         self.assertAllClose(np.array(knp.dot(x, y)), np.dot(x, y))
         self.assertAllClose(np.array(knp.dot(x, z)), np.dot(x, z))
         self.assertAllClose(np.array(knp.dot(x, 2)), np.dot(x, 2))
@@ -2546,11 +2632,13 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_exp(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.exp(x)), np.exp(x))
         self.assertAllClose(np.array(knp.Exp()(x)), np.exp(x))
 
     def test_expand_dims(self):
         x = np.ones([2, 3, 4])
+        x = _to_backend_tensor(x)
         self.assertAllClose(
             np.array(knp.expand_dims(x, 0)), np.expand_dims(x, 0)
         )
@@ -2573,11 +2661,13 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_expm1(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.expm1(x)), np.expm1(x))
         self.assertAllClose(np.array(knp.Expm1()(x)), np.expm1(x))
 
     def test_flip(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.flip(x)), np.flip(x))
         self.assertAllClose(np.array(knp.flip(x, 0)), np.flip(x, 0))
         self.assertAllClose(np.array(knp.flip(x, 1)), np.flip(x, 1))
@@ -2588,73 +2678,87 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_floor(self):
         x = np.array([[1.1, 2.2, -3.3], [3.3, 2.2, -1.1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.floor(x)), np.floor(x))
         self.assertAllClose(np.array(knp.Floor()(x)), np.floor(x))
 
     def test_hstack(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [6, 5, 4]])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.hstack([x, y])), np.hstack([x, y]))
         self.assertAllClose(np.array(knp.Hstack()([x, y])), np.hstack([x, y]))
 
         x = np.ones([2, 3, 4])
         y = np.ones([2, 5, 4])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.hstack([x, y])), np.hstack([x, y]))
         self.assertAllClose(np.array(knp.Hstack()([x, y])), np.hstack([x, y]))
 
     def test_imag(self):
         x = np.array([[1 + 1j, 2 + 2j, 3 + 3j], [3 + 3j, 2 + 2j, 1 + 1j]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.imag(x)), np.imag(x))
         self.assertAllClose(np.array(knp.Imag()(x)), np.imag(x))
 
     def test_isfinite(self):
         x = np.array([[1, 2, np.inf], [np.nan, np.nan, np.nan]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.isfinite(x)), np.isfinite(x))
         self.assertAllClose(np.array(knp.Isfinite()(x)), np.isfinite(x))
 
     def test_isinf(self):
         x = np.array([[1, 2, np.inf], [np.nan, np.nan, np.nan]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.isinf(x)), np.isinf(x))
         self.assertAllClose(np.array(knp.Isinf()(x)), np.isinf(x))
 
     def test_isnan(self):
         x = np.array([[1, 2, np.inf], [np.nan, np.nan, np.nan]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.isnan(x)), np.isnan(x))
         self.assertAllClose(np.array(knp.Isnan()(x)), np.isnan(x))
 
     def test_log(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.log(x)), np.log(x))
         self.assertAllClose(np.array(knp.Log()(x)), np.log(x))
 
     def test_log10(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.log10(x)), np.log10(x))
         self.assertAllClose(np.array(knp.Log10()(x)), np.log10(x))
 
     def test_log1p(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.log1p(x)), np.log1p(x))
         self.assertAllClose(np.array(knp.Log1p()(x)), np.log1p(x))
 
     def test_log2(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.log2(x)), np.log2(x))
         self.assertAllClose(np.array(knp.Log2()(x)), np.log2(x))
 
     def test_logaddexp(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[1, 2, 3], [3, 2, 1]])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.logaddexp(x, y)), np.logaddexp(x, y))
         self.assertAllClose(np.array(knp.Logaddexp()(x, y)), np.logaddexp(x, y))
 
     def test_logical_not(self):
         x = np.array([[True, False], [False, True]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.logical_not(x)), np.logical_not(x))
         self.assertAllClose(np.array(knp.LogicalNot()(x)), np.logical_not(x))
 
     def test_max(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.max(x)), np.max(x))
         self.assertAllClose(np.array(knp.Max()(x)), np.max(x))
 
@@ -2666,6 +2770,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_min(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.min(x)), np.min(x))
         self.assertAllClose(np.array(knp.Min()(x)), np.min(x))
 
@@ -2679,6 +2784,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         x = np.array([1, 2, 3])
         y = np.array([4, 5, 6])
         z = np.array([7, 8, 9])
+        x, y, z = _to_backend_tensor([x, y, z])
         self.assertAllClose(np.array(knp.meshgrid(x, y)), np.meshgrid(x, y))
         self.assertAllClose(np.array(knp.meshgrid(x, z)), np.meshgrid(x, z))
         self.assertAllClose(
@@ -2716,6 +2822,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_moveaxis(self):
         x = np.array([[[0, 1], [2, 3]], [[4, 5], [6, 7]]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(
             np.array(knp.moveaxis(x, 0, -1)), np.moveaxis(x, 0, -1)
         )
@@ -2745,21 +2852,25 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_ndim(self):
         x = np.array([1, 2, 3])
+        x = _to_backend_tensor(x)
         self.assertEqual(knp.ndim(x), np.ndim(x))
         self.assertEqual(knp.Ndim()(x), np.ndim(x))
 
     def test_nonzero(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.nonzero(x)), np.nonzero(x))
         self.assertAllClose(np.array(knp.Nonzero()(x)), np.nonzero(x))
 
     def test_ones_like(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.ones_like(x)), np.ones_like(x))
         self.assertAllClose(np.array(knp.OnesLike()(x)), np.ones_like(x))
 
     def test_pad(self):
         x = np.array([[1, 2], [3, 4]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(
             np.array(knp.pad(x, ((1, 1), (1, 1)))), np.pad(x, ((1, 1), (1, 1)))
         )
@@ -2793,6 +2904,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         )
 
         x = np.ones([2, 3, 4, 5])
+        x = _to_backend_tensor(x)
         self.assertAllClose(
             np.array(knp.pad(x, ((2, 3), (1, 1), (1, 1), (1, 1)))),
             np.pad(x, ((2, 3), (1, 1), (1, 1), (1, 1))),
@@ -2804,6 +2916,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_prod(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.prod(x)), np.prod(x))
         self.assertAllClose(np.array(knp.prod(x, axis=1)), np.prod(x, axis=1))
         self.assertAllClose(
@@ -2820,21 +2933,25 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_ravel(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.ravel(x)), np.ravel(x))
         self.assertAllClose(np.array(knp.Ravel()(x)), np.ravel(x))
 
     def test_real(self):
         x = np.array([[1, 2, 3 - 3j], [3, 2, 1 + 5j]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.real(x)), np.real(x))
         self.assertAllClose(np.array(knp.Real()(x)), np.real(x))
 
     def test_reciprocal(self):
         x = np.array([[1.0, 2.0, 3.0], [3.0, 2.0, 1.0]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.reciprocal(x)), np.reciprocal(x))
         self.assertAllClose(np.array(knp.Reciprocal()(x)), np.reciprocal(x))
 
     def test_repeat(self):
         x = np.array([[1, 2], [3, 4]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.repeat(x, 2)), np.repeat(x, 2))
         self.assertAllClose(
             np.array(knp.repeat(x, 3, axis=1)), np.repeat(x, 3, axis=1)
@@ -2854,6 +2971,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_reshape(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(
             np.array(knp.reshape(x, [3, 2])), np.reshape(x, [3, 2])
         )
@@ -2863,6 +2981,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_roll(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.roll(x, 1)), np.roll(x, 1))
         self.assertAllClose(
             np.array(knp.roll(x, 1, axis=1)), np.roll(x, 1, axis=1)
@@ -2880,26 +2999,31 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_round(self):
         x = np.array([[1.1, 2.5, 3.9], [3.2, 2.3, 1.8]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.round(x)), np.round(x))
         self.assertAllClose(np.array(knp.Round()(x)), np.round(x))
 
     def test_sign(self):
         x = np.array([[1, -2, 3], [-3, 2, -1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.sign(x)), np.sign(x))
         self.assertAllClose(np.array(knp.Sign()(x)), np.sign(x))
 
     def test_sin(self):
         x = np.array([[1, -2, 3], [-3, 2, -1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.sin(x)), np.sin(x))
         self.assertAllClose(np.array(knp.Sin()(x)), np.sin(x))
 
     def test_size(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.size(x)), np.size(x))
         self.assertAllClose(np.array(knp.Size()(x)), np.size(x))
 
     def test_sort(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.sort(x)), np.sort(x))
         self.assertAllClose(np.array(knp.Sort()(x)), np.sort(x))
         self.assertAllClose(np.array(knp.sort(x, axis=0)), np.sort(x, axis=0))
@@ -2907,6 +3031,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_split(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.split(x, 2)), np.split(x, 2))
         self.assertAllClose(np.array(knp.Split(2)(x)), np.split(x, 2))
         self.assertAllClose(
@@ -2920,12 +3045,14 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_sqrt(self):
         x = np.array([[1, 4, 9], [16, 25, 36]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.sqrt(x)), np.sqrt(x))
         self.assertAllClose(np.array(knp.Sqrt()(x)), np.sqrt(x))
 
     def test_stack(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [6, 5, 4]])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.stack([x, y])), np.stack([x, y]))
         self.assertAllClose(
             np.array(knp.stack([x, y], axis=1)), np.stack([x, y], axis=1)
@@ -2937,6 +3064,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_std(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.std(x)), np.std(x))
         self.assertAllClose(np.array(knp.std(x, axis=1)), np.std(x, axis=1))
         self.assertAllClose(
@@ -2953,6 +3081,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_swapaxes(self):
         x = np.arange(24).reshape([1, 2, 3, 4])
+        x = _to_backend_tensor(x)
         self.assertAllClose(
             np.array(knp.swapaxes(x, 0, 1)),
             np.swapaxes(x, 0, 1),
@@ -2964,16 +3093,19 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_tan(self):
         x = np.array([[1, -2, 3], [-3, 2, -1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.tan(x)), np.tan(x))
         self.assertAllClose(np.array(knp.Tan()(x)), np.tan(x))
 
     def test_tile(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.tile(x, [2, 3])), np.tile(x, [2, 3]))
         self.assertAllClose(np.array(knp.Tile([2, 3])(x)), np.tile(x, [2, 3]))
 
     def test_trace(self):
         x = np.arange(24).reshape([1, 2, 3, 4])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.trace(x)), np.trace(x))
         self.assertAllClose(
             np.array(knp.trace(x, axis1=2, axis2=3)),
@@ -2986,12 +3118,14 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_tril(self):
         x = np.arange(24).reshape([1, 2, 3, 4])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.tril(x)), np.tril(x))
         self.assertAllClose(np.array(knp.tril(x, -1)), np.tril(x, -1))
         self.assertAllClose(np.array(knp.Tril(-1)(x)), np.tril(x, -1))
 
     def test_triu(self):
         x = np.arange(24).reshape([1, 2, 3, 4])
+        x = _to_backend_tensor(x)
         self.assertAllClose(np.array(knp.triu(x)), np.triu(x))
         self.assertAllClose(np.array(knp.triu(x, -1)), np.triu(x, -1))
         self.assertAllClose(np.array(knp.Triu(-1)(x)), np.triu(x, -1))
@@ -2999,6 +3133,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
     def test_vstack(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [6, 5, 4]])
+        x, y = _to_backend_tensor([x, y])
         self.assertAllClose(np.array(knp.vstack([x, y])), np.vstack([x, y]))
         self.assertAllClose(np.array(knp.Vstack()([x, y])), np.vstack([x, y]))
 
