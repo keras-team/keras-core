@@ -3,6 +3,7 @@ import warnings
 
 import numpy as np
 import tensorflow as tf
+from keras.utils import tf_utils
 from tensorflow.python.eager import context as tf_context
 
 from keras_core import callbacks as callbacks_module
@@ -197,18 +198,32 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 self.distribute_strategy,
                 reduction=self.distribute_reduction_method,
             )
-            return [outputs]
+            return outputs
 
         def mutli_step_on_iterator(iterator):
-            outputs = []
-            for _ in tf.range(self.steps_per_execution):
-                outputs += one_step_on_iterator(iterator)
+            outputs = one_step_on_iterator(iterator)
+            for _ in tf.range(self.steps_per_execution - 1):
+                tf.autograph.experimental.set_loop_options(
+                    shape_invariants=[
+                        (
+                            outputs,
+                            tf.nest.map_structure(
+                                lambda t: tf_utils.get_tensor_spec(
+                                    t, dynamic_batch=True
+                                ).shape,
+                                outputs,
+                            ),
+                        )
+                    ]
+                )
+                step_outputs = one_step_on_iterator(iterator)
+                outputs = tf.nest.map_structure(
+                    lambda t1, t2: concat([t1, t2]), outputs, step_outputs
+                )
             return outputs
 
         if self.steps_per_execution > 1:
-            # TODO(haifengj): Use multi_step_on_iterator.
-            # predict_function = mutli_step_on_iterator
-            predict_function = one_step_on_iterator
+            predict_function = mutli_step_on_iterator
         else:
             predict_function = one_step_on_iterator
 
@@ -431,28 +446,29 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 model=self,
             )
 
+        def append_to_outputs(batch_outputs, outputs):
+            if outputs is None:
+                outputs = tf.nest.map_structure(
+                    lambda batch_output: [batch_output],
+                    batch_outputs,
+                )
+            else:
+                tf.__internal__.nest.map_structure_up_to(
+                    batch_outputs,
+                    lambda output, batch_output: output.append(batch_output),
+                    outputs,
+                    batch_outputs,
+                )
+            return outputs
+
         self.make_predict_function()
         callbacks.on_predict_begin()
         outputs = None
         with epoch_iterator.catch_stop_iteration():
             for step, iterator in epoch_iterator.enumerate_epoch():
                 callbacks.on_predict_batch_begin(step)
-                multi_batch_outputs = self.predict_function(iterator)
-                for batch_outputs in multi_batch_outputs:
-                    if outputs is None:
-                        outputs = tf.nest.map_structure(
-                            lambda batch_output: [batch_output],
-                            batch_outputs,
-                        )
-                    else:
-                        tf.__internal__.nest.map_structure_up_to(
-                            batch_outputs,
-                            lambda output, batch_output: output.append(
-                                batch_output
-                            ),
-                            outputs,
-                            batch_outputs,
-                        )
+                batch_outputs = self.predict_function(iterator)
+                outputs = append_to_outputs(batch_outputs, outputs)
                 callbacks.on_predict_batch_end(step, {"outputs": batch_outputs})
         callbacks.on_predict_end()
         return tf.__internal__.nest.map_structure_up_to(
