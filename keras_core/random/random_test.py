@@ -1,7 +1,6 @@
 import numpy as np
 from absl.testing import parameterized
 
-import keras_core.operations as ops
 from keras_core import testing
 from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.operations import numpy as knp
@@ -36,8 +35,8 @@ class RandomTest(testing.TestCase, parameterized.TestCase):
         res = random.uniform(shape, minval=minval, maxval=maxval, seed=seed)
         self.assertEqual(res.shape, KerasTensor(shape).shape)
         self.assertEqual(res.shape, np_res.shape)
-        self.assertLessEqual(ops.max(res), maxval)
-        self.assertGreaterEqual(ops.max(res), minval)
+        self.assertLessEqual(knp.max(res), maxval)
+        self.assertGreaterEqual(knp.max(res), minval)
 
     @parameterized.parameters(
         {"seed": 10, "shape": (5,), "mean": 0, "stddev": 1},
@@ -54,8 +53,8 @@ class RandomTest(testing.TestCase, parameterized.TestCase):
         )
         self.assertEqual(res.shape, KerasTensor(shape).shape)
         self.assertEqual(res.shape, np_res.shape)
-        self.assertLessEqual(ops.max(res), mean + 2 * stddev)
-        self.assertGreaterEqual(ops.max(res), mean - 2 * stddev)
+        self.assertLessEqual(knp.max(res), mean + 2 * stddev)
+        self.assertGreaterEqual(knp.max(res), mean - 2 * stddev)
 
     def test_dropout(self):
         x = knp.ones((3, 5))
