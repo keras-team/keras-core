@@ -9,9 +9,5 @@ pytest
 pandas
 absl-py
 requests
-<<<<<<< HEAD
-torch>=2.0.1+cpu --find-link https://download.pytorch.org/whl/cpu
-=======
 h5py
 torch
->>>>>>> origin
