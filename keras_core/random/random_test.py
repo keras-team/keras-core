@@ -2,7 +2,6 @@ import numpy as np
 from absl.testing import parameterized
 
 from keras_core import testing
-from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.operations import numpy as knp
 from keras_core.random import random
 
@@ -19,7 +18,7 @@ class RandomTest(testing.TestCase, parameterized.TestCase):
         np.random.seed(seed)
         np_res = np.random.normal(loc=mean, scale=stddev, size=shape)
         res = random.normal(shape, mean=mean, stddev=stddev, seed=seed)
-        self.assertEqual(res.shape, KerasTensor(shape).shape)
+        self.assertEqual(res.shape, shape)
         self.assertEqual(res.shape, np_res.shape)
 
     @parameterized.parameters(
@@ -33,7 +32,7 @@ class RandomTest(testing.TestCase, parameterized.TestCase):
         np.random.seed(seed)
         np_res = np.random.uniform(low=minval, high=maxval, size=shape)
         res = random.uniform(shape, minval=minval, maxval=maxval, seed=seed)
-        self.assertEqual(res.shape, KerasTensor(shape).shape)
+        self.assertEqual(res.shape, shape)
         self.assertEqual(res.shape, np_res.shape)
         self.assertLessEqual(knp.max(res), maxval)
         self.assertGreaterEqual(knp.max(res), minval)
@@ -51,7 +50,7 @@ class RandomTest(testing.TestCase, parameterized.TestCase):
         res = random.truncated_normal(
             shape, mean=mean, stddev=stddev, seed=seed
         )
-        self.assertEqual(res.shape, KerasTensor(shape).shape)
+        self.assertEqual(res.shape, shape)
         self.assertEqual(res.shape, np_res.shape)
         self.assertLessEqual(knp.max(res), mean + 2 * stddev)
         self.assertGreaterEqual(knp.max(res), mean - 2 * stddev)
