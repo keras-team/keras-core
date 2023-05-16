@@ -50,6 +50,7 @@ class TorchDataLoaderAdapter(DataAdapter):
             shape[0] = None  # The batch size is not guaranteed to be static.
 
             # No easy way to get string representation of dtype in torch
+            # TODO: Figure out a better way to achieve this
             dtype = str(x.dtype).replace("torch.", "")
             return tf.TensorSpec(shape=shape, dtype=dtype)
 
