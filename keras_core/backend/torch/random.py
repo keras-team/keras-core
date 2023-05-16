@@ -2,15 +2,16 @@ import torch
 import torch.nn.functional as tnn
 
 from keras_core.backend.config import floatx
+from keras_core.backend.torch.core import to_torch_dtype
 from keras_core.random.seed_generator import SeedGenerator
 from keras_core.random.seed_generator import draw_seed
 from keras_core.random.seed_generator import make_default_seed
 
 
 def torch_seed_generator(seed):
-    seed = int(draw_seed(seed))
+    seed_val, _ = draw_seed(seed)
     generator = torch.Generator()
-    generator.manual_seed(seed)
+    generator.manual_seed(int(seed_val))
     return generator
 
 
@@ -36,6 +37,7 @@ def normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
             of `keras_core.backend.SeedGenerator`.
     """
     dtype = dtype or floatx()
+    dtype = to_torch_dtype(dtype)
     generator = torch_seed_generator(seed)
     return torch.normal(
         mean, stddev, size=shape, generator=generator, dtype=dtype
@@ -65,6 +67,7 @@ def uniform(shape, minval=0.0, maxval=1.0, dtype=None, seed=None):
             of `keras_core.backend.SeedGenerator`.
     """
     dtype = dtype or floatx()
+    dtype = to_torch_dtype(dtype)
     generator = torch_seed_generator(seed)
     return (maxval - minval) * torch.rand(
         *shape, generator=generator, dtype=dtype
@@ -92,16 +95,19 @@ def truncated_normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
             across multiple calls, use as seed an instance
             of `keras_core.backend.SeedGenerator`.
     """
-    dtype = dtype or floatx()
-    _ = torch_seed_generator(seed)
-    # TODO
-    raise NotImplementedError(
-        "`truncated_normal` not implemented in PyTorch backend."
+    x = torch.empty(shape)
+    # TODO: setting seed globally via `manual_seed` might create side effects.
+    if seed is not None:
+        seed_val, _ = draw_seed(seed)
+        torch.manual_seed(int(seed_val))
+    return torch.nn.init.trunc_normal_(
+        x, mean=mean, std=stddev, a=-stddev * 2, b=stddev * 2
     )
 
 
 def dropout(inputs, rate, noise_shape=None, seed=None):
-    # TODO: setting seed globally might create side effects.
-    # Need to see how to use `torch_seed_generator`
-    torch.manual_seed(seed)
+    # TODO: setting seed globally via `manual_seed` might create side effects.
+    if seed is not None:
+        seed_val, _ = draw_seed(seed)
+        torch.manual_seed(int(seed_val))
     return tnn.dropout(inputs, p=rate)

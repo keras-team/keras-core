@@ -19,7 +19,7 @@ class SeedGenerator:
             return [seed, 0]
 
         self.state = Variable(
-            seed_initializer, shape=(2,), dtype="uint32", trainable=False
+            seed_initializer, shape=(2,), dtype="int32", trainable=False
         )
 
 
@@ -33,14 +33,12 @@ def draw_seed(seed):
     if isinstance(seed, SeedGenerator):
         # Use * 1 to create a copy
         new_seed_value = seed.state.value * 1
-        seed.state.assign(
-            seed.state + convert_to_tensor([0, 1], dtype="uint32")
-        )
+        seed.state.assign(seed.state + convert_to_tensor([0, 1], dtype="int32"))
         return new_seed_value
     elif isinstance(seed, int):
-        return convert_to_tensor([seed, 0], dtype="uint32")
+        return convert_to_tensor([seed, 0], dtype="int32")
     elif seed is None:
-        return convert_to_tensor([make_default_seed(), 0], dtype="uint32")
+        return convert_to_tensor([make_default_seed(), 0], dtype="int32")
     raise ValueError(
         "Argument `seed` must be either an integer "
         "or an instance of `SeedGenerator`. "

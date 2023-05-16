@@ -23,6 +23,8 @@ TORCH_DTYPES = {
 
 
 def to_torch_dtype(dtype):
+    if isinstance(dtype, torch.dtype):
+        return dtype
     dtype = standardize_dtype(dtype)
     dtype = TORCH_DTYPES.get(dtype, None)
     if dtype is None:
