@@ -38,9 +38,9 @@ class TimeDistributed(Wrapper):
     You can then use `TimeDistributed` to apply the same `Conv2D` layer to each
     of the 10 timesteps, independently:
 
-    >>> inputs = keras_core.Input(shape=(10, 128, 128, 3))
-    >>> conv_2d_layer = keras_core.layers.Conv2D(64, (3, 3))
-    >>> outputs = keras_core.layers.TimeDistributed(conv_2d_layer)(inputs)
+    >>> inputs = layers.Input(shape=(10, 128, 128, 3))
+    >>> conv_2d_layer = layers.Conv2D(64, (3, 3))
+    >>> outputs = layers.TimeDistributed(conv_2d_layer)(inputs)
     >>> outputs.shape
     (None, 10, 126, 126, 64)
 
@@ -74,16 +74,23 @@ class TimeDistributed(Wrapper):
         super().__init__(layer, **kwargs)
         self.supports_masking = True
 
-    def compute_output_shape(self, input_shape):
+    def _get_child_input_shape(self, input_shape):
         if not isinstance(input_shape, (tuple, list)) or len(input_shape) < 3:
             raise ValueError(
                 "`TimeDistributed` Layer should be passed an `input_shape ` "
                 f"with at least 3 dimensions, received: {input_shape}"
             )
-        timesteps = input_shape[1]
-        child_input_shape = [input_shape[0]] + list(input_shape[2:])
+        return (input_shape[0], *input_shape[2:])
+
+    def compute_output_shape(self, input_shape):
+        child_input_shape = self._get_child_input_shape(input_shape)
         child_output_shape = self.layer.compute_output_shape(child_input_shape)
-        return (child_output_shape[0], timesteps, *child_output_shape[1:])
+        return (child_output_shape[0], input_shape[1], *child_output_shape[1:])
+
+    def build(self, input_shape):
+        child_input_shape = self._get_child_input_shape(input_shape)
+        self.layer.build(child_input_shape)
+        self.built = True
 
     def call(self, inputs, training=None, mask=None):
         input_shape = inputs.shape

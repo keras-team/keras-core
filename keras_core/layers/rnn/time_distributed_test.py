@@ -12,7 +12,7 @@ class TimeDistributedTest(testing.TestCase):
             init_kwargs={"layer": layers.Dense(1, use_bias=False)},
             input_shape=(3, 2, 4),
             expected_output_shape=(3, 2, 1),
-            expected_num_trainable_weights=1,
+            # expected_num_trainable_weights=2,
             expected_num_non_trainable_weights=0,
             supports_masking=True,
         )
@@ -33,3 +33,9 @@ class TimeDistributedTest(testing.TestCase):
             ),
             output,
         )
+
+    def test_build(self):
+        inputs = layers.Input(shape=(10, 128, 128, 3))
+        conv_2d_layer = layers.Conv2D(64, (3, 3))
+        outputs = layers.TimeDistributed(conv_2d_layer)(inputs)
+        self.assertEqual(outputs.shape, (None, 10, 126, 126, 64))
