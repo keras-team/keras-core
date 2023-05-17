@@ -1,6 +1,7 @@
 from keras_core.layers.activations.activation import Activation
 from keras_core.layers.attention.additive_attention import AdditiveAttention
 from keras_core.layers.attention.attention import Attention
+from keras_core.layers.attention.multi_head_attention import MultiHeadAttention
 from keras_core.layers.convolutional.conv1d import Conv1D
 from keras_core.layers.convolutional.conv1d_transpose import Conv1DTranspose
 from keras_core.layers.convolutional.conv2d import Conv2D
@@ -102,6 +103,7 @@ from keras_core.layers.reshaping.permute import Permute
 from keras_core.layers.reshaping.repeat_vector import RepeatVector
 from keras_core.layers.reshaping.reshape import Reshape
 from keras_core.layers.reshaping.up_sampling1d import UpSampling1D
+from keras_core.layers.rnn.bidirectional import Bidirectional
 from keras_core.layers.rnn.gru import GRU
 from keras_core.layers.rnn.lstm import LSTM
 from keras_core.layers.rnn.rnn import RNN

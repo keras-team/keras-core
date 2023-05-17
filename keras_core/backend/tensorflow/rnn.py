@@ -84,12 +84,11 @@ def rnn(
     if not time_major:
         inputs = tf.nest.map_structure(swap_batch_timestep, inputs)
 
-    flatted_inputs = tf.nest.flatten(inputs)
-    time_steps = flatted_inputs[0].shape[0]
-    batch = flatted_inputs[0].shape[1]
-    time_steps_t = tf.shape(flatted_inputs[0])[0]
+    flattened_inputs = tf.nest.flatten(inputs)
+    time_steps = flattened_inputs[0].shape[0]
+    time_steps_t = tf.shape(flattened_inputs[0])[0]
 
-    for input_ in flatted_inputs:
+    for input_ in flattened_inputs:
         input_.shape.with_rank_at_least(3)
 
     if mask is not None:
@@ -236,20 +235,20 @@ def rnn(
                 size=time_steps_t,
                 tensor_array_name=f"input_ta_{i}",
             )
-            for i, inp in enumerate(flatted_inputs)
+            for i, inp in enumerate(flattened_inputs)
         )
         input_ta = tuple(
             ta.unstack(input_)
             if not go_backwards
             else ta.unstack(tf.reverse(input_, [0]))
-            for ta, input_ in zip(input_ta, flatted_inputs)
+            for ta, input_ in zip(input_ta, flattened_inputs)
         )
 
         # Get the time(0) input and compute the output for that, the output will
         # be used to determine the dtype of output tensor array. Don't read from
         # input_ta due to TensorArray clear_after_read default to True.
         input_time_zero = tf.nest.pack_sequence_as(
-            inputs, [inp[0] for inp in flatted_inputs]
+            inputs, [inp[0] for inp in flattened_inputs]
         )
         # output_time_zero is used to determine the cell output shape and its
         # dtype.  the value is discarded.
@@ -436,20 +435,6 @@ def rnn(
         outputs = tf.nest.pack_sequence_as(output_time_zero, outputs)
         last_output = tf.nest.pack_sequence_as(output_time_zero, last_output)
 
-    # static shape inference
-    def set_shape(output_):
-        if isinstance(output_, tf.Tensor):
-            shape = output_.shape.as_list()
-            if return_all_outputs:
-                shape[0] = time_steps
-            else:
-                shape[0] = 1
-            shape[1] = batch
-            output_.set_shape(shape)
-        return output_
-
-    outputs = tf.nest.map_structure(set_shape, outputs)
-
     if not time_major:
         outputs = tf.nest.map_structure(swap_batch_timestep, outputs)
 
@@ -589,7 +574,12 @@ def _is_sequence_right_padded(mask):
     max_seq_length = tf.shape(mask)[1]
     count_of_true = tf.reduce_sum(tf.cast(mask, tf.int32), axis=1)
     right_padded_mask = tf.sequence_mask(count_of_true, maxlen=max_seq_length)
-    return tf.reduce_all(tf.equal(mask, right_padded_mask))
+    return tf.reduce_all(
+        tf.equal(
+            tf.cast(mask, dtype="bool"),
+            tf.cast(right_padded_mask, dtype="bool"),
+        )
+    )
 
 
 def _has_fully_masked_sequence(mask):
@@ -598,7 +588,9 @@ def _has_fully_masked_sequence(mask):
     # to standard kernel, until the issue on cudnn side has been fixed.  For a
     # fully masked sequence, it will contain all Falses. To make it easy to
     # check, we inverse the boolean, check if any of the sequence has all True.
-    return tf.reduce_any(tf.reduce_all(tf.logical_not(mask), axis=1))
+    return tf.reduce_any(
+        tf.reduce_all(tf.logical_not(tf.cast(mask, dtype="bool")), axis=1)
+    )
 
 
 def _standardize_cudnn_weights(weights, biases, shape, transpose_weights=False):
