@@ -41,7 +41,7 @@ class TorchDataLoaderAdapter(DataAdapter):
             shape = x.shape
             if len(shape) < 1:
                 raise ValueError(
-                    "When passing a Python generator to a Keras model, "
+                    "When passing a Pytorch DataLoader to a Keras model, "
                     "the arrays returned by the generator "
                     "must be at least rank 1. Received: "
                     f"{x} of rank {len(x.shape)}"
