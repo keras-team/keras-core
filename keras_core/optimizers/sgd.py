@@ -1,7 +1,9 @@
 from keras_core import operations as ops
+from keras_core.api_export import keras_core_export
 from keras_core.optimizers import optimizer
 
 
+@keras_core_export("keras_core.optimizers.SGD")
 class SGD(optimizer.Optimizer):
     """Gradient descent (with momentum) optimizer.
 
