@@ -89,7 +89,7 @@ class TimeDistributed(Wrapper):
 
     def build(self, input_shape):
         child_input_shape = self._get_child_input_shape(input_shape)
-        self.layer.build(child_input_shape)
+        super().build(child_input_shape)
         self.built = True
 
     def call(self, inputs, training=None, mask=None):

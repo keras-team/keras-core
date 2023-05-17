@@ -12,7 +12,7 @@ class TimeDistributedTest(testing.TestCase):
             init_kwargs={"layer": layers.Dense(1, use_bias=False)},
             input_shape=(3, 2, 4),
             expected_output_shape=(3, 2, 1),
-            # expected_num_trainable_weights=2,
+            expected_num_trainable_weights=1,
             expected_num_non_trainable_weights=0,
             supports_masking=True,
         )
