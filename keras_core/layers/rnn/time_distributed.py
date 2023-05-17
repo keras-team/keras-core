@@ -45,10 +45,6 @@ class TimeDistributed(Wrapper):
         mask: Binary tensor of shape `(samples, timesteps)` indicating whether
             a given timestep should be masked. This argument is passed to the
             wrapped layer (only if the layer supports this argument).
-
-    Raises:
-        ValueError: If not initialized with a `keras_core.layers.Layer`
-        instance.
     """
 
     def __init__(self, layer, **kwargs):
