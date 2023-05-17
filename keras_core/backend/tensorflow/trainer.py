@@ -157,13 +157,13 @@ class TensorFlowTrainer(base_trainer.Trainer):
             )
             return outputs
 
-        def mutli_step_on_iterator(iterator):
+        def multi_step_on_iterator(iterator):
             for _ in tf.range(self.steps_per_execution):
                 outputs = one_step_on_iterator(iterator)
             return outputs
 
         if self.steps_per_execution > 1:
-            test_function = mutli_step_on_iterator
+            test_function = multi_step_on_iterator
         else:
             test_function = one_step_on_iterator
 
@@ -198,7 +198,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
             )
             return outputs
 
-        def mutli_step_on_data(data):
+        def multi_step_on_data(data):
             outputs = one_step_on_data_distributed(data[:1])
             for single_step_data in data[1:]:
                 step_outputs = one_step_on_data_distributed([single_step_data])
@@ -208,7 +208,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
             return outputs
 
         if self.steps_per_execution > 1:
-            predict_function = mutli_step_on_data
+            predict_function = multi_step_on_data
         else:
             predict_function = one_step_on_data_distributed
 
