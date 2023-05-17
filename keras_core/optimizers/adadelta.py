@@ -21,9 +21,9 @@ class Adadelta(optimizer.Optimizer):
     learning rate can be set, as in most other Keras optimizers.
 
     Args:
-        learning_rate: A `Tensor`, float, or a schedule that is a
-            `keras_core.optimizers.schedules.LearningRateSchedule`, or a
-            callable that takes no arguments and returns the actual value to
+        learning_rate: A float, a
+            `keras_core.optimizers.schedules.LearningRateSchedule` instance, or
+            a callable that takes no arguments and returns the actual value to
             use. The learning rate. Defaults to 0.001. Note that `Adadelta`
             tends to benefit from higher initial learning rate values compared
             to other optimizers. To match the exact form in the original paper,

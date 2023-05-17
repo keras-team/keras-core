@@ -18,9 +18,9 @@ class RMSprop(optimizer.Optimizer):
     gradients, and uses that average to estimate the variance.
 
     Args:
-        learning_rate: A `Tensor`, float, or a schedule that is a
-            `keras_core.optimizers.schedules.LearningRateSchedule`, or a
-            callable that takes no arguments and returns the actual value to
+        learning_rate: A float, a
+            `keras_core.optimizers.schedules.LearningRateSchedule` instance, or
+            a callable that takes no arguments and returns the actual value to
             use. The learning rate. Defaults to 0.001.
         rho: float, defaults to 0.9. Discounting factor for the old gradients.
         momentum: float, defaults to 0.0. If not 0.0., the optimizer tracks the

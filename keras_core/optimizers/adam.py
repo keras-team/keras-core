@@ -18,9 +18,9 @@ class Adam(optimizer.Optimizer):
     data/parameters*".
 
     Args:
-        learning_rate: A `Tensor`, float, or a schedule that is a
-            `keras_core.optimizers.schedules.LearningRateSchedule`, or a
-            callable that takes no arguments and returns the actual value to
+        learning_rate: A float, a
+            `keras_core.optimizers.schedules.LearningRateSchedule` instance, or
+            a callable that takes no arguments and returns the actual value to
             use. The learning rate. Defaults to 0.001.
         beta_1: A float value or a constant float tensor, or a callable
             that takes no arguments and returns the actual value to use. The
