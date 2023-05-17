@@ -1718,8 +1718,9 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         self.assertAllClose(np.array(knp.full_like(x, 2)), np.full_like(x, 2))
 
-        # TODO: implement conversion of shape into repetitions, pass to `torch.tile`,
-        # since `torch.full()` only accepts scalars for `fill_value`."
+        # TODO: implement conversion of shape into repetitions, pass to
+        # `torch.tile`, since `torch.full()` only accepts scalars
+        # for `fill_value`."
         if backend.backend() == "torch":
             return
 
@@ -1838,8 +1839,8 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         )
 
         if backend.backend() == "torch":
-            # TODO: torch.linspace does not support tensor or array for start/stop,
-            # create manual implementation
+            # TODO: torch.linspace does not support tensor or array
+            # for start/stop, create manual implementation
             return
 
         start = np.zeros([2, 3, 4])
@@ -1947,8 +1948,8 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         )
 
         if backend.backend() == "torch":
-            #TODO: torch.logspace does not support tensor or array for start/stop,
-            # create manual implementation
+            # TODO: torch.logspace does not support tensor or array
+            # for start/stop, create manual implementation
             return
 
         start = np.zeros([2, 3, 4])
@@ -2032,7 +2033,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         self.assertAllClose(np.array(knp.take(x, indices)), np.take(x, indices))
         self.assertAllClose(np.array(knp.take(x, 0)), np.take(x, 0))
         if backend.backend() == "torch":
-            #TODO: Fix numpy compatibility (squeeze by one dimension only)
+            # TODO: Fix numpy compatibility (squeeze by one dimension only)
             return
         self.assertAllClose(
             np.array(knp.take(x, 0, axis=1)), np.take(x, 0, axis=1)
@@ -2792,12 +2793,11 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
             np.array(knp.pad(x, ((1, 1), (1, 1)))),
             np.pad(x, ((1, 1), (1, 1))),
         )
-        
+
         # TODO: implement padding with non-constant padding,
         # bypass NotImplementedError
         if backend.backend() == "torch":
             return
-            
 
         self.assertAllClose(
             np.array(knp.pad(x, ((1, 1), (1, 1)), mode="reflect")),
@@ -3079,8 +3079,9 @@ class NumpyArrayCreateOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(
             np.array(knp.full([2, 3], 0.1)), np.full([2, 3], 0.1)
         )
-        # TODO: implement conversion of shape into repetitions, pass to `torch.tile`,
-        # since `torch.full()` only accepts scalars for `fill_value`."
+        # TODO: implement conversion of shape into repetitions, pass to
+        # `torch.tile`, since `torch.full()` only accepts scalars
+        # for `fill_value`."
         if backend.backend() == "torch":
             return
         self.assertAllClose(
@@ -3102,7 +3103,7 @@ class NumpyArrayCreateOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(np.array(knp.Identity()(3)), np.identity(3))
 
     def test_tri(self):
-        #TODO: create a manual implementation, as PyTorch has no equivalent
+        # TODO: create a manual implementation, as PyTorch has no equivalent
         if backend.backend() == "torch":
             return
         self.assertAllClose(np.array(knp.tri(3)), np.tri(3))

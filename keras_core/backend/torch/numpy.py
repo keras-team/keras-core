@@ -686,8 +686,7 @@ def trace(x, offset=None, axis1=None, axis2=None):
     # API divergence between `np.trace()` and `torch.trace()`
     if offset or axis1 or axis2:
         raise NotImplementedError(
-            "Arguments not supported by `torch.trace:"
-            "offset, axis1, axis2"
+            "Arguments not supported by `torch.trace:" "offset, axis1, axis2"
         )
     return torch.trace(x)
 
