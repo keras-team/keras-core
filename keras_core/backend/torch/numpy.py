@@ -1,7 +1,7 @@
 import torch
-from keras_core.backend.torch.core import to_torch_dtype
-from keras_core.backend.torch.core import convert_to_tensor
 
+from keras_core.backend.torch.core import convert_to_tensor
+from keras_core.backend.torch.core import to_torch_dtype
 
 
 def add(x1, x2):
@@ -47,9 +47,7 @@ def max(x, axis=None, keepdims=False, initial=None):
         result = result.values
 
     if initial is not None:
-        return torch.maximum(
-            result, initial
-        )
+        return torch.maximum(result, initial)
     return result
 
 
@@ -176,12 +174,15 @@ def average(x, axis=None, weights=None):
     x = convert_to_tensor(x)
     if weights is not None:
         weights = convert_to_tensor(weights)
-        return torch.sum(torch.mul(x, weights), dim=axis)/ torch.sum(weights, dim=-1)
+        return torch.sum(torch.mul(x, weights), dim=axis) / torch.sum(
+            weights, dim=-1
+        )
     return torch.mean(x, axis)
 
 
 def bincount(x, weights=None, minlength=0):
     x = convert_to_tensor(x)
+    weights = convert_to_tensor(weights)
     return torch.bincount(x, weights, minlength)
 
 
@@ -207,13 +208,13 @@ def concatenate(xs, axis=0):
 
 
 def conjugate(x):
-    x = convert_to_tensor(x)
-    return conj(x)
+    x = torch.from_numpy(x)
+    return torch.conj(x).resolve_conj()
 
 
 def conj(x):
-    x = convert_to_tensor(x)
-    return torch.conj(x)
+    x = torch.from_numpy(x)
+    return torch.conj(x).resolve_conj()
 
 
 def copy(x):
@@ -240,11 +241,17 @@ def cross(x1, x2, axisa=-1, axisb=-1, axisc=-1, axis=None):
 
 def cumprod(x, axis=None):
     x = convert_to_tensor(x)
+    if axis is None:
+        x = x.flatten()
+        axis = 0
     return torch.cumprod(x, dim=axis)
 
 
 def cumsum(x, axis=None):
     x = convert_to_tensor(x)
+    if axis is None:
+        x = x.flatten()
+        axis = 0
     return torch.cumsum(x, dim=axis)
 
 
@@ -256,10 +263,10 @@ def diag(x, k=0):
 def diagonal(x, offset=0, axis1=0, axis2=1):
     x = convert_to_tensor(x)
     return torch.diagonal(
-       x,
-       offset=offset,
-       dim1=axis1,
-       dim2=axis2,
+        x,
+        offset=offset,
+        dim1=axis1,
+        dim2=axis2,
     )
 
 
@@ -295,6 +302,10 @@ def expm1(x):
 
 def flip(x, axis=None):
     x = convert_to_tensor(x)
+    if axis is None:
+        axis = tuple(range(len(x.shape)))
+    if isinstance(axis, int):
+        axis = (axis,)
     return torch.flip(x, dims=axis)
 
 
@@ -305,11 +316,23 @@ def floor(x):
 
 def full(shape, fill_value, dtype=None):
     dtype = to_torch_dtype(dtype)
+    if hasattr(fill_value, "__len__"):
+        raise NotImplementedError(
+            "`torch.full()` only accepts scalars for `fill_value`."
+        )
+        # TODO: implement conversion of shape into repetitions for `torch.tile``
+        # return torch.tile(fill_value, reps)
     return torch.full(size=shape, fill_value=fill_value, dtype=dtype)
 
 
 def full_like(x, fill_value, dtype=None):
     dtype = to_torch_dtype(dtype)
+    if hasattr(fill_value, "__len__"):
+        raise NotImplementedError(
+            "`torch.full()` only accepts scalars for `fill_value`."
+        )
+        # TODO: implement conversion of shape into repetitions for `torch.tile``
+        # return torch.tile(fill_value, reps)
     x = convert_to_tensor(x)
     return torch.full_like(input=x, fill_value=fill_value, dtype=dtype)
 
@@ -335,7 +358,7 @@ def identity(n, dtype="float32"):
 
 
 def imag(x):
-    x1, x2 = convert_to_tensor(x1), convert_to_tensor(x2)
+    x = convert_to_tensor(x)
     return torch.imag(x)
 
 
@@ -374,17 +397,17 @@ def linspace(
 ):
     if axis != 0:
         raise ValueError(
-        "torch.linspace does not support an `axis` argument. "
-        f"Received axis={axis}"
+            "torch.linspace does not support an `axis` argument. "
+            f"Received axis={axis}"
         )
         dtype = to_torch_dtype(dtype)
     if endpoint is False:
-        stop = stop - ((stop-start)/num)
+        stop = stop - ((stop - start) / num)
     linspace = torch.linspace(
-       start=start,
-       end=stop,
-       steps=num,
-       dtype=dtype,
+        start=start,
+        end=stop,
+        steps=num,
+        dtype=dtype,
     )
     if retstep is True:
         return (linspace, num)
@@ -434,18 +457,18 @@ def logical_or(x1, x2):
 def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
     if axis != 0:
         raise ValueError(
-        "torch.logspace does not support an `axis` argument. "
-        f"Received axis={axis}"
+            "torch.logspace does not support an `axis` argument. "
+            f"Received axis={axis}"
         )
     dtype = to_torch_dtype(dtype)
     if endpoint is False:
-        stop = stop - ((stop-start)/num)
+        stop = stop - ((stop - start) / num)
     logspace = torch.logspace(
-       start=start,
-       end=stop,
-       steps=num,
-       base=base,
-       dtype=dtype,
+        start=start,
+        end=stop,
+        steps=num,
+        base=base,
+        dtype=dtype,
     )
     return logspace
 
@@ -474,9 +497,7 @@ def min(x, axis=None, keepdims=False, initial=None):
         result = result.values
 
     if initial is not None:
-        return torch.minimum(
-            result, initial
-        )
+        return torch.minimum(result, initial)
     return result
 
 
@@ -561,6 +582,7 @@ def reciprocal(x):
 
 def repeat(x, repeats, axis=None):
     x = convert_to_tensor(x)
+    repeats = convert_to_tensor(repeats)
     return torch.repeat_interleave(x, repeats, dim=axis)
 
 
@@ -585,13 +607,13 @@ def sin(x):
 
 
 def size(x):
-    x = convert_to_tensor(x)
-    return x.size()
+    x_shape = convert_to_tensor(tuple(x.shape))
+    return torch.prod(x_shape)
 
 
 def sort(x, axis=-1):
     x = convert_to_tensor(x)
-    return torch.sort(x, dim=axis)
+    return torch.sort(x, dim=axis).values
 
 
 def split(x, indices_or_sections, axis=0):
@@ -610,7 +632,8 @@ def stack(x, axis=0):
 
 def std(x, axis=None, keepdims=False):
     x = convert_to_tensor(x)
-    return torch.std(x, dim=axis, keepdim=keepdims)
+    # Remove Bessel correction to align with numpy
+    return torch.std(x, dim=axis, keepdim=keepdims, unbiased=False)
 
 
 def swapaxes(x, axis1, axis2):
@@ -620,11 +643,15 @@ def swapaxes(x, axis1, axis2):
 
 def take(x, indices, axis=None):
     x = convert_to_tensor(x)
-    return torch.index_select(x, index=indices, dim=axis)
+    indices = convert_to_tensor(indices).long()
+    if axis is not None:
+        return torch.index_select(x, dim=axis, index=indices)
+    return torch.take(x, index=indices)
 
 
 def take_along_axis(x, indices, axis=None):
     x = convert_to_tensor(x)
+    indices = convert_to_tensor(indices).long()
     return torch.take_along_dim(x, indices, dim=axis)
 
 
@@ -651,8 +678,10 @@ def tile(x, repeats):
 def trace(x, offset=None, axis1=None, axis2=None):
     x = convert_to_tensor(x)
     if offset or axis1 or axis2:
-        "Arguments not supported by `torch.trace: "
-        f""
+        raise NotImplementedError(
+            "Arguments not supported by `torch.trace:"
+            "offset, axis1, axis2"
+        )
     return torch.trace(x)
 
 
@@ -682,6 +711,7 @@ def vstack(xs):
 
 
 def where(condition, x1, x2):
+    condition = convert_to_tensor(condition, dtype=bool)
     x1, x2 = convert_to_tensor(x1), convert_to_tensor(x2)
     return torch.where(condition, x1, x2)
 
@@ -718,14 +748,16 @@ def sqrt(x):
 
 def squeeze(x, axis=None):
     x = convert_to_tensor(x)
-    return torch.squeeze(x, dim=axis)
+    if axis is not None:
+        return torch.squeeze(x, dim=axis)
+    return torch.squeeze(x)
 
 
 def transpose(x, axes=None):
     x = convert_to_tensor(x)
     if axes is not None:
         return torch.permute(x, dims=axes)
-    return torch.t(x)
+    return x.T
 
 
 def var(x, axis=None, keepdims=False):
@@ -743,8 +775,7 @@ def sum(x, axis=None, keepdims=False):
 def eye(N, M=None, k=None, dtype="float32"):
     if k is not None:
         raise NotImplementedError(
-            "Argument not supported by "
-            f"`torch.eye`: k={k}"
+            "Argument not supported by " f"`torch.eye`: k={k}"
         )
     dtype = to_torch_dtype(dtype)
     return torch.eye(n=N, m=M, dtype=dtype)

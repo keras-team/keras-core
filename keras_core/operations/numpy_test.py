@@ -1665,13 +1665,19 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         y3 = np.ones([1, 5, 4, 2])
         self.assertAllClose(np.array(knp.cross(x1, y1)), np.cross(x1, y1))
         self.assertAllClose(np.array(knp.cross(x1, y2)), np.cross(x1, y2))
-        self.assertAllClose(np.array(knp.cross(x1, y3)), np.cross(x1, y3))
-        self.assertAllClose(np.array(knp.cross(x2, y3)), np.cross(x2, y3))
+        if backend.backend() != "torch":
+            # API divergence between `torch.cross` and `np.cross`
+            # `torch.cross` only allows dim 3, `np.cross` allows dim 2 or 3
+            self.assertAllClose(np.array(knp.cross(x1, y3)), np.cross(x1, y3))
+            self.assertAllClose(np.array(knp.cross(x2, y3)), np.cross(x2, y3))
 
         self.assertAllClose(np.array(knp.Cross()(x1, y1)), np.cross(x1, y1))
         self.assertAllClose(np.array(knp.Cross()(x1, y2)), np.cross(x1, y2))
-        self.assertAllClose(np.array(knp.Cross()(x1, y3)), np.cross(x1, y3))
-        self.assertAllClose(np.array(knp.Cross()(x2, y3)), np.cross(x2, y3))
+        if backend.backend() != "torch":
+            # API divergence between `torch.cross` and `np.cross`
+            # `torch.cross` only allows dim 3, `np.cross` allows dim 2 or 3
+            self.assertAllClose(np.array(knp.Cross()(x1, y3)), np.cross(x1, y3))
+            self.assertAllClose(np.array(knp.Cross()(x2, y3)), np.cross(x2, y3))
 
     def test_einsum(self):
         x = np.arange(24).reshape([2, 3, 4])
@@ -1825,6 +1831,11 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
             np.linspace(0, 10, 5, endpoint=False),
         )
 
+        if backend.backend() == "torch":
+            # TODO: torch.linspace does not support tensor or array for start/stop,
+            # create manual implementation
+            pass
+
         start = np.zeros([2, 3, 4])
         stop = np.ones([2, 3, 4])
         self.assertAllClose(
@@ -1928,6 +1939,11 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
             np.array(knp.Logspace(num=5, endpoint=False)(0, 10)),
             np.logspace(0, 10, 5, endpoint=False),
         )
+
+        if backend.backend() == "torch":
+            #TODO: torch.logspace does not support tensor or array for start/stop,
+            # create manual implementation
+            pass
 
         start = np.zeros([2, 3, 4])
         stop = np.ones([2, 3, 4])
@@ -3054,6 +3070,9 @@ class NumpyArrayCreateOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(np.array(knp.Identity()(3)), np.identity(3))
 
     def test_tri(self):
+        #TODO: create a manual implementation, as PyTorch has no equivalent
+        if backend.backend() == "torch":
+            pass
         self.assertAllClose(np.array(knp.tri(3)), np.tri(3))
         self.assertAllClose(np.array(knp.tri(3, 4)), np.tri(3, 4))
         self.assertAllClose(np.array(knp.tri(3, 4, 1)), np.tri(3, 4, 1))

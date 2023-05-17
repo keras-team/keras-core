@@ -340,15 +340,19 @@ ALLOWED_DTYPES = {
 
 
 def standardize_dtype(dtype):
+    if dtype is None:
+        return config.floatx()
+    if hasattr(dtype, "name"):
+        dtype = dtype.name
+    elif hasattr(dtype, "__name__"):
+        dtype = dtype.__name__
     if dtype == "int":
         if config.backend() == "tensorflow":
             dtype = "int64"
         else:
             dtype = "int32"
-    if dtype is None:
-        return config.floatx()
-    if hasattr(dtype, "name"):
-        dtype = dtype.name
+    if dtype == "float":
+        dtype = "float32"
     if dtype not in ALLOWED_DTYPES:
         raise ValueError(f"Invalid dtype: {dtype}")
     return dtype
