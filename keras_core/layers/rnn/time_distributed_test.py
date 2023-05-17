@@ -17,7 +17,13 @@ class TimeDistributedTest(testing.TestCase):
             supports_masking=True,
         )
 
-    def test_masking(self):
+    def test_build(self):
+        inputs = layers.Input(shape=(10, 128, 128, 3), batch_size=32)
+        conv_2d_layer = layers.Conv2D(64, (3, 3))
+        outputs = layers.TimeDistributed(conv_2d_layer)(inputs)
+        self.assertEqual(outputs.shape, (32, 10, 126, 126, 64))
+
+    def test_correctness(self):
         sequence = np.arange(24).reshape((3, 2, 4)).astype("float32")
         layer = layers.Dense(
             1,
@@ -25,17 +31,10 @@ class TimeDistributedTest(testing.TestCase):
             use_bias=False,
         )
         layer = layers.TimeDistributed(layer=layer)
-        mask = np.array([[False, True], [False, True], [True, True]])
-        output = layer(sequence, mask=mask)
+        output = layer(sequence)
         self.assertAllClose(
             np.array(
                 [[[0.06], [0.22]], [[0.38], [0.53999996]], [[0.7], [0.86]]]
             ),
             output,
         )
-
-    def test_build(self):
-        inputs = layers.Input(shape=(10, 128, 128, 3), batch_size=32)
-        conv_2d_layer = layers.Conv2D(64, (3, 3))
-        outputs = layers.TimeDistributed(conv_2d_layer)(inputs)
-        self.assertEqual(outputs.shape, (32, 10, 126, 126, 64))

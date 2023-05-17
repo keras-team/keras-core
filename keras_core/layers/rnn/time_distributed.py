@@ -84,16 +84,16 @@ class TimeDistributed(Wrapper):
         batch_size = input_shape[0]
         timesteps = input_shape[1]
 
-        if mask_shape is not None and mask_shape != (batch_size, timesteps):
+        if mask_shape is not None and mask_shape[:2] != (batch_size, timesteps):
             raise ValueError(
                 "`TimeDistributed` Layer should be passed a `mask` of shape "
-                f"({batch_size}, {timesteps}), "
+                f"({batch_size}, {timesteps}, ...), "
                 f"received: mask.shape={mask_shape}"
             )
 
         def per_timestep_function(batch, timestep):
             kwargs = {}
-            if self.layer.supports_masking:
+            if self.layer._call_has_mask_arg():
                 kwargs["mask"] = None if mask is None else mask[batch][timestep]
             if self.layer._call_has_training_arg():
                 kwargs["training"] = training
