@@ -35,7 +35,7 @@ class TimeDistributedTest(testing.TestCase):
         )
 
     def test_build(self):
-        inputs = layers.Input(shape=(10, 128, 128, 3))
+        inputs = layers.Input(shape=(10, 128, 128, 3), batch_size=10)
         conv_2d_layer = layers.Conv2D(64, (3, 3))
         outputs = layers.TimeDistributed(conv_2d_layer)(inputs)
-        self.assertEqual(outputs.shape, (None, 10, 126, 126, 64))
+        self.assertEqual(outputs.shape, (10, 10, 126, 126, 64))

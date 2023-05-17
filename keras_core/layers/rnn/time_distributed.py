@@ -1,17 +1,3 @@
-# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
 """Wrapper layer to apply every temporal slice of an input."""
 
 import functools
@@ -48,28 +34,28 @@ class TimeDistributed(Wrapper):
     the timestamps, the same set of weights are used at each timestamp.
 
     Args:
-      layer: a `tf.keras_core.layers.Layer` instance.
+        layer: a `keras_core.layers.Layer` instance.
 
     Call arguments:
-      inputs: Input tensor of shape (batch, time, ...) or nested tensors,
-        and each of which has shape (batch, time, ...).
-      training: Python boolean indicating whether the layer should behave in
-        training mode or in inference mode. This argument is passed to the
-        wrapped layer (only if the layer supports this argument).
-      mask: Binary tensor of shape `(samples, timesteps)` indicating whether
-        a given timestep should be masked. This argument is passed to the
-        wrapped layer (only if the layer supports this argument).
+        inputs: Input tensor of shape (batch, time, ...) or nested tensors,
+            and each of which has shape (batch, time, ...).
+        training: Python boolean indicating whether the layer should behave in
+            training mode or in inference mode. This argument is passed to the
+            wrapped layer (only if the layer supports this argument).
+        mask: Binary tensor of shape `(samples, timesteps)` indicating whether
+            a given timestep should be masked. This argument is passed to the
+            wrapped layer (only if the layer supports this argument).
 
     Raises:
-      ValueError: If not initialized with a `tf.keras_core.layers.Layer`
-      instance.
+        ValueError: If not initialized with a `keras_core.layers.Layer`
+        instance.
     """
 
     def __init__(self, layer, **kwargs):
         if not isinstance(layer, Layer):
             raise ValueError(
                 "Please initialize `TimeDistributed` layer with a "
-                f"`tf.keras_core.layers.Layer` instance. Received: {layer}"
+                f"`keras_core.layers.Layer` instance. Received: {layer}"
             )
         super().__init__(layer, **kwargs)
         self.supports_masking = True
@@ -77,7 +63,7 @@ class TimeDistributed(Wrapper):
     def _get_child_input_shape(self, input_shape):
         if not isinstance(input_shape, (tuple, list)) or len(input_shape) < 3:
             raise ValueError(
-                "`TimeDistributed` Layer should be passed an `input_shape ` "
+                "`TimeDistributed` Layer should be passed an `input_shape` "
                 f"with at least 3 dimensions, received: {input_shape}"
             )
         return (input_shape[0], *input_shape[2:])
@@ -100,8 +86,9 @@ class TimeDistributed(Wrapper):
 
         if mask_shape is not None and mask_shape != (batch_size, timesteps):
             raise ValueError(
-                "`TimeDistributed` Layer should be passed an `mask` of shape "
-                f"({batch_size}, {timesteps}), received: {mask_shape}"
+                "`TimeDistributed` Layer should be passed a `mask` of shape "
+                f"({batch_size}, {timesteps}), "
+                f"received: mask.shape={mask_shape}"
             )
 
         def per_timestep_function(batch, timestep):
