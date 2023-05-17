@@ -3,7 +3,6 @@ import warnings
 
 import numpy as np
 import tensorflow as tf
-from keras.utils import tf_utils
 from tensorflow.python.eager import context as tf_context
 
 from keras_core import callbacks as callbacks_module
@@ -187,9 +186,8 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 one_step_on_data, jit_compile=True, reduce_retracing=True
             )
 
-        def one_step_on_iterator(iterator):
-            """Runs a single predict step given a Dataset iterator."""
-            data = next(iterator)
+        def one_step_on_data_distributed(data):
+            data = data[0]
             outputs = self.distribute_strategy.run(
                 one_step_on_data, args=(data,)
             )
@@ -200,32 +198,19 @@ class TensorFlowTrainer(base_trainer.Trainer):
             )
             return outputs
 
-        def mutli_step_on_iterator(iterator):
-            outputs = one_step_on_iterator(iterator)
-            for _ in tf.range(self.steps_per_execution - 1):
-                tf.autograph.experimental.set_loop_options(
-                    shape_invariants=[
-                        (
-                            outputs,
-                            tf.nest.map_structure(
-                                lambda t: tf_utils.get_tensor_spec(
-                                    t, dynamic_batch=True
-                                ).shape,
-                                outputs,
-                            ),
-                        )
-                    ]
-                )
-                step_outputs = one_step_on_iterator(iterator)
+        def mutli_step_on_data(data):
+            outputs = one_step_on_data_distributed(data[:1])
+            for single_step_data in data[1:]:
+                step_outputs = one_step_on_data_distributed([single_step_data])
                 outputs = tf.nest.map_structure(
                     lambda t1, t2: concat([t1, t2]), outputs, step_outputs
                 )
             return outputs
 
         if self.steps_per_execution > 1:
-            predict_function = mutli_step_on_iterator
+            predict_function = mutli_step_on_data
         else:
-            predict_function = one_step_on_iterator
+            predict_function = one_step_on_data_distributed
 
         if not self.run_eagerly:
             predict_function = tf.function(
@@ -461,13 +446,27 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 )
             return outputs
 
+        def get_data(iterator):
+            """Returns data for the next execution."""
+            data = []
+            for _ in range(self.steps_per_execution):
+                try:
+                    single_step_data = next(iterator)
+                except (StopIteration, tf.errors.OutOfRangeError):
+                    return data
+                data.append(single_step_data)
+            return data
+
         self.make_predict_function()
         callbacks.on_predict_begin()
         outputs = None
         with epoch_iterator.catch_stop_iteration():
             for step, iterator in epoch_iterator.enumerate_epoch():
                 callbacks.on_predict_batch_begin(step)
-                batch_outputs = self.predict_function(iterator)
+                data = get_data(iterator)
+                if len(data) == 0:
+                    raise StopIteration
+                batch_outputs = self.predict_function(data)
                 outputs = append_to_outputs(batch_outputs, outputs)
                 callbacks.on_predict_batch_end(step, {"outputs": batch_outputs})
         callbacks.on_predict_end()
