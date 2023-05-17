@@ -167,7 +167,6 @@ class MultiHeadAttention(Layer):
         query_shape,
         value_shape,
         key_shape=None,
-        attention_mask_shape=None,
     ):
         """Builds layers and variables.
 
@@ -527,7 +526,6 @@ class MultiHeadAttention(Layer):
         query_shape,
         value_shape,
         key_shape=None,
-        attention_mask_shape=None,
     ):
         if key_shape is None:
             key_shape = value_shape

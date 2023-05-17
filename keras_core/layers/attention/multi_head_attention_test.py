@@ -61,7 +61,6 @@ class MultiHeadAttentionTest(testing.TestCase, parameterized.TestCase):
         batch_size, hidden_size = 3, 8
         query_shape = (batch_size,) + q_dims + (hidden_size,)
         value_shape = (batch_size,) + v_dims + (hidden_size,)
-        mask_shape = (batch_size,) + mask_dims
         self.run_layer_test(
             layers.MultiHeadAttention,
             init_kwargs={
@@ -72,7 +71,6 @@ class MultiHeadAttentionTest(testing.TestCase, parameterized.TestCase):
             input_shape={
                 "query_shape": query_shape,
                 "value_shape": value_shape,
-                "attention_mask_shape": mask_shape,
             },
             expected_output_shape=query_shape,
             expected_num_trainable_weights=8,
