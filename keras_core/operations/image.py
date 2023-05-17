@@ -51,7 +51,7 @@ class Resize(Operation):
         )
 
 
-@keras_core_export("keras_core.operations.resize")
+@keras_core_export("keras_core.operations.image.resize")
 def resize(
     image, size, method="bilinear", antialias=False, data_format="channels_last"
 ):
