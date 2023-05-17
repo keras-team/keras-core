@@ -24,11 +24,11 @@ class TimeDistributed(Wrapper):
     You can then use `TimeDistributed` to apply the same `Conv2D` layer to each
     of the 10 timesteps, independently:
 
-    >>> inputs = layers.Input(shape=(10, 128, 128, 3))
+    >>> inputs = layers.Input(shape=(10, 128, 128, 3), batch_size=32)
     >>> conv_2d_layer = layers.Conv2D(64, (3, 3))
     >>> outputs = layers.TimeDistributed(conv_2d_layer)(inputs)
     >>> outputs.shape
-    (None, 10, 126, 126, 64)
+    (32, 10, 126, 126, 64)
 
     Because `TimeDistributed` applies the same instance of `Conv2D` to each of
     the timestamps, the same set of weights are used at each timestamp.
