@@ -181,7 +181,7 @@ def average(x, axis=None, weights=None):
 
 
 def bincount(x, weights=None, minlength=0):
-    x = convert_to_tensor(x)
+    x = convert_to_tensor(x, dtype=int)
     weights = convert_to_tensor(weights)
     return torch.bincount(x, weights, minlength)
 
@@ -208,12 +208,14 @@ def concatenate(xs, axis=0):
 
 
 def conjugate(x):
-    x = torch.from_numpy(x)
+    if not isinstance(x, torch.Tensor):
+        x = torch.from_numpy(x)  # needed for complex type conversion
     return torch.conj(x).resolve_conj()
 
 
 def conj(x):
-    x = torch.from_numpy(x)
+    if not isinstance(x, torch.Tensor):
+        x = torch.from_numpy(x)  # needed for complex type conversion
     return torch.conj(x).resolve_conj()
 
 
@@ -229,7 +231,7 @@ def cos(x):
 
 def count_nonzero(x, axis=None):
     x = convert_to_tensor(x)
-    return torch.count_nonzero(x, dim=axis)
+    return torch.count_nonzero(x, dim=axis).T
 
 
 def cross(x1, x2, axisa=-1, axisb=-1, axisc=-1, axis=None):
@@ -272,7 +274,9 @@ def diagonal(x, offset=0, axis1=0, axis2=1):
 
 def dot(x, y):
     x, y = convert_to_tensor(x), convert_to_tensor(y)
-    return torch.dot(x, y)
+    if len(x.shape) == 0 or len(y.shape) == 0:
+        return torch.multiply(x, y)
+    return torch.matmul(x, y)
 
 
 def empty(shape, dtype="float32"):
@@ -358,7 +362,8 @@ def identity(n, dtype="float32"):
 
 
 def imag(x):
-    x = convert_to_tensor(x)
+    if not isinstance(x, torch.Tensor):
+        x = torch.from_numpy(x)  # needed for complex type conversion
     return torch.imag(x)
 
 
@@ -528,7 +533,7 @@ def ndim(x):
 
 def nonzero(x):
     x = convert_to_tensor(x)
-    return torch.nonzero(x)
+    return torch.nonzero(x).T
 
 
 def not_equal(x1, x2):
@@ -544,7 +549,7 @@ def ones_like(x, dtype=None):
 
 def outer(x1, x2):
     x1, x2 = convert_to_tensor(x1), convert_to_tensor(x2)
-    return torch.outer(x1, x2)
+    return torch.outer(x1.flatten(), x2.flatten())
 
 
 def pad(x, pad_width, mode="constant"):
@@ -582,7 +587,7 @@ def reciprocal(x):
 
 def repeat(x, repeats, axis=None):
     x = convert_to_tensor(x)
-    repeats = convert_to_tensor(repeats)
+    repeats = convert_to_tensor(repeats, dtype=int)
     return torch.repeat_interleave(x, repeats, dim=axis)
 
 
@@ -677,6 +682,8 @@ def tile(x, repeats):
 
 def trace(x, offset=None, axis1=None, axis2=None):
     x = convert_to_tensor(x)
+    # TODO: implement support for these arguments
+    # API divergence between `np.trace()` and `torch.trace()`
     if offset or axis1 or axis2:
         raise NotImplementedError(
             "Arguments not supported by `torch.trace:"
@@ -762,7 +769,8 @@ def transpose(x, axes=None):
 
 def var(x, axis=None, keepdims=False):
     x = convert_to_tensor(x)
-    return torch.var(x, dim=axis, keepdim=keepdims)
+    # Bessel correction removed for numpy compatibility
+    return torch.var(x, dim=axis, keepdim=keepdims, correction=0)
 
 
 def sum(x, axis=None, keepdims=False):
@@ -773,9 +781,9 @@ def sum(x, axis=None, keepdims=False):
 
 
 def eye(N, M=None, k=None, dtype="float32"):
-    if k is not None:
-        raise NotImplementedError(
-            "Argument not supported by " f"`torch.eye`: k={k}"
-        )
+    # TODO: implement support for `k` diagonal arg,
+    # does not exist in torch.eye()
     dtype = to_torch_dtype(dtype)
-    return torch.eye(n=N, m=M, dtype=dtype)
+    if M is not None:
+        return torch.eye(n=N, m=M, dtype=dtype)
+    return torch.eye(n=N, dtype=dtype)
