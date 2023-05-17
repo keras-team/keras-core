@@ -55,12 +55,12 @@ def max(x, axis=None, keepdims=False, initial=None):
 
 def ones(shape, dtype="float32"):
     dtype = to_torch_dtype(dtype)
-    torch.ones(*shape, dtype=dtype)
+    return torch.ones(*shape, dtype=dtype)
 
 
 def zeros(shape, dtype="float32"):
     dtype = to_torch_dtype(dtype)
-    torch.zeros(*shape, dtype=dtype)
+    return torch.zeros(*shape, dtype=dtype)
 
 
 def absolute(x):
@@ -114,8 +114,9 @@ def append(
     axis=None,
 ):
     x1, x2 = convert_to_tensor(x1), convert_to_tensor(x2)
-    dim = axis or 0
-    return torch.cat((x1, x2), dim=dim)
+    if axis is None:
+        return torch.cat((x1.flatten(), x2.flatten()))
+    return torch.cat((x1, x2), dim=axis)
 
 
 def arange(start, stop=None, step=None, dtype=None):
@@ -175,7 +176,7 @@ def average(x, axis=None, weights=None):
     x = convert_to_tensor(x)
     if weights is not None:
         weights = convert_to_tensor(weights)
-        return torch.matmul(x, weights.T) / torch.sum(weights)
+        return torch.sum(torch.mul(x, weights), dim=axis)/ torch.sum(weights, dim=-1)
     return torch.mean(x, axis)
 
 
@@ -309,6 +310,7 @@ def full(shape, fill_value, dtype=None):
 
 def full_like(x, fill_value, dtype=None):
     dtype = to_torch_dtype(dtype)
+    x = convert_to_tensor(x)
     return torch.full_like(input=x, fill_value=fill_value, dtype=dtype)
 
 
@@ -329,8 +331,7 @@ def hstack(xs):
 
 def identity(n, dtype="float32"):
     dtype = to_torch_dtype(dtype)
-    pass
-    # return tfnp.identity(n, dtype=dtype)
+    return torch.eye(n, dtype=dtype)
 
 
 def imag(x):
@@ -377,17 +378,16 @@ def linspace(
         f"Received axis={axis}"
         )
         dtype = to_torch_dtype(dtype)
-    steps = int(abs(stop - start)/num)
+    if endpoint is False:
+        stop = stop - ((stop-start)/num)
     linspace = torch.linspace(
        start=start,
        end=stop,
-       steps=steps,
+       steps=num,
        dtype=dtype,
     )
-    if endpoint is False:
-        return linspace[:-1]
     if retstep is True:
-        return (linspace, steps)
+        return (linspace, num)
     return linspace
 
 
@@ -438,16 +438,15 @@ def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
         f"Received axis={axis}"
         )
     dtype = to_torch_dtype(dtype)
-    steps = int(abs(stop - start)/num)
+    if endpoint is False:
+        stop = stop - ((stop-start)/num)
     logspace = torch.logspace(
        start=start,
        end=stop,
-       steps=steps,
+       steps=num,
        base=base,
        dtype=dtype,
     )
-    if endpoint is False:
-        return logspace[:-1]
     return logspace
 
 
@@ -605,7 +604,7 @@ def split(x, indices_or_sections, axis=0):
 
 
 def stack(x, axis=0):
-    x = convert_to_tensor(x)
+    x = [convert_to_tensor(elem) for elem in x]
     return torch.stack(x, dim=axis)
 
 
@@ -660,7 +659,6 @@ def trace(x, offset=None, axis1=None, axis2=None):
 def tri(N, M=None, k=0, dtype="float32"):
     dtype = to_torch_dtype(dtype)
     pass
-    # return tfnp.tri(N, M=M, k=k, dtype=dtype)
 
 
 def tril(x, k=0):
@@ -679,7 +677,7 @@ def vdot(x1, x2):
 
 
 def vstack(xs):
-    x = [convert_to_tensor(x) for x in xs]
+    xs = [convert_to_tensor(x) for x in xs]
     return torch.vstack(xs)
 
 
@@ -744,7 +742,7 @@ def sum(x, axis=None, keepdims=False):
 
 def eye(N, M=None, k=None, dtype="float32"):
     if k is not None:
-        raise ValueError(
+        raise NotImplementedError(
             "Argument not supported by "
             f"`torch.eye`: k={k}"
         )
