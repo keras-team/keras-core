@@ -40,10 +40,22 @@ class UpSampling3dTest(testing.TestCase, parameterized.TestCase):
             )
 
         # basic test
+        if data_format == "channels_first":
+            expected_output_shape = (2, 2, 20, 22, 24)
+        else:
+            expected_output_shape = (2, 20, 22, 24, 2)
+
         self.run_layer_test(
             layers.UpSampling3D,
             init_kwargs={"size": (2, 2, 2), "data_format": data_format},
             input_shape=inputs.shape,
+            expected_output_shape=expected_output_shape,
+            expected_output_dtype="float32",
+            expected_num_trainable_weights=0,
+            expected_num_non_trainable_weights=0,
+            expected_num_seed_generators=0,
+            expected_num_losses=0,
+            supports_masking=False,
         )
 
         layer = layers.UpSampling3D(
