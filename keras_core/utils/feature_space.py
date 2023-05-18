@@ -384,7 +384,7 @@ class FeatureSpace(Layer):
         crossing_dim=32,
         hashing_dim=32,
         num_discretization_bins=32,
-        name=None
+        name=None,
     ):
         super().__init__(name=name)
         if not features:
