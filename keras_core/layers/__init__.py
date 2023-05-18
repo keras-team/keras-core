@@ -104,7 +104,11 @@ from keras_core.layers.reshaping.repeat_vector import RepeatVector
 from keras_core.layers.reshaping.reshape import Reshape
 from keras_core.layers.reshaping.up_sampling1d import UpSampling1D
 from keras_core.layers.reshaping.up_sampling3d import UpSampling3D
+from keras_core.layers.reshaping.zero_padding3d import ZeroPadding3D
 from keras_core.layers.rnn.bidirectional import Bidirectional
+from keras_core.layers.rnn.conv_lstm1d import ConvLSTM1D
+from keras_core.layers.rnn.conv_lstm2d import ConvLSTM2D
+from keras_core.layers.rnn.conv_lstm3d import ConvLSTM3D
 from keras_core.layers.rnn.gru import GRU
 from keras_core.layers.rnn.lstm import LSTM
 from keras_core.layers.rnn.rnn import RNN
