@@ -74,11 +74,11 @@ def log_softmax(x, axis=None):
 
 
 def generic_pool(inputs, pool_size, pool_fn, strides, padding, data_format):
-    if padding != "valid":
+    if padding.lower() != "valid":
         raise NotImplementedError(
             "Only 'valid' padding is currently supported."
         )
-    if data_format != "channels_last":
+    if data_format.lower() != "channels_last":
         raise NotImplementedError(
             "Only 'channels_last' data format is currently supported."
         )
@@ -184,156 +184,379 @@ def average_pool(
     )
 
 
-# def conv(
-#     inputs,
-#     kernel,
-#     strides=1,
-#     padding="valid",
-#     data_format="channel_last",
-#     dilation_rate=1,
-# ):
-#     num_spatial_dims = inputs.ndim - 2
-#     dimension_numbers = _convert_to_lax_conv_dimension_numbers(
-#         num_spatial_dims,
-#         data_format,
-#         transpose=False,
-#     )
-#     strides = _convert_to_spatial_operand(
-#         strides,
-#         num_spatial_dims,
-#         data_format,
-#         include_batch_and_channels=False,
-#     )
-#     dilation_rate = _convert_to_spatial_operand(
-#         dilation_rate,
-#         num_spatial_dims,
-#         data_format,
-#         include_batch_and_channels=False,
-#     )
-#     return jax.lax.conv_general_dilated(
-#         inputs,
-#         kernel,
-#         strides,
-#         padding,
-#         rhs_dilation=dilation_rate,
-#         dimension_numbers=dimension_numbers,
-#     )
+def conv(
+    inputs,
+    kernel,
+    strides=1,
+    padding="valid",
+    data_format="channel_last",
+    dilation_rate=1,
+):
+    if isinstance(strides, int):
+        strides = (strides,) * len(inputs.shape[1:-1])
+    if isinstance(dilation_rate, int):
+        dilation_rate = (dilation_rate,) * len(inputs.shape[1:-1])
+
+    rank = len(inputs.shape)
+    if padding.lower() != "valid":
+        raise NotImplementedError(
+            "Only 'VALID' padding is currently supported."
+        )
+    if data_format.lower() != "channels_last":
+        raise NotImplementedError(
+            "Only 'channels_last' data format is currently supported."
+        )
+    if any(rate != 1 for rate in dilation_rate):
+        raise NotImplementedError(
+            "Only dilation_rate of 1 is currently supported."
+        )
+
+    if rank == 3:
+        # 1D convolution
+        N, L, C = inputs.shape
+        M, K = kernel.shape
+        conv_L = (L - K) // strides[0] + 1
+        convolved = np.empty((N, conv_L, M))
+        for i in range(conv_L):
+            start = i * strides[0]
+            end = start + K
+            convolved[:, i, :] = np.tensordot(
+                inputs[:, start:end, :], kernel, axes=((1, 2), (1, 0))
+            )
+
+    elif rank == 4:
+        # 2D convolution
+        N, H, W, C = inputs.shape
+        M, KH, KW = kernel.shape
+        conv_H = (H - KH) // strides[0] + 1
+        conv_W = (W - KW) // strides[1] + 1
+        convolved = np.empty((N, conv_H, conv_W, M))
+        for i in range(conv_H):
+            for j in range(conv_W):
+                start_H = i * strides[0]
+                end_H = start_H + KH
+                start_W = j * strides[1]
+                end_W = start_W + KW
+                convolved[:, i, j, :] = np.tensordot(
+                    inputs[:, start_H:end_H, start_W:end_W, :],
+                    kernel,
+                    axes=((1, 2, 3), (1, 2, 0)),
+                )
+
+    elif rank == 5:
+        # 3D convolution
+        N, D, H, W, C = inputs.shape
+        M, KD, KH, KW = kernel.shape
+        conv_D = (D - KD) // strides[0] + 1
+        conv_H = (H - KH) // strides[1] + 1
+        conv_W = (W - KW) // strides[2] + 1
+        convolved = np.empty((N, conv_D, conv_H, conv_W, M))
+        for i in range(conv_D):
+            for j in range(conv_H):
+                for k in range(conv_W):
+                    start_D = i * strides[0]
+                    end_D = start_D + KD
+                    start_H = j * strides[1]
+                    end_H = start_H + KH
+                    start_W = k * strides[2]
+                    end_W = start_W + KW
+                    convolved[:, i, j, k, :] = np.tensordot(
+                        inputs[
+                            :, start_D:end_D, start_H:end_H, start_W:end_W, :
+                        ],
+                        kernel,
+                        axes=((1, 2, 3, 4), (1, 2, 3, 0)),
+                    )
+
+    else:
+        raise NotImplementedError(
+            "Convolution is not implemented for >3D tensors."
+            f"Got {rank}D tensor."
+        )
+
+    return convolved
 
 
-# def depthwise_conv(
-#     inputs,
-#     kernel,
-#     strides=1,
-#     padding="valid",
-#     data_format="channel_last",
-#     dilation_rate=1,
-# ):
-#     num_spatial_dims = inputs.ndim - 2
-#     dimension_numbers = _convert_to_lax_conv_dimension_numbers(
-#         num_spatial_dims,
-#         data_format,
-#         transpose=False,
-#     )
-#     strides = _convert_to_spatial_operand(
-#         strides,
-#         num_spatial_dims,
-#         data_format,
-#         include_batch_and_channels=False,
-#     )
-#     dilation_rate = _convert_to_spatial_operand(
-#         dilation_rate,
-#         num_spatial_dims,
-#         data_format,
-#         include_batch_and_channels=False,
-#     )
-#     feature_group_count = (
-#         inputs.shape[-1] if data_format == "channels_last" else inputs.shape[1]
-#     )
-#     kernel = jnp.reshape(
-#         kernel,
-#         kernel.shape[:-2] + (1, feature_group_count * kernel.shape[-1]),
-#     )
-#     return jax.lax.conv_general_dilated(
-#         inputs,
-#         kernel,
-#         strides,
-#         padding,
-#         rhs_dilation=dilation_rate,
-#         dimension_numbers=dimension_numbers,
-#         feature_group_count=feature_group_count,
-#     )
+def depthwise_conv(
+    inputs,
+    kernel,
+    strides=1,
+    padding="valid",
+    data_format="channel_last",
+    dilation_rate=1,
+):
+    if isinstance(strides, int):
+        strides = (strides,) * len(inputs.shape[1:-1])
+    if isinstance(dilation_rate, int):
+        dilation_rate = (dilation_rate,) * len(inputs.shape[1:-1])
+
+    rank = len(inputs.shape)
+    if padding.lower() != "valid":
+        raise NotImplementedError(
+            "Only 'VALID' padding is currently supported."
+        )
+    if data_format.lower() != "channels_last":
+        raise NotImplementedError(
+            "Only 'channels_last' data format is currently supported."
+        )
+    if any(rate != 1 for rate in dilation_rate):
+        raise NotImplementedError(
+            "Only dilation_rate of 1 is currently supported."
+        )
+
+    C = inputs.shape[-1]
+    if C != kernel.shape[-1]:
+        raise ValueError(
+            "The number of input channels should be the same as the number of kernel channels."
+        )
+
+    if rank == 3:
+        # 1D depthwise convolution
+        N, L, _ = inputs.shape
+        K, _ = kernel.shape
+        conv_L = (L - K) // strides[0] + 1
+        convolved = np.empty((N, conv_L, C))
+        for c in range(C):
+            for i in range(conv_L):
+                start = i * strides[0]
+                end = start + K
+                convolved[:, i, c] = np.sum(
+                    inputs[:, start:end, c] * kernel[:, c], axis=1
+                )
+
+    elif rank == 4:
+        # 2D depthwise convolution
+        N, H, W, _ = inputs.shape
+        KH, KW, _ = kernel.shape
+        conv_H = (H - KH) // strides[0] + 1
+        conv_W = (W - KW) // strides[1] + 1
+        convolved = np.empty((N, conv_H, conv_W, C))
+        for c in range(C):
+            for i in range(conv_H):
+                for j in range(conv_W):
+                    start_H = i * strides[0]
+                    end_H = start_H + KH
+                    start_W = j * strides[1]
+                    end_W = start_W + KW
+                    convolved[:, i, j, c] = np.sum(
+                        inputs[:, start_H:end_H, start_W:end_W, c]
+                        * kernel[:, :, c],
+                        axis=(1, 2),
+                    )
+
+    elif rank == 5:
+        # 3D depthwise convolution
+        N, D, H, W, _ = inputs.shape
+        KD, KH, KW, _ = kernel.shape
+        conv_D = (D - KD) // strides[0] + 1
+        conv_H = (H - KH) // strides[1] + 1
+        conv_W = (W - KW) // strides[2] + 1
+        convolved = np.empty((N, conv_D, conv_H, conv_W, C))
+        for c in range(C):
+            for i in range(conv_D):
+                for j in range(conv_H):
+                    for k in range(conv_W):
+                        start_D = i * strides[0]
+                        end_D = start_D + KD
+                        start_H = j * strides[1]
+                        end_H = start_H + KH
+                        start_W = k * strides[2]
+                        end_W = start_W + KW
+                        convolved[:, i, j, k, c] = np.sum(
+                            inputs[
+                                :,
+                                start_D:end_D,
+                                start_H:end_H,
+                                start_W:end_W,
+                                c,
+                            ]
+                            * kernel[:, :, :, c],
+                            axis=(1, 2, 3),
+                        )
+
+    else:
+        raise NotImplementedError(
+            "Depthwise convolution is not implemented for >3D tensors."
+            f"Got {rank}D tensor."
+        )
+
+    return convolved
 
 
-# def separable_conv(
-#     inputs,
-#     depthwise_kernel,
-#     pointwise_kernel,
-#     strides=1,
-#     padding="valid",
-#     data_format="channels_last",
-#     dilation_rate=1,
-# ):
-#     depthwise_conv_output = depthwise_conv(
-#         inputs,
-#         depthwise_kernel,
-#         strides,
-#         padding,
-#         data_format,
-#         dilation_rate,
-#     )
-#     return conv(
-#         depthwise_conv_output,
-#         pointwise_kernel,
-#         strides=1,
-#         padding="valid",
-#         data_format=data_format,
-#         dilation_rate=dilation_rate,
-#     )
+def separable_conv(
+    inputs,
+    depthwise_kernel,
+    pointwise_kernel,
+    strides=1,
+    padding="valid",
+    data_format="channel_last",
+    dilation_rate=1,
+):
+    if isinstance(strides, int):
+        strides = (strides,) * len(inputs.shape[1:-1])
+    if isinstance(dilation_rate, int):
+        dilation_rate = (dilation_rate,) * len(inputs.shape[1:-1])
+
+    rank = len(inputs.shape)
+    if padding.lower() != "valid":
+        raise NotImplementedError(
+            "Only 'VALID' padding is currently supported."
+        )
+    if data_format.lower() != "channels_last":
+        raise NotImplementedError(
+            "Only 'channels_last' data format is currently supported."
+        )
+    if any(rate != 1 for rate in dilation_rate):
+        raise NotImplementedError(
+            "Only dilation_rate of 1 is currently supported."
+        )
+
+    # Depthwise convolution
+    depthwise_convolved = depthwise_conv(
+        inputs, depthwise_kernel, strides, padding, data_format, dilation_rate
+    )
+
+    # Pointwise convolution
+    N = depthwise_convolved.shape[0]
+    M, C = pointwise_kernel.shape
+    if C != depthwise_convolved.shape[-1]:
+        raise ValueError(
+            "The number of input channels should be the same as the number of kernel channels."
+        )
+
+    if rank == 3:
+        # 1D pointwise convolution
+        L, _ = depthwise_convolved.shape[1:]
+        convolved = np.empty((N, L, M))
+        for n in range(N):
+            for i in range(L):
+                convolved[n, i, :] = np.dot(
+                    depthwise_convolved[n, i, :], pointwise_kernel.T
+                )
+
+    elif rank == 4:
+        # 2D pointwise convolution
+        H, W, _ = depthwise_convolved.shape[1:]
+        convolved = np.empty((N, H, W, M))
+        for n in range(N):
+            for i in range(H):
+                for j in range(W):
+                    convolved[n, i, j, :] = np.dot(
+                        depthwise_convolved[n, i, j, :], pointwise_kernel.T
+                    )
+
+    elif rank == 5:
+        # 3D pointwise convolution
+        D, H, W, _ = depthwise_convolved.shape[1:]
+        convolved = np.empty((N, D, H, W, M))
+        for n in range(N):
+            for i in range(D):
+                for j in range(H):
+                    for k in range(W):
+                        convolved[n, i, j, k, :] = np.dot(
+                            depthwise_convolved[n, i, j, k, :],
+                            pointwise_kernel.T,
+                        )
+
+    else:
+        raise NotImplementedError(
+            "Separable convolution is not implemented for >3D tensors."
+            f"Got {rank}D tensor."
+        )
+
+    return convolved
 
 
-# def conv_transpose(
-#     inputs,
-#     kernel,
-#     strides=1,
-#     padding="valid",
-#     output_padding=None,
-#     data_format="channels_last",
-#     dilation_rate=1,
-# ):
-#     num_spatial_dims = inputs.ndim - 2
-#     dimension_numbers = _convert_to_lax_conv_dimension_numbers(
-#         num_spatial_dims,
-#         data_format,
-#         transpose=False,
-#     )
-#     strides = _convert_to_spatial_operand(
-#         strides,
-#         num_spatial_dims,
-#         data_format,
-#         include_batch_and_channels=False,
-#     )
-#     dilation_rate = _convert_to_spatial_operand(
-#         dilation_rate,
-#         num_spatial_dims,
-#         data_format,
-#         include_batch_and_channels=False,
-#     )
+def conv_transpose(
+    inputs,
+    kernel,
+    strides=1,
+    padding="valid",
+    data_format="channel_last",
+    output_padding=None,
+):
+    if isinstance(strides, int):
+        strides = (strides,) * len(inputs.shape[1:-1])
 
-#     if output_padding is not None:
-#         raise ValueError(
-#             "Custom `output_padding` is not supported yet, please set "
-#             "`output_padding=None`."
-#         )
-#     padding = padding.upper()
-#     return jax.lax.conv_transpose(
-#         inputs,
-#         kernel,
-#         strides,
-#         padding,
-#         rhs_dilation=dilation_rate,
-#         dimension_numbers=dimension_numbers,
-#         transpose_kernel=True,
-#    )
+    rank = len(inputs.shape)
+    if padding.lower() != "valid":
+        raise NotImplementedError(
+            "Only 'VALID' padding is currently supported."
+        )
+    if data_format.lower() != "channels_last":
+        raise NotImplementedError(
+            "Only 'channels_last' data format is currently supported."
+        )
+
+    if output_padding is None:
+        output_padding = (0,) * len(inputs.shape[1:-1])
+
+    M, C = kernel.shape[:2]
+    if C != inputs.shape[-1]:
+        raise ValueError(
+            "The number of input channels should be the same as the number of kernel channels."
+        )
+
+    if rank == 3:
+        # 1D convolution transpose
+        N, L, _ = inputs.shape
+        K, _ = kernel.shape[2:]
+        conv_L = (L - 1) * strides[0] + K + output_padding[0]
+        convolved = np.zeros((N, conv_L, M))
+        for i in range(L):
+            start = i * strides[0]
+            end = start + K
+            convolved[:, start:end, :] += np.tensordot(
+                inputs[:, i, :], kernel, axes=(1, 1)
+            )
+
+    elif rank == 4:
+        # 2D convolution transpose
+        N, H, W, _ = inputs.shape
+        KH, KW, _ = kernel.shape[2:]
+        conv_H = (H - 1) * strides[0] + KH + output_padding[0]
+        conv_W = (W - 1) * strides[1] + KW + output_padding[1]
+        convolved = np.zeros((N, conv_H, conv_W, M))
+        for i in range(H):
+            for j in range(W):
+                start_H = i * strides[0]
+                end_H = start_H + KH
+                start_W = j * strides[1]
+                end_W = start_W + KW
+                convolved[:, start_H:end_H, start_W:end_W, :] += np.tensordot(
+                    inputs[:, i, j, :], kernel, axes=(1, 1)
+                )
+
+    elif rank == 5:
+        # 3D convolution transpose
+        N, D, H, W, _ = inputs.shape
+        KD, KH, KW, _ = kernel.shape[2:]
+        conv_D = (D - 1) * strides[0] + KD + output_padding[0]
+        conv_H = (H - 1) * strides[1] + KH + output_padding[1]
+        conv_W = (W - 1) * strides[2] + KW + output_padding[2]
+        convolved = np.zeros((N, conv_D, conv_H, conv_W, M))
+        for i in range(D):
+            for j in range(H):
+                for k in range(W):
+                    start_D = i * strides[0]
+                    end_D = start_D + KD
+                    start_H = j * strides[1]
+                    end_H = start_H + KH
+                    start_W = k * strides[2]
+                    end_W = start_W + KW
+                    convolved[
+                        :, start_D:end_D, start_H:end_H, start_W:end_W, :
+                    ] += np.tensordot(
+                        inputs[:, i, j, k, :], kernel, axes=(1, 1)
+                    )
+
+    else:
+        raise NotImplementedError(
+            "Convolution transpose is not implemented for >3D tensors."
+            f"Got {rank}D tensor."
+        )
+
+    return convolved
 
 
 def one_hot(x, num_classes, axis=-1):
