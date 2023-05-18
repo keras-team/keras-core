@@ -1826,7 +1826,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
 
     @pytest.mark.skipif(
         backend.backend() == "torch",
-        reason="`torch.linspace` has no support for tensor or array start/stop.",
+        reason="`torch.linspace` has no support for array start/stop.",
     )
     def test_linspace(self):
         self.assertAllClose(
@@ -1937,7 +1937,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
 
     @pytest.mark.skipif(
         backend.backend() == "torch",
-        reason="`torch.logspace` has no support for tensor or array start/stop.",
+        reason="`torch.logspace` has no support for array start/stop.",
     )
     def test_logspace(self):
         self.assertAllClose(

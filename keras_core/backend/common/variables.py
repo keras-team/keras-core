@@ -338,7 +338,7 @@ ALLOWED_DTYPES = {
     "bool",
 }
 
-STANDARD_DTYPES = {
+PYTHON_DTYPES_MAP = {
     bool: "bool",
     int: "int",  # TBD by backend
     float: "float32",
@@ -348,8 +348,8 @@ STANDARD_DTYPES = {
 def standardize_dtype(dtype):
     if dtype is None:
         return config.floatx()
-    if dtype in STANDARD_DTYPES:
-        dtype = STANDARD_DTYPES.get(dtype)
+    if dtype in PYTHON_DTYPES_MAP:
+        dtype = PYTHON_DTYPES_MAP.get(dtype)
     if dtype == "int":
         if config.backend() == "tensorflow":
             dtype = "int64"
