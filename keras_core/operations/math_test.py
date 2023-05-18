@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 import pytest
 
 from keras_core import backend
@@ -44,8 +45,18 @@ class MathOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(values, [4, 3])
         self.assertAllClose(indices, [1, 4])
 
+        x = np.random.rand(5, 5)
+        outputs = kmath.top_k(x, k=2)
+        expected = tf.math.top_k(x, k=2)
+        self.assertAllClose(outputs.values, expected.values)
+        self.assertAllClose(outputs.indices, expected.indices)
+
     def test_logsumexp(self):
-        x_np = np.random.rand(5, 5)
-        y_tf_np = kmath.logsumexp(x_np)
-        y_np = np.log(np.sum(np.exp(x_np)))
-        self.assertAllClose(y_tf_np, y_np)
+        x = np.random.rand(5, 5)
+        outputs = kmath.logsumexp(x)
+        expected = np.log(np.sum(np.exp(x)))
+        self.assertAllClose(outputs, expected)
+
+        outputs = kmath.logsumexp(x, axis=1)
+        expected = np.log(np.sum(np.exp(x, axis=1)))
+        self.assertAllClose(outputs, expected)
