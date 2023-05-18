@@ -330,7 +330,8 @@ def full(shape, fill_value, dtype=None):
     dtype = to_torch_dtype(dtype)
     if hasattr(fill_value, "__len__"):
         raise NotImplementedError(
-            "`torch.full()` only accepts scalars for `fill_value`."
+            "`torch.full()` only accepts scalars for `fill_value`. "
+            f"Received: fill_value={fill_value}"
         )
         # TODO: implement conversion of shape into repetitions for `torch.tile``
         # return torch.tile(fill_value, reps)
@@ -795,7 +796,7 @@ def eye(N, M=None, k=None, dtype="float32"):
         raise NotImplementedError(
             "Due to API divergence bewtween `torch.eye` "
             "and `np.eye`, the argument k is not supported: "
-            f"k={k}"
+            f"Received: k={k}"
         )
     dtype = to_torch_dtype(dtype)
     if M is not None:
