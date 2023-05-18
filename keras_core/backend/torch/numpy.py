@@ -235,8 +235,16 @@ def count_nonzero(x, axis=None):
 
 
 def cross(x1, x2, axisa=-1, axisb=-1, axisc=-1, axis=None):
-    # There is API divergence between np.cross and torch.cross
+    # TODO: There is API divergence between np.cross and torch.cross,
+    # preventing `axisa`, `axisb`, and `axisc` parameters from
+    # being used.
     # https://github.com/pytorch/pytorch/issues/50273
+    if axisa != -1 or axisb != -1 or axisc != -1:
+        raise NotImplementedError(
+            "Due to API divergence between `torch.cross()` and "
+            "`np.cross`, the following arguments are not supported: "
+            f"axisa={axisa}, axisb={axisb}, axisc={axisc}"
+        )
     x1, x2 = convert_to_tensor(x1), convert_to_tensor(x2)
     return torch.cross(x1, x2, dim=axis)
 
@@ -686,7 +694,8 @@ def trace(x, offset=None, axis1=None, axis2=None):
     # API divergence between `np.trace()` and `torch.trace()`
     if offset or axis1 or axis2:
         raise NotImplementedError(
-            "Arguments not supported by `torch.trace:" "offset, axis1, axis2"
+            "Arguments not supported by `torch.trace: "
+            f"offset={offset}, axis1={axis1}, axis2={axis2}"
         )
     return torch.trace(x)
 
@@ -782,6 +791,12 @@ def sum(x, axis=None, keepdims=False):
 def eye(N, M=None, k=None, dtype="float32"):
     # TODO: implement support for `k` diagonal arg,
     # does not exist in torch.eye()
+    if k is not None:
+        raise NotImplementedError(
+            "Due to API divergence bewtween `torch.eye` "
+            "and `np.eye`, the argument k is not supported: "
+            f"k={k}"
+        )
     dtype = to_torch_dtype(dtype)
     if M is not None:
         return torch.eye(n=N, m=M, dtype=dtype)

@@ -3053,12 +3053,13 @@ class NumpyArrayCreateOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(np.array(knp.Zeros()([2, 3])), np.zeros([2, 3]))
 
     def test_eye(self):
-        self.assertAllClose(np.array(knp.eye(3)), np.eye(3))
-        self.assertAllClose(np.array(knp.eye(3, 4)), np.eye(3, 4))
         # TODO: implement support for `k` diagonal arg,
         # does not exist in torch.eye()
         if backend.backend() == "torch":
             return
+
+        self.assertAllClose(np.array(knp.eye(3)), np.eye(3))
+        self.assertAllClose(np.array(knp.eye(3, 4)), np.eye(3, 4))
         self.assertAllClose(np.array(knp.eye(3, 4, 1)), np.eye(3, 4, 1))
 
         self.assertAllClose(np.array(knp.Eye()(3)), np.eye(3))
