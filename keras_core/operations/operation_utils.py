@@ -2,8 +2,6 @@ import math
 
 import numpy as np
 
-from keras_core import operations as ops
-
 
 def compute_pooling_output_shape(
     input_shape,
@@ -163,31 +161,3 @@ def compute_reshape_output_shape(input_shape, new_shape, new_shape_arg_name):
     output_shape = list(new_shape)
     output_shape[unknown_dim_index] = input_size // known_output_size
     return tuple(output_shape)
-
-
-def resize_volumes(x, depth_factor, height_factor, width_factor, data_format):
-    """Resizes the volume contained in a 5D tensor.
-    Args:
-        x: Tensor or variable to resize.
-        depth_factor: Positive integer.
-        height_factor: Positive integer.
-        width_factor: Positive integer.
-        data_format: One of `"channels_first"`, `"channels_last"`.
-    Returns:
-        A tensor.
-    Raises:
-        ValueError: if `data_format` is neither
-            `channels_last` or `channels_first`.
-    """
-    if data_format == "channels_first":
-        output = ops.repeat(x, depth_factor, axis=2)
-        output = ops.repeat(output, height_factor, axis=3)
-        output = ops.repeat(output, width_factor, axis=4)
-        return output
-    elif data_format == "channels_last":
-        output = ops.repeat(x, depth_factor, axis=1)
-        output = ops.repeat(output, height_factor, axis=2)
-        output = ops.repeat(output, width_factor, axis=3)
-        return output
-    else:
-        raise ValueError("Invalid data_format: " + str(data_format))
