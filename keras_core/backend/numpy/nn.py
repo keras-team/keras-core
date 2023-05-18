@@ -73,141 +73,115 @@ def log_softmax(x, axis=None):
     return x - np.log(np.sum(exp_x, axis=axis, keepdims=True))
 
 
-def _convert_to_spatial_operand(
-    x,
-    num_spatial_dims,
-    data_format="channels_last",
-    include_batch_and_channels=True,
-):
-    # Helper function that converts an operand to a spatial operand.
-    x = (x,) * num_spatial_dims if isinstance(x, int) else x
-    if not include_batch_and_channels:
-        return x
-    if data_format == "channels_last":
-        x = (1,) + x + (1,)
+def generic_pool(inputs, pool_size, pool_fn, strides, padding, data_format):
+    if padding != "valid":
+        raise NotImplementedError(
+            "Only 'valid' padding is currently supported."
+        )
+    if data_format != "channels_last":
+        raise NotImplementedError(
+            "Only 'channels_last' data format is currently supported."
+        )
+    rank = len(inputs.shape)
+    if rank == 3:
+        # 1D pooling
+        N, L, C = inputs.shape
+        pooled_L = (L - pool_size[0]) // strides[0] + 1
+        pooled = np.empty((N, pooled_L, C))
+        for i in range(pooled_L):
+            start = i * strides[0]
+            end = start + pool_size[0]
+            pooled[:, i, :] = pool_fn(inputs[:, start:end, :], axis=1)
+
+    elif rank == 4:
+        # 2D pooling
+        N, H, W, C = inputs.shape
+        pooled_H = (H - pool_size[0]) // strides[0] + 1
+        pooled_W = (W - pool_size[1]) // strides[1] + 1
+        pooled = np.empty((N, pooled_H, pooled_W, C))
+        for i in range(pooled_H):
+            for j in range(pooled_W):
+                start_H = i * strides[0]
+                end_H = start_H + pool_size[0]
+                start_W = j * strides[1]
+                end_W = start_W + pool_size[1]
+                pooled[:, i, j, :] = pool_fn(
+                    inputs[:, start_H:end_H, start_W:end_W, :], axis=(1, 2)
+                )
+
+    elif rank == 5:
+        # 3D pooling
+        N, D, H, W, C = inputs.shape
+        pooled_D = (D - pool_size[0]) // strides[0] + 1
+        pooled_H = (H - pool_size[1]) // strides[1] + 1
+        pooled_W = (W - pool_size[2]) // strides[2] + 1
+        pooled = np.empty((N, pooled_D, pooled_H, pooled_W, C))
+        for i in range(pooled_D):
+            for j in range(pooled_H):
+                for k in range(pooled_W):
+                    start_D = i * strides[0]
+                    end_D = start_D + pool_size[0]
+                    start_H = j * strides[1]
+                    end_H = start_H + pool_size[1]
+                    start_W = k * strides[2]
+                    end_W = start_W + pool_size[2]
+                    pooled[:, i, j, k, :] = pool_fn(
+                        inputs[
+                            :, start_D:end_D, start_H:end_H, start_W:end_W, :
+                        ],
+                        axis=(1, 2, 3),
+                    )
+
     else:
-        x = (1,) + (1,) + x
-    return x
+        raise NotImplementedError(
+            "Pooling is not implemented for >3D tensors." f"Got {rank}D tensor."
+        )
+
+    return pooled
 
 
-# def _pool(
-#     inputs,
-#     initial_value,
-#     reduce_fn,
-#     pool_size,
-#     strides=None,
-#     padding="valid",
-# ):
-#     """Helper function to define pooling functions.
-
-#     Args:
-#         inputs: input data of shape `N+2`.
-#         initial_value: the initial value for the reduction.
-#         reduce_fn: a reduce function of the form `(T, T) -> T`.
-#         pool_size: a sequence of `N` integers, representing the window size to
-#             reduce over.
-#         strides: a sequence of `N` integers, representing the inter-window
-#             strides (default: `(1, ..., 1)`).
-#         padding: either the string `same` or `valid`.
-
-#     Returns:
-#         The output of the reduction for each window slice.
-#     """
-#     if padding not in ("same", "valid"):
-#         raise ValueError(
-#             f"Invalid padding '{padding}', must be 'same' or 'valid'."
-#         )
-#     padding = padding.upper()
-#     return lax.reduce_window(
-#         inputs,
-#         initial_value,
-#         reduce_fn,
-#         pool_size,
-#         strides,
-#         padding,
-#     )
+def max_pool(
+    inputs,
+    pool_size,
+    strides=None,
+    padding="valid",
+    data_format="channels_last",
+):
+    num_spatial_dims = len(inputs.shape) - 2
+    pool_size = (
+        [pool_size] * num_spatial_dims
+        if isinstance(pool_size, int)
+        else pool_size
+    )
+    strides = pool_size if strides is None else strides
+    strides = (
+        [strides] * num_spatial_dims if isinstance(strides, int) else strides
+    )
+    return generic_pool(
+        inputs, pool_size, np.max, strides, padding, data_format
+    )
 
 
-# def max_pool(
-#     inputs,
-#     pool_size,
-#     strides=None,
-#     padding="valid",
-#     data_format="channels_last",
-# ):
-#     num_spatial_dims = inputs.ndim - 2
-#     pool_size = _convert_to_spatial_operand(
-#         pool_size, num_spatial_dims, data_format
-#     )
-#     strides = pool_size if strides is None else strides
-#     strides = _convert_to_spatial_operand(
-#         strides, num_spatial_dims, data_format
-#     )
-#     return _pool(inputs, -jnp.inf, lax.max, pool_size, strides, padding)
-
-
-# def average_pool(
-#     inputs,
-#     pool_size,
-#     strides,
-#     padding,
-#     data_format="channels_last",
-# ):
-#     num_spatial_dims = inputs.ndim - 2
-#     pool_size = _convert_to_spatial_operand(
-#         pool_size, num_spatial_dims, data_format
-#     )
-#     strides = pool_size if strides is None else strides
-#     strides = _convert_to_spatial_operand(
-#         strides, num_spatial_dims, data_format
-#     )
-
-#     pooled = _pool(inputs, 0.0, lax.add, pool_size, strides, padding)
-#     if padding == "valid":
-#         # Avoid the extra reduce_window.
-#         return pooled / np.prod(pool_size)
-#     else:
-#         # Count the number of valid entries at each input point, then use that
-#         # for computing average. Assumes that any two arrays of same shape will
-#         # be padded the same. Avoid broadcasting on axis where pooling is
-#         # skipped.
-#         shape = [
-#             (a if b != 1 else 1) for (a, b) in zip(inputs.shape, pool_size)
-#         ]
-#         window_counts = _pool(
-#             jnp.ones(shape, inputs.dtype),
-#             0.0,
-#             lax.add,
-#             pool_size,
-#             strides,
-#             padding,
-#         )
-#         return pooled / window_counts
-
-
-# def _convert_to_lax_conv_dimension_numbers(
-#     num_spatial_dims,
-#     data_format="channels_last",
-#     transpose=False,
-# ):
-#     """Create a `lax.ConvDimensionNumbers` for the given inputs."""
-#     num_dims = num_spatial_dims + 2
-
-#     if data_format == "channels_last":
-#         spatial_dims = tuple(range(1, num_dims - 1))
-#         inputs_dn = (0, num_dims - 1) + spatial_dims
-#     else:
-#         spatial_dims = tuple(range(2, num_dims))
-#         inputs_dn = (0, 1) + spatial_dims
-
-#     if transpose:
-#         kernel_dn = (num_dims - 2, num_dims - 1) + tuple(range(num_dims - 2))
-#     else:
-#         kernel_dn = (num_dims - 1, num_dims - 2) + tuple(range(num_dims - 2))
-
-#     return lax.ConvDimensionNumbers(
-#         lhs_spec=inputs_dn, rhs_spec=kernel_dn, out_spec=inputs_dn
-#     )
+def average_pool(
+    inputs,
+    pool_size,
+    strides,
+    padding,
+    data_format="channels_last",
+):
+    num_spatial_dims = len(inputs.shape) - 2
+    pool_size = (
+        [pool_size] * num_spatial_dims
+        if isinstance(pool_size, int)
+        else pool_size
+    )
+    strides = pool_size if strides is None else strides
+    strides = (
+        [strides] * num_spatial_dims if isinstance(strides, int) else strides
+    )
+    return generic_pool(
+        inputs, pool_size, np.average, strides, padding, data_format
+    )
 
 
 # def conv(
