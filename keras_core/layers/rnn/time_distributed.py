@@ -1,10 +1,7 @@
 """Wrapper layer to apply every temporal slice of an input."""
 
-import functools
-
-import numpy as np
-
 from keras_core import backend
+from keras_core import operations as ops
 from keras_core.api_export import keras_core_export
 from keras_core.layers.core.wrapper import Wrapper
 from keras_core.layers.layer import Layer
@@ -87,20 +84,31 @@ class TimeDistributed(Wrapper):
                 f"received: mask.shape={mask_shape}"
             )
 
-        def per_timestep_function(batch, timestep):
-            kwargs = {}
-            if self.layer._call_has_mask_arg():
-                kwargs["mask"] = None if mask is None else mask[batch][timestep]
-            if self.layer._call_has_training_arg():
-                kwargs["training"] = training
-            return self.layer.call(inputs[batch][timestep], **kwargs)
+        def time_distributed_transpose(data):
+            """Swaps the timestep and batch dimensions of a tensor."""
+            axes = [1, 0, *range(2, len(data.shape))]
+            return ops.transpose(data, axes=axes)
+
+        time_distributed_inputs = time_distributed_transpose(inputs)
+        if mask is None:
+            time_distributed_mask = None
+        else:
+            time_distributed_mask = time_distributed_transpose(mask)
 
         def per_batch_function(batch):
-            return backend.vectorized_map(
-                functools.partial(per_timestep_function, batch),
-                np.arange(timesteps, dtype=np.int32),
-            )
+            kwargs = {}
+            if self.layer._call_has_mask_arg():
+                kwargs["mask"] = (
+                    None
+                    if time_distributed_mask is None
+                    else time_distributed_mask[batch]
+                )
+            if self.layer._call_has_training_arg():
+                kwargs["training"] = training
+            return self.layer.call(time_distributed_inputs[batch], **kwargs)
 
-        return backend.vectorized_map(
-            per_batch_function, np.arange(batch_size, dtype=np.int32)
+        outputs = backend.vectorized_map(
+            per_batch_function, ops.arange(timesteps)
         )
+
+        return time_distributed_transpose(outputs)

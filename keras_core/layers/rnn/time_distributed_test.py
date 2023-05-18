@@ -56,7 +56,9 @@ class TimeDistributedTest(testing.TestCase):
                 if mask is None:
                     return unmasked
                 else:
-                    return unmasked * ops.cast(mask, inputs.dtype)
+                    return ops.transpose(
+                        ops.transpose(unmasked) * ops.cast(mask, inputs.dtype)
+                    )
 
         sequence = np.arange(24).reshape((3, 2, 4)).astype("float32")
         layer = layers.TimeDistributed(layer=MaskedDense(1))
