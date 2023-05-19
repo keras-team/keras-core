@@ -28,12 +28,12 @@ def softsign(x):
     return tnn.soft_sign(x)
 
 
-def silu(x):
-    return tnn.silu(x)
+def silu(x, beta=1.0):
+    return x * sigmoid(beta * x)
 
 
 def swish(x):
-    return x * tnn.sigmoid(x)
+    return silu(x, beta=1)
 
 
 def log_sigmoid(x):
