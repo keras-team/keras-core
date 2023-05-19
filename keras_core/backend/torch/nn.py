@@ -2,70 +2,100 @@ import torch
 import torch.nn.functional as tnn
 
 from keras_core.backend.config import epsilon
+from keras_core.backend.torch.core import convert_to_tensor
 
 
 def relu(x):
+    x = convert_to_tensor(x)
     return tnn.relu(x)
 
 
 def relu6(x):
+    x = convert_to_tensor(x)
     return tnn.relu6(x)
 
 
 def sigmoid(x):
+    x = convert_to_tensor(x)
     return tnn.sigmoid(x)
 
 
 def tanh(x):
+    x = convert_to_tensor(x)
     return tnn.tanh(x)
 
 
 def softplus(x):
+    x = convert_to_tensor(x)
     return tnn.softplus(x)
 
 
 def softsign(x):
-    return tnn.soft_sign(x)
+    x = convert_to_tensor(x)
+    return tnn.softsign(x)
 
 
 def silu(x, beta=1.0):
+    x = convert_to_tensor(x)
     return x * sigmoid(beta * x)
 
 
 def swish(x):
+    x = convert_to_tensor(x)
     return silu(x, beta=1)
 
 
 def log_sigmoid(x):
+    x = convert_to_tensor(x)
     return tnn.logsigmoid(x)
 
 
 def leaky_relu(x, negative_slope=0.2):
+    x = convert_to_tensor(x)
     return tnn.leaky_relu(x, negative_slope=negative_slope)
 
 
 def hard_sigmoid(x):
+    x = convert_to_tensor(x)
     return tnn.hardsigmoid(x)
 
 
-def elu(x):
-    return tnn.elu(x)
+def elu(x, alpha=1.0):
+    x = convert_to_tensor(x)
+    return tnn.elu(x, alpha)
 
 
 def selu(x):
+    x = convert_to_tensor(x)
     return tnn.selu(x)
 
 
 def gelu(x, approximate=True):
-    return tnn.gelu(x, approximate)
+    # TODO: torch.nn.gelu expects string approximate of `"none"` or `"tanh"`
+    x = convert_to_tensor(x)
+    if approximate:
+        return tnn.gelu(x, approximate="tanh")
+    return tnn.gelu(x)
 
 
 def softmax(x, axis=None):
-    return tnn.softmax(x, dim=axis)
+    logits = convert_to_tensor(x)
+    if axis is None:
+        # Unlike numpy, PyTorch will handle axis=None as axis=-1.
+        # We need this workaround for the reduction on every dim.
+        logits_exp = torch.exp(logits)
+        return logits_exp / torch.sum(logits_exp)
+    return tnn.softmax(logits, dim=axis)
 
 
-def log_softmax(x, axis=-1):
-    return tnn.log_softmax(x, dim=axis)
+def log_softmax(x, axis=None):
+    logits = convert_to_tensor(x)
+    if axis is None:
+        # Unlike numpy, PyTorch will handle axis=None as axis=-1.
+        # We need this workaround for the reduction on every dim.
+        logits_exp = torch.exp(logits)
+        return logits - torch.log(torch.sum(logits_exp))
+    return tnn.log_softmax(logits, dim=axis)
 
 
 def max_pool(
@@ -158,7 +188,9 @@ def conv_transpose(
 
 
 def one_hot(x, num_classes, axis=-1):
-    if axis != -1 or axis != x.shape[-1]:
+    # TODO: Fails Test - keras_core/operations/nn_test.py
+    x = convert_to_tensor(x, dtype=torch.long)
+    if axis != -1 and axis != (x.dim() - 1):
         raise ValueError(
             "`one_hot` is only implemented for last axis for PyTorch backend. "
             f"`axis` arg value {axis} should be -1 or last axis of the input "
@@ -168,8 +200,8 @@ def one_hot(x, num_classes, axis=-1):
 
 
 def categorical_crossentropy(target, output, from_logits=False, axis=-1):
-    target = torch.as_tensor(target)
-    output = torch.as_tensor(output)
+    target = convert_to_tensor(target)
+    output = convert_to_tensor(output)
 
     if target.shape != output.shape:
         raise ValueError(
@@ -194,8 +226,8 @@ def categorical_crossentropy(target, output, from_logits=False, axis=-1):
 
 
 def sparse_categorical_crossentropy(target, output, from_logits=False, axis=-1):
-    target = torch.as_tensor(target, dtype=torch.long)
-    output = torch.as_tensor(output)
+    target = convert_to_tensor(target, dtype=torch.long)
+    output = convert_to_tensor(output)
 
     if len(target.shape) == len(output.shape) and target.shape[-1] == 1:
         target = torch.squeeze(target, dim=-1)
@@ -224,8 +256,8 @@ def sparse_categorical_crossentropy(target, output, from_logits=False, axis=-1):
 
 def binary_crossentropy(target, output, from_logits=False):
     # TODO: `torch.as_tensor` has device arg. Need to think how to pass it.
-    target = torch.as_tensor(target)
-    output = torch.as_tensor(output)
+    target = convert_to_tensor(target)
+    output = convert_to_tensor(output)
 
     if target.shape != output.shape:
         raise ValueError(
@@ -233,8 +265,11 @@ def binary_crossentropy(target, output, from_logits=False):
             "Received: "
             f"target.shape={target.shape}, output.shape={output.shape}"
         )
-
+    # By default, PyTorch, does reduction of `sum` over all rows,
+    # change reduction to `none` to keep dim
     if from_logits:
-        return tnn.binary_cross_entropy_with_logits(output, target)
+        return tnn.binary_cross_entropy_with_logits(
+            output, target, reduction="none"
+        )
     else:
-        return tnn.binary_cross_entropy(output, target)
+        return tnn.binary_cross_entropy(output, target, reduction="none")
