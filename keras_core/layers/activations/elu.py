@@ -15,8 +15,8 @@ class ELU(Layer):
     ```
 
     Args:
-        **kwargs: Base layer keyword arguments, such as
-            `name` and `dtype`.
+        alpha: float, slope of negative section. Defaults to 1.0.
+        **kwargs: Base layer keyword arguments, such as `name` and `dtype`.
     """
 
     def __init__(self, alpha=1.0, **kwargs):
