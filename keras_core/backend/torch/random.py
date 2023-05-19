@@ -105,6 +105,7 @@ def truncated_normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
     trunc_x.data.mul_(stddev).add_(mean)
     return trunc_x
 
+
 def dropout(inputs, rate, noise_shape=None, seed=None):
     # TODO: setting seed globally via `manual_seed` might create side effects.
     if seed is not None:
