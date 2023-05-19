@@ -3,7 +3,6 @@ tensorflow
 # Remove after resolving Cuda version differences with TF
 torch>=2.0.1+cpu
 jax[cpu]
-torch
 namex
 black>=22
 flake8
@@ -13,4 +12,3 @@ pandas
 absl-py
 requests
 h5py
-torch
