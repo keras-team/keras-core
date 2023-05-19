@@ -22,16 +22,13 @@ class PReLU(Layer):
         negative_slope_initializer: Initializer function for the weights.
         negative_slope_regularizer: Regularizer for the weights.
         negative_slope_constraint: Constraint for the weights.
-        shared_axes: The axes along which to share learnable
-            parameters for the activation function.
-            For example, if the incoming feature maps
-            are from a 2D convolution
-            with output shape `(batch, height, width, channels)`,
-            and you wish to share parameters across space
-            so that each filter only has one set of parameters,
+        shared_axes: The axes along which to share learnable parameters for the
+            activation function. For example, if the incoming feature maps are
+            from a 2D convolution with output shape
+            `(batch, height, width, channels)`, and you wish to share parameters
+            across space so that each filter only has one set of parameters,
             set `shared_axes=[1, 2]`.
-        **kwargs: Base layer keyword arguments, such as
-            `name` and `dtype`.
+        **kwargs: Base layer keyword arguments, such as `name` and `dtype`.
     """
 
     def __init__(
