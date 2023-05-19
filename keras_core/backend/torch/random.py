@@ -95,15 +95,15 @@ def truncated_normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
             across multiple calls, use as seed an instance
             of `keras_core.backend.SeedGenerator`.
     """
-    x = torch.empty(shape)
-    # TODO: setting seed globally via `manual_seed` might create side effects.
-    if seed is not None:
-        seed_val, _ = draw_seed(seed)
-        torch.manual_seed(int(seed_val))
-    return torch.nn.init.trunc_normal_(
-        x, mean=mean, std=stddev, a=-stddev * 2, b=stddev * 2
-    )
-
+    # Take a larger standard normal dist, discard values outside 2 * stddev
+    # Offset by mean and stddev
+    x = normal(shape + (4,), mean=0, stddev=1, dtype=dtype, seed=seed)
+    valid = (x > -2) & (x < 2)
+    indexes = valid.max(-1, keepdim=True)[1]
+    trunc_x = torch.empty(shape)
+    trunc_x.data.copy_(x.gather(-1, indexes).squeeze(-1))
+    trunc_x.data.mul_(stddev).add_(mean)
+    return trunc_x
 
 def dropout(inputs, rate, noise_shape=None, seed=None):
     # TODO: setting seed globally via `manual_seed` might create side effects.
