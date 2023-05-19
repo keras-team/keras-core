@@ -1,9 +1,9 @@
 import tensorflow as tf
 
-from keras_core.backend.common.random import SeedGenerator
-from keras_core.backend.common.random import draw_seed
-from keras_core.backend.common.random import make_default_seed
 from keras_core.backend.config import floatx
+from keras_core.random.seed_generator import SeedGenerator
+from keras_core.random.seed_generator import draw_seed
+from keras_core.random.seed_generator import make_default_seed
 
 
 def tf_draw_seed(seed):

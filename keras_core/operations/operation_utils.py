@@ -103,7 +103,7 @@ def compute_conv_output_shape(
                 f"`kernel shape={kernel_shape}`, "
                 f"`dilation_rate={dilation_rate}`."
             )
-    elif padding == "same":
+    elif padding == "same" or padding == "causal":
         output_spatial_shape = np.floor((spatial_shape - 1) / strides) + 1
     output_spatial_shape = tuple([int(i) for i in output_spatial_shape])
     if data_format == "channels_last":
@@ -161,3 +161,23 @@ def compute_reshape_output_shape(input_shape, new_shape, new_shape_arg_name):
     output_shape = list(new_shape)
     output_shape[unknown_dim_index] = input_size // known_output_size
     return tuple(output_shape)
+
+
+def reduce_shape(shape, axis=None, keepdims=False):
+    shape = list(shape)
+    if axis is None:
+        if keepdims:
+            output_shape = [1 for _ in range(shape)]
+        else:
+            output_shape = []
+        return output_shape
+
+    if keepdims:
+        for ax in axis:
+            shape[ax] = 1
+        return shape
+    else:
+        for ax in axis:
+            shape[ax] = -1
+        output_shape = list(filter((-1).__ne__, shape))
+        return output_shape

@@ -68,7 +68,7 @@ class UpSampling2D(Layer):
     ):
         super().__init__(**kwargs)
         self.data_format = backend.config.standardize_data_format(data_format)
-        self.size = argument_validation.normalize_tuple(size, 2, "size")
+        self.size = argument_validation.standardize_tuple(size, 2, "size")
         self.interpolation = interpolation.lower()
         self.input_spec = InputSpec(ndim=4)
 

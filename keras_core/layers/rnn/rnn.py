@@ -188,6 +188,7 @@ class RNN(Layer):
         go_backwards=False,
         stateful=False,
         unroll=False,
+        zero_output_for_mask=False,
         **kwargs,
     ):
         if isinstance(cell, (list, tuple)):
@@ -204,12 +205,11 @@ class RNN(Layer):
                 "one integer per RNN state). "
                 f"Received: cell={cell}"
             )
+        super().__init__(**kwargs)
+
         # If True, the output for masked timestep will be zeros, whereas in the
         # False case, output from previous timestep is returned for masked
         # timestep.
-        zero_output_for_mask = kwargs.pop("zero_output_for_mask", False)
-        super().__init__(**kwargs)
-
         self.zero_output_for_mask = zero_output_for_mask
         self.cell = cell
         self.return_sequences = return_sequences
@@ -239,17 +239,17 @@ class RNN(Layer):
             self.state_size = state_size
             self.single_state = False
 
-    def compute_output_shape(self, sequence_shape, initial_state_shape=None):
-        state_shape = [(sequence_shape[0], d) for d in self.state_size]
+    def compute_output_shape(self, sequences_shape, initial_state_shape=None):
+        state_shape = [(sequences_shape[0], d) for d in self.state_size]
         output_size = getattr(self.cell, "output_size", None)
         if output_size is None:
             output_size = self.state_size[0]
         if not isinstance(output_size, int):
             raise ValueError("output_size must be an integer.")
         if self.return_sequences:
-            output_shape = (sequence_shape[0], sequence_shape[1], output_size)
+            output_shape = (sequences_shape[0], sequences_shape[1], output_size)
         else:
-            output_shape = (sequence_shape[0], output_size)
+            output_shape = (sequences_shape[0], output_size)
         if self.return_state:
             return output_shape, *state_shape
         return output_shape
@@ -267,9 +267,9 @@ class RNN(Layer):
         else:
             return output_mask
 
-    def build(self, sequence_shape, initial_state_shape=None):
+    def build(self, sequences_shape, initial_state_shape=None):
         # Build cell (if layer).
-        step_input_shape = (sequence_shape[0],) + sequence_shape[2:]
+        step_input_shape = (sequences_shape[0],) + sequences_shape[2:]
         if isinstance(self.cell, Layer) and not self.cell.built:
             self.cell.build(step_input_shape)
             self.cell.built = True
@@ -277,21 +277,23 @@ class RNN(Layer):
             if self.states is not None:
                 self.reset_state()
             else:
-                if sequence_shape[0] is None:
+                if sequences_shape[0] is None:
                     raise ValueError(
                         "When using `stateful=True` in a RNN, the "
                         "batch size must be static. Found dynamic "
-                        f"batch size: sequence.shape={sequence_shape}"
+                        f"batch size: sequence.shape={sequences_shape}"
                     )
-                self._create_state_variables(sequence_shape[0])
+                self._create_state_variables(sequences_shape[0])
         self.built = True
 
     @tracking.no_automatic_dependency_tracking
     def _create_state_variables(self, batch_size):
-        self.states = [
-            backend.Variable(value, trainable=False, dtype=self.variable_dtype)
-            for value in self.get_initial_state(batch_size)
-        ]
+        self.states = nest.map_structure(
+            lambda value: backend.Variable(
+                value, trainable=False, dtype=self.variable_dtype
+            ),
+            self.get_initial_state(batch_size),
+        )
 
     def get_initial_state(self, batch_size):
         get_initial_state_fn = getattr(self.cell, "get_initial_state", None)
@@ -319,46 +321,63 @@ class RNN(Layer):
             for v in self.states:
                 v.assign(ops.zeros_like(v))
 
+    def inner_loop(self, sequences, initial_state, mask, training=False):
+        cell_kwargs = {}
+        if isinstance(self.cell, Layer) and self.cell._call_has_training_arg():
+            cell_kwargs["training"] = training
+
+        def step(inputs, states):
+            output, new_states = self.cell(inputs, states, **cell_kwargs)
+            if not nest.is_nested(new_states):
+                new_states = [new_states]
+            return output, new_states
+
+        if not nest.is_nested(initial_state):
+            initial_state = [initial_state]
+
+        return backend.rnn(
+            step,
+            sequences,
+            initial_state,
+            go_backwards=self.go_backwards,
+            mask=mask,
+            unroll=self.unroll,
+            input_length=sequences.shape[1],
+            zero_output_for_mask=self.zero_output_for_mask,
+            return_all_outputs=self.return_sequences,
+        )
+
     def call(
         self,
-        sequence,
+        sequences,
         initial_state=None,
         mask=None,
         training=False,
     ):
-        self._maybe_reset_cell_dropout_mask(self.cell)
-
-        timesteps = sequence.shape[1]
+        timesteps = sequences.shape[1]
         if self.unroll and timesteps is None:
             raise ValueError(
                 "Cannot unroll a RNN if the "
                 "time dimension is undefined. \n"
                 "- If using a Sequential model, "
                 "specify the time dimension by passing "
-                "an `input_shape` or `batch_input_shape` "
-                "argument to your first layer. If your "
-                "first layer is an Embedding, you can "
-                "also use the `input_length` argument.\n"
+                "an `Input()` as your first layer.\n"
                 "- If using the functional API, specify "
                 "the time dimension by passing a `shape` "
-                "or `batch_shape` argument to your Input layer."
+                "or `batch_shape` argument to your `Input()`."
             )
 
-        cell_kwargs = {}
-        if isinstance(self.cell, Layer) and self.cell._call_has_training_arg():
-            cell_kwargs["training"] = training
         if initial_state is None:
             if self.stateful:
                 initial_state = self.states
             else:
                 initial_state = self.get_initial_state(
-                    batch_size=ops.shape(sequence)[0]
+                    batch_size=ops.shape(sequences)[0]
                 )
-        else:
-            # RNN expect the states in a list, even if single state.
-            if not nest.is_nested(initial_state):
-                initial_state = [initial_state]
-            initial_state = list(initial_state)
+        # RNN expect the states in a list, even if single state.
+        if not nest.is_nested(initial_state):
+            initial_state = [initial_state]
+        initial_state = list(initial_state)
 
         # Cast states to compute dtype.
         # Note that states may be deeply nested
@@ -367,23 +386,13 @@ class RNN(Layer):
             lambda x: ops.cast(x, dtype=self.compute_dtype), initial_state
         )
 
-        def step(inputs, states):
-            output, new_states = self.cell(inputs, states, **cell_kwargs)
-            if not nest.is_nested(new_states):
-                new_states = [new_states]
-            return output, new_states
-
-        last_output, outputs, states = backend.nn.rnn(
-            step,
-            sequence,
-            initial_state,
-            go_backwards=self.go_backwards,
+        last_output, outputs, states = self.inner_loop(
+            sequences=sequences,
+            initial_state=initial_state,
             mask=mask,
-            unroll=self.unroll,
-            input_length=timesteps,
-            zero_output_for_mask=self.zero_output_for_mask,
-            return_all_outputs=self.return_sequences,
+            training=training,
         )
+        self._maybe_reset_dropout_masks(self.cell)
 
         if self.stateful:
             for self_state, state in zip(
@@ -403,13 +412,13 @@ class RNN(Layer):
             return output, *states
         return output
 
-    def _maybe_reset_cell_dropout_mask(self, cell):
+    def _maybe_reset_dropout_masks(self, cell):
         if isinstance(cell, DropoutRNNCellMixin):
             cell.reset_dropout_mask()
             cell.reset_recurrent_dropout_mask()
         if isinstance(cell, StackedRNNCells):
             for c in cell.cells:
-                self._maybe_reset_cell_dropout_mask(c)
+                self._maybe_reset_dropout_masks(c)
 
     def get_config(self):
         config = {

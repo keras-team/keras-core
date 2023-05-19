@@ -4,14 +4,16 @@ from keras_core.api_export import keras_core_export
 from keras_core.utils.naming import auto_name
 
 
+@keras_core_export("keras_core.KerasTensor")
 class KerasTensor:
     def __init__(self, shape, dtype="float32", record_history=True, name=None):
         from keras_core import backend
 
-        if backend.DYNAMIC_SHAPES_OK:
-            shape = backend.standardize_shape(shape, fully_defined=False)
-        else:
-            shape = backend.standardize_shape(shape, fully_defined=True)
+        shape = backend.standardize_shape(
+            shape,
+            allow_dynamic_batch_size=backend.DYNAMIC_BATCH_SIZE_OK,
+            allow_all_dynamic=backend.DYNAMIC_SHAPES_OK,
+        )
         self.shape = shape
         self.dtype = backend.standardize_dtype(dtype)
         self.name = name or auto_name(self.__class__.__name__)

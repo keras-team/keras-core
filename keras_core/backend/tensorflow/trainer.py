@@ -92,6 +92,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
         if self.train_function is not None and not force:
             return self.train_function
 
+        @tf.autograph.experimental.do_not_convert
         def one_step_on_data(data):
             """Runs a single training step on a batch of data."""
             return self.train_step(data)
@@ -114,12 +115,19 @@ class TensorFlowTrainer(base_trainer.Trainer):
             )
             return outputs
 
-        if not self.run_eagerly:
-            train_function = tf.function(
-                one_step_on_iterator, reduce_retracing=True
-            )
+        def multi_step_on_iterator(iterator):
+            for _ in tf.range(self.steps_per_execution):
+                outputs = one_step_on_iterator(iterator)
+            return outputs
+
+        if self.steps_per_execution > 1:
+            train_function = multi_step_on_iterator
         else:
             train_function = one_step_on_iterator
+
+        if not self.run_eagerly:
+            train_function = tf.function(train_function, reduce_retracing=True)
+
         self.train_function = train_function
 
     def make_test_function(self, force=False):
@@ -149,12 +157,19 @@ class TensorFlowTrainer(base_trainer.Trainer):
             )
             return outputs
 
-        if not self.run_eagerly:
-            test_function = tf.function(
-                one_step_on_iterator, reduce_retracing=True
-            )
+        def multi_step_on_iterator(iterator):
+            for _ in tf.range(self.steps_per_execution):
+                outputs = one_step_on_iterator(iterator)
+            return outputs
+
+        if self.steps_per_execution > 1:
+            test_function = multi_step_on_iterator
         else:
             test_function = one_step_on_iterator
+
+        if not self.run_eagerly:
+            test_function = tf.function(test_function, reduce_retracing=True)
+
         self.test_function = test_function
 
     def make_predict_function(self, force=False):
@@ -171,9 +186,8 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 one_step_on_data, jit_compile=True, reduce_retracing=True
             )
 
-        def one_step_on_iterator(iterator):
-            """Runs a single predict step given a Dataset iterator."""
-            data = next(iterator)
+        def one_step_on_data_distributed(data):
+            data = data[0]
             outputs = self.distribute_strategy.run(
                 one_step_on_data, args=(data,)
             )
@@ -184,12 +198,25 @@ class TensorFlowTrainer(base_trainer.Trainer):
             )
             return outputs
 
+        def multi_step_on_data(data):
+            outputs = one_step_on_data_distributed(data[:1])
+            for single_step_data in data[1:]:
+                step_outputs = one_step_on_data_distributed([single_step_data])
+                outputs = tf.nest.map_structure(
+                    lambda t1, t2: concat([t1, t2]), outputs, step_outputs
+                )
+            return outputs
+
+        if self.steps_per_execution > 1:
+            predict_function = multi_step_on_data
+        else:
+            predict_function = one_step_on_data_distributed
+
         if not self.run_eagerly:
             predict_function = tf.function(
-                one_step_on_iterator, reduce_retracing=True
+                predict_function, reduce_retracing=True
             )
-        else:
-            predict_function = one_step_on_iterator
+
         self.predict_function = predict_function
 
     def fit(
@@ -244,6 +271,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
             shuffle=shuffle,
             class_weight=class_weight,
             distribute_strategy=self.distribute_strategy,
+            steps_per_execution=self.steps_per_execution,
         )
 
         # Container that configures and calls callbacks.
@@ -403,27 +431,48 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 model=self,
             )
 
+        def append_to_outputs(batch_outputs, outputs):
+            if outputs is None:
+                outputs = tf.nest.map_structure(
+                    lambda batch_output: [batch_output],
+                    batch_outputs,
+                )
+            else:
+                tf.__internal__.nest.map_structure_up_to(
+                    batch_outputs,
+                    lambda output, batch_output: output.append(batch_output),
+                    outputs,
+                    batch_outputs,
+                )
+            return outputs
+
+        def get_data(iterator):
+            """Returns data for the next execution."""
+            data = []
+            for _ in range(self.steps_per_execution):
+                try:
+                    single_step_data = next(iterator)
+                except (StopIteration, tf.errors.OutOfRangeError) as e:
+                    if len(data) > 0:
+                        # Suppress the error when still have remaining data.
+                        return data
+                    else:
+                        # Re-raise the error for
+                        # TFEpochIterator.catch_stop_iteration() to catch when
+                        # no data left.
+                        raise e
+                data.append(single_step_data)
+            return data
+
         self.make_predict_function()
         callbacks.on_predict_begin()
         outputs = None
         with epoch_iterator.catch_stop_iteration():
             for step, iterator in epoch_iterator.enumerate_epoch():
                 callbacks.on_predict_batch_begin(step)
-                batch_outputs = self.predict_function(iterator)
-                if outputs is None:
-                    outputs = tf.nest.map_structure(
-                        lambda batch_output: [batch_output],
-                        batch_outputs,
-                    )
-                else:
-                    tf.__internal__.nest.map_structure_up_to(
-                        batch_outputs,
-                        lambda output, batch_output: output.append(
-                            batch_output
-                        ),
-                        outputs,
-                        batch_outputs,
-                    )
+                data = get_data(iterator)
+                batch_outputs = self.predict_function(data)
+                outputs = append_to_outputs(batch_outputs, outputs)
                 callbacks.on_predict_batch_end(step, {"outputs": batch_outputs})
         callbacks.on_predict_end()
         return tf.__internal__.nest.map_structure_up_to(
@@ -445,7 +494,9 @@ class TFEpochIterator(EpochIterator):
                         self.data_adapter.get_tf_dataset()
                     )
                 )
-            for step in range(self.steps_per_epoch):
+            for step in range(
+                0, self.steps_per_epoch, self.steps_per_execution
+            ):
                 yield step, self._current_iterator
         else:
             iterator = iter(
@@ -454,12 +505,14 @@ class TFEpochIterator(EpochIterator):
                 )
             )
             if self.num_batches:
-                for step in range(self.num_batches):
+                for step in range(
+                    0, self.num_batches, self.steps_per_execution
+                ):
                     yield step, iterator
             else:
                 step = -1
                 while True:
-                    step += 1
+                    step += self.steps_per_execution
                     self._steps_seen = step + 1
                     yield step, iterator
         self.data_adapter.on_epoch_end()

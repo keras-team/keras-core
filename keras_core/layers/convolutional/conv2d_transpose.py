@@ -25,8 +25,8 @@ class Conv2DTranspose(BaseConvTranspose):
         kernel_size: int or tuple/list of 1 integer, specifying the size of the
             transposed convolution window.
         strides: int or tuple/list of 1 integer, specifying the stride length
-            of the transposed convolution. `stride value != 1` is incompatible
-            with `dilation_rate != 1`.
+            of the transposed convolution. `strides > 1` is incompatible with
+            `dilation_rate > 1`.
         padding: string, either `"valid"` or `"same"` (case-insensitive).
             `"valid"` means no padding. `"same"` results in padding evenly to
             the left/right or up/down of the input such that output has the same
@@ -68,7 +68,7 @@ class Conv2DTranspose(BaseConvTranspose):
 
     Output shape:
     - If `data_format="channels_last"`:
-        A 4D tensor with shape: `(batch_size, new_height, new_width filters)`
+        A 4D tensor with shape: `(batch_size, new_height, new_width, filters)`
     - If `data_format="channels_first"`:
         A 4D tensor with shape: `(batch_size, filters, new_height, new_width)`
 
@@ -97,10 +97,10 @@ class Conv2DTranspose(BaseConvTranspose):
         self,
         filters,
         kernel_size,
-        strides=1,
+        strides=(1, 1),
         padding="valid",
-        data_format="channels_last",
-        dilation_rate=1,
+        data_format=None,
+        dilation_rate=(1, 1),
         activation=None,
         use_bias=True,
         kernel_initializer="glorot_uniform",

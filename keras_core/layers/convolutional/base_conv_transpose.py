@@ -11,29 +11,30 @@ from keras_core.backend.common.backend_utils import (
 )
 from keras_core.layers.input_spec import InputSpec
 from keras_core.layers.layer import Layer
+from keras_core.utils.argument_validation import standardize_padding
+from keras_core.utils.argument_validation import standardize_tuple
 
 
 class BaseConvTranspose(Layer):
-    """Abstract N-D transpose convolution layer.
+    """Abstract N-D transposed convolution layer.
 
-    The need for transposed convolutions generally arises
-    from the desire to use a transformation going in the opposite direction
-    of a normal convolution, i.e., from something that has the shape of the
-    output of some convolution to something that has the shape of its input
-    while maintaining a connectivity pattern that is compatible with
-    said convolution.
+    The need for transposed convolutions generally arises from the desire to use
+    a transformation going in the opposite direction of a normal convolution,
+    i.e., from something that has the shape of the output of some convolution to
+    something that has the shape of its input while maintaining a connectivity
+    pattern that is compatible with said convolution.
 
     Args:
         rank: int, the rank of the transposed convolution, e.g. 2 for 2D
             transposed convolution.
         filters: int, the dimension of the output space (the number of filters
             in the transposed convolution).
-        kernel_size: int or tuple/list of N integers (N=`rank`), specifying the
-            size of the transposed convolution window.
-        strides: int or tuple/list of N integers, specifying the stride length
-            of the transposed convolution. If only one int is specified, the
-            same stride size will be used for all dimensions.
-            `stride value != 1` is incompatible with `dilation_rate != 1`.
+        kernel_size: int or tuple/list of `rank` integers, specifying the size
+            of the transposed convolution window.
+        strides: int or tuple/list of `rank` integers, specifying the stride
+            length of the transposed convolution. If only one int is specified,
+            the same stride size will be used for all dimensions.
+            `strides > 1` is incompatible with `dilation_rate > 1`.
         padding: string, either `"valid"` or `"same"` (case-insensitive).
             `"valid"` means no padding. `"same"` results in padding evenly to
             the left/right or up/down of the input such that output has the same
@@ -45,9 +46,9 @@ class BaseConvTranspose(Layer):
             `(batch, features, steps)`. It defaults to the `image_data_format`
             value found in your Keras config file at `~/.keras/keras.json`.
             If you never set it, then it will be `"channels_last"`.
-        dilation_rate: int or tuple/list of N integers, specifying the dilation
-            rate to use for dilated convolution. If only one int is specified,
-            the same dilation rate will be used for all dimensions.
+        dilation_rate: int or tuple/list of `rank` integers, specifying the
+            dilation rate to use for dilated convolution. If only one int is
+            specified, the same dilation rate will be used for all dimensions.
         activation: Activation function. If `None`, no activation is applied.
         use_bias: bool, if `True`, bias will be added to the output.
         kernel_initializer: Initializer for the convolution kernel. If `None`,
@@ -74,6 +75,7 @@ class BaseConvTranspose(Layer):
         kernel_size,
         strides=1,
         padding="valid",
+        output_padding=None,
         data_format=None,
         dilation_rate=1,
         activation=None,
@@ -97,20 +99,20 @@ class BaseConvTranspose(Layer):
         )
         self.rank = rank
         self.filters = filters
-
-        if isinstance(kernel_size, int):
-            kernel_size = (kernel_size,) * self.rank
-        self.kernel_size = kernel_size
-
-        if isinstance(strides, int):
-            strides = (strides,) * self.rank
-        self.strides = strides
-
-        if isinstance(dilation_rate, int):
-            dilation_rate = (dilation_rate,) * self.rank
-        self.dilation_rate = dilation_rate
-
-        self.padding = padding
+        self.kernel_size = standardize_tuple(kernel_size, rank, "kernel_size")
+        self.strides = standardize_tuple(strides, rank, "strides")
+        self.dilation_rate = standardize_tuple(
+            dilation_rate, rank, "dilation_rate"
+        )
+        self.padding = standardize_padding(padding)
+        if output_padding is None:
+            self.output_padding = None
+        else:
+            self.output_padding = standardize_tuple(
+                output_padding,
+                rank,
+                "output_padding",
+            )
         self.data_format = standardize_data_format(data_format)
         self.activation = activations.get(activation)
         self.use_bias = use_bias
@@ -131,14 +133,14 @@ class BaseConvTranspose(Layer):
 
         if not all(self.kernel_size):
             raise ValueError(
-                "The argument `kernel_size` cannot contain 0. Received: "
-                f"{self.kernel_size}"
+                "The argument `kernel_size` cannot contain 0. Received "
+                f"kernel_size={self.kernel_size}."
             )
 
         if not all(self.strides):
             raise ValueError(
-                "The argument `strides` cannot contains 0. Received: "
-                f"{self.strides}"
+                "The argument `strides` cannot contains 0. Received "
+                f"strides={self.strides}."
             )
 
         if max(self.strides) > 1 and max(self.dilation_rate) > 1:
@@ -192,6 +194,7 @@ class BaseConvTranspose(Layer):
             self.kernel,
             strides=list(self.strides),
             padding=self.padding,
+            output_padding=self.output_padding,
             dilation_rate=self.dilation_rate,
             data_format=self.data_format,
         )
@@ -215,6 +218,7 @@ class BaseConvTranspose(Layer):
             self.filters,
             strides=self.strides,
             padding=self.padding,
+            output_padding=self.output_padding,
             data_format=self.data_format,
             dilation_rate=self.dilation_rate,
         )

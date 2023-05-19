@@ -1,5 +1,9 @@
+import numpy as np
+
 from keras_core.backend import config
 from keras_core.backend.common import global_state
+from keras_core.backend.common.stateless_scope import get_stateless_scope
+from keras_core.backend.common.stateless_scope import in_stateless_scope
 from keras_core.utils.naming import auto_name
 
 
@@ -20,7 +24,6 @@ class KerasVariable:
                     f"Received: initializer={initializer} "
                     f"and shape={shape}"
                 )
-        from keras_core.backend.common.stateless_scope import in_stateless_scope
 
         if in_stateless_scope():
             if callable(initializer):
@@ -33,11 +36,18 @@ class KerasVariable:
                     "You are attempting to create a variable "
                     "while in a stateless scope. This is disallowed. "
                     "Make sure that all variables are created "
-                    "before you start using your layer/model objects. "
-                    "Most of this time, this means you need to "
+                    "before you start using your layer/model objects.\n\n"
+                    "In some cases, you might be seeing this error "
+                    "because you need to "
                     "implement a `def build(self, input_shape)` method "
                     "on your layer/model, which will "
-                    "create its variables."
+                    "create its variables.\n\n"
+                    "In some other cases, you might be seeing this error "
+                    "because you are instantiating a `Variable` and "
+                    "assigning it to a layer without going through "
+                    "self.add_variable()/self.add_weight(). Always prefer "
+                    "using these methods "
+                    "(with a `shape` and `initializer` argument)."
                 )
         else:
             if callable(initializer):
@@ -69,6 +79,42 @@ class KerasVariable:
             return autocast_scope.maybe_cast(value)
         return value
 
+    def numpy(self):
+        return np.array(self.value)
+
+    @property
+    def value(self):
+        if in_stateless_scope():
+            scope = get_stateless_scope()
+            value = scope.get_current_value(self)
+            if value is not None:
+                return self._maybe_autocast(value)
+        if self._value is None:
+            # Unitialized variable. Return a placeholder.
+            # This is fine because it's only ever used
+            # in during shape inference / graph tracing
+            # (anything else would be a bug, to be fixed.)
+            return self._maybe_autocast(
+                self._initializer(self._shape, dtype=self._dtype)
+            )
+        return self._maybe_autocast(self._value)
+
+    def assign(self, value):
+        value = self._convert_to_tensor(value, dtype=self.dtype)
+        if value.shape != self.value.shape:
+            raise ValueError(
+                "The shape of the target variable and "
+                "the shape of the target value in "
+                "`variable.assign(value)` must match. "
+                f"Received: value.shape={value.shape}; "
+                f"variable.shape={self.value.shape}"
+            )
+        if in_stateless_scope():
+            scope = get_stateless_scope()
+            scope.add_update((self, value))
+        else:
+            self._direct_assign(value)
+
     @property
     def dtype(self):
         autocast_scope = get_autocast_scope()
@@ -91,16 +137,6 @@ class KerasVariable:
         )
 
     def _initialize(self, value):
-        raise NotImplementedError
-
-    @property
-    def value(self):
-        raise NotImplementedError
-
-    def numpy(self):
-        raise NotImplementedError
-
-    def assign(self, value):
         raise NotImplementedError
 
     def _convert_to_tensor(self, value, dtype=None):
@@ -329,39 +365,69 @@ ALLOWED_DTYPES = {
     "int64",
     "bfloat16",
     "bool",
+    "string",
+}
+
+PYTHON_DTYPES_MAP = {
+    bool: "bool",
+    int: "int",  # TBD by backend
+    float: "float32",
+    str: "string",
 }
 
 
 def standardize_dtype(dtype):
+    if dtype is None:
+        return config.floatx()
+    if dtype in PYTHON_DTYPES_MAP:
+        dtype = PYTHON_DTYPES_MAP.get(dtype)
     if dtype == "int":
         if config.backend() == "tensorflow":
             dtype = "int64"
         else:
             dtype = "int32"
-    if dtype is None:
-        return config.floatx()
     if hasattr(dtype, "name"):
         dtype = dtype.name
+
     if dtype not in ALLOWED_DTYPES:
         raise ValueError(f"Invalid dtype: {dtype}")
     return dtype
 
 
-def standardize_shape(shape, fully_defined=False):
+def standardize_shape(
+    shape, allow_dynamic_batch_size=True, allow_all_dynamic=True
+):
     if not isinstance(shape, tuple):
         if shape is None:
             raise ValueError("Undefined shapes are not supported.")
         if not hasattr(shape, "__iter__"):
             raise ValueError(f"Cannot convert '{shape}' to a shape.")
         shape = tuple(shape)
-    for e in shape:
-        if not fully_defined and e is None:
+
+    for i, e in enumerate(shape):
+        if i == 0 and allow_dynamic_batch_size and e is None:
+            continue
+        if allow_all_dynamic and e is None:
             continue
         if not isinstance(e, int):
-            raise ValueError(
+            msg = (
                 f"Cannot convert '{shape}' to a shape. "
-                f"Found invalid entry '{e}'"
+                f"Found invalid entry '{e}'. "
             )
+            if allow_dynamic_batch_size:
+                msg += (
+                    "Dynamic shapes (shapes with `None` entries) "
+                    f"are not allowed with the {config.backend()}, "
+                    "except for the batch size (axis 0)."
+                )
+            else:
+                msg += (
+                    "Dynamic shapes (shapes with `None` entries) "
+                    f"are not allowed with the {config.backend()}. "
+                    "All dimensions should be positive integers, "
+                    "including the batch size (axis 0)."
+                )
+            raise ValueError(msg)
         if e < 0:
             raise ValueError(
                 f"Cannot convert '{shape}' to a shape. "
