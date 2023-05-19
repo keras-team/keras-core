@@ -1,8 +1,10 @@
+import numpy as np
+
 from keras_core import backend
+from keras_core import operations as ops
 from keras_core.layers.input_spec import InputSpec
 from keras_core.layers.layer import Layer
 from keras_core.utils import argument_validation
-from keras_core.utils import image_utils
 
 
 class UpSampling2D(Layer):
@@ -99,7 +101,7 @@ class UpSampling2D(Layer):
             return (input_shape[0], height, width, input_shape[3])
 
     def call(self, inputs):
-        return image_utils.resize_images(
+        return self._resize_images(
             inputs,
             self.size[0],
             self.size[1],
@@ -115,3 +117,47 @@ class UpSampling2D(Layer):
         }
         base_config = super().get_config()
         return {**base_config, **config}
+
+    def _resize_images(
+        self,
+        x,
+        height_factor,
+        width_factor,
+        data_format,
+        interpolation="nearest",
+    ):
+        """Resizes the images contained in a 4D tensor.
+
+        Args:
+            x: Tensor or variable to resize.
+            height_factor: Positive integer.
+            width_factor: Positive integer.
+            data_format: One of `"channels_first"`, `"channels_last"`.
+            interpolation: A string, one of `"area"`, `"bicubic"`, `"bilinear"`,
+            `"gaussian"`, `"lanczos3"`, `"lanczos5"`, `"mitchellcubic"`,
+            `"nearest"`.
+
+        Returns:
+            A tensor.
+
+        Raises:
+            ValueError: in case of incorrect value for
+            `data_format` or `interpolation`.
+        """
+        if data_format == "channels_first":
+            rows, cols = 2, 3
+        elif data_format == "channels_last":
+            rows, cols = 1, 2
+        else:
+            raise ValueError(f"Invalid `data_format` argument: {data_format}")
+
+        new_shape = x.shape[rows : cols + 1]
+        new_shape *= np.array([height_factor, width_factor])
+
+        if data_format == "channels_first":
+            x = ops.transpose(x, [0, 2, 3, 1])
+        x = ops.image.resize(x, new_shape, method=interpolation)
+        if data_format == "channels_first":
+            x = ops.transpose(x, [0, 3, 1, 2])
+
+        return x

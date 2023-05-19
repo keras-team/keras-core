@@ -1,43 +1,3 @@
-<<<<<<< HEAD
-from keras_core import backend
-
-
-def normalize_data_format(value):
-    if value is None:
-        value = backend.image_data_format()
-    data_format = value.lower()
-    if data_format not in {"channels_first", "channels_last"}:
-        raise ValueError(
-            "The `data_format` argument must be one of "
-            f'"channels_first", "channels_last". Received: {value}'
-        )
-    return data_format
-
-
-def normalize_tuple(value, n, name, allow_zero=False):
-    """Transforms non-negative/positive integer/integers into an integer tuple.
-
-    Args:
-      value: The value to validate and convert. Could an int, or any iterable of
-        ints.
-      n: The size of the tuple to be returned.
-      name: The name of the argument being validated, e.g. "strides" or
-        "kernel_size". This is only used to format error messages.
-      allow_zero: Default to False. A ValueError will raised if zero is received
-        and this param is False.
-
-    Returns:
-      A tuple of n integers.
-
-    Raises:
-      ValueError: If something else than an int/long or iterable thereof or a
-      negative value is
-        passed.
-    """
-    error_msg = (
-        f"The `{name}` argument must be a tuple of {n} "
-        f"integers. Received: {value}"
-=======
 def standardize_tuple(value, n, name, allow_zero=False):
     """Transforms non-negative/positive integer/integers into an integer tuple.
 
@@ -55,7 +15,6 @@ def standardize_tuple(value, n, name, allow_zero=False):
     error_msg = (
         f"The `{name}` argument must be a tuple of {n} integers. "
         f"Received {name}={value}"
->>>>>>> main
     )
 
     if isinstance(value, int):
@@ -86,19 +45,12 @@ def standardize_tuple(value, n, name, allow_zero=False):
 
     if unqualified_values:
         error_msg += (
-<<<<<<< HEAD
-            f" including {unqualified_values}"
-            f" that does not satisfy the requirement `{req_msg}`."
-=======
             f", including values {unqualified_values}"
             f" that do not satisfy `value {req_msg}`"
->>>>>>> main
         )
         raise ValueError(error_msg)
 
     return value_tuple
-<<<<<<< HEAD
-=======
 
 
 def standardize_padding(value, allow_causal=False):
@@ -116,4 +68,3 @@ def standardize_padding(value, allow_causal=False):
             f"Received: {padding}"
         )
     return padding
->>>>>>> main
