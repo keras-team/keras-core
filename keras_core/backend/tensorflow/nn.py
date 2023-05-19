@@ -58,7 +58,11 @@ def hard_sigmoid(x):
 
 
 def elu(x, alpha=1.0):
-    return tf.nn.elu(x, alpha=alpha)
+    res = tf.nn.elu(x)
+    if alpha == 1:
+        return res
+    else:
+        return tf.where(x > 0, res, alpha * res)
 
 
 def selu(x):
