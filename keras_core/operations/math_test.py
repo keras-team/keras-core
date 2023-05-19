@@ -14,77 +14,93 @@ from keras_core.operations import math as kmath
 )
 class MathOpsDynamicShapeTest(testing.TestCase):
     def test_segment_sum(self):
-        data = KerasTensor([None, 4], dtype="float32")
-        segment_ids = KerasTensor([10], dtype="int32")
+        data = KerasTensor((None, 4), dtype="float32")
+        segment_ids = KerasTensor((10,), dtype="int32")
         outputs = kmath.segment_sum(data, segment_ids)
         self.assertEqual(outputs.shape, (None, 4))
 
-        data = KerasTensor([None, 4], dtype="float32")
-        segment_ids = KerasTensor([10], dtype="int32")
+        data = KerasTensor((None, 4), dtype="float32")
+        segment_ids = KerasTensor((10,), dtype="int32")
         outputs = kmath.segment_sum(data, segment_ids, num_segments=5)
         self.assertEqual(outputs.shape, (5, 4))
 
     def test_topk(self):
-        x = KerasTensor([None, 2, 3])
+        x = KerasTensor((None, 2, 3))
         values, indices = kmath.top_k(x, k=1)
         self.assertEqual(values.shape, (None, 2, 1))
         self.assertEqual(indices.shape, (None, 2, 1))
 
     def test_in_top_k(self):
-        targets = KerasTensor([None])
-        predictions = KerasTensor([None, 10])
+        targets = KerasTensor((None,))
+        predictions = KerasTensor((None, 10))
         self.assertEqual(
             kmath.in_top_k(targets, predictions, k=1).shape, (None,)
         )
 
     def test_logsumexp(self):
-        x = KerasTensor([None, 2, 3], dtype="float32")
+        x = KerasTensor((None, 2, 3), dtype="float32")
         result = kmath.logsumexp(x)
         self.assertEqual(result.shape, ())
 
 
 class MathOpsStaticShapeTest(testing.TestCase):
+    @pytest.mark.skipif(
+        backend.backend() == "jax",
+        reason="JAX does not support `num_segments=None`.",
+    )
     def test_segment_sum(self):
-        if backend.backend() != "jax":
-            # JAX does not support `num_segments=None`.
-            data = KerasTensor([10, 4], dtype="float32")
-            segment_ids = KerasTensor([10], dtype="int32")
-            outputs = kmath.segment_sum(data, segment_ids)
-            self.assertEqual(outputs.shape, (None, 4))
+        data = KerasTensor((10, 4), dtype="float32")
+        segment_ids = KerasTensor((10,), dtype="int32")
+        outputs = kmath.segment_sum(data, segment_ids)
+        self.assertEqual(outputs.shape, (None, 4))
 
-        data = KerasTensor([10, 4], dtype="float32")
-        segment_ids = KerasTensor([10], dtype="int32")
+    def test_segment_sum_explicit_num_segments(self):
+        data = KerasTensor((10, 4), dtype="float32")
+        segment_ids = KerasTensor((10,), dtype="int32")
         outputs = kmath.segment_sum(data, segment_ids, num_segments=5)
         self.assertEqual(outputs.shape, (5, 4))
 
     def test_topk(self):
-        x = KerasTensor([1, 2, 3])
+        x = KerasTensor((1, 2, 3))
         values, indices = kmath.top_k(x, k=1)
         self.assertEqual(values.shape, (1, 2, 1))
         self.assertEqual(indices.shape, (1, 2, 1))
 
     def test_in_top_k(self):
-        targets = KerasTensor([5])
-        predictions = KerasTensor([5, 10])
+        targets = KerasTensor((5,))
+        predictions = KerasTensor((5, 10))
         self.assertEqual(kmath.in_top_k(targets, predictions, k=1).shape, (5,))
 
     def test_logsumexp(self):
-        x = KerasTensor([1, 2, 3], dtype="float32")
+        x = KerasTensor((1, 2, 3), dtype="float32")
         result = kmath.logsumexp(x)
         self.assertEqual(result.shape, ())
 
 
 class MathOpsCorrectnessTest(testing.TestCase):
+    @pytest.mark.skipif(
+        backend.backend() == "jax",
+        reason="JAX does not support `num_segments=None`.",
+    )
     def test_segment_sum(self):
         # Test 1D case.
         data = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=np.float32)
         segment_ids = np.array([0, 0, 1, 1, 1, 2, 2, 2], dtype=np.int32)
-        if backend.backend() != "jax":
-            # JAX does not support `num_segments=None`.
-            outputs = kmath.segment_sum(data, segment_ids)
-            expected = tf.math.segment_sum(data, segment_ids)
-            self.assertAllClose(outputs, expected)
+        outputs = kmath.segment_sum(data, segment_ids)
+        expected = tf.math.segment_sum(data, segment_ids)
+        self.assertAllClose(outputs, expected)
 
+        # Test N-D case.
+        data = np.random.rand(9, 3, 3)
+        segment_ids = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2], dtype=np.int32)
+        outputs = kmath.segment_sum(data, segment_ids)
+        expected = tf.math.segment_sum(data, segment_ids)
+        self.assertAllClose(outputs, expected)
+
+    def test_segment_sum_explicit_num_segments(self):
+        # Test 1D case.
+        data = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=np.float32)
+        segment_ids = np.array([0, 0, 1, 1, 1, 2, 2, 2], dtype=np.int32)
         outputs = kmath.segment_sum(data, segment_ids, num_segments=4)
         expected = tf.math.unsorted_segment_sum(
             data, segment_ids, num_segments=4
@@ -94,12 +110,6 @@ class MathOpsCorrectnessTest(testing.TestCase):
         # Test N-D case.
         data = np.random.rand(9, 3, 3)
         segment_ids = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2], dtype=np.int32)
-        if backend.backend() != "jax":
-            # JAX does not support `num_segments=None`.
-            outputs = kmath.segment_sum(data, segment_ids)
-            expected = tf.math.segment_sum(data, segment_ids)
-            self.assertAllClose(outputs, expected)
-
         outputs = kmath.segment_sum(data, segment_ids, num_segments=4)
         expected = tf.math.unsorted_segment_sum(
             data, segment_ids, num_segments=4

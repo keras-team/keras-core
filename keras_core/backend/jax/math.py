@@ -5,8 +5,8 @@ import jax.numpy as jnp
 def segment_sum(data, segment_ids, num_segments=None, sorted=False):
     if num_segments is None:
         raise ValueError(
-            "`num_segments` must be set for Jax backend, but received: "
-            "`num_segments`=None."
+            "Argument `num_segments` must be set when using the JAX backend. "
+            "Received: num_segments=None"
         )
     return jax.ops.segment_sum(
         data, segment_ids, num_segments, indices_are_sorted=sorted
