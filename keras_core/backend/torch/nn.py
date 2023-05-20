@@ -188,15 +188,19 @@ def conv_transpose(
 
 
 def one_hot(x, num_classes, axis=-1):
-    # TODO: Fails Test - keras_core/operations/nn_test.py
+    # Axis is the output axis. By default, PyTorch, outputs to last axis.
+    # If axis is not last, change output to axis and shift remaining elements.
     x = convert_to_tensor(x, dtype=torch.long)
-    if axis != -1 and axis != (x.dim() - 1):
-        raise ValueError(
-            "`one_hot` is only implemented for last axis for PyTorch backend. "
-            f"`axis` arg value {axis} should be -1 or last axis of the input "
-            f"tensor with shape {x.shape}."
-        )
-    return tnn.one_hot(x, num_classes)
+    output = tnn.one_hot(x, num_classes)
+    dims = output.dim()
+    if axis != -1 and axis != dims:
+        new_axes_order = list(range(dims))
+        new_axes_order[axis] = -1  # Shifts output to axis positon
+        # Shift remaining axes with offset by 1 since output moved to `axis`.
+        for ax in range(axis+1, dims):
+            new_axes_order[ax] -= 1
+        output = output.permute(new_axes_order)
+    return output
 
 
 def categorical_crossentropy(target, output, from_logits=False, axis=-1):
