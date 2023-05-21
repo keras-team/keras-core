@@ -51,14 +51,10 @@ class UpSampling2dTest(testing.TestCase, parameterized.TestCase):
         # compare with numpy
         if data_format == "channels_first":
             expected_out = np.repeat(inputs, length_row, axis=2)
-            expected_out = np.repeat(
-                expected_out, length_col, axis=3
-            )
+            expected_out = np.repeat(expected_out, length_col, axis=3)
         else:
             expected_out = np.repeat(inputs, length_row, axis=1)
-            expected_out = np.repeat(
-                expected_out, length_col, axis=2
-            )
+            expected_out = np.repeat(expected_out, length_col, axis=2)
 
         np.testing.assert_allclose(np_output, expected_out)
 
@@ -98,19 +94,11 @@ class UpSampling2dTest(testing.TestCase, parameterized.TestCase):
         layer.build(inputs.shape)
         np_output = layer(inputs=backend.Variable(inputs))
         if data_format == "channels_first":
-            self.assertEqual(
-                np_output.shape[2], length_row * input_num_row
-            )
-            self.assertEqual(
-                np_output.shape[3], length_col * input_num_col
-            )
+            self.assertEqual(np_output.shape[2], length_row * input_num_row)
+            self.assertEqual(np_output.shape[3], length_col * input_num_col)
         else:
-            self.assertEqual(
-                np_output.shape[1], length_row * input_num_row
-            )
-            self.assertEqual(
-                np_output.shape[2], length_col * input_num_col
-            )
+            self.assertEqual(np_output.shape[1], length_row * input_num_row)
+            self.assertEqual(np_output.shape[2], length_col * input_num_col)
 
     def test_upsampling_2d_correctness(self):
         input_shape = (2, 2, 1, 3)

@@ -10,8 +10,9 @@ from keras_core.utils import argument_validation
 class UpSampling2D(Layer):
     """Upsampling layer for 2D inputs.
 
-    Repeats the rows and columns of the data
-    by `size[0]` and `size[1]` respectively.
+    The implementation uses interpolative resizing, given the resize method
+    (specified by the `interpolation` argument). Use `interpolation=nearest`
+    to repeat the rows and columns of the data.
 
     Examples:
 
@@ -133,8 +134,8 @@ class UpSampling2D(Layer):
             height_factor: Positive integer.
             width_factor: Positive integer.
             data_format: One of `"channels_first"`, `"channels_last"`.
-            interpolation: A string, one of `"area"`, `"bicubic"`, `"bilinear"`,
-            `"gaussian"`, `"lanczos3"`, `"lanczos5"`, `"nearest"`.
+            interpolation: A string, one of `"bicubic"`, `"bilinear"`,
+            `"lanczos3"`, `"lanczos5"`, or `"nearest"`.
 
         Returns:
             A tensor.
