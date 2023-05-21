@@ -1,3 +1,4 @@
+# flake8: noqa
 import numpy as np
 
 from keras_core import backend
@@ -111,26 +112,18 @@ class UpSampling2dTest(testing.TestCase):
         x = np.arange(np.prod(input_shape)).reshape(input_shape)
         np.testing.assert_array_equal(
             layers.UpSampling2D(size=(1, 2))(x),
+            # fmt: off
             np.array(
-                [
-                    [[[0, 1, 2], [0, 1, 2]], [[3, 4, 5], [3, 4, 5]]],
-                    [
-                        [
-                            [
-                                6,
-                                7,
-                                8,
-                            ],
-                            [
-                                6,
-                                7,
-                                8,
-                            ],
-                        ],
-                        [[9, 10, 11], [9, 10, 11]],
-                    ],
-                ]
+                [[[[ 0.,  1.,  2.],
+                   [ 0.,  1.,  2.]],
+                  [[ 3.,  4.,  5.],
+                   [ 3.,  4.,  5.]]],
+                 [[[ 6.,  7.,  8.],
+                   [ 6.,  7.,  8.]],
+                  [[ 9., 10., 11.],
+                   [ 9., 10., 11.]]]]
             ),
+            # fmt: on
         )
 
     def test_upsampling_2d_various_interpolation_methods(self):
