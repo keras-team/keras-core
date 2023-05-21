@@ -34,34 +34,34 @@ class UpSampling2D(Layer):
        [ 9 10 11]]]]
 
     Args:
-      size: Int, or tuple of 2 integers.
-          The upsampling factors for rows and columns.
-      data_format: A string,
-          one of `channels_last` (default) or `channels_first`.
-          The ordering of the dimensions in the inputs.
-          `channels_last` corresponds to inputs with shape
-          `(batch_size, height, width, channels)` while `channels_first`
-          corresponds to inputs with shape
-          `(batch_size, channels, height, width)`.
-          When unspecified, uses
-          `image_data_format` value found in your Keras config file at
-          `~/.keras/keras.json` (if exists) else `"channels_last"`.
-          Defaults to `"channels_last"`.
-      interpolation: A string, one of `"bicubic"`, `"bilinear"`, `"lanczos3"`,
-          `"lanczos5"`, `"nearest"`.
+        size: Int, or tuple of 2 integers.
+            The upsampling factors for rows and columns.
+        data_format: A string,
+            one of `"channels_last"` (default) or `"channels_first"`.
+            The ordering of the dimensions in the inputs.
+            `"channels_last"` corresponds to inputs with shape
+            `(batch_size, height, width, channels)` while `"channels_first"`
+            corresponds to inputs with shape
+            `(batch_size, channels, height, width)`.
+            When unspecified, uses
+            `image_data_format` value found in your Keras config file at
+            `~/.keras/keras.json` (if exists) else `"channels_last"`.
+            Defaults to `"channels_last"`.
+        interpolation: A string, one of `"bicubic"`, `"bilinear"`, `"lanczos3"`,
+            `"lanczos5"`, `"nearest"`.
 
     Input shape:
-      4D tensor with shape:
-      - If `data_format` is `"channels_last"`:
+        4D tensor with shape:
+        - If `data_format` is `"channels_last"`:
             `(batch_size, rows, cols, channels)`
-      - If `data_format` is `"channels_first"`:
+        - If `data_format` is `"channels_first"`:
             `(batch_size, channels, rows, cols)`
 
     Output shape:
-      4D tensor with shape:
-      - If `data_format` is `"channels_last"`:
+        4D tensor with shape:
+        - If `data_format` is `"channels_last"`:
             `(batch_size, upsampled_rows, upsampled_cols, channels)`
-      - If `data_format` is `"channels_first"`:
+        - If `data_format` is `"channels_first"`:
             `(batch_size, channels, upsampled_rows, upsampled_cols)`
     """
 
@@ -134,15 +134,10 @@ class UpSampling2D(Layer):
             width_factor: Positive integer.
             data_format: One of `"channels_first"`, `"channels_last"`.
             interpolation: A string, one of `"area"`, `"bicubic"`, `"bilinear"`,
-            `"gaussian"`, `"lanczos3"`, `"lanczos5"`, `"mitchellcubic"`,
-            `"nearest"`.
+            `"gaussian"`, `"lanczos3"`, `"lanczos5"`, `"nearest"`.
 
         Returns:
             A tensor.
-
-        Raises:
-            ValueError: in case of incorrect value for
-            `data_format` or `interpolation`.
         """
         if data_format == "channels_first":
             rows, cols = 2, 3
