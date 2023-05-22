@@ -1,11 +1,11 @@
-import torch
 import numpy as np
+import torch
 import torch.nn.functional as tnn
 
+from keras_core.backend import standardize_data_format
 from keras_core.backend.config import epsilon
 from keras_core.backend.torch.core import convert_to_tensor
 from keras_core.utils.argument_validation import standardize_tuple
-from keras_core.backend import standardize_data_format
 
 
 def relu(x):
@@ -153,7 +153,7 @@ def _transpose_spatial_outputs(outputs):
 def max_pool(
     inputs,
     pool_size,
-    strides=1,
+    strides=None,
     padding="valid",
     data_format=None,
 ):
@@ -193,9 +193,9 @@ def max_pool(
 def average_pool(
     inputs,
     pool_size,
-    strides,
-    padding,
-    data_format="channels_last",
+    strides=None,
+    padding="valid",
+    data_format=None,
 ):
     inputs = convert_to_tensor(inputs)
     num_spatial_dims = inputs.ndim - 2
