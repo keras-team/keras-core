@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import numpy as np
 import torch.nn.functional as tnn
 
 from keras_core.backend import standardize_data_format
@@ -153,7 +154,7 @@ def _transpose_spatial_outputs(outputs):
 def max_pool(
     inputs,
     pool_size,
-    strides=None,
+    strides=1,
     padding="valid",
     data_format=None,
 ):
@@ -182,9 +183,8 @@ def max_pool(
         outputs = tnn.max_pool3d(inputs, kernel_size=pool_size, stride=strides)
     else:
         raise ValueError(
-            "Inputs to pooling operation must have ndim=3, 4, or 5 "
-            "corresponding to 1D, 2D and 3D inputs. Received: "
-            f"inputs.shape={inputs.shape}."
+            "Pooling inputs's shape must be 3, 4 or 5, corresponding to 1D, 2D "
+            f"and 3D inputs. But received shape: {inputs.shape}."
         )
     if data_format == "channels_last":
         outputs = _transpose_spatial_outputs(outputs)
@@ -223,9 +223,8 @@ def average_pool(
         outputs = tnn.avg_pool3d(inputs, kernel_size=pool_size, stride=strides)
     else:
         raise ValueError(
-            "Inputs to pooling operation must have ndim=3, 4, or 5 "
-            "corresponding to 1D, 2D and 3D inputs. Received: "
-            f"inputs.shape={inputs.shape}."
+            "Pooling inputs's shape must be 3, 4 or 5, corresponding to 1D, 2D "
+            f"and 3D inputs. But received shape: {inputs.shape}."
         )
     if data_format == "channels_last":
         outputs = _transpose_spatial_outputs(outputs)
