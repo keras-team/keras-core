@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import numpy as np
 import torch.nn.functional as tnn
 
 from keras_core.backend import standardize_data_format
@@ -154,7 +153,7 @@ def _transpose_spatial_outputs(outputs):
 def max_pool(
     inputs,
     pool_size,
-    strides=1,
+    strides=None,
     padding="valid",
     data_format=None,
 ):
