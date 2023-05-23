@@ -37,22 +37,22 @@ def ResNet(
     Args:
         stack_fn: A function that returns output tensor for the
             stacked residual blocks.
-        preact: Whether to use pre-activation or not. True for ResNetV2,
-            False for ResNet and ResNeXt.
+        preact: Whether to use pre-activation or not. `True` for ResNetV2,
+            `False` for ResNet and ResNeXt.
         use_bias: Whether to use biases for convolutional layers or not.
-            True for ResNet and ResNetV2, False for ResNeXt.
+            `True` for ResNet and ResNetV2, `False` for ResNeXt.
         model_name: Name of the model.
         include_top: Whether to include the fully-connected
             layer at the top of the network.
         weights: One of `None` (random initialization),
-            'imagenet' (pre-training on ImageNet),
+            `"imagenet"` (pre-training on ImageNet),
             or the path to the weights file to be loaded.
         input_tensor: Optional Keras tensor (i.e. output of `layers.Input()`)
             to use as image input for the model.
         input_shape: Optional shape tuple, only to be specified
-            if `include_top` is False (otherwise the input shape
+            if `include_top` is `False` (otherwise the input shape
             has to be `(224, 224, 3)` (with `channels_last` data format)
-            or `(3, 224, 224)` (with `channels_first` data format). It
+            or `(3, 224, 224)` (with `"channels_first"` data format). It
             should have exactly 3 inputs channels.
         pooling: Optional pooling mode for feature extraction
             when `include_top` is `False`.
@@ -66,7 +66,7 @@ def ResNet(
             - `max` means that global max pooling will
                 be applied.
         classes: optional number of classes to classify images
-          into, only to be specified if `include_top` is True,
+          into, only to be specified if `include_top` is `True`,
           and if no `weights` argument is specified.
         classifier_activation: A `str` or callable. The activation
             function to use on the "top" layer. Ignored unless
@@ -76,21 +76,23 @@ def ResNet(
             `None` or `"softmax"`.
 
     Returns:
-      A Model instance.
+        A Model instance.
     """
 
     if not (weights in {"imagenet", None} or gfile.exists(weights)):
         raise ValueError(
             "The `weights` argument should be either "
-            "`None` (random initialization), `imagenet` "
+            "`None` (random initialization), 'imagenet' "
             "(pre-training on ImageNet), "
-            "or the path to the weights file to be loaded."
+            "or the path to the weights file to be loaded.  Received: "
+            f"weights={weights}"
         )
 
     if weights == "imagenet" and include_top and classes != 1000:
         raise ValueError(
-            'If using `weights` as `"imagenet"` with `include_top`'
-            " as true, `classes` should be 1000"
+            "If using `weights='imagenet'` with `include_top=True`, "
+            "`classes` should be 1000.  "
+            f"Received classes={classes}"
         )
 
     # Determine proper input shape
@@ -196,8 +198,8 @@ def residual_block_v1(
         filters: No of filters in the bottleneck layer.
         kernel_size: Kernel size of the bottleneck layer. Defaults to 3
         stride: Stride of the first layer. Defaults to 1
-        conv_shortcut: Use convolution shortcut if True, otherwise
-            use identity shortcut. Defaults to True
+        conv_shortcut: Use convolution shortcut if `True`, otherwise
+            use identity shortcut. Defaults to `True`
         name(optional): Name of the block
 
     Returns:
@@ -356,14 +358,14 @@ Args:
     include_top: whether to include the fully-connected
         layer at the top of the network.
     weights: one of `None` (random initialization),
-        'imagenet' (pre-training on ImageNet), or the path to the weights file
-        to be loaded.
+        `"imagenet"` (pre-training on ImageNet), or the path to the weights
+        file to be loaded.
     input_tensor: optional Keras tensor (i.e. output of `layers.Input()`)
         to use as image input for the model.
     input_shape: optional shape tuple, only to be specified if `include_top`
-        is False (otherwise the input shape has to be `(224, 224, 3)`
-        (with `'channels_last'` data format) or `(3, 224, 224)`
-        (with `'channels_first'` data format). It should have exactly 3
+        is `False` (otherwise the input shape has to be `(224, 224, 3)`
+        (with `"channels_last"` data format) or `(3, 224, 224)`
+        (with `"channels_first"` data format). It should have exactly 3
         inputs channels, and width and height should be no smaller than 32.
         E.g. `(200, 200, 3)` would be one valid value.
     pooling: Optional pooling mode for feature extraction when `include_top`
@@ -375,7 +377,7 @@ Args:
                 model will be a 2D tensor.
         - `max` means that global max pooling will be applied.
     classes: optional number of classes to classify images into, only to be
-        specified if `include_top` is True, and if no `weights` argument is
+        specified if `include_top` is `True`, and if no `weights` argument is
         specified.
     classifier_activation: A `str` or callable. The activation function to
         use on the "top" layer. Ignored unless `include_top=True`. Set
@@ -383,8 +385,8 @@ Args:
         When loading pretrained weights, `classifier_activation` can only
         be `None` or `"softmax"`.
 
-  Returns:
-    A model instance.
+Returns:
+    A Model instance.
 """
 
 setattr(ResNet50, "__doc__", ResNet50.__doc__ + DOC)
