@@ -303,8 +303,8 @@ def conv(
     if channels % kernel_in_channels > 0:
         raise ValueError(
             "The number of input channels must be evenly divisible by "
-            f"kernel's in_channels. Received input channels {channels} and "
-            f"kernel in_channels {kernel_in_channels}. "
+            f"kernel's in_channels. Received input shape {inputs.shape} and "
+            f"kernel shape {kernel.shape}. "
         )
     groups = channels // kernel_in_channels
     if num_spatial_dims == 1:
@@ -333,8 +333,9 @@ def conv(
         )
     else:
         raise ValueError(
-            "Pooling inputs's shape must be 3, 4 or 5, corresponding to 1D, 2D "
-            f"and 3D inputs. But received shape: {inputs.shape}."
+            "Inputs to conv operation should have ndim=3, 4, or 5,"
+            "corresponding to 1D, 2D and 3D inputs. Received input "
+            f"shape: {inputs.shape}."
         )
 
     if data_format == "channels_last":
@@ -454,8 +455,9 @@ def conv_transpose(
         )
     else:
         raise ValueError(
-            "Conv transpose inputs's shape must be 3, 4 or 5, corresponding to "
-            f"1D, 2D and 3D inputs. But received shape: {inputs.shape}."
+            "Inputs to conv transpose operation should have ndim=3, 4, or 5,"
+            "corresponding to 1D, 2D and 3D inputs. Received input "
+            f"shape: {inputs.shape}."
         )
     if data_format == "channels_last":
         outputs = _transpose_spatial_outputs(outputs)
