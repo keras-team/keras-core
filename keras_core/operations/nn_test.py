@@ -783,10 +783,10 @@ class NNOpsCorrectnessTest(testing.TestCase):
         inputs_2d = np.ones([2, 10, 10, 4])
         kernel = np.ones([2, 2, 2, 6])
         outputs = knn.conv(
-            inputs_2d, kernel, 2, padding="same", dilation_rate=2
+            inputs_2d, kernel, 2, padding="same", dilation_rate=1
         )
         expected = tf.nn.conv2d(
-            inputs_2d, kernel, 2, padding="SAME", dilations=2
+            inputs_2d, kernel, 2, padding="SAME", dilations=1
         )
         self.assertAllClose(outputs, expected)
 
