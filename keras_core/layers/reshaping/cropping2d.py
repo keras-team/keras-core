@@ -2,6 +2,7 @@ from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.input_spec import InputSpec
 from keras_core.layers.layer import Layer
+from keras_core.utils import argument_validation
 
 
 @keras_core_export("keras_core.layers.Cropping2D")
@@ -26,7 +27,7 @@ class Cropping2D(Layer):
               cropping values for height and width:
               `(symmetric_height_crop, symmetric_width_crop)`.
             - If tuple of 2 tuples of 2 ints: interpreted as
-              `((top_crop, bottom_crop), (left_crop, right_crop))`
+              `((top_crop, bottom_crop), (left_crop, right_crop))`.
         data_format: A string, one of `"channels_last"` (default) or
             `"channels_first"`. The ordering of the dimensions in the inputs.
             `"channels_last"` corresponds to inputs with shape
@@ -65,12 +66,12 @@ class Cropping2D(Layer):
                     "`cropping` should have two elements. "
                     f"Received: cropping={cropping}."
                 )
-            height_cropping = cropping[0]
-            if isinstance(height_cropping, int):
-                height_cropping = (height_cropping, height_cropping)
-            width_cropping = cropping[1]
-            if isinstance(width_cropping, int):
-                width_cropping = (width_cropping, width_cropping)
+            height_cropping = argument_validation.standardize_tuple(
+                cropping[0], 2, "1st entry of cropping", allow_zero=True
+            )
+            width_cropping = argument_validation.standardize_tuple(
+                cropping[1], 2, "2nd entry of cropping", allow_zero=True
+            )
             self.cropping = (height_cropping, width_cropping)
         else:
             raise ValueError(

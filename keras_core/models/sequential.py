@@ -112,11 +112,6 @@ class Sequential(Model):
         self._functional = Functional(inputs=inputs, outputs=outputs)
         self.built = True
 
-    def __call__(self, inputs, training=None, mask=None):
-        if self._functional:
-            return self._functional(inputs, training=training, mask=mask)
-        return super().__call__(inputs, training=training, mask=mask)
-
     def call(self, inputs, training=None, mask=None):
         if self._functional:
             return self._functional.call(inputs, training=training, mask=mask)
@@ -164,6 +159,22 @@ class Sequential(Model):
             )  # Ignore mask
             inputs = outputs
         return outputs
+
+    @property
+    def input_shape(self):
+        if self._functional:
+            return self._functional.input_shape
+        raise ValueError(
+            f"Sequential model '{self.name}' has no defined input shape yet."
+        )
+
+    @property
+    def output_shape(self):
+        if self._functional:
+            return self._functional.output_shape
+        raise ValueError(
+            f"Sequential model '{self.name}' has no defined output shape yet."
+        )
 
     def _is_layer_name_unique(self, layer):
         for ref_layer in self._layers:

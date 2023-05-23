@@ -8,7 +8,7 @@ from keras_core import operations as ops
 from keras_core import testing
 
 
-class CroppingTest(testing.TestCase, parameterized.TestCase):
+class Cropping2DTest(testing.TestCase, parameterized.TestCase):
     @parameterized.product(
         (
             # different cropping values
@@ -66,10 +66,10 @@ class CroppingTest(testing.TestCase, parameterized.TestCase):
         not backend.DYNAMIC_SHAPES_OK,
         reason="Backend does not support dynamic shapes",
     )
-    def test_cropping_2d_with_dynamic_batch_size(self):
-        input_layer = layers.Input(batch_shape=(None, 7, 9, 5))
-        permuted = layers.Cropping2D(((1, 2), (3, 4)))(input_layer)
-        self.assertEqual(permuted.shape, (None, 4, 2, 5))
+    def test_cropping_2d_with_dynamic_spatial_dim(self):
+        input_layer = layers.Input(batch_shape=(1, 7, None, 5))
+        cropped = layers.Cropping2D(((1, 2), (3, 4)))(input_layer)
+        self.assertEqual(cropped.shape, (1, 4, None, 5))
 
     @parameterized.product(
         (
@@ -97,3 +97,9 @@ class CroppingTest(testing.TestCase, parameterized.TestCase):
             layers.Cropping2D(cropping=(1, 2, 3))
         with self.assertRaises(ValueError):
             layers.Cropping2D(cropping="1")
+        with self.assertRaises(ValueError):
+            layers.Cropping2D(cropping=((1, 2), (3, 4, 5)))
+        with self.assertRaises(ValueError):
+            layers.Cropping2D(cropping=((1, 2), (3, -4)))
+        with self.assertRaises(ValueError):
+            layers.Cropping2D(cropping=((1, 2), "3"))

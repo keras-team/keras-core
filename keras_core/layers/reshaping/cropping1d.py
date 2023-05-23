@@ -1,6 +1,7 @@
 from keras_core.api_export import keras_core_export
 from keras_core.layers.input_spec import InputSpec
 from keras_core.layers.layer import Layer
+from keras_core.utils import argument_validation
 
 
 @keras_core_export("keras_core.layers.Cropping1D")
@@ -26,10 +27,12 @@ class Cropping1D(Layer):
      [[8 9]]]
 
     Args:
-        cropping: Integer or tuple of integers of length 2.
-            How many units should be trimmed off at the beginning and end of
-            the cropping dimension (axis 1).
-            If a single int is provided, the same value will be used for both.
+        cropping: Int, or tuple of int (length 2), or dictionary.
+            - If int: how many units should be trimmed off at the beginning and
+              end of the cropping dimension (axis 1).
+            - If tuple of 2 ints: how many units should be trimmed off at the
+              beginning and end of the cropping dimension
+              (`(left_crop, right_crop)`).
 
     Input shape:
         3D tensor with shape `(batch_size, axis_to_crop, features)`
@@ -40,9 +43,9 @@ class Cropping1D(Layer):
 
     def __init__(self, cropping=(1, 1), name=None, dtype=None):
         super().__init__(name=name, dtype=dtype)
-        if isinstance(cropping, int):
-            cropping = (cropping, cropping)
-        self.cropping = cropping
+        self.cropping = argument_validation.standardize_tuple(
+            cropping, 2, "cropping", allow_zero=True
+        )
         self.input_spec = InputSpec(ndim=3)
 
     def compute_output_shape(self, input_shape):

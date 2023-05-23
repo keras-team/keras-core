@@ -1,7 +1,5 @@
 import numpy as np
-import pytest
 
-from keras_core import backend
 from keras_core import testing
 from keras_core.backend.common import keras_tensor
 from keras_core.operations import function
@@ -43,9 +41,6 @@ class FunctionTest(testing.TestCase):
         self.assertAllClose(y_val[1], np.ones((2, 3)) * 4)
 
     def test_dynamic_shape_inference(self):
-        if not backend.DYNAMIC_SHAPES_OK:
-            pytest.skip("Test only valid for dynamic shape backends")
-
         x = keras_tensor.KerasTensor((None, 3))
         y = x**2
         fn = function.Function(x, y)
