@@ -743,7 +743,9 @@ def trace(x, offset=None, axis1=None, axis2=None):
 
 def tri(N, M=None, k=0, dtype="float32"):
     dtype = to_torch_dtype(dtype)
-    pass
+    M = M or N
+    x = torch.zeros((N, M))
+    return torch.diag_embed
 
 
 def tril(x, k=0):
@@ -832,15 +834,9 @@ def sum(x, axis=None, keepdims=False):
 
 
 def eye(N, M=None, k=None, dtype="float32"):
-    # TODO: implement support for `k` diagonal arg,
-    # does not exist in torch.eye()
-    if k is not None:
-        raise NotImplementedError(
-            "Due to API divergence bewtween `torch.eye` "
-            "and `np.eye`, the argument k is not supported: "
-            f"Received: k={k}"
-        )
+    M = M or N
     dtype = to_torch_dtype(dtype)
-    if M is not None:
+    if k is None or k==0:
         return torch.eye(n=N, m=M, dtype=dtype)
-    return torch.eye(n=N, dtype=dtype)
+    return torch.diag(torch.ones(N, dtype=dtype), diagonal=k)[:-1]
+    
