@@ -3,9 +3,10 @@ import numpy as np
 from keras_core import layers
 from keras_core import testing
 import tensorflow as tf
+from absl.testing import parameterized
 
 
-class BatchNormalizationTest(testing.TestCase):
+class BatchNormalizationTest(testing.TestCase, parameterized.TestCase):
     def test_bn_basics(self):
         # vector case
         self.run_layer_test(
@@ -57,24 +58,35 @@ class BatchNormalizationTest(testing.TestCase):
             supports_masking=True,
         )
 
-    def test_correctness(self):
+    @parameterized.product(
+        axis=(-1, 1),
+        input_shape=((2, 3, 4), (2, 3, 4, 4)),
+    )
+    def test_correctness(self, axis, input_shape):
         # Training
-        layer = layers.BatchNormalization(axis=-1, momentum=0.8)
+        layer = layers.BatchNormalization(axis=axis, momentum=0)
         tf_keras_layer = tf.keras.layers.BatchNormalization(
-            axis=-1, momentum=0.8
+            axis=axis, momentum=0
         )
+        layer.build(input_shape)
+        tf_keras_layer.build(input_shape)
         # Random data centered on 5.0, variance 10.0
-        x = np.random.normal(loc=5.0, scale=10.0, size=(200, 4, 4, 3))
+        x = np.random.normal(loc=5.0, scale=10.0, size=input_shape)
         out = x
         tf_out = x
         for _ in range(3):
             out = layer(out, training=True)
             tf_out = tf_keras_layer(tf_out, training=True)
+            import pdb
+
+            pdb.set_trace()
         self.assertAllClose(out, tf_out)
 
         # Assert the normalization is correct.
-        out -= np.reshape(np.array(layer.beta), (1, 1, 1, 3))
-        out /= np.reshape(np.array(layer.gamma), (1, 1, 1, 3))
+        broadcast_shape = [1] * len(input_shape)
+        broadcast_shape[axis] = input_shape[axis]
+        out -= np.reshape(np.array(layer.beta), broadcast_shape)
+        out /= np.reshape(np.array(layer.gamma), broadcast_shape)
 
         self.assertAllClose(np.mean(out, axis=(0, 1, 2)), 0.0, atol=1e-3)
         self.assertAllClose(np.std(out, axis=(0, 1, 2)), 1.0, atol=1e-3)
@@ -111,30 +123,3 @@ class BatchNormalizationTest(testing.TestCase):
 
         self.assertAllClose(np.mean(out, axis=(0, 1, 2)), 0.0, atol=1e-3)
         self.assertAllClose(np.std(out, axis=(0, 1, 2)), 1.0, atol=1e-3)
-
-    def test_masking_correctness(self):
-        x = np.ones((2, 5, 3))
-        mask = np.array(
-            [
-                [False, False, True, True, False],
-                [False, True, True, False, False],
-            ]
-        )
-
-        layer = layers.BatchNormalization(axis=-1, momentum=0.8)
-        tf_keras_layer = tf.keras.layers.BatchNormalization(
-            axis=-1, momentum=0.8
-        )
-
-        out = x
-        tf_out = x
-        for _ in range(3):
-            out = layer(out, training=True, mask=mask)
-            tf_out = tf_keras_layer(tf_out, training=True, mask=mask)
-
-        self.assertAllClose(out, tf_out)
-
-        # Inference
-        out = layer(x, training=False, mask=mask)
-        tf_out = tf_keras_layer(x, training=False, mask=mask)
-        self.assertAllClose(out, tf_out)

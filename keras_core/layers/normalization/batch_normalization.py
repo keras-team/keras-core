@@ -77,8 +77,6 @@ class BatchNormalization(Layer):
             - `training=False`: The layer will normalize its inputs using
             the mean and variance of its moving statistics, learned during
             training.
-        mask: boolean tensor of shape `[batch_size, sequence_length]`. `mask` is
-            only supported for 3D inputs, i.e., sequence inputs.
 
     Reference:
 
@@ -190,33 +188,11 @@ class BatchNormalization(Layer):
         return input_shape
 
     def call(self, inputs, training=None, mask=None):
+        broadcast_shape = [1] * len(inputs.shape)
+        broadcast_shape[self.axis] = inputs.shape[self.axis]
         if training and self.trainable:
-            if mask is None:
-                mean = ops.mean(
-                    inputs, axis=self._reduction_axes, keepdims=True
-                )
-                variance = ops.var(
-                    inputs, axis=self._reduction_axes, keepdims=True
-                )
-            else:
-                num_elements = ops.sum(mask)
-                mask = ops.expand_dims(mask, axis=-1)
-
-                mean = (
-                    ops.sum(
-                        inputs * mask, axis=self._reduction_axes, keepdims=True
-                    )
-                    / num_elements
-                )
-                variance = (
-                    ops.sum(
-                        ((inputs - mean) * mask) ** 2,
-                        axis=self._reduction_axes,
-                        keepdims=True,
-                    )
-                    / num_elements
-                )
-
+            mean = ops.mean(inputs, axis=self._reduction_axes, keepdims=True)
+            variance = ops.var(inputs, axis=self._reduction_axes, keepdims=True)
             outputs = (inputs - mean) / ops.sqrt(variance + self.epsilon)
             mean = ops.squeeze(mean, self._reduction_axes)
             variance = ops.squeeze(variance, self._reduction_axes)
@@ -228,17 +204,16 @@ class BatchNormalization(Layer):
                 self.moving_mean * self.momentum + mean * (1.0 - self.momentum)
             )
         else:
-            moving_mean = ops.expand_dims(
-                self.moving_mean, axis=self._reduction_axes
-            )
+            moving_mean = ops.reshape(self.moving_mean, broadcast_shape)
+            moving_variance = ops.reshape(self.moving_variance, broadcast_shape)
             outputs = (inputs - moving_mean) / ops.sqrt(
-                self.moving_variance + self.epsilon
+                moving_variance + self.epsilon
             )
         if self.scale:
-            gamma = ops.expand_dims(self.gamma, axis=self._reduction_axes)
+            gamma = ops.reshape(self.gamma, broadcast_shape)
             outputs = outputs * gamma
         if self.center:
-            beta = ops.expand_dims(self.beta, axis=self._reduction_axes)
+            beta = ops.reshape(self.beta, broadcast_shape)
             outputs = outputs + beta
         return outputs
 
