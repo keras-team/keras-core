@@ -8,5 +8,3 @@ pytest
 pandas
 absl-py
 requests
-google
-protobuf

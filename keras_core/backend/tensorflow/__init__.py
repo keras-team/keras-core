@@ -13,7 +13,6 @@ from keras_core.backend.tensorflow import math
 from keras_core.backend.tensorflow import nn
 from keras_core.backend.tensorflow import numpy
 from keras_core.backend.tensorflow import random
-from keras_core.backend.tensorflow import tensorboard
 from keras_core.utils.naming import auto_name
 
 DYNAMIC_SHAPES_OK = True
