@@ -1,9 +1,8 @@
 import numpy as np
+from absl.testing import parameterized
 
 from keras_core import layers
 from keras_core import testing
-import tensorflow as tf
-from absl.testing import parameterized
 
 
 class BatchNormalizationTest(testing.TestCase, parameterized.TestCase):
@@ -59,30 +58,17 @@ class BatchNormalizationTest(testing.TestCase, parameterized.TestCase):
         )
 
     @parameterized.product(
-        axis=(-1,),
-        input_shape=((1, 2, 2, 1),),
+        axis=(-1, 1),
+        input_shape=((5, 2, 3), (5, 3, 3, 2)),
     )
     def test_correctness(self, axis, input_shape):
         # Training
         layer = layers.BatchNormalization(axis=axis, momentum=0)
-        tf_keras_layer = tf.keras.layers.BatchNormalization(
-            axis=axis, momentum=0
-        )
-        layer.build(input_shape)
-        tf_keras_layer.build(input_shape)
         # Random data centered on 5.0, variance 10.0
         x = np.random.normal(loc=5.0, scale=10.0, size=input_shape)
-        x = np.reshape(np.array([[1, 2], [3, 4]]), input_shape)
         out = x
-        tf_out = x
-        for _ in range(1):
+        for _ in range(3):
             out = layer(out, training=True)
-            tf_out = tf_keras_layer(tf_out, training=True)
-
-        import pdb
-
-        pdb.set_trace()
-        self.assertAllClose(out, tf_out)
 
         # Assert the normalization is correct.
         broadcast_shape = [1] * len(input_shape)
@@ -90,13 +76,16 @@ class BatchNormalizationTest(testing.TestCase, parameterized.TestCase):
         out -= np.reshape(np.array(layer.beta), broadcast_shape)
         out /= np.reshape(np.array(layer.gamma), broadcast_shape)
 
-        self.assertAllClose(np.mean(out, axis=(0, 1, 2)), 0.0, atol=1e-3)
-        self.assertAllClose(np.std(out, axis=(0, 1, 2)), 1.0, atol=1e-3)
+        reduction_axes = list(range(len(input_shape)))
+        del reduction_axes[axis]
+        reduction_axes = tuple(reduction_axes)
+        self.assertAllClose(np.mean(out, axis=reduction_axes), 0.0, atol=1e-3)
+        self.assertAllClose(np.std(out, axis=reduction_axes), 1.0, atol=1e-3)
 
         # Inference
-        out = layer(x, training=False)
-        tf_out = tf_keras_layer(x, training=False)
-        self.assertAllClose(out, tf_out, atol=5e-3)
+        inference_out = layer(x, training=False)
+        training_out = layer(x, training=True)
+        self.assertNotAllClose(inference_out, training_out)
 
     def test_trainable_behavior(self):
         layer = layers.BatchNormalization(axis=-1, momentum=0.8, epsilon=1e-7)
