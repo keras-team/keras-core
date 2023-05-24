@@ -17,6 +17,7 @@ from keras_core.callbacks.callback import Callback
 from keras_core.utils import file_utils
 from keras_core.layers import Embedding
 from keras_core import operations as ops
+from keras_core.utils import shape_utils
 from keras_core.optimizers import Optimizer
 from keras_core.optimizers.schedules import learning_rate_schedule
 from keras_core import backend
@@ -561,23 +562,23 @@ class TensorBoard(Callback):
     def _log_weight_as_image(self, weight, weight_name, epoch):
         """Logs a weight as a TensorBoard image."""
         w_img = ops.squeeze(weight)
-        shape = backend.int_shape(w_img)
+        shape = shape_utils.int_shape(w_img)
         if len(shape) == 1:  # Bias case
             w_img = ops.reshape(w_img, [1, shape[0], 1, 1])
         elif len(shape) == 2:  # Dense layer kernel case
             if shape[0] > shape[1]:
                 w_img = ops.transpose(w_img)
-                shape = backend.int_shape(w_img)
+                shape = shape_utils.int_shape(w_img)
             w_img = ops.reshape(w_img, [1, shape[0], shape[1], 1])
         elif len(shape) == 3:  # ConvNet case
             if backend.image_data_format() == "channels_last":
                 # Switch to channels_first to display every kernel as a separate
                 # image.
-                w_img = ops.transpose(w_img, perm=[2, 0, 1])
-                shape = backend.int_shape(w_img)
+                w_img = ops.transpose(w_img, [2, 0, 1])
+                shape = shape_utils.int_shape(w_img)
             w_img = ops.reshape(w_img, [shape[0], shape[1], shape[2], 1])
 
-        shape = backend.int_shape(w_img)
+        shape = shape_utils.int_shape(w_img)
         # Not possible to handle 3D convnets etc.
         if len(shape) == 4 and shape[-1] in [1, 3, 4]:
             summary.image(weight_name, w_img, step=epoch)
@@ -601,7 +602,7 @@ class TensorBoard(Callback):
         try:
             backend.tensorboard.start_trace(logdir)
             self._profiler_started = True
-        except tf.errors.AlreadyExistsError as e:
+        except Exception as e:
             # Profiler errors should not be fatal.
             logging.error("Failed to start profiler: %s", e.message)
 

@@ -383,11 +383,17 @@ class TestTensorBoardV2(testing.TestCase):
             },
         )
         self.assertEqual(
-            self._strip_layer_names(summary_file.histograms, "sequential"),
+            summary_file.histograms,
             {
-                _ObservedSummary(logdir=self.train_dir, tag="bias_0/histogram"),
+                _ObservedSummary(logdir=self.train_dir, tag="bias/histogram"),
                 _ObservedSummary(
-                    logdir=self.train_dir, tag="kernel_0/histogram"
+                    logdir=self.train_dir, tag="kernel/histogram"
+                ),
+                _ObservedSummary(
+                    logdir=self.train_dir, tag="variable_34/histogram"
+                ),
+                _ObservedSummary(
+                    logdir=self.train_dir, tag="variable_35/histogram"
                 ),
             },
         )
@@ -424,26 +430,16 @@ class TestTensorBoardV2(testing.TestCase):
         self.assertEqual(
             self._strip_layer_names(summary_file.histograms, model_type),
             {
-                _ObservedSummary(logdir=self.train_dir, tag="bias_0/histogram"),
-                _ObservedSummary(
-                    logdir=self.train_dir, tag="kernel_0/histogram"
-                ),
+                _ObservedSummary(logdir=self.train_dir, tag="histogram"),
             },
         )
-        if summary_file.convert_from_v2_summary_proto:
-            expected_image_summaries = {
-                _ObservedSummary(logdir=self.train_dir, tag="bias_0/image"),
-                _ObservedSummary(logdir=self.train_dir, tag="kernel_0/image"),
-            }
-        else:
-            expected_image_summaries = {
-                _ObservedSummary(logdir=self.train_dir, tag="bias_0/image/0"),
-                _ObservedSummary(logdir=self.train_dir, tag="kernel_0/image/0"),
-                _ObservedSummary(logdir=self.train_dir, tag="kernel_0/image/1"),
-                _ObservedSummary(logdir=self.train_dir, tag="kernel_0/image/2"),
-            }
+        expected_image_summaries = {
+            _ObservedSummary(logdir=self.train_dir, tag="variable_38/image"),
+            _ObservedSummary(logdir=self.train_dir, tag="bias/image"),
+            _ObservedSummary(logdir=self.train_dir, tag="kernel/image"),
+        }
         self.assertEqual(
-            self._strip_layer_names(summary_file.images, model_type),
+            summary_file.images,
             expected_image_summaries,
         )
 
@@ -510,7 +506,7 @@ class TestTensorBoardV2(testing.TestCase):
                 return x
 
         model = get_model_from_layers(
-            [LayerWithSummary()], input_shape=(5,), name="model"
+            [LayerWithSummary()], input_shape=(5,)
         )
 
         model.compile("sgd", "mse")
