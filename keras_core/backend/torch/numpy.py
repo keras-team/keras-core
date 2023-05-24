@@ -441,7 +441,7 @@ def linspace(
             steps = steps.unsqueeze(-1)
 
         # increments from `start` to `stop` in each dimension
-        linspace = start[None] + steps*(stop - start)[None]
+        linspace = start[None] + steps * (stop - start)[None]
     else:
         linspace = torch.linspace(
             start=start,
@@ -515,7 +515,7 @@ def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
             steps = steps.unsqueeze(-1)
 
         # increments from `start` to `stop` in each dimension
-        linspace = start[None] + steps*(stop - start)[None]
+        linspace = start[None] + steps * (stop - start)[None]
         logspace = base**linspace
     else:
         logspace = torch.logspace(
