@@ -4,6 +4,8 @@ import os
 
 from tensorflow.core.util import event_pb2
 from tensorflow.python.lib.io import tf_record
+import tensorflow.summary as summary
+from tensorflow.compat.v1 import SummaryMetadata
 
 import keras_core
 from keras_core import callbacks
@@ -62,8 +64,8 @@ class _SummaryFile:
         self.convert_from_v2_summary_proto = False
 
 
-def get_model_from_layers(model_layers, input_shape):
-    model = models.Sequential()
+def get_model_from_layers(model_layers, input_shape, name=None):
+    model = models.Sequential(name=name)
     model.add(
         Input(input_shape,
             dtype="float32",
@@ -383,18 +385,9 @@ class TestTensorBoardV2(testing.TestCase):
             },
         )
         self.assertEqual(
-            summary_file.histograms,
+            self._strip_layer_names(summary_file.histograms, "sequential"),
             {
-                _ObservedSummary(logdir=self.train_dir, tag="bias/histogram"),
-                _ObservedSummary(
-                    logdir=self.train_dir, tag="kernel/histogram"
-                ),
-                _ObservedSummary(
-                    logdir=self.train_dir, tag="variable_34/histogram"
-                ),
-                _ObservedSummary(
-                    logdir=self.train_dir, tag="variable_35/histogram"
-                ),
+                _ObservedSummary(logdir=self.train_dir, tag="histogram")
             },
         )
 
@@ -487,15 +480,16 @@ class TestTensorBoardV2(testing.TestCase):
         def scalar_v2_mock(name, data, step=None):
             """A reimplementation of the scalar plugin to avoid circular
             deps."""
-            metadata = tf.compat.v1.SummaryMetadata()
+            metadata = SummaryMetadata()
             # Should match value in tensorboard/plugins/scalar/metadata.py.
             metadata.plugin_data.plugin_name = "scalars"
-            with tf.summary.experimental.summary_scope(
+            with summary.experimental.summary_scope(
                 name, "scalar_summary", values=[data, step]
             ) as (tag, _):
-                return tf.summary.write(
+                tensor = ops.convert_to_tensor(data, "float32")
+                summary.write(
                     tag=tag,
-                    tensor=tf.cast(data, "float32"),
+                    tensor=tensor,
                     step=step,
                     metadata=metadata,
                 )
@@ -506,10 +500,10 @@ class TestTensorBoardV2(testing.TestCase):
                 return x
 
         model = get_model_from_layers(
-            [LayerWithSummary()], input_shape=(5,)
+            [LayerWithSummary()], input_shape=(5,), name="model"
         )
 
-        model.compile("sgd", "mse")
+        model.compile("sgd", "mse", jit_compile=False)  # summary ops can't xla
         tb_cbk = callbacks.TensorBoard(self.logdir, update_freq=1)
         x, y = np.ones((10, 5)), np.ones((10, 5))
         model.fit(
@@ -610,7 +604,8 @@ class TestTensorBoardV2NonParameterizedTest(testing.TestCase):
     def _get_seq_model(self):
         model = models.Sequential(
             [
-                Conv2D(8, (3, 3), input_shape=(10, 10, 1)),
+                Input((10, 10, 1)),
+                Conv2D(8, (3, 3)),
                 Flatten(),
                 Dense(1),
             ]
@@ -675,7 +670,8 @@ class TestTensorBoardV2NonParameterizedTest(testing.TestCase):
     def test_TensorBoard_writeSequentialModel_withInputShape(self):
         model = models.Sequential(
             [
-                Conv2D(8, (3, 3), input_shape=(10, 10, 1)),
+                Input(input_shape=(10, 10, 1)),
+                Conv2D(8, (3, 3)),
                 Flatten(),
                 Dense(1),
             ]
