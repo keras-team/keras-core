@@ -75,8 +75,10 @@ class BatchNormalization(Layer):
             - `training=True`: The layer will normalize its inputs using
             the mean and variance of the current batch of inputs.
             - `training=False`: The layer will normalize its inputs using
-            the mean and variance of its moving statistics,
-            learned during training.
+            the mean and variance of its moving statistics, learned during
+            training.
+        mask: boolean tensor of shape `[batch_size, sequence_length]`. `mask` is
+            only supported for 3D inputs, i.e., sequence inputs.
 
     Reference:
 
@@ -102,12 +104,11 @@ class BatchNormalization(Layer):
 
     Note that:
 
-    - Setting `trainable` on an model containing other layers will
-    recursively set the `trainable` value of all inner layers.
-    - If the value of the `trainable`
-    attribute is changed after calling `compile()` on a model,
-    the new value doesn't take effect for this model
-    until `compile()` is called again.
+    - Setting `trainable` on an model containing other layers will recursively
+        set the `trainable` value of all inner layers.
+    - If the value of the `trainable` attribute is changed after calling
+        `compile()` on a model, the new value doesn't take effect for this model
+        until `compile()` is called again.
     """
 
     def __init__(
@@ -189,11 +190,36 @@ class BatchNormalization(Layer):
         return input_shape
 
     def call(self, inputs, training=None, mask=None):
-        # TODO: support masking during stats computation.
         if training and self.trainable:
-            mean = ops.mean(inputs, axis=self._reduction_axes)
-            variance = ops.var(inputs, axis=self._reduction_axes)
+            if mask is None:
+                mean = ops.mean(
+                    inputs, axis=self._reduction_axes, keepdims=True
+                )
+                variance = ops.var(
+                    inputs, axis=self._reduction_axes, keepdims=True
+                )
+            else:
+                num_elements = ops.sum(mask)
+                mask = ops.expand_dims(mask, axis=-1)
+
+                mean = (
+                    ops.sum(
+                        inputs * mask, axis=self._reduction_axes, keepdims=True
+                    )
+                    / num_elements
+                )
+                variance = (
+                    ops.sum(
+                        ((inputs - mean) * mask) ** 2,
+                        axis=self._reduction_axes,
+                        keepdims=True,
+                    )
+                    / num_elements
+                )
+
             outputs = (inputs - mean) / ops.sqrt(variance + self.epsilon)
+            mean = ops.squeeze(mean, self._reduction_axes)
+            variance = ops.squeeze(variance, self._reduction_axes)
             self.moving_variance.assign(
                 self.moving_variance * self.momentum
                 + variance * (1.0 - self.momentum)
@@ -202,13 +228,18 @@ class BatchNormalization(Layer):
                 self.moving_mean * self.momentum + mean * (1.0 - self.momentum)
             )
         else:
-            outputs = (inputs - self.moving_mean) / ops.sqrt(
+            moving_mean = ops.expand_dims(
+                self.moving_mean, axis=self._reduction_axes
+            )
+            outputs = (inputs - moving_mean) / ops.sqrt(
                 self.moving_variance + self.epsilon
             )
         if self.scale:
-            outputs = outputs * self.gamma
+            gamma = ops.expand_dims(self.gamma, axis=self._reduction_axes)
+            outputs = outputs * gamma
         if self.center:
-            outputs = outputs + self.beta
+            beta = ops.expand_dims(self.beta, axis=self._reduction_axes)
+            outputs = outputs + beta
         return outputs
 
     def get_config(self):
