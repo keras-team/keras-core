@@ -2,16 +2,27 @@ import json
 import logging
 import os
 import warnings
+import time
+import sys
 
 import numpy as np
-import tensorflow as tf
+import tensorflow.summary as summary
+
+from tensorflow.io import gfile
+from tensorflow.compat.v1 import SummaryMetadata
+from tensorflow import nest
 
 from keras_core.api_export import keras_core_export
 from keras_core.callbacks.callback import Callback
 from keras_core.utils import file_utils
+from keras_core.layers import Embedding
+from keras_core import operations as ops
+from keras_core.optimizers import Optimizer
+from keras_core.optimizers.schedules import learning_rate_schedule
+from keras_core import backend
 
 
-@keras_core_export("keras.callbacks.TensorBoard")
+@keras_core_export("keras_core.callbacks.TensorBoard")
 class TensorBoard(Callback):
 
     """Enable visualizations for TensorBoard.
@@ -164,7 +175,6 @@ class TensorBoard(Callback):
     ):
         super().__init__()
         self._supports_tf_logs = True
-        self._validate_kwargs(kwargs)
 
         self.log_dir = file_utils.path_to_string(log_dir)
         self.histogram_freq = histogram_freq
@@ -187,58 +197,16 @@ class TensorBoard(Callback):
         # Used to restore any existing `SummaryWriter` after training ends.
         self._prev_summary_state = []
 
-    def _validate_kwargs(self, kwargs):
-        """Handle arguments were supported in V1."""
-        if kwargs.get("write_grads", False):
-            logging.warning(
-                "`write_grads` will be ignored in TensorFlow 2.0 "
-                "for the `TensorBoard` Callback."
-            )
-        if kwargs.get("batch_size", False):
-            logging.warning(
-                "`batch_size` is no longer needed in the "
-                "`TensorBoard` Callback and will be ignored "
-                "in TensorFlow 2.0."
-            )
-        if kwargs.get("embeddings_layer_names", False):
-            logging.warning(
-                "`embeddings_layer_names` is not supported in "
-                "TensorFlow 2.0. Instead, all `Embedding` layers "
-                "will be visualized."
-            )
-        if kwargs.get("embeddings_data", False):
-            logging.warning(
-                "`embeddings_data` is not supported in TensorFlow "
-                "2.0. Instead, all `Embedding` variables will be "
-                "visualized."
-            )
-
-        supported_kwargs = {
-            "write_grads",
-            "embeddings_layer_names",
-            "embeddings_data",
-            "batch_size",
-        }
-        unrecognized_kwargs = set(kwargs.keys()) - supported_kwargs
-
-        # Only allow kwargs that were supported in V1.
-        if unrecognized_kwargs:
-            raise ValueError(
-                "Unrecognized arguments in `TensorBoard` Callback: "
-                f"{unrecognized_kwargs}. "
-                f"Supported kwargs are: {supported_kwargs}"
-            )
-
     def set_model(self, model):
         """Sets Keras model and writes graph if specified."""
         self.model = model
         self._log_write_dir = self.log_dir
 
         self._train_dir = os.path.join(self._log_write_dir, "train")
-        self._train_step = self.model._train_counter
+        self._train_step = 0
 
         self._val_dir = os.path.join(self._log_write_dir, "validation")
-        self._val_step = self.model._test_counter
+        self._val_step = 0
 
         self._writers = {}  # Resets writers.
 
@@ -252,7 +220,7 @@ class TensorBoard(Callback):
     @property
     def _train_writer(self):
         if "train" not in self._writers:
-            self._writers["train"] = tf.summary.create_file_writer(
+            self._writers["train"] = summary.create_file_writer(
                 self._train_dir
             )
         return self._writers["train"]
@@ -260,48 +228,44 @@ class TensorBoard(Callback):
     @property
     def _val_writer(self):
         if "val" not in self._writers:
-            self._writers["val"] = tf.summary.create_file_writer(self._val_dir)
+            self._writers["val"] = summary.create_file_writer(self._val_dir)
         return self._writers["val"]
 
     def _write_keras_model_train_graph(self):
         """Writes Keras model train_function graph to TensorBoard."""
         with self._train_writer.as_default():
-            with tf.summary.record_if(True):
-                train_fn = self.model.train_tf_function
+            with summary.record_if(True):
+                train_fn = self.model.train_function
                 # If the train_function is a `tf.function`, we can write out a
                 # graph
                 if hasattr(train_fn, "function_spec"):
                     # TODO(b/243822285): Use _variable_creation_fn directly.
                     if hasattr(train_fn, "_concrete_stateful_fn"):
-                        tf.summary.graph(train_fn._concrete_stateful_fn.graph)
+                        summary.graph(train_fn._concrete_stateful_fn.graph)
                     else:
-                        tf.summary.graph(
+                        summary.graph(
                             train_fn._concrete_variable_creation_fn.graph
                         )
 
     def _write_keras_model_summary(self):
         """Writes Keras graph network summary to TensorBoard."""
         with self._train_writer.as_default():
-            with tf.summary.record_if(True):
+            with summary.record_if(True):
                 summary_writable = (
-                    self.model._is_graph_network
-                    or self.model.__class__.__name__ == "Sequential"
+                    self.model.__class__.__name__ == "Sequential"
                 )
                 if summary_writable:
                     keras_model_summary("keras", self.model, step=0)
 
     def _configure_embeddings(self):
         """Configure the Projector for embeddings."""
-        # TODO(omalleyt): Add integration tests.
-        from layers import core
-        from protobuf import projector_config_pb2
+        from tensorboard.plugins import projector
 
-        # isort: off
         from google.protobuf import text_format
 
-        config = projector_config_pb2.ProjectorConfig()
+        config = projector.ProjectorConfig()
         for layer in self.model.layers:
-            if isinstance(layer, core.Embedding):
+            if isinstance(layer, Embedding):
                 embedding = config.embeddings.add()
                 # Embeddings are always the first layer, so this naming should
                 # be consistent in any keras models checkpoints.
@@ -330,7 +294,7 @@ class TensorBoard(Callback):
 
         config_pbtxt = text_format.MessageToString(config)
         path = os.path.join(self._log_write_dir, "projector_config.pbtxt")
-        with tf.io.gfile.GFile(path, "w") as f:
+        with gfile.GFile(path, "w") as f:
             f.write(config_pbtxt)
 
     def _push_writer(self, writer, step):
@@ -338,11 +302,11 @@ class TensorBoard(Callback):
         if self.update_freq == "epoch":
             return
 
-        should_record = lambda: tf.equal(step % self.update_freq, 0)
-        # TODO(b/151339474): Fix deadlock when not using .value() here.
+        should_record = lambda: step % self.update_freq == 0
+
         summary_context = (
-            writer.as_default(step.value()),
-            tf.summary.record_if(should_record),
+            writer.as_default(step),
+            summary.record_if(should_record),
         )
         self._prev_summary_state.append(summary_context)
         summary_context[0].__enter__()
@@ -392,7 +356,7 @@ class TensorBoard(Callback):
         # Support legacy way of specifying "start,stop" or "start" as str.
         if isinstance(profile_batch, str):
             profile_batch = str(profile_batch).split(",")
-            profile_batch = tf.nest.map_structure(int, profile_batch)
+            profile_batch = nest.map_structure(int, profile_batch)
 
         if isinstance(profile_batch, int):
             self._start_batch = profile_batch
@@ -441,12 +405,12 @@ class TensorBoard(Callback):
 
     def on_test_end(self, logs=None):
         if self.model.optimizer and hasattr(self.model.optimizer, "iterations"):
-            with tf.summary.record_if(True), self._val_writer.as_default():
+            with summary.record_if(True), self._val_writer.as_default():
                 for name, value in logs.items():
-                    tf.summary.scalar(
+                    summary.scalar(
                         "evaluation_" + name + "_vs_iterations",
                         value,
-                        step=self.model.optimizer.iterations.read_value(),
+                        step=self.model.optimizer.iterations,
                     )
         self._pop_writer()
 
@@ -471,7 +435,7 @@ class TensorBoard(Callback):
             self._should_write_train_graph = False
         if self.write_steps_per_second:
             batch_run_time = time.time() - self._batch_start_time
-            tf.summary.scalar(
+            summary.scalar(
                 "batch_steps_per_second",
                 1.0 / batch_run_time,
                 step=self._train_step,
@@ -483,7 +447,7 @@ class TensorBoard(Callback):
         # For now, we just disable `update_freq` in those cases.
         if isinstance(logs, dict):
             for name, value in logs.items():
-                tf.summary.scalar("batch_" + name, value, step=self._train_step)
+                summary.scalar("batch_" + name, value, step=self._train_step)
 
         if not self._should_trace:
             return
@@ -495,7 +459,7 @@ class TensorBoard(Callback):
         # Keeps track of epoch for profiling.
         if self.write_steps_per_second:
             self._previous_epoch_iterations = (
-                self.model.optimizer.iterations.numpy()
+                self.model.optimizer.iterations
             )
             self._epoch_start_time = time.time()
 
@@ -510,7 +474,7 @@ class TensorBoard(Callback):
             self._log_embeddings(epoch)
 
     def _start_trace(self):
-        tf.summary.trace_on(graph=True, profiler=False)
+        summary.trace_on(graph=True, profiler=False)
         self._start_profiler(logdir=self.log_dir)
         self._is_tracing = True
 
@@ -519,14 +483,14 @@ class TensorBoard(Callback):
         if batch is None:
             batch = self._stop_batch
         with self._train_writer.as_default():
-            with tf.summary.record_if(True):
+            with summary.record_if(True):
                 # TODO(b/126388999): Remove step info in the summary name.
-                tf.summary.trace_export(name="batch_%d" % batch, step=batch)
+                summary.trace_export(name="batch_%d" % batch, step=batch)
         self._stop_profiler()
         self._is_tracing = False
 
     def _collect_learning_rate(self, logs):
-        if isinstance(self.model.optimizer, optimizer.Optimizer):
+        if isinstance(self.model.optimizer, Optimizer):
             lr_schedule = getattr(self.model.optimizer, "_learning_rate", None)
         else:
             lr_schedule = getattr(self.model.optimizer, "lr", None)
@@ -535,8 +499,12 @@ class TensorBoard(Callback):
         return logs
 
     def _compute_steps_per_second(self):
-        current_iteration = self.model.optimizer.iterations.numpy()
+        current_iteration = self.model.optimizer.iterations
         time_since_epoch_begin = time.time() - self._epoch_start_time
+        current_iteration = ops.convert_to_tensor(current_iteration, "float32")
+        self._previous_epoch_iterations = ops.convert_to_tensor(self._previous_epoch_iterations, "float32")
+        time_since_epoch_begin = ops.convert_to_tensor(time_since_epoch_begin, "float32")
+
         steps_per_second = (
             current_iteration - self._previous_epoch_iterations
         ) / time_since_epoch_begin
@@ -558,27 +526,27 @@ class TensorBoard(Callback):
         if self.write_steps_per_second:
             train_logs["steps_per_second"] = self._compute_steps_per_second()
 
-        with tf.summary.record_if(True):
+        with summary.record_if(True):
             if train_logs:
                 with self._train_writer.as_default():
                     for name, value in train_logs.items():
-                        tf.summary.scalar("epoch_" + name, value, step=epoch)
+                        summary.scalar("epoch_" + name, value, step=epoch)
             if val_logs:
                 with self._val_writer.as_default():
                     for name, value in val_logs.items():
                         name = name[4:]  # Remove 'val_' prefix.
-                        tf.summary.scalar("epoch_" + name, value, step=epoch)
+                        summary.scalar("epoch_" + name, value, step=epoch)
 
     def _log_weights(self, epoch):
         """Logs the weights of the Model to TensorBoard."""
         with self._train_writer.as_default():
-            with tf.summary.record_if(True):
+            with summary.record_if(True):
                 for layer in self.model.layers:
                     for weight in layer.weights:
                         weight_name = weight.name.replace(":", "_")
                         # Add a suffix to prevent summary tag name collision.
                         histogram_weight_name = weight_name + "/histogram"
-                        tf.summary.histogram(
+                        summary.histogram(
                             histogram_weight_name, weight, step=epoch
                         )
                         if self.write_images:
@@ -592,33 +560,33 @@ class TensorBoard(Callback):
 
     def _log_weight_as_image(self, weight, weight_name, epoch):
         """Logs a weight as a TensorBoard image."""
-        w_img = tf.squeeze(weight)
+        w_img = ops.squeeze(weight)
         shape = backend.int_shape(w_img)
         if len(shape) == 1:  # Bias case
-            w_img = tf.reshape(w_img, [1, shape[0], 1, 1])
+            w_img = ops.reshape(w_img, [1, shape[0], 1, 1])
         elif len(shape) == 2:  # Dense layer kernel case
             if shape[0] > shape[1]:
-                w_img = tf.transpose(w_img)
+                w_img = ops.transpose(w_img)
                 shape = backend.int_shape(w_img)
-            w_img = tf.reshape(w_img, [1, shape[0], shape[1], 1])
+            w_img = ops.reshape(w_img, [1, shape[0], shape[1], 1])
         elif len(shape) == 3:  # ConvNet case
             if backend.image_data_format() == "channels_last":
                 # Switch to channels_first to display every kernel as a separate
                 # image.
-                w_img = tf.transpose(w_img, perm=[2, 0, 1])
+                w_img = ops.transpose(w_img, perm=[2, 0, 1])
                 shape = backend.int_shape(w_img)
-            w_img = tf.reshape(w_img, [shape[0], shape[1], shape[2], 1])
+            w_img = ops.reshape(w_img, [shape[0], shape[1], shape[2], 1])
 
         shape = backend.int_shape(w_img)
         # Not possible to handle 3D convnets etc.
         if len(shape) == 4 and shape[-1] in [1, 3, 4]:
-            tf.summary.image(weight_name, w_img, step=epoch)
+            summary.image(weight_name, w_img, step=epoch)
 
     def _log_embeddings(self, epoch):
         embeddings_ckpt = os.path.join(
             self._log_write_dir,
             "train",
-            f"keras_embedding.ckpt-{epoch}",
+            f"keras_embedding.ckpt-{epoch}.weights.h5"
         )
         self.model.save_weights(embeddings_ckpt)
 
@@ -631,7 +599,7 @@ class TensorBoard(Callback):
         if self._profiler_started:
             return
         try:
-            tf.profiler.experimental.start(logdir=logdir)
+            ops.start_trace(logdir)
             self._profiler_started = True
         except tf.errors.AlreadyExistsError as e:
             # Profiler errors should not be fatal.
@@ -646,8 +614,8 @@ class TensorBoard(Callback):
         if not self._profiler_started:
             return
         try:
-            tf.profiler.experimental.stop(save=save)
-        except tf.errors.UnavailableError as e:
+            ops.stop_trace(save=save)
+        except Exception as e:
             # Profiler errors should not be fatal.
             logging.error("Failed to stop profiler: %s", e.message)
         finally:
@@ -677,7 +645,7 @@ def keras_model_summary(name, data, step=None):
       ValueError: if a default writer exists, but no step was provided and
         `tf.summary.experimental.get_step()` is None.
     """
-    summary_metadata = tf.compat.v1.SummaryMetadata()
+    summary_metadata = SummaryMetadata()
     # Hard coding a plugin name. Please refer to go/tb-plugin-name-hardcode for
     # the rationale.
     summary_metadata.plugin_data.plugin_name = "graph_keras_model"
@@ -693,10 +661,10 @@ def keras_model_summary(name, data, step=None):
         )
         return False
 
-    with tf.summary.experimental.summary_scope(
+    with summary.experimental.summary_scope(
         name, "graph_keras_model", [data, step]
     ) as (tag, _):
-        tensor = tf.constant(json_string, dtype=tf.string)
-        return tf.summary.write(
+        tensor = ops.convert_to_tensor(json_string, dtype="string")
+        return summary.write(
             tag=tag, tensor=tensor, step=step, metadata=summary_metadata
         )

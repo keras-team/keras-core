@@ -2,8 +2,18 @@ import collections
 import numpy as np
 import os
 
+from tensorflow.core.util import event_pb2
+from tensorflow.python.lib.io import tf_record
+
+import keras_core
 from keras_core import callbacks
-from keras_core import layers
+from keras_core.layers import Layer
+from keras_core.layers import Input
+from keras_core.layers import InputLayer
+from keras_core.layers import Conv2D
+from keras_core.layers import Flatten
+from keras_core.layers import Dense
+from keras_core.layers import Embedding
 from keras_core import losses
 from keras_core import operations as ops
 from keras_core.optimizers import schedules
@@ -18,6 +28,22 @@ from keras_core import testing
 #     written.
 #   tag: str. The name of the summary.
 _ObservedSummary = collections.namedtuple("_ObservedSummary", ("logdir", "tag"))
+
+
+class _SummaryIterator(object):
+  """Yields `Event` protocol buffers from a given path."""
+
+  def __init__(self, path):
+    self._tf_record_iterator = tf_record.tf_record_iterator(path)
+
+  def __iter__(self):
+    return self
+
+  def __next__(self):
+    r = next(self._tf_record_iterator)
+    return event_pb2.Event.FromString(r)
+
+  next = __next__
 
 
 class _SummaryFile:
@@ -39,13 +65,13 @@ class _SummaryFile:
 def get_model_from_layers(model_layers, input_shape):
     model = models.Sequential()
     model.add(
-        layers.InputLayer(
-            input_shape=input_shape,
+        Input(input_shape,
             dtype="float32",
         )
     )
     for layer in model_layers:
         model.add(layer)
+    return model
 
 def list_summaries(logdir):
     """Read all summaries under the logdir into a `_SummaryFile`.
@@ -70,7 +96,7 @@ def list_summaries(logdir):
             if not filename.startswith("events.out."):
                 continue
             path = os.path.join(dirpath, filename)
-            for event in tf.compat.v1.train.summary_iterator(path):
+            for event in _SummaryIterator(path):
                 if event.graph_def:
                     result.graph_defs.append(event.graph_def)
                 if not event.summary:  # (e.g., it's a `graph_def` event)
@@ -117,9 +143,9 @@ class TestTensorBoardV2(testing.TestCase):
 
     def _get_model(self, compile_model=True):
         layers = [
-            layers.Conv2D(8, (3, 3)),
-            layers.Flatten(),
-            layers.Dense(1),
+            Conv2D(8, (3, 3)),
+            Flatten(),
+            Dense(1),
         ]
         model = get_model_from_layers(
             layers, input_shape=(10, 10, 1)
@@ -423,9 +449,9 @@ class TestTensorBoardV2(testing.TestCase):
 
     def test_TensorBoard_projector_callback(self):
         layers = [
-            layers.Embedding(10, 10, name="test_embedding"),
-            layers.Dense(10, activation="relu"),
-            layers.Dense(1, activation="sigmoid"),
+            Embedding(10, 10, name="test_embedding"),
+            Dense(10, activation="relu"),
+            Dense(1, activation="sigmoid"),
         ]
         model = get_model_from_layers(layers, input_shape=(10,))
         model.compile(
@@ -462,9 +488,6 @@ class TestTensorBoardV2(testing.TestCase):
             )
 
     def test_custom_summary(self):
-        if not tf.executing_eagerly():
-            self.skipTest("Custom summaries only supported in V2 code path.")
-
         def scalar_v2_mock(name, data, step=None):
             """A reimplementation of the scalar plugin to avoid circular
             deps."""
@@ -481,7 +504,7 @@ class TestTensorBoardV2(testing.TestCase):
                     metadata=metadata,
                 )
 
-        class LayerWithSummary(layers.Layer):
+        class LayerWithSummary(Layer):
             def call(self, x):
                 scalar_v2_mock("custom_summary", ops.sum(x))
                 return x
@@ -541,12 +564,9 @@ class TestTensorBoardV2(testing.TestCase):
             result.add(summary._replace(tag=new_tag))
         return result
 
-    def test_TensorBoard_invalid_argument(self):
-        with self.assertRaisesRegex(ValueError, "Unrecognized arguments"):
-            callbacks.TensorBoard(wwrite_images=True)
-
     def test_TensorBoard_non_blocking(self):
-        model = models.Sequential([layers.Dense(1)])
+        model = models.Sequential([Dense(1)])
+        model.optimizer = optimizers.Adam()
         tb = callbacks.TensorBoard(self.logdir)
         self.assertTrue(tb._supports_tf_logs)
         cb_list = callbacks.CallbackList(
@@ -561,29 +581,30 @@ class TestTensorBoardV2(testing.TestCase):
                 "NumPy conversion."
             )
 
-        with tf.compat.v1.test.mock.patch.object(tensor, "numpy", mock_numpy):
-            logs = {"metric": tensor}
+        tensor.numpy = mock_numpy
 
-            cb_list.on_train_begin(logs)
-            cb_list.on_epoch_begin(0, logs)
-            cb_list.on_train_batch_begin(0, logs)
-            cb_list.on_train_batch_end(0, logs)
-            cb_list.on_epoch_end(0, logs)
-            cb_list.on_train_end(logs)
+        logs = {"metric": tensor}
 
-            cb_list.on_test_begin(logs)
-            cb_list.on_test_batch_begin(0, logs)
-            cb_list.on_test_batch_end(0, logs)
-            cb_list.on_test_end(logs)
+        cb_list.on_train_begin(logs)
+        cb_list.on_epoch_begin(0, logs)
+        cb_list.on_train_batch_begin(0, logs)
+        cb_list.on_train_batch_end(0, logs)
+        cb_list.on_epoch_end(0, logs)
+        cb_list.on_train_end(logs)
 
-            cb_list.on_predict_begin(logs)
-            cb_list.on_predict_batch_begin(logs)
-            cb_list.on_predict_batch_end(logs)
-            cb_list.on_predict_end(logs)
+        cb_list.on_test_begin(logs)
+        cb_list.on_test_batch_begin(0, logs)
+        cb_list.on_test_batch_end(0, logs)
+        cb_list.on_test_end(logs)
+
+        cb_list.on_predict_begin(logs)
+        cb_list.on_predict_batch_begin(logs)
+        cb_list.on_predict_batch_end(logs)
+        cb_list.on_predict_end(logs)
 
 
 # Note that this test specifies model_type explicitly.
-class TestTensorBoardV2NonParameterizedTest(test_combinations.TestCase):
+class TestTensorBoardV2NonParameterizedTest(testing.TestCase):
     def setUp(self):
         super(TestTensorBoardV2NonParameterizedTest, self).setUp()
         self.logdir = os.path.join(self.get_temp_dir(), "tb")
@@ -593,9 +614,9 @@ class TestTensorBoardV2NonParameterizedTest(test_combinations.TestCase):
     def _get_seq_model(self):
         model = models.Sequential(
             [
-                layers.Conv2D(8, (3, 3), input_shape=(10, 10, 1)),
-                layers.Flatten(),
-                layers.Dense(1),
+                Conv2D(8, (3, 3), input_shape=(10, 10, 1)),
+                Flatten(),
+                Dense(1),
             ]
         )
         opt = optimizers.SGD(learning_rate=0.001)
@@ -647,9 +668,9 @@ class TestTensorBoardV2NonParameterizedTest(test_combinations.TestCase):
     def test_TensorBoard_writeSequentialModel_noInputShape(self):
         model = models.Sequential(
             [
-                layers.Conv2D(8, (3, 3)),
-                layers.Flatten(),
-                layers.Dense(1),
+                Conv2D(8, (3, 3)),
+                Flatten(),
+                Dense(1),
             ]
         )
         model.compile("sgd", "mse")
@@ -658,19 +679,19 @@ class TestTensorBoardV2NonParameterizedTest(test_combinations.TestCase):
     def test_TensorBoard_writeSequentialModel_withInputShape(self):
         model = models.Sequential(
             [
-                layers.Conv2D(8, (3, 3), input_shape=(10, 10, 1)),
-                layers.Flatten(),
-                layers.Dense(1),
+                Conv2D(8, (3, 3), input_shape=(10, 10, 1)),
+                Flatten(),
+                Dense(1),
             ]
         )
         model.compile("sgd", "mse")
         self.fitModelAndAssertKerasModelWritten(model)
 
     def test_TensorBoard_writeModel(self):
-        inputs = layers.Input([10, 10, 1])
-        x = layers.Conv2D(8, (3, 3), activation="relu")(inputs)
-        x = layers.Flatten()(x)
-        x = layers.Dense(1)(x)
+        inputs = Input([10, 10, 1])
+        x = Conv2D(8, (3, 3), activation="relu")(inputs)
+        x = Flatten()(x)
+        x = Dense(1)(x)
         model = models.Model(inputs=inputs, outputs=[x])
         model.compile("sgd", "mse")
         self.fitModelAndAssertKerasModelWritten(model)
