@@ -341,23 +341,21 @@ def floor(x):
 def full(shape, fill_value, dtype=None):
     dtype = to_torch_dtype(dtype)
     if hasattr(fill_value, "__len__"):
-        raise NotImplementedError(
-            "`torch.full()` only accepts scalars for `fill_value`. "
-            f"Received: fill_value={fill_value}"
-        )
-        # TODO: implement conversion of shape into repetitions for `torch.tile``
-        # return torch.tile(fill_value, reps)
+        fill_value = convert_to_tensor(fill_value)
+        reps = shape[-1] // fill_value.shape[-1]  # channels-last reduction
+        reps_by_dim = (*shape[:-1], reps)
+        return torch.tile(fill_value, reps_by_dim)
     return torch.full(size=shape, fill_value=fill_value, dtype=dtype)
 
 
 def full_like(x, fill_value, dtype=None):
     dtype = to_torch_dtype(dtype)
     if hasattr(fill_value, "__len__"):
-        raise NotImplementedError(
-            "`torch.full()` only accepts scalars for `fill_value`."
+        fill_value = convert_to_tensor(fill_value)
+        reps_by_dim = tuple(
+            [x.shape[i] // fill_value.shape[i] for i in range(len(x.shape))]
         )
-        # TODO: implement conversion of shape into repetitions for `torch.tile``
-        # return torch.tile(fill_value, reps)
+        return torch.tile(fill_value, reps_by_dim)
     x = convert_to_tensor(x)
     return torch.full_like(input=x, fill_value=fill_value, dtype=dtype)
 

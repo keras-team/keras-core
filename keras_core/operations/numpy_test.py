@@ -1713,27 +1713,16 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
             np.array(knp.full_like(x, 2, dtype="float32")),
             np.full_like(x, 2, dtype="float32"),
         )
+        self.assertAllClose(
+            np.array(knp.full_like(x, np.ones([2, 3]))),
+            np.full_like(x, np.ones([2, 3])),
+        )
 
         self.assertAllClose(np.array(knp.FullLike()(x, 2)), np.full_like(x, 2))
         self.assertAllClose(
             np.array(knp.FullLike()(x, 2, dtype="float32")),
             np.full_like(x, 2, dtype="float32"),
         )
-
-    # TODO: implement conversion of shape into repetitions, pass to
-    # `torch.tile`, since `torch.full()` only accepts scalars
-    # for `fill_value`."
-    @pytest.mark.skipif(
-        backend.backend() == "torch",
-        reason="`torch.full` only accepts scalars for `fill_value`.",
-    )
-    def test_full_like_without_torch(self):
-        x = np.array([[1, 2, 3], [3, 2, 1]])
-        self.assertAllClose(
-            np.array(knp.full_like(x, np.ones([2, 3]))),
-            np.full_like(x, np.ones([2, 3])),
-        )
-
         self.assertAllClose(
             np.array(knp.FullLike()(x, np.ones([2, 3]))),
             np.full_like(x, np.ones([2, 3])),
@@ -3092,25 +3081,15 @@ class NumpyArrayCreateOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(
             np.array(knp.full([2, 3], 0.1)), np.full([2, 3], 0.1)
         )
-
-        self.assertAllClose(np.array(knp.Full()([2, 3], 0)), np.full([2, 3], 0))
-        self.assertAllClose(
-            np.array(knp.Full()([2, 3], 0.1)), np.full([2, 3], 0.1)
-        )
-
-    # TODO: implement conversion of shape into repetitions, pass to
-    # `torch.tile`, since `torch.full()` only accepts scalars
-    # for `fill_value`."
-    @pytest.mark.skipif(
-        backend.backend() == "torch",
-        reason="`torch.full` only accepts scalars for `fill_value`.",
-    )
-    def test_full_without_torch(self):
         self.assertAllClose(
             np.array(knp.full([2, 3], np.array([1, 4, 5]))),
             np.full([2, 3], np.array([1, 4, 5])),
         )
 
+        self.assertAllClose(np.array(knp.Full()([2, 3], 0)), np.full([2, 3], 0))
+        self.assertAllClose(
+            np.array(knp.Full()([2, 3], 0.1)), np.full([2, 3], 0.1)
+        )
         self.assertAllClose(
             np.array(knp.Full()([2, 3], np.array([1, 4, 5]))),
             np.full([2, 3], np.array([1, 4, 5])),
