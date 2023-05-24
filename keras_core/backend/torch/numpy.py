@@ -738,14 +738,7 @@ def tile(x, repeats):
 
 def trace(x, offset=None, axis1=None, axis2=None):
     x = convert_to_tensor(x)
-    # TODO: implement support for these arguments
-    # API divergence between `np.trace()` and `torch.trace()`
-    if offset or axis1 or axis2:
-        raise NotImplementedError(
-            "Arguments not supported by `torch.trace: "
-            f"offset={offset}, axis1={axis1}, axis2={axis2}"
-        )
-    return torch.trace(x)
+    return torch.sum(torch.diagonal(x, offset, axis1, axis2), dim=-1)
 
 
 def tri(N, M=None, k=0, dtype="float32"):

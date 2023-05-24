@@ -2992,13 +2992,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(np.array(knp.tile(x, [2, 3])), np.tile(x, [2, 3]))
         self.assertAllClose(np.array(knp.Tile([2, 3])(x)), np.tile(x, [2, 3]))
 
-    @pytest.mark.skipif(
-        backend.backend() == "torch",
-        reason="`torch.split` does not support args `offset`, `axis1`, `axis2`",
-    )
     def test_trace(self):
-        # TODO: implement `torch.trace` support for arguments `offset`,
-        # `axis1`, `axis2` and delete NotImplementedError
         x = np.arange(24).reshape([1, 2, 3, 4])
         self.assertAllClose(np.array(knp.trace(x)), np.trace(x))
         self.assertAllClose(
