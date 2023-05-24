@@ -294,7 +294,7 @@ def diagonal(x, offset=0, axis1=0, axis2=1):
 
 def dot(x, y):
     x, y = convert_to_tensor(x), convert_to_tensor(y)
-    if len(x.shape) == 0 or len(y.shape) == 0:
+    if x.ndim == 0 or y.ndim == 0:
         return torch.multiply(x, y)
     return torch.matmul(x, y)
 
@@ -327,7 +327,7 @@ def expm1(x):
 def flip(x, axis=None):
     x = convert_to_tensor(x)
     if axis is None:
-        axis = tuple(range(len(x.shape)))
+        axis = tuple(range(x.ndim))
     if isinstance(axis, int):
         axis = (axis,)
     return torch.flip(x, dims=axis)
@@ -353,7 +353,7 @@ def full_like(x, fill_value, dtype=None):
     if hasattr(fill_value, "__len__"):
         fill_value = convert_to_tensor(fill_value)
         reps_by_dim = tuple(
-            [x.shape[i] // fill_value.shape[i] for i in range(len(x.shape))]
+            [x.shape[i] // fill_value.shape[i] for i in range(x.ndim)]
         )
         return torch.tile(fill_value, reps_by_dim)
     x = convert_to_tensor(x)
