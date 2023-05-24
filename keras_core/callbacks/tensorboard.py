@@ -599,7 +599,7 @@ class TensorBoard(Callback):
         if self._profiler_started:
             return
         try:
-            ops.start_trace(logdir)
+            backend.tensorboard.start_trace(logdir)
             self._profiler_started = True
         except tf.errors.AlreadyExistsError as e:
             # Profiler errors should not be fatal.
@@ -614,7 +614,7 @@ class TensorBoard(Callback):
         if not self._profiler_started:
             return
         try:
-            ops.stop_trace(save=save)
+            backend.tensorboard.stop_trace(save=save)
         except Exception as e:
             # Profiler errors should not be fatal.
             logging.error("Failed to stop profiler: %s", e.message)
