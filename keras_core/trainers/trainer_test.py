@@ -7,6 +7,7 @@ from keras_core import losses
 from keras_core import metrics
 from keras_core import optimizers
 from keras_core import testing
+from keras_core.callbacks.callback import Callback
 
 if backend.backend() == "jax":
     from keras_core.backend.jax.trainer import JAXTrainer as Trainer
@@ -28,7 +29,7 @@ class ExampleModel(layers.Dense, Trainer):
         Trainer.__init__(self)
 
 
-class OutputStructModel(layers.Layer, Trainer):
+class StructModel(layers.Layer, Trainer):
     def __init__(self, units):
         layers.Layer.__init__(self)
         Trainer.__init__(self)
@@ -45,8 +46,8 @@ class OutputStructModel(layers.Layer, Trainer):
 
     def call(self, x):
         return {
-            "y_one": self.dense_1(x),
-            "y_two": self.dense_2(x),
+            "y_one": self.dense_1(x["x_one"]),
+            "y_two": self.dense_2(x["x_two"]),
         }
 
 
@@ -192,12 +193,15 @@ class TestTrainer(testing.TestCase):
         outputs = model.predict(x, batch_size=batch_size)
         self.assertAllClose(outputs, 4 * np.ones((100, 3)))
 
-        # Test with output struct
-        model = OutputStructModel(units=3)
+        # Test with input/output structs
+        model = StructModel(units=3)
         model.run_eagerly = run_eagerly
         model.jit_compile = jit_compile
 
-        x = np.ones((100, 4))
+        x = {
+            "x_one": np.ones((100, 4)),
+            "x_two": np.ones((100, 4)),
+        }
         batch_size = 16
         outputs = model.predict(x, batch_size=batch_size)
         self.assertTrue(isinstance(outputs, dict))
@@ -213,3 +217,38 @@ class TestTrainer(testing.TestCase):
 
     def test_predict_flow_jit(self):
         self._test_predict_flow(run_eagerly=False, jit_compile=True)
+
+    def test_steps_per_execution_steps_count(self):
+        class StepCount(Callback):
+            def __init__(self):
+                super().__init__()
+                self.count = 0
+                self.batches = [0, 3, 6]
+
+            def on_batch_begin(self, batch, logs=None):
+                assert batch == self.batches[self.count]
+                self.count += 1
+
+        x = np.ones((100, 4))
+        y = np.ones((100, 1))
+        batch_size = 16
+        model = ExampleModel(units=1)
+        model.compile(
+            loss="mse",
+            optimizer="adam",
+            steps_per_execution=3,
+        )
+        step_count = StepCount()
+        model.fit(x=x, y=y, batch_size=16, callbacks=[step_count], verbose=0)
+        self.assertEqual(step_count.count, 3)
+
+        model_2 = ExampleModel(units=1)
+        model_2.compile(loss="mse", optimizer="adam", steps_per_execution=1)
+        model_2.fit(x=x, y=y, batch_size=batch_size, verbose=0)
+
+        self.assertAllClose(model.get_weights(), model_2.get_weights())
+        self.assertAllClose(
+            model.predict(x, batch_size=batch_size),
+            model_2.predict(x, batch_size=batch_size),
+        )
+        self.assertAllClose(model.evaluate(x, y), model_2.evaluate(x, y))

@@ -118,6 +118,20 @@ class Functional(Function, Model):
     def build(self, input_shape):
         self.built = True
 
+    @property
+    def input_shape(self):
+        input_shapes = nest.map_structure(lambda x: x.shape, self.inputs)
+        if isinstance(input_shapes, list) and len(input_shapes) == 1:
+            return input_shapes[0]
+        return input_shapes
+
+    @property
+    def output_shape(self):
+        output_shapes = nest.map_structure(lambda x: x.shape, self.outputs)
+        if isinstance(output_shapes, list) and len(output_shapes) == 1:
+            return output_shapes[0]
+        return output_shapes
+
     def _assert_input_compatibility(self, *args):
         return super(Model, self)._assert_input_compatibility(*args)
 
@@ -526,7 +540,7 @@ def deserialize_node(node_data, created_layers):
             if layer is None:
                 raise ValueError(f"Unknown layer: {history[0]}")
             inbound_node_index = history[1]
-            inbound_tensor_index = history[1]
+            inbound_tensor_index = history[2]
             if len(layer._inbound_nodes) <= inbound_node_index:
                 raise ValueError(
                     "Layer node index out of bounds.\n"

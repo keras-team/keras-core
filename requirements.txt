@@ -1,4 +1,7 @@
 tensorflow
+# TODO: Use Torch CPU
+# Remove after resolving Cuda version differences with TF
+torch>=2.0.1+cpu
 jax[cpu]
 namex
 black>=22
@@ -8,3 +11,4 @@ pytest
 pandas
 absl-py
 requests
+h5py

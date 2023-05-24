@@ -6,6 +6,12 @@ def add(x1, x2):
     return tfnp.add(x1, x2)
 
 
+def bincount(x, weights=None, minlength=None):
+    if minlength is not None:
+        x = tf.cast(x, tf.int32)
+    return tf.math.bincount(x, weights=weights, minlength=minlength, axis=-1)
+
+
 def einsum(subscripts, *operands, **kwargs):
     return tfnp.einsum(subscripts, *operands, **kwargs)
 
@@ -36,9 +42,10 @@ def max(x, axis=None, keepdims=False, initial=None):
 
     # TensorFlow returns -inf by default for an empty list, but for consistency
     # with other backends and the numpy API we want to throw in this case.
+    size_x = size(x)
     tf.assert_greater(
-        size(x),
-        tf.constant(0, dtype=tf.int64),
+        size_x,
+        tf.constant(0, dtype=size_x.dtype),
         message="Cannot compute the max of an empty tensor.",
     )
 
@@ -401,6 +408,10 @@ def not_equal(x1, x2):
 
 def ones_like(x, dtype=None):
     return tfnp.ones_like(x, dtype=dtype)
+
+
+def zeros_like(x, dtype=None):
+    return tf.zeros_like(x, dtype=dtype)
 
 
 def outer(x1, x2):

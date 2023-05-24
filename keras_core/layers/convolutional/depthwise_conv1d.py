@@ -28,18 +28,18 @@ class DepthwiseConv1D(BaseDepthwiseConv):
     are generated per input channel in the depthwise step.
 
     Args:
-        depth_multiplier: The number of depthwise convolution output channels
-            for each input channel. The total number of depthwise convolution
-            output channels will be equal to `input_channel * depth_multiplier`.
         kernel_size: int or tuple/list of 1 integer, specifying the size of the
             depthwise convolution window.
         strides: int or tuple/list of 1 integer, specifying the stride length
-            of the convolution. `stride value != 1` is incompatible
-            with `dilation_rate != 1`.
+            of the convolution. `strides > 1` is incompatible with
+            `dilation_rate > 1`.
         padding: string, either `"valid"` or `"same"` (case-insensitive).
             `"valid"` means no padding. `"same"` results in padding evenly to
             the left/right or up/down of the input such that output has the same
             height/width dimension as the input.
+        depth_multiplier: The number of depthwise convolution output channels
+            for each input channel. The total number of depthwise convolution
+            output channels will be equal to `input_channel * depth_multiplier`.
         data_format: string, either `"channels_last"` or `"channels_first"`.
             The ordering of the dimensions in the inputs. `"channels_last"`
             corresponds to inputs with shape `(batch, steps, features)`
@@ -51,14 +51,15 @@ class DepthwiseConv1D(BaseDepthwiseConv):
             rate to use for dilated convolution.
         activation: Activation function. If `None`, no activation is applied.
         use_bias: bool, if `True`, bias will be added to the output.
-        kernel_initializer: Initializer for the convolution kernel. If `None`,
-            the default initializer (`"glorot_uniform"`) will be used.
+        depthwise_initializer: Initializer for the convolution kernel.
+            If `None`, the default initializer (`"glorot_uniform"`)
+            will be used.
         bias_initializer: Initializer for the bias vector. If `None`, the
             default initializer (`"zeros"`) will be used.
-        kernel_regularizer: Optional regularizer for the convolution kernel.
+        depthwise_regularizer: Optional regularizer for the convolution kernel.
         bias_regularizer: Optional regularizer for the bias vector.
         activity_regularizer: Optional regularizer function for the output.
-        kernel_constraint: Optional projection function to be applied to the
+        depthwise_constraint: Optional projection function to be applied to the
             kernel after being updated by an `Optimizer` (e.g. used to implement
             norm constraints or value constraints for layer weights). The
             function must take as input the unprojected variable and must return
@@ -98,20 +99,20 @@ class DepthwiseConv1D(BaseDepthwiseConv):
 
     def __init__(
         self,
-        depth_multiplier,
         kernel_size,
         strides=1,
         padding="valid",
-        data_format="channels_last",
+        depth_multiplier=1,
+        data_format=None,
         dilation_rate=1,
         activation=None,
         use_bias=True,
-        kernel_initializer="glorot_uniform",
+        depthwise_initializer="glorot_uniform",
         bias_initializer="zeros",
-        kernel_regularizer=None,
+        depthwise_regularizer=None,
         bias_regularizer=None,
         activity_regularizer=None,
-        kernel_constraint=None,
+        depthwise_constraint=None,
         bias_constraint=None,
         **kwargs
     ):
@@ -125,12 +126,12 @@ class DepthwiseConv1D(BaseDepthwiseConv):
             dilation_rate=dilation_rate,
             activation=activation,
             use_bias=use_bias,
-            kernel_initializer=kernel_initializer,
+            depthwise_initializer=depthwise_initializer,
             bias_initializer=bias_initializer,
-            kernel_regularizer=kernel_regularizer,
+            depthwise_regularizer=depthwise_regularizer,
             bias_regularizer=bias_regularizer,
             activity_regularizer=activity_regularizer,
-            kernel_constraint=kernel_constraint,
+            depthwise_constraint=depthwise_constraint,
             bias_constraint=bias_constraint,
             **kwargs
         )

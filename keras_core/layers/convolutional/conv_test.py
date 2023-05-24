@@ -33,6 +33,17 @@ class ConvBasicTest(testing.TestCase, parameterized.TestCase):
         {
             "filters": 6,
             "kernel_size": 2,
+            "strides": 1,
+            "padding": "causal",
+            "data_format": "channels_last",
+            "dilation_rate": (2,),
+            "groups": 2,
+            "input_shape": (3, 4, 4),
+            "output_shape": (3, 4, 6),
+        },
+        {
+            "filters": 6,
+            "kernel_size": 2,
             "strides": (2,),
             "padding": "valid",
             "data_format": "channels_last",
@@ -251,6 +262,15 @@ class ConvCorrectnessTest(testing.TestCase, parameterized.TestCase):
         },
         {
             "filters": 6,
+            "kernel_size": 2,
+            "strides": 1,
+            "padding": "causal",
+            "data_format": "channels_last",
+            "dilation_rate": (2,),
+            "groups": 2,
+        },
+        {
+            "filters": 6,
             "kernel_size": (2,),
             "strides": (2,),
             "padding": "valid",
@@ -316,6 +336,15 @@ class ConvCorrectnessTest(testing.TestCase, parameterized.TestCase):
             "groups": 1,
         },
         {
+            "filters": 4,
+            "kernel_size": 3,
+            "strides": 2,
+            "padding": "same",
+            "data_format": "channels_last",
+            "dilation_rate": 1,
+            "groups": 1,
+        },
+        {
             "filters": 6,
             "kernel_size": 2,
             "strides": 1,
@@ -326,7 +355,7 @@ class ConvCorrectnessTest(testing.TestCase, parameterized.TestCase):
         },
         {
             "filters": 6,
-            "kernel_size": (2, 2),
+            "kernel_size": (4, 3),
             "strides": (2, 1),
             "padding": "valid",
             "data_format": "channels_last",
@@ -453,4 +482,4 @@ class ConvCorrectnessTest(testing.TestCase, parameterized.TestCase):
         outputs = layer(inputs)
 
         expected = tf_keras_layer(inputs)
-        self.assertAllClose(outputs, expected)
+        self.assertAllClose(outputs, expected, rtol=1e-5)

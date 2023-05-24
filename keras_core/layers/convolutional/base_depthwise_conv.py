@@ -9,6 +9,8 @@ from keras_core.backend import standardize_data_format
 from keras_core.layers.input_spec import InputSpec
 from keras_core.layers.layer import Layer
 from keras_core.operations.operation_utils import compute_conv_output_shape
+from keras_core.utils.argument_validation import standardize_padding
+from keras_core.utils.argument_validation import standardize_tuple
 
 
 class BaseDepthwiseConv(Layer):
@@ -39,12 +41,12 @@ class BaseDepthwiseConv(Layer):
         depth_multiplier: The number of depthwise convolution output channels
             for each input channel. The total number of depthwise convolution
             output channels will be equal to `input_channel * depth_multiplier`.
-        kernel_size: int or tuple/list of N integers (N=`rank`), specifying the
-            size of the depthwise convolution window.
-        strides: int or tuple/list of N integers, specifying the stride length
-            of the depthwise convolution. If only one int is specified, the same
-            stride size will be used for all dimensions. `stride value != 1` is
-            incompatible with `dilation_rate != 1`.
+        kernel_size: int or tuple/list of `rank` integers, specifying the size
+            of the depthwise convolution window.
+        strides: int or tuple/list of `rank` integers, specifying the stride
+            length of the depthwise convolution. If only one int is specified,
+            the same stride size will be used for all dimensions.
+            `strides > 1` is incompatible with `dilation_rate > 1`.
         padding: string, either `"valid"` or `"same"` (case-insensitive).
             `"valid"` means no padding. `"same"` results in padding evenly to
             the left/right or up/down of the input such that output has the same
@@ -56,19 +58,20 @@ class BaseDepthwiseConv(Layer):
             `(batch, features, steps)`. It defaults to the `image_data_format`
             value found in your Keras config file at `~/.keras/keras.json`.
             If you never set it, then it will be `"channels_last"`.
-        dilation_rate: int or tuple/list of N integers, specifying the dilation
-            rate to use for dilated convolution. If only one int is specified,
-            the same dilation rate will be used for all dimensions.
+        dilation_rate: int or tuple/list of `rank` integers, specifying the
+            dilation rate to use for dilated convolution. If only one int is
+            specified, the same dilation rate will be used for all dimensions.
         activation: Activation function. If `None`, no activation is applied.
         use_bias: bool, if `True`, bias will be added to the output.
-        kernel_initializer: Initializer for the convolution kernel. If `None`,
-            the default initializer (`"glorot_uniform"`) will be used.
+        depthwise_initializer: Initializer for the depthwsie convolution
+            kernel. If `None`, the default initializer (`"glorot_uniform"`)
+            will be used.
         bias_initializer: Initializer for the bias vector. If `None`, the
             default initializer (`"zeros"`) will be used.
-        kernel_regularizer: Optional regularizer for the convolution kernel.
+        depthwise_regularizer: Optional regularizer for the convolution kernel.
         bias_regularizer: Optional regularizer for the bias vector.
         activity_regularizer: Optional regularizer function for the output.
-        kernel_constraint: Optional projection function to be applied to the
+        depthwise_constraint: Optional projection function to be applied to the
             kernel after being updated by an `Optimizer` (e.g. used to implement
             norm constraints or value constraints for layer weights). The
             function must take as input the unprojected variable and must return
@@ -89,12 +92,12 @@ class BaseDepthwiseConv(Layer):
         dilation_rate=1,
         activation=None,
         use_bias=True,
-        kernel_initializer="glorot_uniform",
+        depthwise_initializer="glorot_uniform",
         bias_initializer="zeros",
-        kernel_regularizer=None,
+        depthwise_regularizer=None,
         bias_regularizer=None,
         activity_regularizer=None,
-        kernel_constraint=None,
+        depthwise_constraint=None,
         bias_constraint=None,
         trainable=True,
         name=None,
@@ -108,28 +111,20 @@ class BaseDepthwiseConv(Layer):
         )
         self.rank = rank
         self.depth_multiplier = depth_multiplier
-
-        if isinstance(kernel_size, int):
-            kernel_size = (kernel_size,) * self.rank
-        self.kernel_size = kernel_size
-
-        if isinstance(strides, int):
-            strides = (strides,) * self.rank
-        self.strides = strides
-
-        if isinstance(dilation_rate, int):
-            dilation_rate = (dilation_rate,) * self.rank
-        self.dilation_rate = dilation_rate
-
-        self.padding = padding
+        self.kernel_size = standardize_tuple(kernel_size, rank, "kernel_size")
+        self.strides = standardize_tuple(strides, rank, "strides")
+        self.dilation_rate = standardize_tuple(
+            dilation_rate, rank, "dilation_rate"
+        )
+        self.padding = standardize_padding(padding)
         self.data_format = standardize_data_format(data_format)
         self.activation = activations.get(activation)
         self.use_bias = use_bias
-        self.kernel_initializer = initializers.get(kernel_initializer)
+        self.depthwise_initializer = initializers.get(depthwise_initializer)
         self.bias_initializer = initializers.get(bias_initializer)
-        self.kernel_regularizer = regularizers.get(kernel_regularizer)
+        self.depthwise_regularizer = regularizers.get(depthwise_regularizer)
         self.bias_regularizer = regularizers.get(bias_regularizer)
-        self.kernel_constraint = constraints.get(kernel_constraint)
+        self.depthwise_constraint = constraints.get(depthwise_constraint)
         self.bias_constraint = constraints.get(bias_constraint)
         self.input_spec = InputSpec(min_ndim=self.rank + 2)
         self.data_format = self.data_format
@@ -143,14 +138,14 @@ class BaseDepthwiseConv(Layer):
 
         if not all(self.kernel_size):
             raise ValueError(
-                "The argument `kernel_size` cannot contain 0(s). Received: "
-                f"{self.kernel_size}"
+                "The argument `kernel_size` cannot contain 0. Received "
+                f"kernel_size={self.kernel_size}."
             )
 
         if not all(self.strides):
             raise ValueError(
-                "The argument `strides` cannot contains 0(s). Received: "
-                f"{self.strides}"
+                "The argument `strides` cannot contains 0. Received "
+                f"strides={self.strides}"
             )
 
         if max(self.strides) > 1 and max(self.dilation_rate) > 1:
@@ -170,16 +165,16 @@ class BaseDepthwiseConv(Layer):
         self.input_spec = InputSpec(
             min_ndim=self.rank + 2, axes={channel_axis: input_channel}
         )
-        kernel_shape = self.kernel_size + (
+        depthwise_shape = self.kernel_size + (
             input_channel,
             self.depth_multiplier,
         )
         self.kernel = self.add_weight(
             name="kernel",
-            shape=kernel_shape,
-            initializer=self.kernel_initializer,
-            regularizer=self.kernel_regularizer,
-            constraint=self.kernel_constraint,
+            shape=depthwise_shape,
+            initializer=self.depthwise_initializer,
+            regularizer=self.depthwise_regularizer,
+            constraint=self.depthwise_constraint,
             trainable=True,
             dtype=self.dtype,
         )
@@ -255,14 +250,14 @@ class BaseDepthwiseConv(Layer):
                 "dilation_rate": self.dilation_rate,
                 "activation": activations.serialize(self.activation),
                 "use_bias": self.use_bias,
-                "kernel_initializer": initializers.serialize(
-                    self.kernel_initializer
+                "depthwise_initializer": initializers.serialize(
+                    self.depthwise_initializer
                 ),
                 "bias_initializer": initializers.serialize(
                     self.bias_initializer
                 ),
-                "kernel_regularizer": regularizers.serialize(
-                    self.kernel_regularizer
+                "depthwise_regularizer": regularizers.serialize(
+                    self.depthwise_regularizer
                 ),
                 "bias_regularizer": regularizers.serialize(
                     self.bias_regularizer
@@ -270,8 +265,8 @@ class BaseDepthwiseConv(Layer):
                 "activity_regularizer": regularizers.serialize(
                     self.activity_regularizer
                 ),
-                "kernel_constraint": constraints.serialize(
-                    self.kernel_constraint
+                "depthwise_constraint": constraints.serialize(
+                    self.depthwise_constraint
                 ),
                 "bias_constraint": constraints.serialize(self.bias_constraint),
             }

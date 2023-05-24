@@ -4,7 +4,12 @@ import numpy as np
 from jax import lax
 from jax import nn as jnn
 
+from keras_core.backend import standardize_data_format
+from keras_core.backend.common.backend_utils import (
+    compute_conv_transpose_padding,
+)
 from keras_core.backend.config import epsilon
+from keras_core.backend.jax.core import convert_to_tensor
 
 
 def relu(x):
@@ -51,8 +56,8 @@ def hard_sigmoid(x):
     return jnn.hard_sigmoid(x)
 
 
-def elu(x):
-    return jnn.elu(x)
+def elu(x, alpha=1.0):
+    return jnn.elu(x, alpha=alpha)
 
 
 def selu(x):
@@ -131,8 +136,9 @@ def max_pool(
     pool_size,
     strides=None,
     padding="valid",
-    data_format="channels_last",
+    data_format=None,
 ):
+    data_format = standardize_data_format(data_format)
     num_spatial_dims = inputs.ndim - 2
     pool_size = _convert_to_spatial_operand(
         pool_size, num_spatial_dims, data_format
@@ -149,8 +155,9 @@ def average_pool(
     pool_size,
     strides,
     padding,
-    data_format="channels_last",
+    data_format=None,
 ):
+    data_format = standardize_data_format(data_format)
     num_spatial_dims = inputs.ndim - 2
     pool_size = _convert_to_spatial_operand(
         pool_size, num_spatial_dims, data_format
@@ -213,9 +220,10 @@ def conv(
     kernel,
     strides=1,
     padding="valid",
-    data_format="channels_last",
+    data_format=None,
     dilation_rate=1,
 ):
+    data_format = standardize_data_format(data_format)
     num_spatial_dims = inputs.ndim - 2
     dimension_numbers = _convert_to_lax_conv_dimension_numbers(
         num_spatial_dims,
@@ -247,8 +255,8 @@ def conv(
         )
     feature_group_count = channels // kernel_in_channels
     return jax.lax.conv_general_dilated(
-        inputs,
-        kernel,
+        convert_to_tensor(inputs),
+        convert_to_tensor(kernel),
         strides,
         padding,
         rhs_dilation=dilation_rate,
@@ -262,9 +270,10 @@ def depthwise_conv(
     kernel,
     strides=1,
     padding="valid",
-    data_format="channels_last",
+    data_format=None,
     dilation_rate=1,
 ):
+    data_format = standardize_data_format(data_format)
     num_spatial_dims = inputs.ndim - 2
     dimension_numbers = _convert_to_lax_conv_dimension_numbers(
         num_spatial_dims,
@@ -307,9 +316,10 @@ def separable_conv(
     pointwise_kernel,
     strides=1,
     padding="valid",
-    data_format="channels_last",
+    data_format=None,
     dilation_rate=1,
 ):
+    data_format = standardize_data_format(data_format)
     depthwise_conv_output = depthwise_conv(
         inputs,
         depthwise_kernel,
@@ -334,10 +344,20 @@ def conv_transpose(
     strides=1,
     padding="valid",
     output_padding=None,
-    data_format="channels_last",
+    data_format=None,
     dilation_rate=1,
 ):
+    data_format = standardize_data_format(data_format)
     num_spatial_dims = inputs.ndim - 2
+    padding_values = compute_conv_transpose_padding(
+        inputs.shape,
+        kernel.shape,
+        strides,
+        padding,
+        output_padding,
+        data_format,
+        dilation_rate,
+    )
     dimension_numbers = _convert_to_lax_conv_dimension_numbers(
         num_spatial_dims,
         data_format,
@@ -356,17 +376,11 @@ def conv_transpose(
         include_batch_and_channels=False,
     )
 
-    if output_padding is not None:
-        raise ValueError(
-            "Custom `output_padding` is not supported yet, please set "
-            "`output_padding=None`."
-        )
-    padding = padding.upper()
     return jax.lax.conv_transpose(
         inputs,
         kernel,
         strides,
-        padding,
+        padding=padding_values,
         rhs_dilation=dilation_rate,
         dimension_numbers=dimension_numbers,
         transpose_kernel=True,
@@ -404,7 +418,7 @@ def categorical_crossentropy(target, output, from_logits=False, axis=-1):
 
 
 def sparse_categorical_crossentropy(target, output, from_logits=False, axis=-1):
-    target = jnp.array(target, dtype="int64")
+    target = jnp.array(target, dtype="int32")
     output = jnp.array(output)
     if len(target.shape) == len(output.shape) and target.shape[-1] == 1:
         target = jnp.squeeze(target, axis=-1)
@@ -443,7 +457,9 @@ def binary_crossentropy(target, output, from_logits=False):
         )
 
     if from_logits:
-        output = jnn.sigmoid(output)
+        log_logits = jax.nn.log_sigmoid(output)
+        log_neg_logits = jax.nn.log_sigmoid(-output)
+        return -1.0 * target * log_logits - (1.0 - target) * log_neg_logits
 
     output = jnp.clip(output, epsilon(), 1.0 - epsilon())
     bce = target * jnp.log(output)

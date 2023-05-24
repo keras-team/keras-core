@@ -34,6 +34,7 @@ from keras_core.metrics.metric import Metric
 from keras_core.operations.operation import Operation
 from keras_core.utils import summary_utils
 from keras_core.utils import traceback_utils
+from keras_core.utils.shape_utils import map_shape_structure
 from keras_core.utils.tracking import Tracker
 
 
@@ -48,6 +49,7 @@ class Layer(Operation):
         autocast=True,
         name=None,
     ):
+        self._lock = False
         super().__init__(name=name)
         self.activity_regularizer = regularizers.get(activity_regularizer)
 
@@ -64,7 +66,11 @@ class Layer(Operation):
         self._trainable_variables = []
         self._non_trainable_variables = []
         self._supports_masking = not utils.is_default(self.compute_mask)
+        # Whether to automatically convert (+ auto-cast) inputs to `call()`.
+        self._convert_input_args = True
+        # Whether to allow non-tensors as positional arguments in `call()`.
         self._allow_non_tensor_positional_args = False
+        # Dict of shapes that were used to call `build()`.
         self._build_shapes_dict = None
         self._call_signature_parameters = [
             p.name for p in inspect.signature(self.call).parameters.values()
@@ -322,8 +328,6 @@ class Layer(Operation):
         #####################################
         # 1. Convert any array arguments to tensors of correct dtype.
         def maybe_convert(x):
-            if isinstance(x, np.ndarray):
-                return backend.convert_to_tensor(x, dtype=self.compute_dtype)
             if backend.is_tensor(x):
                 if (
                     self.autocast
@@ -331,6 +335,7 @@ class Layer(Operation):
                     and x.dtype != self.compute_dtype
                 ):
                     return backend.cast(x, dtype=self.compute_dtype)
+                return x
             elif isinstance(x, backend.KerasTensor):
                 if (
                     self.autocast
@@ -338,10 +343,14 @@ class Layer(Operation):
                     and x.dtype != self.compute_dtype
                 ):
                     x.dtype = self.compute_dtype
+                return x
+            elif hasattr(x, "__array__"):
+                return backend.convert_to_tensor(x, dtype=self.compute_dtype)
             return x
 
-        args = nest.map_structure(maybe_convert, args)
-        kwargs = nest.map_structure(maybe_convert, kwargs)
+        if self._convert_input_args:
+            args = nest.map_structure(maybe_convert, args)
+            kwargs = nest.map_structure(maybe_convert, kwargs)
 
         ##########################################################
         # 2. Enforce that only tensors can be passed positionally.
@@ -471,7 +480,8 @@ class Layer(Operation):
 
         Args:
             trainable_variables: List of trainable variables of the model.
-            non_trainable_variables: List of non-trainable variables of the model.
+            non_trainable_variables: List of non-trainable variables of the
+                model.
             *args: Positional argumets to be passed to `call()`.
             return_losses: If `True`, `stateless_call()` will return the list of
                 losses created during `call()` as part of its return values.
@@ -503,7 +513,9 @@ class Layer(Operation):
         )
         # Attach the updated state to the model
         # (until you do this, the model is still in its pre-call state).
-        for ref_var, value in zip(model.non_trainable_variables, non_trainable_variables):
+        for ref_var, value in zip(
+            model.non_trainable_variables, non_trainable_variables
+        ):
             ref_var.assign(value)
         ```
         """
@@ -564,7 +576,9 @@ class Layer(Operation):
         else:
             # Use compute_output_shape() to return the right output spec
             call_spec = CallSpec(self.call, args, kwargs)
-            shapes_dict = get_shapes_dict(call_spec)
+            shapes_dict = get_shapes_dict(
+                self.compute_output_shape, call_spec, self.__class__
+            )
             if len(shapes_dict) == 1:
                 # Single arg: pass it positionally
                 input_shape = tuple(shapes_dict.values())[0]
@@ -572,6 +586,7 @@ class Layer(Operation):
             else:
                 # More than one shape: pass them by name.
                 output_shape = self.compute_output_shape(**shapes_dict)
+
             if (
                 isinstance(output_shape, list)
                 and output_shape
@@ -595,7 +610,9 @@ class Layer(Operation):
                 and isinstance(output_shape[0], (int, type(None)))
             ):
                 return KerasTensor(output_shape, dtype=self.compute_dtype)
-            return nest.map_structure(
+            # Case: nested. Could be a tuple/list of shapes, or a dict of
+            # shapes. Could be deeply nested.
+            return map_shape_structure(
                 lambda s: KerasTensor(s, dtype=self.compute_dtype), output_shape
             )
 
@@ -689,7 +706,9 @@ class Layer(Operation):
                 for x in scope.losses:
                     if x in self._losses:
                         scope.losses.remove(x)
-        self._losses = []
+        self._losses.clear()
+        for layer in self._layers:
+            layer._clear_losses()
 
     def add_metric(self):
         # Permanently disabled
@@ -713,7 +732,7 @@ class Layer(Operation):
 
     def _maybe_build(self, call_spec):
         if not self.built:
-            shapes_dict = get_shapes_dict(call_spec)
+            shapes_dict = get_shapes_dict(self.build, call_spec, self.__class__)
             self._build_shapes_dict = shapes_dict
             failure = False
             if len(shapes_dict) == 1:
@@ -731,9 +750,6 @@ class Layer(Operation):
                     else:
                         self.build(input_shape)
             else:
-                # More than one shape: pass them by name,
-                # and check that build() expects the right args.
-                check_build_signature(self.build, shapes_dict)
                 with backend.name_scope(self.name):
                     if utils.is_default(self.build):
                         if might_have_unbuilt_state(self):
@@ -741,28 +757,7 @@ class Layer(Operation):
                             if not status:
                                 failure = True
                     else:
-                        run_build = True
-                        build_args = set(
-                            inspect.signature(self.build).parameters.keys()
-                        )
-                        for key in shapes_dict.keys():
-                            if key not in build_args:
-                                run_build = False
-                        if run_build:
-                            self.build(**shapes_dict)
-                        else:
-                            raise ValueError(
-                                "In a layer with multiple tensor arguments "
-                                "in call(), the build() method should accept "
-                                "corresponding `*_shape` arguments, e.g. "
-                                "if the call signature is `def call(self, x1, x2)` "
-                                "then the build signature should be "
-                                "`def build(self, x1_shape, x2_shape)`. "
-                                "Keras will not build this layer automatically "
-                                "since it does not conform to this. "
-                                "Expected the following build keys: "
-                                f"{list(shapes_dict.keys())}"
-                            )
+                        self.build(**shapes_dict)
             if failure:
                 if call_spec.eager:
                     # Will let the actual eager call do the state-building
@@ -810,7 +805,7 @@ class Layer(Operation):
             # Case: all input keyword arguments were plain tensors.
             input_tensors = {
                 # We strip the `_shape` suffix to recover kwarg names.
-                k[:-6]: backend.KerasTensor(shape)
+                k.removesuffix("_shape"): backend.KerasTensor(shape)
                 for k, shape in shapes_dict.items()
             }
             try:
@@ -835,17 +830,22 @@ class Layer(Operation):
         )
 
     def __setattr__(self, name, value):
-        # Track Variables, Layers, Metrics
+        # Prevent users from attaching state to the
+        # layer before `super()` is called -- since that
+        # state would silently not be tracked.
+        if name != "_lock":
+            self._check_super_called()
+        # Track Variables, Layers, Metrics, SeedGenerators.
         if hasattr(self, "_tracker"):
             value = self._tracker.track(value)
         return super().__setattr__(name, value)
 
     def _check_super_called(self):
-        if not hasattr(self, "_tracker"):
+        if getattr(self, "_lock", True):
             raise RuntimeError(
                 f"In layer '{self.__class__.__name__}', you forgot to call "
-                "`super().__init__()` in the `__init__()` method. "
-                "Go add it!"
+                "`super().__init__()` as the first statement "
+                "in the `__init__()` method. Go add it!"
             )
 
     def _assert_input_compatibility(self, arg_0):
@@ -910,7 +910,11 @@ class Layer(Operation):
         flat_masks = nest.flatten(output_masks)
         for tensor, mask in zip(flat_outputs, flat_masks):
             if getattr(tensor, "_keras_mask", None) is None:
-                tensor._keras_mask = mask
+                try:
+                    tensor._keras_mask = mask
+                except AttributeError:
+                    # It's a C type.
+                    pass
 
 
 def is_backend_tensor_or_symbolic(x):
@@ -976,16 +980,17 @@ def get_arguments_dict(fn, args, kwargs):
     return arg_dict
 
 
-def get_shapes_dict(call_spec):
+def get_shapes_dict(target_fn, call_spec, cls):
     """Convert the call() arguments dict into a dict of input shape arguments.
 
     Example:
 
     ```
-    >>> get_shapes_dict(call_spec)
+    >>> get_shapes_dict(self.build, call_spec, cls)
     {"input_a_shape": (2, 3)}
     ```
     """
+    expected_names = check_shapes_signature(target_fn, call_spec, cls)
     shapes_dict = {}
     for k, v in call_spec.tensor_arguments_dict.items():
         if k == "mask" or k.startswith("mask_"):
@@ -993,6 +998,8 @@ def get_shapes_dict(call_spec):
             continue
         if k == "kwargs" or k == "args":
             # Do not include catch-alls in shapes dict
+            continue
+        if expected_names is not None and f"{k}_shape" not in expected_names:
             continue
         if k in call_spec.nested_tensor_argument_names:
             shapes_dict[f"{k}_shape"] = nest.map_structure(
@@ -1003,22 +1010,26 @@ def get_shapes_dict(call_spec):
     return shapes_dict
 
 
-def check_build_signature(build_fn, shapes_dict):
-    """Asserts that the argument names in build_fn match entries in shapes_dict.
+def check_shapes_signature(target_fn, call_spec, cls):
+    """Asserts that the argument names in `target_fn` match arguments in `call`.
 
-    For instance if call() has the signature `def call(self, a, b)`
-    then we'll see `shapes_dict == {"a_shape": (...), "b_shape": (...)}
-    and we expect build() to have signature `def build(self, a_shape, b_shape)`.
+    We use this to check that `build()` and `compute_output_shape()` arguments
+    align with `call()` arguments.
 
-    When there is a single tensor argument, we pass it positionally and thus
-    don't check names (if we did, it would force call() to always take
-    `input` as its first argument, which is usually not the case).
+    For instance if `build()` has the signature
+    `def build(self, a_shape, b_shape)` we expect `call()` to accept the
+    arguments `a` and `b`.
+
+    When there is a single argument accepted by `target_fn`, we do allow any
+    name and do not check the call signature.
+
+    Returns:
+        The list of arguments names expected by the `target_fn` or
+        `None` if any passed name is acceptable.
     """
-    if len(shapes_dict) == 1:
-        return
-    if utils.is_default(build_fn):
-        return
-    sig = inspect.signature(build_fn)
+    if utils.is_default(target_fn):
+        return None
+    sig = inspect.signature(target_fn)
     expected_names = []
     for name, param in sig.parameters.items():
         if param.kind in (
@@ -1027,14 +1038,31 @@ def check_build_signature(build_fn, shapes_dict):
             param.KEYWORD_ONLY,
         ):
             expected_names.append(name)
-    if set(expected_names) != set(shapes_dict.keys()):
-        comma_separated = ", ".join(shapes_dict.keys())
-        raise ValueError(
-            "For a `call()` method with more than one tensor argument, "
-            "the arguments of the `build()` method should match the "
-            "tensor arguments of `call()` method. Here we expect the signature "
-            f"`build(self, {comma_separated})`."
+    if len(expected_names) == 1:
+        return None
+    for name in expected_names:
+        method_name = target_fn.__name__
+        error_preamble = (
+            f"For a `{method_name}()` method with more than one argument, all "
+            "arguments should have a `_shape` suffix and match an argument "
+            f"from `call()`. E.g. `{method_name}(self, foo_shape, bar_shape)` "
+            "would match `call(self, foo, bar)`."
         )
+        if not name.endswith("_shape"):
+            raise ValueError(
+                f"{error_preamble} For layer '{cls.__name__}', "
+                f"Received `{method_name}()` argument "
+                f"`{name}`, which does not end in `_shape`."
+            )
+        expected_call_arg = name.removesuffix("_shape")
+        if expected_call_arg not in call_spec.arguments_dict:
+            raise ValueError(
+                f"{error_preamble} For layer '{cls.__name__}', "
+                f"received `{method_name}()` argument "
+                f"`{name}`, but `call()` does not have argument "
+                f"`{expected_call_arg}`."
+            )
+    return expected_names
 
 
 class CallContext:

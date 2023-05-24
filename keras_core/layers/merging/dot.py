@@ -1,6 +1,7 @@
 from keras_core import operations as ops
 from keras_core.api_export import keras_core_export
 from keras_core.layers.merging.base_merge import Merge
+from keras_core.utils.numerical_utils import normalize
 
 
 def batch_dot(x, y, axes=None):
@@ -48,8 +49,8 @@ def batch_dot(x, y, axes=None):
         rank is 1, we reshape it to `(batch_size, 1)`.
     """
 
-    x_shape = tuple(ops.shape(x))
-    y_shape = tuple(ops.shape(y))
+    x_shape = x.shape
+    y_shape = y.shape
 
     x_ndim = len(x_shape)
     y_ndim = len(y_shape)
@@ -195,32 +196,6 @@ def batch_dot(x, y, axes=None):
     return result
 
 
-def l2_normalize(x, axis=None, epsilon=1e-9):
-    """Normalizes along dimension `axis` using an L2 norm.
-
-    For a 1-D tensor with `axis = 0`, computes
-
-    `output = x / sqrt(max(sum(x**2), epsilon))`
-
-    For `x` with more dimensions, independently normalizes each
-    1-D slice along dimension `axis`.
-
-    Args:
-        x: Input tensor.
-        axis: Dimension along which to normalize. A scalar or a
-            vector of integers.
-        epsilon: A lower bound value for the norm. Will use `sqrt(epsilon)`
-            as the divisor if `norm < sqrt(epsilon)`.
-
-    Returns:
-        A normalized tensor with the same shape as input.
-    """
-
-    square_sum = ops.sum(ops.square(x), axis=axis, keepdims=True)
-    x_inv_norm = 1.0 / ops.sqrt(ops.maximum(square_sum, epsilon))
-    return ops.multiply(x, x_inv_norm)
-
-
 @keras_core_export("keras_core.layers.Dot")
 class Dot(Merge):
     """Computes element-wise dot product of two tensors.
@@ -288,7 +263,6 @@ class Dot(Merge):
         self._reshape_required = False
 
     def build(self, input_shape):
-        super().build(input_shape)
         # Used purely for shape validation.
         if not isinstance(input_shape[0], tuple) or len(input_shape) != 2:
             raise ValueError(
@@ -313,6 +287,7 @@ class Dot(Merge):
                 f"{shape2[axes[1]]} (at axis {axes[1]}). "
                 f"Full input shapes: {shape1}, {shape2}"
             )
+        self.built = True
 
     def _merge_function(self, inputs):
         if len(inputs) != 2:
@@ -326,8 +301,8 @@ class Dot(Merge):
         if isinstance(self.axes, int):
             if self.axes < 0:
                 axes = [
-                    self.axes % x1.ndim,
-                    self.axes % x2.ndim,
+                    self.axes % len(x1.shape),
+                    self.axes % len(x2.shape),
                 ]
             else:
                 axes = [self.axes] * 2
@@ -335,13 +310,13 @@ class Dot(Merge):
             axes = []
             for i in range(len(self.axes)):
                 if self.axes[i] < 0:
-                    axes.append(self.axes[i] % inputs[i].ndim)
+                    axes.append(self.axes[i] % len(inputs[i].shape))
                 else:
                     axes.append(self.axes[i])
 
         if self.normalize:
-            x1 = l2_normalize(x1, axis=axes[0])
-            x2 = l2_normalize(x2, axis=axes[1])
+            x1 = normalize(x1, axis=axes[0])
+            x2 = normalize(x2, axis=axes[1])
         output = batch_dot(x1, x2, axes)
         return output
 
