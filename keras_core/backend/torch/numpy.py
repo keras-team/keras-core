@@ -428,15 +428,27 @@ def linspace(
             "torch.linspace does not support an `axis` argument. "
             f"Received axis={axis}"
         )
-        dtype = to_torch_dtype(dtype)
+    dtype = to_torch_dtype(dtype)
     if endpoint is False:
         stop = stop - ((stop - start) / num)
-    linspace = torch.linspace(
-        start=start,
-        end=stop,
-        steps=num,
-        dtype=dtype,
-    )
+    if hasattr(start, "__len__") and hasattr(stop, "__len__"):
+        start, stop = convert_to_tensor(start), convert_to_tensor(stop)
+        stop = cast(stop, dtype) if endpoint is False and dtype else stop
+        steps = torch.arange(num, dtype=dtype) / (num - 1)
+
+        # reshape `steps` to allow for broadcasting
+        for i in range(start.ndim):
+            steps = steps.unsqueeze(-1)
+
+        # increments from `start` to `stop` in each dimension
+        linspace = start[None] + steps*(stop - start)[None]
+    else:
+        linspace = torch.linspace(
+            start=start,
+            end=stop,
+            steps=num,
+            dtype=dtype,
+        )
     if retstep is True:
         return (linspace, num)
     return linspace
@@ -493,13 +505,26 @@ def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
     dtype = to_torch_dtype(dtype)
     if endpoint is False:
         stop = stop - ((stop - start) / num)
-    logspace = torch.logspace(
-        start=start,
-        end=stop,
-        steps=num,
-        base=base,
-        dtype=dtype,
-    )
+    if hasattr(start, "__len__") and hasattr(stop, "__len__"):
+        start, stop = convert_to_tensor(start), convert_to_tensor(stop)
+        stop = cast(stop, dtype) if endpoint is False and dtype else stop
+        steps = torch.arange(num, dtype=dtype) / (num - 1)
+
+        # reshape `steps` to allow for broadcasting
+        for i in range(start.ndim):
+            steps = steps.unsqueeze(-1)
+
+        # increments from `start` to `stop` in each dimension
+        linspace = start[None] + steps*(stop - start)[None]
+        logspace = base**linspace
+    else:
+        logspace = torch.logspace(
+            start=start,
+            end=stop,
+            steps=num,
+            base=base,
+            dtype=dtype,
+        )
     return logspace
 
 

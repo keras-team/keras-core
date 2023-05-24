@@ -1823,13 +1823,6 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
             np.linspace(0, 10, 5, endpoint=False),
         )
 
-    # TODO: torch.linspace does not support tensor or array
-    # for start/stop, create manual implementation
-    @pytest.mark.skipif(
-        backend.backend() == "torch",
-        reason="`torch.linspace` has no support for array start/stop.",
-    )
-    def test_linspace_without_torch(self):
         start = np.zeros([2, 3, 4])
         stop = np.ones([2, 3, 4])
         self.assertAllClose(
@@ -1934,15 +1927,9 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
             np.logspace(0, 10, 5, endpoint=False),
         )
 
-    # TODO: torch.logspace does not support tensor or array
-    # for start/stop, create manual implementation
-    @pytest.mark.skipif(
-        backend.backend() == "torch",
-        reason="`torch.logspace` has no support for array start/stop.",
-    )
-    def test_logspace_without_torch(self):
         start = np.zeros([2, 3, 4])
         stop = np.ones([2, 3, 4])
+
         self.assertAllClose(
             np.array(knp.logspace(start, stop, 5, base=10)),
             np.logspace(start, stop, 5, base=10),
