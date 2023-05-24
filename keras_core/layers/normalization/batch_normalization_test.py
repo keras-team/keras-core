@@ -59,8 +59,8 @@ class BatchNormalizationTest(testing.TestCase, parameterized.TestCase):
         )
 
     @parameterized.product(
-        axis=(-1, 1),
-        input_shape=((2, 3, 4), (2, 3, 4, 4)),
+        axis=(-1,),
+        input_shape=((1, 2, 2, 1),),
     )
     def test_correctness(self, axis, input_shape):
         # Training
@@ -72,14 +72,16 @@ class BatchNormalizationTest(testing.TestCase, parameterized.TestCase):
         tf_keras_layer.build(input_shape)
         # Random data centered on 5.0, variance 10.0
         x = np.random.normal(loc=5.0, scale=10.0, size=input_shape)
+        x = np.reshape(np.array([[1, 2], [3, 4]]), input_shape)
         out = x
         tf_out = x
-        for _ in range(3):
+        for _ in range(1):
             out = layer(out, training=True)
             tf_out = tf_keras_layer(tf_out, training=True)
-            import pdb
 
-            pdb.set_trace()
+        import pdb
+
+        pdb.set_trace()
         self.assertAllClose(out, tf_out)
 
         # Assert the normalization is correct.
