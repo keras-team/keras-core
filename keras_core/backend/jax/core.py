@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+import numpy as np
 from tensorflow import nest
 
 from keras_core.backend.common import KerasVariable
@@ -188,3 +189,20 @@ def scatter(indices, values, shape):
     zeros = jnp.zeros(shape, values.dtype)
     key = tuple(jnp.moveaxis(indices, -1, 0))
     return zeros.at[key].add(values)
+
+
+def scatter_update(inputs, indices, updates):
+    indices = np.array(indices)
+    indices = np.transpose(indices)
+    inputs[tuple(indices)] = updates
+    return inputs
+
+
+def block_update(inputs, start_indices, updates):
+    update_shape = updates.shape
+    slices = [
+        slice(start_index, start_index + update_length)
+        for start_index, update_length in zip(start_indices, update_shape)
+    ]
+    inputs[tuple(slices)] = updates
+    return inputs
