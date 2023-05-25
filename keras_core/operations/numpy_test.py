@@ -2003,11 +2003,6 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         self.assertAllClose(np.array(knp.outer(x, y)), np.outer(x, y))
         self.assertAllClose(np.array(knp.Outer()(x, y)), np.outer(x, y))
 
-    # TODO: Fix numpy compatibility (squeeze by one dimension only)
-    @pytest.mark.skipif(
-        backend.backend() == "torch",
-        reason="`torch.take` and `np.take` have return shape divergence.",
-    )
     def test_take(self):
         x = np.arange(24).reshape([1, 2, 3, 4])
         indices = np.array([0, 1])

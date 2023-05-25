@@ -703,7 +703,7 @@ def take(x, indices, axis=None):
     x = convert_to_tensor(x)
     indices = convert_to_tensor(indices).long()
     if axis is not None:
-        return torch.index_select(x, dim=axis, index=indices)
+        return torch.index_select(x, dim=axis, index=indices).squeeze(axis)
     return torch.take(x, index=indices)
 
 
