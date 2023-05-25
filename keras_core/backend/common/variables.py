@@ -446,6 +446,10 @@ def standardize_shape(
 def is_float_dtype(dtype):
     if hasattr(dtype, "name"):
         dtype = dtype.name
+    # The is a torch.dtype when using torch backend.
+    # Need to convert it to a str.
+    if not isinstance(dtype, str):
+        dtype = str(dtype).split(".")[-1]
     return dtype.startswith("float") or dtype.startswith("bfloat")
 
 
