@@ -845,8 +845,15 @@ def sum(x, axis=None, keepdims=False):
 
 
 def eye(N, M=None, k=None, dtype="float32"):
-    M = M or N
+    # TODO: implement support for `k` diagonal arg,
+    # does not exist in torch.eye()
+    if k is not None:
+        raise NotImplementedError(
+            "Due to API divergence bewtween `torch.eye` "
+            "and `np.eye`, the argument k is not supported: "
+            f"Received: k={k}"
+        )
     dtype = to_torch_dtype(dtype)
-    if k is None or k == 0:
+    if M is not None:
         return torch.eye(n=N, m=M, dtype=dtype)
-    return torch.diag(torch.ones(N, dtype=dtype), diagonal=k)[:-1]
+    return torch.eye(n=N, dtype=dtype)
