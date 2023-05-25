@@ -744,8 +744,8 @@ def trace(x, offset=None, axis1=None, axis2=None):
 def tri(N, M=None, k=0, dtype="float32"):
     dtype = to_torch_dtype(dtype)
     M = M or N
-    x = torch.zeros((N, M))
-    return torch.diag_embed
+    x = torch.ones((N, M), dtype=dtype)
+    return torch.tril(x, diagonal=k)
 
 
 def tril(x, k=0):
@@ -839,4 +839,4 @@ def eye(N, M=None, k=None, dtype="float32"):
     if k is None or k==0:
         return torch.eye(n=N, m=M, dtype=dtype)
     return torch.diag(torch.ones(N, dtype=dtype), diagonal=k)[:-1]
-    
+
