@@ -1,26 +1,25 @@
 import json
 import logging
 import os
-import warnings
-import time
 import sys
+import time
+import warnings
 
 import numpy as np
 import tensorflow.summary as summary
-
-from tensorflow.io import gfile
-from tensorflow.compat.v1 import SummaryMetadata
 from tensorflow import nest
+from tensorflow.compat.v1 import SummaryMetadata
+from tensorflow.io import gfile
 
+from keras_core import backend
+from keras_core import operations as ops
 from keras_core.api_export import keras_core_export
 from keras_core.callbacks.callback import Callback
-from keras_core.utils import file_utils
 from keras_core.layers import Embedding
-from keras_core import operations as ops
-from keras_core.utils import shape_utils
 from keras_core.optimizers import Optimizer
 from keras_core.optimizers.schedules import learning_rate_schedule
-from keras_core import backend
+from keras_core.utils import file_utils
+from keras_core.utils import shape_utils
 
 
 @keras_core_export("keras_core.callbacks.TensorBoard")
@@ -60,7 +59,7 @@ class TensorBoard(Callback):
             'logs') This directory should not be reused by any other callbacks.
         histogram_freq: frequency (in epochs) at which to compute
             weight histograms for the layers of the model. If set to 0,
-            histograms won't be computed. Validation data (or split) must be 
+            histograms won't be computed. Validation data (or split) must be
             specified for histogram visualizations.
         write_graph: whether to visualize the graph in TensorBoard. The log file
             can become quite large when write_graph is set to True.
@@ -75,8 +74,8 @@ class TensorBoard(Callback):
             (including custom ones added by `Model.compile`) will be logged to
             TensorBoard every 1000 batches. `'batch'` is a synonym for `1`,
             meaning that they will be written every batch.
-            Note however that writing too frequently to TensorBoard can slow 
-            down your training, especially when used with distribution 
+            Note however that writing too frequently to TensorBoard can slow
+            down your training, especially when used with distribution
             strategies as it will incur additional synchronization overhead.
             Batch-level summary writing is also available via `train_step`
             override. Please see
@@ -221,9 +220,7 @@ class TensorBoard(Callback):
     @property
     def _train_writer(self):
         if "train" not in self._writers:
-            self._writers["train"] = summary.create_file_writer(
-                self._train_dir
-            )
+            self._writers["train"] = summary.create_file_writer(self._train_dir)
         return self._writers["train"]
 
     @property
@@ -252,17 +249,16 @@ class TensorBoard(Callback):
         """Writes Keras graph network summary to TensorBoard."""
         with self._train_writer.as_default():
             with summary.record_if(True):
-                summary_writable = (
-                    self.model.__class__.__name__ == "Sequential"
-                )
-                if summary_writable:
+                if (
+                    self.model.__class__.__name__ == "Functional"
+                    or self.model.__class__.__name__ == "Sequential"
+                ):
                     keras_model_summary("keras", self.model, step=0)
 
     def _configure_embeddings(self):
         """Configure the Projector for embeddings."""
-        from tensorboard.plugins import projector
-
         from google.protobuf import text_format
+        from tensorboard.plugins import projector
 
         config = projector.ProjectorConfig()
         for layer in self.model.layers:
@@ -303,7 +299,8 @@ class TensorBoard(Callback):
         if self.update_freq == "epoch":
             return
 
-        should_record = lambda: step % self.update_freq == 0
+        def should_record():
+            return step % self.update_freq == 0
 
         summary_context = (
             writer.as_default(step),
@@ -459,9 +456,7 @@ class TensorBoard(Callback):
     def on_epoch_begin(self, epoch, logs=None):
         # Keeps track of epoch for profiling.
         if self.write_steps_per_second:
-            self._previous_epoch_iterations = (
-                self.model.optimizer.iterations
-            )
+            self._previous_epoch_iterations = self.model.optimizer.iterations
             self._epoch_start_time = time.time()
 
     def on_epoch_end(self, epoch, logs=None):
@@ -503,8 +498,12 @@ class TensorBoard(Callback):
         current_iteration = self.model.optimizer.iterations
         time_since_epoch_begin = time.time() - self._epoch_start_time
         current_iteration = ops.convert_to_tensor(current_iteration, "float32")
-        self._previous_epoch_iterations = ops.convert_to_tensor(self._previous_epoch_iterations, "float32")
-        time_since_epoch_begin = ops.convert_to_tensor(time_since_epoch_begin, "float32")
+        self._previous_epoch_iterations = ops.convert_to_tensor(
+            self._previous_epoch_iterations, "float32"
+        )
+        time_since_epoch_begin = ops.convert_to_tensor(
+            time_since_epoch_begin, "float32"
+        )
 
         steps_per_second = (
             current_iteration - self._previous_epoch_iterations
@@ -587,7 +586,7 @@ class TensorBoard(Callback):
         embeddings_ckpt = os.path.join(
             self._log_write_dir,
             "train",
-            f"keras_embedding.ckpt-{epoch}.weights.h5"
+            f"keras_embedding.ckpt-{epoch}.weights.h5",
         )
         self.model.save_weights(embeddings_ckpt)
 
