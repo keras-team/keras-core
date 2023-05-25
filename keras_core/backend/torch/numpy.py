@@ -674,9 +674,20 @@ def sort(x, axis=-1):
 
 def split(x, indices_or_sections, axis=0):
     x = convert_to_tensor(x)
+    if isinstance(indices_or_sections, list):
+        idxs = convert_to_tensor(indices_or_sections)
+        start_size = indices_or_sections[0]
+        end_size = x.shape[axis] - indices_or_sections[-1]
+        chunk_sizes = (
+            [start_size]
+            + torch.diff(idxs).type(torch.int).tolist()
+            + [end_size]
+        )
+    else:
+        chunk_sizes = x.shape[axis] // indices_or_sections
     return torch.split(
         tensor=x,
-        split_size_or_sections=indices_or_sections,
+        split_size_or_sections=chunk_sizes,
         dim=axis,
     )
 
