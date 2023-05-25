@@ -5,8 +5,39 @@ import math
 import numpy as np
 
 from keras_core import backend
+from keras_core import layers
+from keras_core import optimizers
 from keras_core import testing
+from keras_core.models import Sequential
 from keras_core.optimizers import schedules
+
+
+class TestFitLRSchedulesFlow(testing.TestCase):
+    def test_fit_lr_correctness(self):
+        model = Sequential(
+            [
+                layers.Dense(
+                    2, kernel_initializer="ones", bias_initializer="ones"
+                )
+            ]
+        )
+        optimizer = optimizers.Adam(
+            learning_rate=schedules.ExponentialDecay(
+                initial_learning_rate=0.05, decay_steps=1, decay_rate=0.9
+            )
+        )
+        self.assertEqual(len(optimizer.variables), 1)
+        self.assertEqual(optimizer.variables[0], 0)
+
+        model.compile(optimizer=optimizer, loss="mse")
+        x = np.arange(32).reshape((16, 2))
+        y = np.arange(32).reshape((16, 2))
+        history = model.fit(x, y, epochs=3, batch_size=4, shuffle=False)
+        self.assertEqual(optimizer.variables[0], 4 * 3)
+        self.assertAllClose(
+            history.history["loss"],
+            [230.79457092285156, 128.30319213867188, 79.33648681640625],
+        )
 
 
 class ExponentialDecayTest(testing.TestCase):
