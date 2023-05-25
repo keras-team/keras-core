@@ -836,7 +836,6 @@ def sum(x, axis=None, keepdims=False):
 def eye(N, M=None, k=None, dtype="float32"):
     M = M or N
     dtype = to_torch_dtype(dtype)
-    if k is None or k==0:
+    if k is None or k == 0:
         return torch.eye(n=N, m=M, dtype=dtype)
     return torch.diag(torch.ones(N, dtype=dtype), diagonal=k)[:-1]
-
