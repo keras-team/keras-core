@@ -341,8 +341,6 @@ def full(shape, fill_value, dtype=None):
     if len(fill_value.shape) > 0:
         # `torch.full` only supports scala `fill_value`.
         expand_size = len(shape) - len(fill_value.shape)
-        expand_index = [None] * expand_size + [...]
-        fill_value = fill_value[expand_index]
         tile_shape = tuple(shape[:expand_size]) + (1,) * len(fill_value.shape)
         return torch.tile(fill_value, tile_shape)
 
@@ -828,11 +826,8 @@ def eye(N, M=None, k=None, dtype="float32"):
     dtype = to_torch_dtype(dtype)
     M = N if M is None else M
     k = 0 if k is None else k
-    shorter_side = np.minimum(N, M)
-    if k > 0:
-        remaining = M - k
-    else:
-        remaining = N + k
-    diag_length = int(np.maximum(0, np.minimum(remaining, shorter_side)))
+    if k == 0:
+        return torch.eye(N, M, dtype=dtype)
+    diag_length = np.maximum(N, M)
     diag = torch.ones(diag_length, dtype=dtype)
     return torch.diag(diag, diagonal=k)[:N, :M]
