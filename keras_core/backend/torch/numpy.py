@@ -605,8 +605,16 @@ def outer(x1, x2):
 def pad(x, pad_width, mode="constant"):
     x = convert_to_tensor(x)
     pad_sum = ()
+    pad_width = list(pad_width)[::-1]  # torch uses reverse order
     for pad in pad_width:
         pad_sum += pad
+    if mode == "symmetric":
+        mode = "replicate"
+    if mode != "constant" and x.ndim < 3:
+        new_dims = [1] * (3 - x.ndim)
+        x = cast(x, torch.float32) if x.dtype == torch.int else x
+        x = x.view(*new_dims, *x.shape)
+        return torch.nn.functional.pad(x, pad=pad_sum, mode=mode).squeeze()
     return torch.nn.functional.pad(x, pad=pad_sum, mode=mode)
 
 
