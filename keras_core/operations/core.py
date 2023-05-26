@@ -67,7 +67,7 @@ def block_update(inputs, start_indices, updates):
         inputs: A tensor, the tensor to be updated.
         start_indices: A list/tuple of shape `[inputs.ndims]`, specifying
             the starting indices for updating.
-        updates: A tensor, the new values to be put to `inputs` at `indices`. 
+        updates: A tensor, the new values to be put to `inputs` at `indices`.
             `updates` must have the same rank as `inputs`.
 
     Returns:

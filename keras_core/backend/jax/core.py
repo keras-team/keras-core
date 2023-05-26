@@ -1,6 +1,5 @@
 import jax
 import jax.numpy as jnp
-import numpy as np
 from tensorflow import nest
 
 from keras_core.backend.common import KerasVariable
@@ -192,8 +191,8 @@ def scatter(indices, values, shape):
 
 
 def scatter_update(inputs, indices, updates):
-    indices = np.array(indices)
-    indices = np.transpose(indices)
+    indices = jnp.array(indices)
+    indices = jnp.transpose(indices)
     inputs[tuple(indices)] = updates
     return inputs
 
