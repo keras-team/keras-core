@@ -1,12 +1,13 @@
 import math
 import re
+import shutil
 
+import rich
 from tensorflow import nest
 
 from keras_core import backend
 from keras_core.utils import dtype_utils
 from keras_core.utils import io_utils
-from keras_core.utils import text_rendering
 
 
 def count_params(weights):
@@ -220,22 +221,37 @@ def print_summary(
         return rows
 
     layer_range = get_layer_index_bound_by_layer_name(layers, layer_range)
-    print_fn(text_rendering.highlight_msg(f' Model: "{model.name}"'))
     rows = []
     for layer in layers[layer_range[0] : layer_range[1]]:
         rows.extend(print_layer(layer))
 
-    # Render summary as a table.
-    table = text_rendering.TextTable(
-        header=header,
-        rows=rows,
-        positions=positions,
-        # Left align layer name, center-align everything else
-        alignments=["left"] + ["center" for _ in range(len(header) - 1)],
-        max_line_length=line_length,
-    )
-    table_str = table.make()
-    print_fn(table_str)
+    # Compute columns widths
+    line_length = min(line_length, shutil.get_terminal_size().columns - 4)
+    column_widths = []
+    current = 0
+    for pos in positions:
+        width = int(pos * line_length) - current
+        if width < 4:
+            raise ValueError("Insufficient console width to print summary.")
+        column_widths.append(width)
+        current += width
+
+    # Render summary as a rich table.
+    alignment = ["left", "left", "right", "left", "left"]
+    colors = [None, "cyan", "red bold", "green", None]
+    columns = []
+    for i, name in enumerate(header):
+        column = rich.table.Column(
+            name,
+            style=colors[i],
+            justify=alignment[i],
+            width=column_widths[i],
+        )
+        columns.append(column)
+    table = rich.table.Table(*columns, width=line_length, show_lines=True)
+    for row in rows:
+        row = [rich.markup.escape(value) for value in row]
+        table.add_row(*row)
 
     # After the table, append information about parameter count and size.
     if hasattr(model, "_collected_trainable_weights"):
@@ -250,24 +266,37 @@ def print_summary(
     non_trainable_count = count_params(model.non_trainable_weights)
     non_trainable_memory_size = weight_memory_size(model.non_trainable_weights)
 
+    total_count = trainable_count + non_trainable_count
     total_memory_size = trainable_memory_size + non_trainable_memory_size
 
-    print_fn(
-        text_rendering.highlight_msg(
-            f" Total params: {trainable_count + non_trainable_count}"
+    # Create a rich console for printing. Capture for non-interactive logging.
+    if io_utils.is_interactive_logging_enabled():
+        console = rich.console.Console(highlight=False)
+    else:
+        console = rich.console.Console(
+            highlight=False, force_terminal=False, color_system=None
         )
+        console.begin_capture()
+
+    # Print the summary.
+    console.print(f'[bold] Model: "{rich.markup.escape(model.name)}"[/]')
+    console.print(table)
+    console.print(
+        f"[bold] Total params: [red]{total_count}[/][/]"
         + f" ({readable_memory_size(total_memory_size)})"
     )
-    print_fn(
-        text_rendering.highlight_msg(f" Trainable params: {trainable_count}")
+    console.print(
+        f"[bold] Trainable params: [red]{trainable_count}[/][/]"
         + f" ({readable_memory_size(trainable_memory_size)})"
     )
-    print_fn(
-        text_rendering.highlight_msg(
-            f" Non-trainable params: {non_trainable_count}"
-        )
+    console.print(
+        f"[bold] Non-trainable params: [red]{non_trainable_count}[/][/]"
         + f" ({readable_memory_size(non_trainable_memory_size)})"
     )
+
+    # Output captured summary for non-interactive logging.
+    if not io_utils.is_interactive_logging_enabled():
+        io_utils.print_msg(console.end_capture(), line_break=False)
 
 
 def get_layer_index_bound_by_layer_name(layers, layer_range=None):
