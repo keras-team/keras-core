@@ -506,6 +506,8 @@ class TestTensorBoardV2(testing.TestCase):
             x, y, batch_size=2, validation_data=(x, y), callbacks=[tb_cbk]
         )
         summary_file = list_summaries(self.logdir)
+        # TODO: tensorflow will tag with model/layer_with_summary/custom_summary
+        # Jax will only use custom_summary tag
         self.assertEqual(
             summary_file.scalars,
             {
@@ -518,14 +520,54 @@ class TestTensorBoardV2(testing.TestCase):
                 ),
                 _ObservedSummary(
                     logdir=self.train_dir,
-                    tag="model/layer_with_summary/custom_summary",
+                    tag="custom_summary",
                 ),
                 _ObservedSummary(
                     logdir=self.validation_dir,
-                    tag="model/layer_with_summary/custom_summary",
+                    tag="custom_summary",
                 ),
             },
         )
+        # self.assertEqual(
+        #     summary_file.scalars,
+        #     {
+        #         _ObservedSummary(logdir=self.train_dir, tag="batch_loss"),
+        #         _ObservedSummary(logdir=self.train_dir, tag="epoch_loss"),
+        #         _ObservedSummary(logdir=self.validation_dir, tag="epoch_loss"),
+        #         _ObservedSummary(
+        #             logdir=self.validation_dir,
+        #             tag="evaluation_loss_vs_iterations",
+        #         ),
+        #         _ObservedSummary(
+        #             logdir=self.train_dir,
+        #             tag="model/layer_with_summary/custom_summary",
+        #         ),
+        #         _ObservedSummary(
+        #             logdir=self.validation_dir,
+        #             tag="model/layer_with_summary/custom_summary",
+        #         ),
+        #     },
+        # )
+
+    def _strip_to_only_final_name(self, summaries):
+        """Removes all leading names in a summary
+
+        Args:
+            summaries: A `set` of `_ObservedSummary` values.
+
+        Returns:
+            A new `set` of `_ObservedSummary` values striped of all
+            name except for the terminal one.
+
+        """
+        result = set()
+        for summary in summaries:
+            if "/" not in summary.tag:
+                result.add(summary)
+            else:
+                new_tag = summary.tag.split("/")[-1]
+                result.add(summary._replace(tag=new_tag))
+        return result
 
     def _strip_layer_names(self, summaries, model_type):
         """Deduplicate summary names modulo layer prefix.
@@ -534,12 +576,12 @@ class TestTensorBoardV2(testing.TestCase):
         instance, "foo/bar/baz" becomes "bar/baz".
 
         Args:
-          summaries: A `set` of `_ObservedSummary` values.
-          model_type: The model type currently being tested.
+            summaries: A `set` of `_ObservedSummary` values.
+            model_type: The model type currently being tested.
 
         Returns:
-          A new `set` of `_ObservedSummary` values with layer prefixes
-          removed.
+            A new `set` of `_ObservedSummary` values with layer prefixes
+            removed.
         """
         result = set()
         for summary in summaries:

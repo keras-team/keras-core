@@ -61,7 +61,8 @@ class TensorBoard(Callback):
             weight histograms for the layers of the model. If set to 0,
             histograms won't be computed. Validation data (or split) must be
             specified for histogram visualizations.
-        write_graph: whether to visualize the graph in TensorBoard. The log file
+        write_graph: TODO: still not supported.
+            whether to visualize the graph in TensorBoard. The log file
             can become quite large when write_graph is set to True.
         write_images: whether to write model weights to visualize as image in
             TensorBoard.
@@ -603,7 +604,7 @@ class TensorBoard(Callback):
             self._profiler_started = True
         except Exception as e:
             # Profiler errors should not be fatal.
-            logging.error("Failed to start profiler: %s", e.message)
+            logging.error("Failed to start profiler: %s", e)
 
     def _stop_profiler(self, save=True):
         """Stops the profiler if currently active.
@@ -617,7 +618,7 @@ class TensorBoard(Callback):
             backend.tensorboard.stop_trace(save=save)
         except Exception as e:
             # Profiler errors should not be fatal.
-            logging.error("Failed to stop profiler: %s", e.message)
+            logging.error("Failed to stop profiler: %s", e)
         finally:
             self._profiler_started = False
 
