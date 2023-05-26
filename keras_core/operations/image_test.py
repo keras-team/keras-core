@@ -50,7 +50,7 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
                     "not supported by the PyTorch backend. "
                     f"Received: method={method}."
                 )
-            if method == "bicubic" and antialias == False:
+            if method == "bicubic" and antialias is False:
                 self.skipTest(
                     "Resizing with Bicubic interpolation in "
                     "PyTorch backend produces noise. Please "
