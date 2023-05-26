@@ -3,7 +3,7 @@
 import os
 
 import numpy as np
-from keras import backend
+from keras_core import backend
 
 from keras_core.api_export import keras_core_export
 from keras_core.datasets.cifar import load_batch

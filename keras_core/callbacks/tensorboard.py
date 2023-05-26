@@ -85,7 +85,7 @@ class TensorBoard(Callback):
         profile_batch: Profile the batch(es) to sample compute characteristics.
             profile_batch must be a non-negative integer or a tuple of integers.
             A pair of positive integers signify a range of batches to profile.
-            By default, profiling is disabled.
+            By default, profiling is disabled. Not yet supported for JAX.
         embeddings_freq: frequency (in epochs) at which embedding layers will be
             visualized. If set to 0, embeddings won't be visualized.
         embeddings_metadata: Dictionary which maps embedding layer names to the
