@@ -7,7 +7,6 @@ from tensorflow.compat.v1 import SummaryMetadata
 from tensorflow.core.util import event_pb2
 from tensorflow.python.lib.io import tf_record
 
-import keras_core
 from keras_core import backend
 from keras_core import callbacks
 from keras_core import losses
@@ -20,7 +19,6 @@ from keras_core.layers import Dense
 from keras_core.layers import Embedding
 from keras_core.layers import Flatten
 from keras_core.layers import Input
-from keras_core.layers import InputLayer
 from keras_core.layers import Layer
 from keras_core.optimizers import schedules
 
@@ -534,7 +532,8 @@ class TestTensorBoardV2(testing.TestCase):
         #     {
         #         _ObservedSummary(logdir=self.train_dir, tag="batch_loss"),
         #         _ObservedSummary(logdir=self.train_dir, tag="epoch_loss"),
-        #         _ObservedSummary(logdir=self.validation_dir, tag="epoch_loss"),
+        #         _ObservedSummary(logdir=self.validation_dir,
+        #               tag="epoch_loss"),
         #         _ObservedSummary(
         #             logdir=self.validation_dir,
         #             tag="evaluation_loss_vs_iterations",
@@ -562,12 +561,12 @@ class TestTensorBoardV2(testing.TestCase):
 
         """
         result = set()
-        for summary in summaries:
-            if "/" not in summary.tag:
-                result.add(summary)
+        for s in summaries:
+            if "/" not in s.tag:
+                result.add(s)
             else:
-                new_tag = summary.tag.split("/")[-1]
-                result.add(summary._replace(tag=new_tag))
+                new_tag = s.tag.split("/")[-1]
+                result.add(s._replace(tag=new_tag))
         return result
 
     def _strip_layer_names(self, summaries, model_type):
@@ -585,12 +584,12 @@ class TestTensorBoardV2(testing.TestCase):
             removed.
         """
         result = set()
-        for summary in summaries:
-            if "/" not in summary.tag:
-                raise ValueError(f"tag has no layer name: {summary.tag!r}")
+        for s in summaries:
+            if "/" not in s.tag:
+                raise ValueError(f"tag has no layer name: {s.tag!r}")
             start_from = 2 if "subclass" in model_type else 1
-            new_tag = "/".join(summary.tag.split("/")[start_from:])
-            result.add(summary._replace(tag=new_tag))
+            new_tag = "/".join(s.tag.split("/")[start_from:])
+            result.add(s._replace(tag=new_tag))
         return result
 
     def test_TensorBoard_non_blocking(self):
@@ -724,7 +723,9 @@ class TestTensorBoardV2NonParameterizedTest(testing.TestCase):
 
     def test_TensorBoard_writeModel(self):
         # TODO: Requires to_json implementation in trainer
-        # See https://github.com/keras-team/keras/blob/a8d4a7f1ffc9de3c5932828a107e4e95e8803fb4/keras/engine/training.py#L3313
+        # See https://github.com/keras-team/keras/blob/ \
+        # a8d4a7f1ffc9de3c5932828a107e4e95e8803fb4/ \
+        # keras/engine/training.py#L3313
         # inputs = Input([10, 10, 1])
         # x = Conv2D(8, (3, 3), activation="relu")(inputs)
         # x = Flatten()(x)
