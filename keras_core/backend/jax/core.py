@@ -205,3 +205,16 @@ def block_update(inputs, start_indices, updates):
     ]
     inputs[tuple(slices)] = updates
     return inputs
+
+
+def while_loop(cond, body, loop_vars, maximum_iterations=None):
+    if maximum_iterations is not None:
+        loop_vars = list(loop_vars) + [0]
+        _cond = lambda args: cond(*args[:-1]) & (args[-1] < maximum_iterations)
+        _body = lambda args: body(*args[:-1]) + [args[-1] + 1]
+    else:
+        # Unpack list/tuple args.
+        _cond = lambda args: cond(*args)
+        _body = lambda args: body(*args)
+
+    return jax.lax.while_loop(_cond, _body, loop_vars)
