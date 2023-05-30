@@ -12,6 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         backend: [tensorflow, jax]
+        group: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     name: Run tests
     runs-on: ubuntu-latest
     env:
@@ -38,7 +39,7 @@ jobs:
           pip install -e "." --progress-bar off --upgrade
       - name: Test with pytest
         run: |
-          pytest keras_core
+          pytest keras_core --splits 10 --group ${{ matrix.group }}
 
   format:
     name: Check the code format
