@@ -101,7 +101,7 @@ class KerasVariable:
 
     def assign(self, value):
         value = self._convert_to_tensor(value, dtype=self.dtype)
-        if value.shape != self.value.shape:
+        if not shape_equal(value, self.value):
             raise ValueError(
                 "The shape of the target variable and "
                 "the shape of the target value in "
@@ -443,9 +443,23 @@ def standardize_shape(
     return shape
 
 
+def shape_equal(a, b):
+    """Return whether a.shape == b.shape (allows None entries)."""
+    if len(a.shape) != len(b.shape):
+        return False
+    for e1, e2 in zip(a.shape, b.shape):
+        if e1 is not None and e2 is not None and e1 != e2:
+            return False
+    return True
+
+
 def is_float_dtype(dtype):
     if hasattr(dtype, "name"):
         dtype = dtype.name
+    # The is a torch.dtype when using torch backend.
+    # Need to convert it to a str.
+    if not isinstance(dtype, str):
+        dtype = str(dtype).split(".")[-1]
     return dtype.startswith("float") or dtype.startswith("bfloat")
 
 
