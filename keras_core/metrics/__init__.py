@@ -106,6 +106,8 @@ ALL_OBJECTS_DICT.update(
     {
         "mse": MeanSquaredError,
         "MSE": MeanSquaredError,
+        "mae": MeanAbsoluteError,
+        "MAE": MeanAbsoluteError,
     }
 )
 
@@ -174,11 +176,15 @@ def get(identifier):
     Returns:
         A Keras metric as a `function`/ `Metric` class instance.
     """
+    if identifier is None:
+        return None
     if isinstance(identifier, dict):
-        return deserialize(identifier)
+        obj = deserialize(identifier)
     elif isinstance(identifier, str):
-        return deserialize(identifier)
-    elif callable(identifier):
-        return identifier
+        obj = deserialize(identifier)
+    else:
+        obj = identifier
+    if callable(obj):
+        return obj
     else:
         raise ValueError(f"Could not interpret metric identifier: {identifier}")
