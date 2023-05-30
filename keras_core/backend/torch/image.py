@@ -1,13 +1,6 @@
-import torchvision
-from torchvision.transforms import InterpolationMode as im
-
 from keras_core.backend.torch.core import convert_to_tensor
 
-RESIZE_METHODS = {
-    "bilinear": im.BILINEAR,
-    "nearest": im.NEAREST_EXACT,
-    "bicubic": im.BICUBIC,
-}
+RESIZE_METHODS = {}  # populated after torchvision import
 
 UNSUPPORTED_METHODS = (
     "lanczos3",
@@ -18,6 +11,22 @@ UNSUPPORTED_METHODS = (
 def resize(
     image, size, method="bilinear", antialias=False, data_format="channels_last"
 ):
+    try:
+        import torchvision
+        from torchvision.transforms import InterpolationMode as im
+
+        RESIZE_METHODS.update(
+            {
+                "bilinear": im.BILINEAR,
+                "nearest": im.NEAREST_EXACT,
+                "bicubic": im.BICUBIC,
+            }
+        )
+    except:
+        raise ImportError(
+            "The torchvision package is necessary to use `resize` with the "
+            "torch backend. Please install torchvision."
+        )
     if method in UNSUPPORTED_METHODS:
         raise ValueError(
             "Resizing with Lanczos interpolation is "
