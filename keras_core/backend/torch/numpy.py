@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 
 from keras_core.backend.torch.core import cast
@@ -246,16 +247,12 @@ def count_nonzero(x, axis=None):
     return torch.count_nonzero(x, dim=axis).T
 
 
-def cross(x1, x2, axisa=-1, axisb=-1, axisc=-1, axis=None):
-    # TODO: There is API divergence between np.cross and torch.cross,
-    # preventing `axisa`, `axisb`, and `axisc` parameters from
-    # being used.
-    # https://github.com/pytorch/pytorch/issues/50273
+def cross(x1, x2, axisa=-1, axisb=-1, axisc=-1, axis=-1):
     if axisa != -1 or axisb != -1 or axisc != -1:
-        raise NotImplementedError(
-            "Due to API divergence between `torch.cross()` and "
-            "`np.cross`, the following arguments are not supported: "
-            f"axisa={axisa}, axisb={axisb}, axisc={axisc}"
+        raise ValueError(
+            "Torch backend does not support `axisa`, `axisb`, or `axisc`. "
+            f"Received: axisa={axisa}, axisb={axisb}, axisc={axisc}. Please "
+            "use `axis` arg in torch backend."
         )
     x1, x2 = convert_to_tensor(x1), convert_to_tensor(x2)
     return torch.cross(x1, x2, dim=axis)
@@ -294,7 +291,7 @@ def diagonal(x, offset=0, axis1=0, axis2=1):
 
 def dot(x, y):
     x, y = convert_to_tensor(x), convert_to_tensor(y)
-    if len(x.shape) == 0 or len(y.shape) == 0:
+    if x.ndim == 0 or y.ndim == 0:
         return torch.multiply(x, y)
     return torch.matmul(x, y)
 
@@ -327,7 +324,7 @@ def expm1(x):
 def flip(x, axis=None):
     x = convert_to_tensor(x)
     if axis is None:
-        axis = tuple(range(len(x.shape)))
+        axis = tuple(range(x.ndim))
     if isinstance(axis, int):
         axis = (axis,)
     return torch.flip(x, dims=axis)
@@ -340,26 +337,17 @@ def floor(x):
 
 def full(shape, fill_value, dtype=None):
     dtype = to_torch_dtype(dtype)
-    if hasattr(fill_value, "__len__"):
-        raise NotImplementedError(
-            "`torch.full()` only accepts scalars for `fill_value`. "
-            f"Received: fill_value={fill_value}"
-        )
-        # TODO: implement conversion of shape into repetitions for `torch.tile``
-        # return torch.tile(fill_value, reps)
+    fill_value = convert_to_tensor(fill_value, dtype=dtype)
+    if len(fill_value.shape) > 0:
+        # `torch.full` only supports scala `fill_value`.
+        expand_size = len(shape) - len(fill_value.shape)
+        tile_shape = tuple(shape[:expand_size]) + (1,) * len(fill_value.shape)
+        return torch.tile(fill_value, tile_shape)
     return torch.full(size=shape, fill_value=fill_value, dtype=dtype)
 
 
 def full_like(x, fill_value, dtype=None):
-    dtype = to_torch_dtype(dtype)
-    if hasattr(fill_value, "__len__"):
-        raise NotImplementedError(
-            "`torch.full()` only accepts scalars for `fill_value`."
-        )
-        # TODO: implement conversion of shape into repetitions for `torch.tile``
-        # return torch.tile(fill_value, reps)
-    x = convert_to_tensor(x)
-    return torch.full_like(input=x, fill_value=fill_value, dtype=dtype)
+    return full(shape=x.shape, fill_value=fill_value, dtype=dtype)
 
 
 def greater(x1, x2):
@@ -430,15 +418,27 @@ def linspace(
             "torch.linspace does not support an `axis` argument. "
             f"Received axis={axis}"
         )
-        dtype = to_torch_dtype(dtype)
+    dtype = to_torch_dtype(dtype)
     if endpoint is False:
         stop = stop - ((stop - start) / num)
-    linspace = torch.linspace(
-        start=start,
-        end=stop,
-        steps=num,
-        dtype=dtype,
-    )
+    if hasattr(start, "__len__") and hasattr(stop, "__len__"):
+        start, stop = convert_to_tensor(start), convert_to_tensor(stop)
+        stop = cast(stop, dtype) if endpoint is False and dtype else stop
+        steps = torch.arange(num, dtype=dtype) / (num - 1)
+
+        # reshape `steps` to allow for broadcasting
+        for i in range(start.ndim):
+            steps = steps.unsqueeze(-1)
+
+        # increments from `start` to `stop` in each dimension
+        linspace = start[None] + steps * (stop - start)[None]
+    else:
+        linspace = torch.linspace(
+            start=start,
+            end=stop,
+            steps=num,
+            dtype=dtype,
+        )
     if retstep is True:
         return (linspace, num)
     return linspace
@@ -495,13 +495,26 @@ def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
     dtype = to_torch_dtype(dtype)
     if endpoint is False:
         stop = stop - ((stop - start) / num)
-    logspace = torch.logspace(
-        start=start,
-        end=stop,
-        steps=num,
-        base=base,
-        dtype=dtype,
-    )
+    if hasattr(start, "__len__") and hasattr(stop, "__len__"):
+        start, stop = convert_to_tensor(start), convert_to_tensor(stop)
+        stop = cast(stop, dtype) if endpoint is False and dtype else stop
+        steps = torch.arange(num, dtype=dtype) / (num - 1)
+
+        # reshape `steps` to allow for broadcasting
+        for i in range(start.ndim):
+            steps = steps.unsqueeze(-1)
+
+        # increments from `start` to `stop` in each dimension
+        linspace = start[None] + steps * (stop - start)[None]
+        logspace = base**linspace
+    else:
+        logspace = torch.logspace(
+            start=start,
+            end=stop,
+            steps=num,
+            base=base,
+            dtype=dtype,
+        )
     return logspace
 
 
@@ -582,8 +595,16 @@ def outer(x1, x2):
 def pad(x, pad_width, mode="constant"):
     x = convert_to_tensor(x)
     pad_sum = ()
+    pad_width = list(pad_width)[::-1]  # torch uses reverse order
     for pad in pad_width:
         pad_sum += pad
+    if mode == "symmetric":
+        mode = "replicate"
+    if mode != "constant" and x.ndim < 3:
+        new_dims = [1] * (3 - x.ndim)
+        x = cast(x, torch.float32) if x.dtype == torch.int else x
+        x = x.view(*new_dims, *x.shape)
+        return torch.nn.functional.pad(x, pad=pad_sum, mode=mode).squeeze()
     return torch.nn.functional.pad(x, pad=pad_sum, mode=mode)
 
 
@@ -651,9 +672,20 @@ def sort(x, axis=-1):
 
 def split(x, indices_or_sections, axis=0):
     x = convert_to_tensor(x)
+    if isinstance(indices_or_sections, list):
+        idxs = convert_to_tensor(indices_or_sections)
+        start_size = indices_or_sections[0]
+        end_size = x.shape[axis] - indices_or_sections[-1]
+        chunk_sizes = (
+            [start_size]
+            + torch.diff(idxs).type(torch.int).tolist()
+            + [end_size]
+        )
+    else:
+        chunk_sizes = x.shape[axis] // indices_or_sections
     return torch.split(
         tensor=x,
-        split_size_or_sections=indices_or_sections,
+        split_size_or_sections=chunk_sizes,
         dim=axis,
     )
 
@@ -680,7 +712,7 @@ def take(x, indices, axis=None):
     x = convert_to_tensor(x)
     indices = convert_to_tensor(indices).long()
     if axis is not None:
-        return torch.index_select(x, dim=axis, index=indices)
+        return torch.index_select(x, dim=axis, index=indices).squeeze(axis)
     return torch.take(x, index=indices)
 
 
@@ -715,19 +747,14 @@ def tile(x, repeats):
 
 def trace(x, offset=None, axis1=None, axis2=None):
     x = convert_to_tensor(x)
-    # TODO: implement support for these arguments
-    # API divergence between `np.trace()` and `torch.trace()`
-    if offset or axis1 or axis2:
-        raise NotImplementedError(
-            "Arguments not supported by `torch.trace: "
-            f"offset={offset}, axis1={axis1}, axis2={axis2}"
-        )
-    return torch.trace(x)
+    return torch.sum(torch.diagonal(x, offset, axis1, axis2), dim=-1)
 
 
 def tri(N, M=None, k=0, dtype="float32"):
     dtype = to_torch_dtype(dtype)
-    pass
+    M = M or N
+    x = torch.ones((N, M), dtype=dtype)
+    return torch.tril(x, diagonal=k)
 
 
 def tril(x, k=0):
@@ -816,15 +843,11 @@ def sum(x, axis=None, keepdims=False):
 
 
 def eye(N, M=None, k=None, dtype="float32"):
-    # TODO: implement support for `k` diagonal arg,
-    # does not exist in torch.eye()
-    if k is not None:
-        raise NotImplementedError(
-            "Due to API divergence bewtween `torch.eye` "
-            "and `np.eye`, the argument k is not supported: "
-            f"Received: k={k}"
-        )
     dtype = to_torch_dtype(dtype)
-    if M is not None:
-        return torch.eye(n=N, m=M, dtype=dtype)
-    return torch.eye(n=N, dtype=dtype)
+    M = N if M is None else M
+    k = 0 if k is None else k
+    if k == 0:
+        return torch.eye(N, M, dtype=dtype)
+    diag_length = np.maximum(N, M)
+    diag = torch.ones(diag_length, dtype=dtype)
+    return torch.diag(diag, diagonal=k)[:N, :M]

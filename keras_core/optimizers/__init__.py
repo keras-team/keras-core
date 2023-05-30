@@ -1,6 +1,14 @@
 from keras_core.api_export import keras_core_export
+from keras_core.optimizers.adadelta import Adadelta
+from keras_core.optimizers.adafactor import Adafactor
+from keras_core.optimizers.adagrad import Adagrad
 from keras_core.optimizers.adam import Adam
+from keras_core.optimizers.adamax import Adamax
+from keras_core.optimizers.adamw import AdamW
+from keras_core.optimizers.ftrl import Ftrl
+from keras_core.optimizers.nadam import Nadam
 from keras_core.optimizers.optimizer import Optimizer
+from keras_core.optimizers.rmsprop import RMSprop
 from keras_core.optimizers.sgd import SGD
 from keras_core.saving import serialization_lib
 
@@ -8,6 +16,14 @@ ALL_OBJECTS = {
     Optimizer,
     Adam,
     SGD,
+    RMSprop,
+    Adadelta,
+    AdamW,
+    Adagrad,
+    Adamax,
+    Adafactor,
+    Nadam,
+    Ftrl,
 }
 ALL_OBJECTS_DICT = {cls.__name__.lower(): cls for cls in ALL_OBJECTS}
 
@@ -65,10 +81,11 @@ def get(identifier):
     if isinstance(identifier, Optimizer):
         return identifier
     elif isinstance(identifier, dict):
-        return deserialize(identifier)
+        opt = deserialize(identifier)
     elif isinstance(identifier, str):
         config = {"class_name": identifier, "config": {}}
         opt = deserialize(config)
-        if isinstance(opt, Optimizer):
-            return opt
+
+    if isinstance(opt, Optimizer):
+        return opt
     raise ValueError(f"Could not interpret optimizer identifier: {identifier}")

@@ -1,3 +1,4 @@
+from keras_core import backend
 from keras_core.api_export import keras_core_export
 
 
@@ -9,9 +10,8 @@ class Callback:
     `predict()` in order to hook into the various stages of the model training,
     evaluation, and inference lifecycle.
 
-    To create a custom callback, subclass `keras.callbacks.Callback` and
-    override the method associated with the stage of interest. See
-    https://www.tensorflow.org/guide/keras/custom_callback for more information.
+    To create a custom callback, subclass `keras_core.callbacks.Callback` and
+    override the method associated with the stage of interest.
 
     Example:
 
@@ -65,13 +65,25 @@ class Callback:
 
     def __init__(self):
         self.validation_data = None
-        self.model = None
+        self._model = None
 
     def set_params(self, params):
         self.params = params
 
     def set_model(self, model):
-        self.model = model
+        self._model = model
+
+    @property
+    def model(self):
+        if backend.backend() == "jax" and hasattr(
+            self._model, "jax_state_sync"
+        ):
+            # With JAX, by default the model state is not
+            # attached to the model in the middle of an
+            # epoch. We have to force a sync before
+            # accessing model state for e.g. checkpointing.
+            self._model.jax_state_sync()
+        return self._model
 
     def on_batch_begin(self, batch, logs=None):
         """A backwards compatibility alias for `on_train_batch_begin`."""

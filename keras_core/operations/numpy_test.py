@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from tensorflow.python.ops.numpy_ops import np_config
 
 from keras_core import backend
@@ -1713,27 +1712,16 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
             np.array(knp.full_like(x, 2, dtype="float32")),
             np.full_like(x, 2, dtype="float32"),
         )
+        self.assertAllClose(
+            np.array(knp.full_like(x, np.ones([2, 3]))),
+            np.full_like(x, np.ones([2, 3])),
+        )
 
         self.assertAllClose(np.array(knp.FullLike()(x, 2)), np.full_like(x, 2))
         self.assertAllClose(
             np.array(knp.FullLike()(x, 2, dtype="float32")),
             np.full_like(x, 2, dtype="float32"),
         )
-
-    # TODO: implement conversion of shape into repetitions, pass to
-    # `torch.tile`, since `torch.full()` only accepts scalars
-    # for `fill_value`."
-    @pytest.mark.skipif(
-        backend.backend() == "torch",
-        reason="`torch.full` only accepts scalars for `fill_value`.",
-    )
-    def test_full_like_without_torch(self):
-        x = np.array([[1, 2, 3], [3, 2, 1]])
-        self.assertAllClose(
-            np.array(knp.full_like(x, np.ones([2, 3]))),
-            np.full_like(x, np.ones([2, 3])),
-        )
-
         self.assertAllClose(
             np.array(knp.FullLike()(x, np.ones([2, 3]))),
             np.full_like(x, np.ones([2, 3])),
@@ -1834,13 +1822,6 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
             np.linspace(0, 10, 5, endpoint=False),
         )
 
-    # TODO: torch.linspace does not support tensor or array
-    # for start/stop, create manual implementation
-    @pytest.mark.skipif(
-        backend.backend() == "torch",
-        reason="`torch.linspace` has no support for array start/stop.",
-    )
-    def test_linspace_without_torch(self):
         start = np.zeros([2, 3, 4])
         stop = np.ones([2, 3, 4])
         self.assertAllClose(
@@ -1945,15 +1926,9 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
             np.logspace(0, 10, 5, endpoint=False),
         )
 
-    # TODO: torch.logspace does not support tensor or array
-    # for start/stop, create manual implementation
-    @pytest.mark.skipif(
-        backend.backend() == "torch",
-        reason="`torch.logspace` has no support for array start/stop.",
-    )
-    def test_logspace_without_torch(self):
         start = np.zeros([2, 3, 4])
         stop = np.ones([2, 3, 4])
+
         self.assertAllClose(
             np.array(knp.logspace(start, stop, 5, base=10)),
             np.logspace(start, stop, 5, base=10),
@@ -2027,11 +2002,6 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         self.assertAllClose(np.array(knp.outer(x, y)), np.outer(x, y))
         self.assertAllClose(np.array(knp.Outer()(x, y)), np.outer(x, y))
 
-    # TODO: Fix numpy compatibility (squeeze by one dimension only)
-    @pytest.mark.skipif(
-        backend.backend() == "torch",
-        reason="`torch.take` and `np.take` have return shape divergence.",
-    )
     def test_take(self):
         x = np.arange(24).reshape([1, 2, 3, 4])
         indices = np.array([0, 1])
@@ -2804,14 +2774,6 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
             np.pad(x, ((1, 1), (1, 1))),
         )
 
-    # TODO: implement padding with non-constant padding,
-    # bypass NotImplementedError for PyTorch
-    @pytest.mark.skipif(
-        backend.backend() == "torch",
-        reason="padding not implemented for non-constant use case",
-    )
-    def test_pad_without_torch(self):
-        x = np.array([[1, 2], [3, 4]])
         self.assertAllClose(
             np.array(knp.pad(x, ((1, 1), (1, 1)), mode="reflect")),
             np.pad(x, ((1, 1), (1, 1)), mode="reflect"),
@@ -2943,24 +2905,34 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(np.array(knp.sort(x, axis=0)), np.sort(x, axis=0))
         self.assertAllClose(np.array(knp.Sort(axis=0)(x)), np.sort(x, axis=0))
 
-    # TODO: implement split for `torch` with support for conversion
-    # of numpy.split args.
-    @pytest.mark.skipif(
-        backend.backend() == "torch",
-        reason="`torch.split` and `np.split` have return arg divergence.",
-    )
     def test_split(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
-        self.assertAllClose(np.array(knp.split(x, 2)), np.split(x, 2))
-        self.assertAllClose(np.array(knp.Split(2)(x)), np.split(x, 2))
-        self.assertAllClose(
-            np.array(knp.split(x, [1, 2], axis=1)),
-            np.split(x, [1, 2], axis=1),
-        )
-        self.assertAllClose(
-            np.array(knp.Split([1, 2], axis=1)(x)),
-            np.split(x, [1, 2], axis=1),
-        )
+        if backend.backend() == "torch":
+            self.assertAllClose(
+                [t.numpy() for t in knp.split(x, 2)], np.split(x, 2)
+            )
+            self.assertAllClose(
+                [t.numpy() for t in knp.Split(2)(x)], np.split(x, 2)
+            )
+            self.assertAllClose(
+                [t.numpy() for t in knp.split(x, [1, 2], axis=1)],
+                np.split(x, [1, 2], axis=1),
+            )
+            self.assertAllClose(
+                [t.numpy() for t in knp.Split([1, 2], axis=1)(x)],
+                np.split(x, [1, 2], axis=1),
+            )
+        else:
+            self.assertAllClose(np.array(knp.split(x, 2)), np.split(x, 2))
+            self.assertAllClose(np.array(knp.Split(2)(x)), np.split(x, 2))
+            self.assertAllClose(
+                np.array(knp.split(x, [1, 2], axis=1)),
+                np.split(x, [1, 2], axis=1),
+            )
+            self.assertAllClose(
+                np.array(knp.Split([1, 2], axis=1)(x)),
+                np.split(x, [1, 2], axis=1),
+            )
 
     def test_sqrt(self):
         x = np.array([[1, 4, 9], [16, 25, 36]])
@@ -3016,13 +2988,7 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(np.array(knp.tile(x, [2, 3])), np.tile(x, [2, 3]))
         self.assertAllClose(np.array(knp.Tile([2, 3])(x)), np.tile(x, [2, 3]))
 
-    @pytest.mark.skipif(
-        backend.backend() == "torch",
-        reason="`torch.split` does not support args `offset`, `axis1`, `axis2`",
-    )
     def test_trace(self):
-        # TODO: implement `torch.trace` support for arguments `offset`,
-        # `axis1`, `axis2` and delete NotImplementedError
         x = np.arange(24).reshape([1, 2, 3, 4])
         self.assertAllClose(np.array(knp.trace(x)), np.trace(x))
         self.assertAllClose(
@@ -3062,14 +3028,7 @@ class NumpyArrayCreateOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(np.array(knp.zeros([2, 3])), np.zeros([2, 3]))
         self.assertAllClose(np.array(knp.Zeros()([2, 3])), np.zeros([2, 3]))
 
-    @pytest.mark.skipif(
-        backend.backend() == "torch",
-        reason="`torch.eye` does not support arg `k`.",
-    )
     def test_eye(self):
-        # TODO: implement support for `k` diagonal arg,
-        # does not exist in torch.eye()
-
         self.assertAllClose(np.array(knp.eye(3)), np.eye(3))
         self.assertAllClose(np.array(knp.eye(3, 4)), np.eye(3, 4))
         self.assertAllClose(np.array(knp.eye(3, 4, 1)), np.eye(3, 4, 1))
@@ -3092,25 +3051,15 @@ class NumpyArrayCreateOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(
             np.array(knp.full([2, 3], 0.1)), np.full([2, 3], 0.1)
         )
-
-        self.assertAllClose(np.array(knp.Full()([2, 3], 0)), np.full([2, 3], 0))
-        self.assertAllClose(
-            np.array(knp.Full()([2, 3], 0.1)), np.full([2, 3], 0.1)
-        )
-
-    # TODO: implement conversion of shape into repetitions, pass to
-    # `torch.tile`, since `torch.full()` only accepts scalars
-    # for `fill_value`."
-    @pytest.mark.skipif(
-        backend.backend() == "torch",
-        reason="`torch.full` only accepts scalars for `fill_value`.",
-    )
-    def test_full_without_torch(self):
         self.assertAllClose(
             np.array(knp.full([2, 3], np.array([1, 4, 5]))),
             np.full([2, 3], np.array([1, 4, 5])),
         )
 
+        self.assertAllClose(np.array(knp.Full()([2, 3], 0)), np.full([2, 3], 0))
+        self.assertAllClose(
+            np.array(knp.Full()([2, 3], 0.1)), np.full([2, 3], 0.1)
+        )
         self.assertAllClose(
             np.array(knp.Full()([2, 3], np.array([1, 4, 5]))),
             np.full([2, 3], np.array([1, 4, 5])),
@@ -3120,11 +3069,7 @@ class NumpyArrayCreateOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(np.array(knp.identity(3)), np.identity(3))
         self.assertAllClose(np.array(knp.Identity()(3)), np.identity(3))
 
-    @pytest.mark.skipif(
-        backend.backend() == "torch", reason="No torch equivalent for `np.tri`"
-    )
     def test_tri(self):
-        # TODO: create a manual implementation, as PyTorch has no equivalent
         self.assertAllClose(np.array(knp.tri(3)), np.tri(3))
         self.assertAllClose(np.array(knp.tri(3, 4)), np.tri(3, 4))
         self.assertAllClose(np.array(knp.tri(3, 4, 1)), np.tri(3, 4, 1))
