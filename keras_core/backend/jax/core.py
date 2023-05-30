@@ -207,15 +207,33 @@ def block_update(inputs, start_indices, updates):
     return inputs
 
 
-def while_loop(cond, body, loop_vars, maximum_iterations=None):
+def while_loop(
+    cond,
+    body,
+    loop_vars,
+    maximum_iterations=None,
+):
+    loop_vars = tuple(loop_vars)
     if maximum_iterations is not None:
         current_iter = 0
-        loop_vars = list(loop_vars) + [current_iter]
-        # Unpack list/tuple args. The last argument is `current_iter`.
-        _cond = lambda args: cond(*args[:-1]) & (args[-1] < maximum_iterations)
-        _body = lambda args: body(*args[:-1]) + [args[-1] + 1]
-    else:
-        _cond = lambda args: cond(*args)
-        _body = lambda args: body(*args)
+        loop_vars = loop_vars + (current_iter,)
 
-    return jax.lax.while_loop(_cond, _body, loop_vars)
+        # Unpack list/tuple args. The last argument is `current_iter`.
+        def _cond(args):
+            return cond(*args[:-1]) & (args[-1] < maximum_iterations)
+
+        def _body(args):
+            return tuple(body(*args[:-1])) + (args[-1] + 1,)
+
+    else:
+
+        def _cond(args):
+            return cond(*args)
+
+        def _body(args):
+            return tuple(body(*args))
+
+    outputs = jax.lax.while_loop(_cond, _body, loop_vars)
+    if maximum_iterations is not None:
+        outputs = outputs[:-1]
+    return outputs
