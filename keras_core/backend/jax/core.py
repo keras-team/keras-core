@@ -209,11 +209,12 @@ def block_update(inputs, start_indices, updates):
 
 def while_loop(cond, body, loop_vars, maximum_iterations=None):
     if maximum_iterations is not None:
-        loop_vars = list(loop_vars) + [0]
+        current_iter = 0
+        loop_vars = list(loop_vars) + [current_iter]
+        # Unpack list/tuple args. The last argument is `current_iter`.
         _cond = lambda args: cond(*args[:-1]) & (args[-1] < maximum_iterations)
         _body = lambda args: body(*args[:-1]) + [args[-1] + 1]
     else:
-        # Unpack list/tuple args.
         _cond = lambda args: cond(*args)
         _body = lambda args: body(*args)
 
