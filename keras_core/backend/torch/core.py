@@ -142,7 +142,7 @@ def while_loop(
     iteration_check = (
         lambda iter: maximum_iterations is None or iter < maximum_iterations
     )
-    loop_vars = tuple(loop_vars)
+    loop_vars = tuple([convert_to_tensor(v) for v in loop_vars])
     while cond(*loop_vars) and iteration_check(current_iter):
         loop_vars = body(*loop_vars)
         if not isinstance(loop_vars, (list, tuple)):
