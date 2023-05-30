@@ -423,12 +423,12 @@ class TestTensorBoardV2(testing.TestCase):
             },
         )
         expected_image_summaries = {
-            _ObservedSummary(logdir=self.train_dir, tag="variable_38/image"),
+            _ObservedSummary(logdir=self.train_dir, tag="image"),
             _ObservedSummary(logdir=self.train_dir, tag="bias/image"),
             _ObservedSummary(logdir=self.train_dir, tag="kernel/image"),
         }
         self.assertEqual(
-            summary_file.images,
+            self._strip_variable_names(summary_file.images),
             expected_image_summaries,
         )
 
@@ -590,6 +590,31 @@ class TestTensorBoardV2(testing.TestCase):
             start_from = 2 if "subclass" in model_type else 1
             new_tag = "/".join(s.tag.split("/")[start_from:])
             result.add(s._replace(tag=new_tag))
+        return result
+
+    def _strip_variable_names(self, summaries):
+        """Remove `variable_n` from summary tag
+
+        `variable_n` tag names are added with random numbers. Removing them
+        ensures deterministic tag names.
+
+        Args:
+            summaries: A `set` of `_ObservedSummary` values.
+
+        Returns:
+            A new `set` of `_ObservedSummary` values with layer prefixes
+            removed.
+        """
+        result = set()
+        for s in summaries:
+            if "/" not in s.tag:
+                result.add(s)
+            else:
+                split_tag = s.tag.split("/")
+                if "variable" in split_tag[0]:
+                    result.add(s._replace(tag=split_tag[-1]))
+                else:
+                    result.add(s)
         return result
 
     def test_TensorBoard_non_blocking(self):
