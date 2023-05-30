@@ -47,19 +47,41 @@ def readable_memory_size(weight_memory_size):
     return "{:.2f} {}".format(weight_memory_size, units[-1])
 
 
+def highlight_number(x):
+    """Themes numbers in a summary using rich markup.
+
+    We use a separate color for `None`s, e.g. in a layer shape.
+    """
+    if x is None:
+        return f"[color(45)]{x}[/]"
+    else:
+        return f"[color(34)]{x}[/]"
+
+
+def highlight_symbol(x):
+    """Themes keras symbols in a summary using rich markup."""
+    return f"[color(33)]{x}[/]"
+
+
+def bold_text(x):
+    """Bolds text using rich markup."""
+    return f"[bold]{x}[/]"
+
+
 def format_layer_shape(layer):
     if not layer._inbound_nodes:
         return "?"
-    output_shapes = None
+
+    def format_shape(shape):
+        highlighted = [highlight_number(x) for x in shape]
+        return "(" + ", ".join(highlighted) + ")"
+
     for i in range(len(layer._inbound_nodes)):
-        shapes = nest.map_structure(
-            lambda x: tuple(x.shape), layer._inbound_nodes[i].output_tensors
+        outputs = layer._inbound_nodes[i].output_tensors
+        output_shapes = nest.map_structure(
+            lambda x: format_shape(x.shape), outputs
         )
-        if output_shapes is None:
-            output_shapes = shapes
-        elif output_shapes != shapes:
-            return "multiple"
-    if len(output_shapes) == 1 and isinstance(output_shapes[0], tuple):
+    if len(output_shapes) == 1:
         output_shapes = output_shapes[0]
     return str(output_shapes)
 
@@ -162,18 +184,45 @@ def print_summary(
         positions = [p * 0.86 for p in positions] + [1.0]
         header.append("Trainable")
 
+    # Compute columns widths
+    line_length = min(line_length, shutil.get_terminal_size().columns - 4)
+    column_widths = []
+    current = 0
+    for pos in positions:
+        width = int(pos * line_length) - current
+        if width < 4:
+            raise ValueError("Insufficient console width to print summary.")
+        column_widths.append(width)
+        current += width
+
+    # Render summary as a rich table.
+    columns = []
+    # Right align parameter counts.
+    alignment = ["left", "left", "right", "left", "left"]
+    for i, name in enumerate(header):
+        column = rich.table.Column(
+            name,
+            justify=alignment[i],
+            width=column_widths[i],
+        )
+        columns.append(column)
+    table = rich.table.Table(*columns, width=line_length, show_lines=True)
+
     def get_layer_fields(layer, prefix=""):
         output_shape = format_layer_shape(layer)
         name = prefix + layer.name
         cls_name = layer.__class__.__name__
-        if not hasattr(layer, "built"):
-            params = "0"
-        elif not layer.built:
-            params = "0 (unbuilt)"
-        else:
-            params = layer.count_params()
-        fields = [name + " (" + cls_name + ")", output_shape, str(params)]
+        name = rich.markup.escape(name)
+        name += f" ({highlight_symbol(rich.markup.escape(cls_name))})"
 
+        if not hasattr(layer, "built"):
+            params = highlight_number(0)
+        elif not layer.built:
+            params = highlight_number(0) + " (unbuilt)"
+        else:
+            params = highlight_number(f"{layer.count_params():,}")
+
+        fields = [name, output_shape, params]
         if show_trainable:
             fields.append("Y" if layer.trainable else "N")
         return fields
@@ -187,8 +236,8 @@ def print_summary(
             for kt in node.input_tensors:
                 keras_history = kt._keras_history
                 inbound_layer = keras_history.operation
-                node_index = keras_history.node_index
-                tensor_index = keras_history.tensor_index
+                node_index = highlight_number(keras_history.node_index)
+                tensor_index = highlight_number(keras_history.tensor_index)
                 if connections:
                     connections += ", "
                 connections += (
@@ -220,38 +269,11 @@ def print_summary(
                 )
         return rows
 
+    # Render all layers to the rich table.
     layer_range = get_layer_index_bound_by_layer_name(layers, layer_range)
-    rows = []
     for layer in layers[layer_range[0] : layer_range[1]]:
-        rows.extend(print_layer(layer))
-
-    # Compute columns widths
-    line_length = min(line_length, shutil.get_terminal_size().columns - 4)
-    column_widths = []
-    current = 0
-    for pos in positions:
-        width = int(pos * line_length) - current
-        if width < 4:
-            raise ValueError("Insufficient console width to print summary.")
-        column_widths.append(width)
-        current += width
-
-    # Render summary as a rich table.
-    alignment = ["left", "left", "right", "left", "left"]
-    colors = [None, "cyan", "red bold", "green", None]
-    columns = []
-    for i, name in enumerate(header):
-        column = rich.table.Column(
-            name,
-            style=colors[i],
-            justify=alignment[i],
-            width=column_widths[i],
-        )
-        columns.append(column)
-    table = rich.table.Table(*columns, width=line_length, show_lines=True)
-    for row in rows:
-        row = [rich.markup.escape(value) for value in row]
-        table.add_row(*row)
+        for row in print_layer(layer):
+            table.add_row(*row)
 
     # After the table, append information about parameter count and size.
     if hasattr(model, "_collected_trainable_weights"):
@@ -278,19 +300,22 @@ def print_summary(
         )
         console.begin_capture()
 
-    # Print the summary.
-    console.print(f'[bold] Model: "{rich.markup.escape(model.name)}"[/]')
+    # Print the to the console.
+    console.print(bold_text(f'Model: "{rich.markup.escape(model.name)}"'))
     console.print(table)
     console.print(
-        f"[bold] Total params: [red]{total_count}[/][/]"
+        bold_text(" Total params: ")
+        + highlight_number(f"{total_count:,}")
         + f" ({readable_memory_size(total_memory_size)})"
     )
     console.print(
-        f"[bold] Trainable params: [red]{trainable_count}[/][/]"
+        bold_text(" Trainable params: ")
+        + highlight_number(f"{trainable_count:,}")
         + f" ({readable_memory_size(trainable_memory_size)})"
     )
     console.print(
-        f"[bold] Non-trainable params: [red]{non_trainable_count}[/][/]"
+        bold_text(" Non-trainable params: ")
+        + highlight_number(f"{non_trainable_count:,}")
         + f" ({readable_memory_size(non_trainable_memory_size)})"
     )
 
