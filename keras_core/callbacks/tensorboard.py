@@ -197,7 +197,7 @@ class TensorBoard(Callback):
 
     def set_model(self, model):
         """Sets Keras model and writes graph if specified."""
-        self.model = model
+        self._model = model
         self._log_write_dir = self.log_dir
 
         self._train_dir = os.path.join(self._log_write_dir, "train")
