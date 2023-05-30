@@ -508,7 +508,7 @@ class TestTensorBoardV2(testing.TestCase):
         # TODO: tensorflow will tag with model/layer_with_summary/custom_summary
         # Jax will only use custom_summary tag
         self.assertEqual(
-            summary_file.scalars,
+            self._strip_to_only_final_name(summary_file.scalars),
             {
                 _ObservedSummary(logdir=self.train_dir, tag="batch_loss"),
                 _ObservedSummary(logdir=self.train_dir, tag="epoch_loss"),
