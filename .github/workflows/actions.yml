@@ -46,7 +46,7 @@ jobs:
       - name: Test applications with pytest
         if: ${{ steps.filter.outputs.applications == 'true' }}
         run: |
-          pythest keras_core/applications
+          pytest keras_core/applications
       - name: Test with pytest
         run: |
           pytest keras_core --ignore keras_core/applications
