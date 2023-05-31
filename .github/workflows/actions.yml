@@ -49,7 +49,7 @@ jobs:
           pythest keras_core/applications
       - name: Test with pytest
         run: |
-          pytest keras_core --ignore applications
+          pytest keras_core --ignore keras_core/applications
 
   format:
     name: Check the code format
