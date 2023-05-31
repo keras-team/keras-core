@@ -43,7 +43,7 @@ jobs:
             applications:
               - 'keras_core/applications/**'
       - name: Test applications with pytest
-        if: steps.filter.outputs.applications == 'true'
+        if: ${{ steps.filter.outputs.applications == 'true' }}
         run: |
           pythest keras_core/applications
       - name: Test with pytest
