@@ -36,7 +36,8 @@ jobs:
         run: |
           pip install -r requirements.txt --progress-bar off --upgrade
           pip install -e "." --progress-bar off --upgrade
-      - uses: dorny/paths-filter@v2.2.1
+      - name: Check for changes in keras_core/applications
+        uses: dorny/paths-filter@v2.2.1
         id: filter
         with:
           filters: |
