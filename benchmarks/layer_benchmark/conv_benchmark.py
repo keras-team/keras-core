@@ -1,5 +1,10 @@
 from benchmarks.layer_benchmark.base_benchmark import LayerBenchmark
 
+from absl import app
+from absl import flags
+
+FLAGS = flags.FLAGS
+
 
 def benchmark_conv1D(
     num_samples,
@@ -249,4 +254,33 @@ def benchmark_conv3D_transpose(
     )
 
 
-benchmark_conv2D(4000, 20, 199, jit_compile=False)
+BENCHMARK_NAMES = {
+    "benchmark_conv1D": benchmark_conv1D,
+    "benchmark_conv2D": benchmark_conv2D,
+    "benchmark_conv3D": benchmark_conv3D,
+    "benchmark_depthwise_conv1D": benchmark_depthwise_conv1D,
+    "benchmark_depthwise_conv2D": benchmark_depthwise_conv2D,
+    "benchmark_conv1D_transpose": benchmark_conv1D_transpose,
+    "benchmark_conv2D_transpose": benchmark_conv2D_transpose,
+    "benchmark_conv3D_transpose": benchmark_conv3D_transpose,
+}
+
+
+def main(_):
+    benchmark_name = FLAGS.benchmark_name
+    num_samples = FLAGS.num_samples
+    batch_size = FLAGS.batch_size
+    num_iterations = FLAGS.num_iterations
+    jit_compile = FLAGS.jit_compile
+
+    if benchmark_name not in BENCHMARK_NAMES:
+        raise ValueError(
+            f"Invalid benchmark name: {benchmark_name}, `benchmark_name` must "
+            f"be one of {BENCHMARK_NAMES.keys()}"
+        )
+    benchmark_fn = BENCHMARK_NAMES[benchmark_name]
+    benchmark_fn(num_samples, batch_size, num_iterations, jit_compile)
+
+
+if __name__ == "__main__":
+    app.run(main)

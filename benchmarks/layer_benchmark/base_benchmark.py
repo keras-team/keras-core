@@ -3,6 +3,39 @@ import keras_core
 import numpy as np
 import tensorflow as tf
 import time
+from absl import flags
+
+FLAGS = flags.FLAGS
+
+flags.DEFINE_string(
+    "benchmark_name",
+    None,
+    "The name of benchmark to run.",
+)
+
+flags.DEFINE_integer(
+    "num_samples",
+    1000,
+    "Number of sample data for benchmarking.",
+)
+
+flags.DEFINE_integer(
+    "batch_size",
+    20,
+    "Batch size of data.",
+)
+
+flags.DEFINE_integer(
+    "num_iterations",
+    None,
+    "Number of iterations to run in the benchmark.",
+)
+
+flags.DEFINE_bool(
+    "jit_compile",
+    True,
+    "If True, the benchmark will run with XLA compilation.",
+)
 
 
 class BenchmarkMetricsCallback:
@@ -122,16 +155,19 @@ class LayerBenchmark:
         )
 
         print(
-            f"Keras Core throughput: {callback._callback.state['throughput']} samples/sec."
+            f"Keras Core throughput of forward pass of {self.layer_name}: "
+            f"{callback._callback.state['throughput']} samples/sec."
         )
         print(
-            f"TF Keras throughput: {tf_keras_callback._callback.state['throughput']} samples/sec."
+            f"TF Keras throughput of forward pass of {self.layer_name}: "
+            f"{tf_keras_callback._callback.state['throughput']} samples/sec."
         )
 
     def benchmark_train(self, num_samples, batch_size, num_iterations=None):
         data_shape = [num_samples] + list(self.input_shape)
         data = np.random.normal(size=data_shape)
-        label = np.array(self._keras_core_layer(data))
+        # Scale by a small factor to avoid zero gradients.
+        label = np.array(self._keras_core_layer(data)) * 1.001
 
         num_iterations = num_iterations or num_samples // batch_size - 1
         callback = KerasCoreBenchmarkMetricsCallback(num_iterations)
@@ -151,26 +187,12 @@ class LayerBenchmark:
         )
 
         print(
-            f"Keras Core throughput: {callback._callback.state['throughput']} samples/sec."
+            f"Keras Core throughput of forward & backward pass of "
+            f" {self.layer_name}: {callback._callback.state['throughput']} "
+            "samples/sec."
         )
         print(
-            f"TF Keras throughput: {tf_keras_callback._callback.state['throughput']} samples/sec."
+            f"TF Keras  throughput of forward & backward pass of "
+            f" {self.layer_name}: {tf_keras_callback._callback.state['throughput']} "
+            "samples/sec."
         )
-
-
-if __name__ == "__main__":
-    layer_name = "BatchNormalization"
-    init_args = {}
-    benchmark = LayerBenchmark(layer_name, init_args, input_shape=[32, 32, 3])
-
-    benchmark.benchmark_predict(
-        num_samples=4000,
-        batch_size=20,
-        num_iterations=199,
-    )
-
-    benchmark.benchmark_train(
-        num_samples=40,
-        batch_size=10,
-        num_iterations=3,
-    )
