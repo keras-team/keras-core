@@ -8,15 +8,15 @@ python3 -m benchmarks.layer_benchmark.conv_benchmark \
     --benchmark_name=benchmark_conv2D \
     --num_samples=1000 \
     --batch_size=20 \
-    --jit_compile=True 
+    --jit_compile=True
 ```
 """
 
 
-from benchmarks.layer_benchmark.base_benchmark import LayerBenchmark
-
 from absl import app
 from absl import flags
+
+from benchmarks.layer_benchmark.base_benchmark import LayerBenchmark
 
 FLAGS = flags.FLAGS
 
@@ -24,7 +24,6 @@ FLAGS = flags.FLAGS
 def benchmark_conv1D(
     num_samples,
     batch_size,
-    num_iterations=None,
     jit_compile=True,
 ):
     layer_name = "Conv1D"
@@ -42,20 +41,17 @@ def benchmark_conv1D(
     benchmark.benchmark_predict(
         num_samples=num_samples,
         batch_size=batch_size,
-        num_iterations=num_iterations,
     )
 
     benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
-        num_iterations=num_iterations,
     )
 
 
 def benchmark_conv2D(
     num_samples,
     batch_size,
-    num_iterations=None,
     jit_compile=True,
 ):
     layer_name = "Conv2D"
@@ -73,20 +69,17 @@ def benchmark_conv2D(
     benchmark.benchmark_predict(
         num_samples=num_samples,
         batch_size=batch_size,
-        num_iterations=num_iterations,
     )
 
     benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
-        num_iterations=num_iterations,
     )
 
 
 def benchmark_conv3D(
     num_samples,
     batch_size,
-    num_iterations=None,
     jit_compile=True,
 ):
     layer_name = "Conv3D"
@@ -104,20 +97,17 @@ def benchmark_conv3D(
     benchmark.benchmark_predict(
         num_samples=num_samples,
         batch_size=batch_size,
-        num_iterations=num_iterations,
     )
 
     benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
-        num_iterations=num_iterations,
     )
 
 
 def benchmark_depthwise_conv1D(
     num_samples,
     batch_size,
-    num_iterations=None,
     jit_compile=True,
 ):
     layer_name = "DepthwiseConv1D"
@@ -135,20 +125,17 @@ def benchmark_depthwise_conv1D(
     benchmark.benchmark_predict(
         num_samples=num_samples,
         batch_size=batch_size,
-        num_iterations=num_iterations,
     )
 
     benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
-        num_iterations=num_iterations,
     )
 
 
 def benchmark_depthwise_conv2D(
     num_samples,
     batch_size,
-    num_iterations=None,
     jit_compile=True,
 ):
     layer_name = "DepthwiseConv2D"
@@ -166,20 +153,17 @@ def benchmark_depthwise_conv2D(
     benchmark.benchmark_predict(
         num_samples=num_samples,
         batch_size=batch_size,
-        num_iterations=num_iterations,
     )
 
     benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
-        num_iterations=num_iterations,
     )
 
 
 def benchmark_conv1D_transpose(
     num_samples,
     batch_size,
-    num_iterations=None,
     jit_compile=True,
 ):
     layer_name = "Conv1DTranspose"
@@ -197,20 +181,17 @@ def benchmark_conv1D_transpose(
     benchmark.benchmark_predict(
         num_samples=num_samples,
         batch_size=batch_size,
-        num_iterations=num_iterations,
     )
 
     benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
-        num_iterations=num_iterations,
     )
 
 
 def benchmark_conv2D_transpose(
     num_samples,
     batch_size,
-    num_iterations=None,
     jit_compile=True,
 ):
     layer_name = "Conv2DTranspose"
@@ -228,20 +209,17 @@ def benchmark_conv2D_transpose(
     benchmark.benchmark_predict(
         num_samples=num_samples,
         batch_size=batch_size,
-        num_iterations=num_iterations,
     )
 
     benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
-        num_iterations=num_iterations,
     )
 
 
 def benchmark_conv3D_transpose(
     num_samples,
     batch_size,
-    num_iterations=None,
     jit_compile=True,
 ):
     layer_name = "Conv3DTranspose"
@@ -259,13 +237,11 @@ def benchmark_conv3D_transpose(
     benchmark.benchmark_predict(
         num_samples=num_samples,
         batch_size=batch_size,
-        num_iterations=num_iterations,
     )
 
     benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
-        num_iterations=num_iterations,
     )
 
 
@@ -285,7 +261,6 @@ def main(_):
     benchmark_name = FLAGS.benchmark_name
     num_samples = FLAGS.num_samples
     batch_size = FLAGS.batch_size
-    num_iterations = FLAGS.num_iterations
     jit_compile = FLAGS.jit_compile
 
     if benchmark_name not in BENCHMARK_NAMES:
@@ -294,7 +269,7 @@ def main(_):
             f"be one of {BENCHMARK_NAMES.keys()}"
         )
     benchmark_fn = BENCHMARK_NAMES[benchmark_name]
-    benchmark_fn(num_samples, batch_size, num_iterations, jit_compile)
+    benchmark_fn(num_samples, batch_size, jit_compile)
 
 
 if __name__ == "__main__":
