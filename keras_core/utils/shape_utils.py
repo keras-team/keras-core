@@ -1,13 +1,3 @@
-def int_shape(x):
-    try:
-        shape = x.shape
-        if not is_shape_tuple(shape):
-            shape = tuple(shape.as_list())
-        return shape
-    except ValueError:
-        return None
-
-
 def is_shape_tuple(x):
     if isinstance(x, (list, tuple)):
         if all(isinstance(e, (int, type(None))) for e in x):

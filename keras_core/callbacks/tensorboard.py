@@ -1,3 +1,4 @@
+import warnings
 import logging
 import os
 import sys
@@ -16,7 +17,6 @@ from keras_core.layers import Embedding
 from keras_core.optimizers import Optimizer
 from keras_core.optimizers.schedules import learning_rate_schedule
 from keras_core.utils import file_utils
-from keras_core.utils import shape_utils
 
 
 @keras_core_export("keras_core.callbacks.TensorBoard")
@@ -172,9 +172,8 @@ class TensorBoard(Callback):
         **kwargs,
     ):
         super().__init__()
-        self._supports_tf_logs = True
 
-        self.log_dir = file_utils.path_to_string(log_dir)
+        self.log_dir = str(log_dir)
         self.histogram_freq = histogram_freq
         self.write_graph = write_graph
         self.write_images = write_images
@@ -437,10 +436,7 @@ class TensorBoard(Callback):
                 step=self._train_step,
             )
 
-        # `logs` isn't necessarily always a dict. For example, when using
-        # `tf.distribute.experimental.ParameterServerStrategy`, a
-        # `tf.distribute.experimental.coordinator.RemoteValue` will be passed.
-        # For now, we just disable `update_freq` in those cases.
+        # `logs` isn't necessarily always a dict
         if isinstance(logs, dict):
             for name, value in logs.items():
                 summary.scalar("batch_" + name, value, step=self._train_step)
@@ -559,23 +555,23 @@ class TensorBoard(Callback):
     def _log_weight_as_image(self, weight, weight_name, epoch):
         """Logs a weight as a TensorBoard image."""
         w_img = ops.squeeze(weight)
-        shape = shape_utils.int_shape(w_img)
+        shape = w_img.shape
         if len(shape) == 1:  # Bias case
             w_img = ops.reshape(w_img, [1, shape[0], 1, 1])
         elif len(shape) == 2:  # Dense layer kernel case
             if shape[0] > shape[1]:
                 w_img = ops.transpose(w_img)
-                shape = shape_utils.int_shape(w_img)
+                shape = w_img.shape
             w_img = ops.reshape(w_img, [1, shape[0], shape[1], 1])
         elif len(shape) == 3:  # ConvNet case
             if backend.image_data_format() == "channels_last":
                 # Switch to channels_first to display every kernel as a separate
                 # image.
                 w_img = ops.transpose(w_img, [2, 0, 1])
-                shape = shape_utils.int_shape(w_img)
+                shape = w_img.shape
             w_img = ops.reshape(w_img, [shape[0], shape[1], shape[2], 1])
 
-        shape = shape_utils.int_shape(w_img)
+        shape = w_img.shape
         # Not possible to handle 3D convnets etc.
         if len(shape) == 4 and shape[-1] in [1, 3, 4]:
             summary.image(weight_name, w_img, step=epoch)
@@ -628,20 +624,20 @@ def keras_model_summary(name, data, step=None):
     fails to serialize as JSON, it ignores and returns False.
 
     Args:
-      name: A name for this summary. The summary tag used for TensorBoard will
-        be this name prefixed by any active name scopes.
-      data: A Keras Model to write.
-      step: Explicit `int64`-castable monotonic step value for this summary. If
-        omitted, this defaults to `tf.summary.experimental.get_step()`, which
-        must not be None.
+        name: A name for this summary. The summary tag used for TensorBoard will
+            be this name prefixed by any active name scopes.
+        data: A Keras Model to write.
+        step: Explicit `int64`-castable monotonic step value for this summary. If
+            omitted, this defaults to `tf.summary.experimental.get_step()`, which
+            must not be None.
 
     Returns:
-      True on success, or False if no summary was written because no default
-      summary writer was available.
+        True on success, or False if no summary was written because no default
+        summary writer was available.
 
     Raises:
-      ValueError: if a default writer exists, but no step was provided and
-        `tf.summary.experimental.get_step()` is None.
+        ValueError: if a default writer exists, but no step was provided and
+            `tf.summary.experimental.get_step()` is None.
     """
     summary_metadata = SummaryMetadata()
     # Hard coding a plugin name. Please refer to go/tb-plugin-name-hardcode for
@@ -654,9 +650,7 @@ def keras_model_summary(name, data, step=None):
         json_string = data.to_json()
     except Exception as exc:
         # An exception should not break a model code.
-        logging.warning(
-            "Model failed to serialize as JSON. Ignoring... %s", exc
-        )
+        warnings.warn(f"Model failed to serialize as JSON. Ignoring... {exc}")
         return False
 
     with summary.experimental.summary_scope(

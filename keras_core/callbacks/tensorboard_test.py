@@ -621,7 +621,6 @@ class TestTensorBoardV2(testing.TestCase):
         model = models.Sequential([Dense(1)])
         model.optimizer = optimizers.Adam()
         tb = callbacks.TensorBoard(self.logdir)
-        self.assertTrue(tb._supports_tf_logs)
         cb_list = callbacks.CallbackList(
             [tb], model=model, epochs=1, steps=100, verbose=0
         )
@@ -719,7 +718,7 @@ class TestTensorBoardV2NonParameterizedTest(testing.TestCase):
                     if "input" not in layer.name:
                         self.assertIn(layer.name, graph_def_str)
 
-    def test_TensorBoard_writeSequentialModel_noInputShape(self):
+    def test_TensorBoard_write_sequential_model_no_input_shape(self):
         # TODO: Requires to_json implementation in trainer
         # model = models.Sequential(
         #     [
@@ -732,7 +731,7 @@ class TestTensorBoardV2NonParameterizedTest(testing.TestCase):
         # self.fitModelAndAssertKerasModelWritten(model)
         pass
 
-    def test_TensorBoard_writeSequentialModel_withInputShape(self):
+    def test_TensorBoard_write_sequential_model_with_input_shape(self):
         # TODO: Requires to_json implementation in trainer
         # model = models.Sequential(
         #     [
@@ -746,7 +745,7 @@ class TestTensorBoardV2NonParameterizedTest(testing.TestCase):
         # self.fitModelAndAssertKerasModelWritten(model)
         pass
 
-    def test_TensorBoard_writeModel(self):
+    def test_TensorBoard_write_model(self):
         # TODO: Requires to_json implementation in trainer
         # See https://github.com/keras-team/keras/blob/ \
         # a8d4a7f1ffc9de3c5932828a107e4e95e8803fb4/ \
@@ -761,9 +760,9 @@ class TestTensorBoardV2NonParameterizedTest(testing.TestCase):
         # self.fitModelAndAssertKerasModelWritten(model)
         pass
 
-    def test_TensorBoard_autoTrace(self):
-        if backend.backend() == "jax":
-            return
+    def test_TensorBoard_auto_trace(self):
+        #if backend.backend() == "jax":
+       #        return
         # TODO: Debug profiling for JAX
         model = self._get_seq_model()
         x, y = np.ones((10, 10, 10, 1)), np.ones((10, 1))
