@@ -72,7 +72,14 @@ class TFKerasBenchmarkMetricsCallback(tf.keras.callbacks.Callback):
 
 
 class LayerBenchmark:
-    def __init__(self, layer_name, init_args, input_shape, num_iterations=100):
+    def __init__(
+        self,
+        layer_name,
+        init_args,
+        input_shape,
+        num_iterations=100,
+        jit_compile=True,
+    ):
         self.layer_name = layer_name
         self.input_shape = input_shape
         _keras_core_layer_class = getattr(keras_core.layers, layer_name)
@@ -84,6 +91,14 @@ class LayerBenchmark:
         self._keras_core_model = keras_core.Sequential([self._keras_core_layer])
         self._tf_keras_model = tf.keras.Sequential([self._tf_keras_layer])
 
+        self._keras_core_model.compile(
+            loss="mse", optimizer="sgd", jit_compile=jit_compile
+        )
+        self._tf_keras_model.compile(
+            loss="mse", optimizer="sgd", jit_compile=jit_compile
+        )
+
+        self.jit_compile = jit_compile
         self.input_shape = input_shape
         self.num_iterations = num_iterations
 
@@ -112,25 +127,22 @@ class LayerBenchmark:
         print(
             f"TF Keras throughput: {tf_keras_callback._callback.state['throughput']} samples/sec."
         )
-        
+
     def benchmark_train(self, num_samples, batch_size, num_iterations=None):
         data_shape = [num_samples] + list(self.input_shape)
         data = np.random.normal(size=data_shape)
-        label = self._keras_core_layer(data)
-        
+        label = np.array(self._keras_core_layer(data))
+
         num_iterations = num_iterations or num_samples // batch_size - 1
         callback = KerasCoreBenchmarkMetricsCallback(num_iterations)
         tf_keras_callback = TFKerasBenchmarkMetricsCallback(num_iterations)
 
-        self._keras_core_model.compile(loss="mse", optimizer="sgd")
         self._keras_core_model.fit(
             data,
             label,
             batch_size=batch_size,
             callbacks=[callback],
         )
-
-        self._tf_keras_model.compile(loss="mse", optimizer="sgd")
         self._tf_keras_model.fit(
             data,
             label,
@@ -158,7 +170,7 @@ if __name__ == "__main__":
     )
 
     benchmark.benchmark_train(
-        num_samples=4000,
-        batch_size=20,
-        num_iterations=199,
+        num_samples=40,
+        batch_size=10,
+        num_iterations=3,
     )
