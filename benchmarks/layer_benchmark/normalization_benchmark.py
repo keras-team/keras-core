@@ -1,5 +1,23 @@
+""" Benchmark normalization layers.
+
+To run benchmarks, see the following command for an example, please change the
+flag to your custom value:
+
+```
+python3 -m benchmarks.layer_benchmark.normalization_benchmark \
+    --benchmark_name=benchmark_batch_normalization \
+    --num_samples=1000 \
+    --batch_size=20 \
+    --jit_compile=True 
+```
+"""
+
 from benchmarks.layer_benchmark.base_benchmark import LayerBenchmark
 
+from absl import app
+from absl import flags
+
+FLAGS = flags.FLAGS
 
 def benchmark_batch_normalization(
     num_samples,
@@ -85,3 +103,29 @@ def benchmark_layer_normalization(
         batch_size=batch_size,
         num_iterations=num_iterations,
     )
+
+BENCHMARK_NAMES = {
+    "benchmark_batch_normalization": benchmark_batch_normalization,
+    "benchmark_group_normalization": benchmark_group_normalization,
+    "benchmark_layer_normalization": benchmark_layer_normalization,
+}
+
+
+def main(_):
+    benchmark_name = FLAGS.benchmark_name
+    num_samples = FLAGS.num_samples
+    batch_size = FLAGS.batch_size
+    num_iterations = FLAGS.num_iterations
+    jit_compile = FLAGS.jit_compile
+
+    if benchmark_name not in BENCHMARK_NAMES:
+        raise ValueError(
+            f"Invalid benchmark name: {benchmark_name}, `benchmark_name` must "
+            f"be one of {BENCHMARK_NAMES.keys()}"
+        )
+    benchmark_fn = BENCHMARK_NAMES[benchmark_name]
+    benchmark_fn(num_samples, batch_size, num_iterations, jit_compile)
+
+
+if __name__ == "__main__":
+    app.run(main)

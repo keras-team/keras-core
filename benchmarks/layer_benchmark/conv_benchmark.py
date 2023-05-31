@@ -1,3 +1,18 @@
+""" Benchmark conv layers.
+
+To run benchmarks, see the following command for an example, please change the
+flag to your custom value:
+
+```
+python3 -m benchmarks.layer_benchmark.conv_benchmark \
+    --benchmark_name=benchmark_conv2D \
+    --num_samples=1000 \
+    --batch_size=20 \
+    --jit_compile=True 
+```
+"""
+
+
 from benchmarks.layer_benchmark.base_benchmark import LayerBenchmark
 
 from absl import app
