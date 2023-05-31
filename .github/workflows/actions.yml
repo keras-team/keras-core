@@ -37,9 +37,19 @@ jobs:
         run: |
           pip install -r requirements.txt --progress-bar off --upgrade
           pip install -e "." --progress-bar off --upgrade
+      - name: Test applications with pytest
+        uses: dorny/paths-filter@v2.2.1
+        id: filter
+        with:
+          filters: |
+            applications:
+              - 'keras_core/applications/**'
+        if: steps.filter.outputs.applications == 'true'
+        run: |
+          pythest keras_core/applications
       - name: Test with pytest
         run: |
-          pytest keras_core --splits 5 --group ${{ matrix.group }}
+          pytest keras_core
 
   format:
     name: Check the code format

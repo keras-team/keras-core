@@ -9,7 +9,6 @@ black>=22
 flake8
 isort
 pytest
-pytest-split
 pandas
 absl-py
 requests
