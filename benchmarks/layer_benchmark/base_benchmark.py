@@ -193,8 +193,12 @@ class LayerBenchmark:
             callbacks=[tf_keras_callback],
         )
 
-        keras_core_throughput = callback._callback.state["throughput"]
-        tf_keras_throughput = tf_keras_callback._callback.state["throughput"]
+        keras_core_throughput = (
+            callback._callback.state["throughput"] * batch_size
+        )
+        tf_keras_throughput = (
+            tf_keras_callback._callback.state["throughput"] * batch_size
+        )
         print(
             f"Keras Core throughput of forward pass of {self.layer_name}: "
             f"{keras_core_throughput:.2f} samples/sec."
@@ -239,8 +243,12 @@ class LayerBenchmark:
             callbacks=[tf_keras_callback],
         )
 
-        keras_core_throughput = callback._callback.state["throughput"]
-        tf_keras_throughput = tf_keras_callback._callback.state["throughput"]
+        keras_core_throughput = (
+            callback._callback.state["throughput"] * batch_size
+        )
+        tf_keras_throughput = (
+            tf_keras_callback._callback.state["throughput"] * batch_size
+        )
         print(
             f"Keras Core throughput of forward & backward pass of "
             f"{self.layer_name}: {keras_core_throughput:.2f} samples/sec."

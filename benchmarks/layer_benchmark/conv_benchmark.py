@@ -6,7 +6,7 @@ flag to your custom value:
 ```
 python3 -m benchmarks.layer_benchmark.conv_benchmark \
     --benchmark_name=benchmark_conv2D \
-    --num_samples=1000 \
+    --num_samples=2000 \
     --batch_size=20 \
     --jit_compile=True
 ```
