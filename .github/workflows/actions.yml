@@ -17,6 +17,7 @@ jobs:
     env:
       KERAS_BACKEND: ${{ matrix.backend }}
     steps:
+      - uses: actions/checkout@v3
       - name: Check for changes in keras_core/applications
         uses: dorny/paths-filter@v2
         id: filter
@@ -24,7 +25,6 @@ jobs:
           filters: |
             applications:
               - 'keras_core/applications/**'
-      - uses: actions/checkout@v3
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
