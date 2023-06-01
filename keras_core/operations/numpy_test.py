@@ -889,7 +889,7 @@ class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
         # Ellipsis slice.
         sliced = knp.get_item(x, np.s_[..., -1])
         self.assertEqual(sliced.shape, (None, 5))
-        # newaxis slice.
+        # `newaxis` slice.
         sliced = knp.get_item(x, np.s_[:, np.newaxis, ...])
         self.assertEqual(sliced.shape, (None, 1, 5, 16))
         # Strided slice.
@@ -902,7 +902,6 @@ class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
             sliced = knp.get_item(x, np.s_[..., 5, ...])
         with self.assertRaises(ValueError):
             sliced = knp.get_item(x, np.s_[:, :, :, :])
-
 
     def test_hstack(self):
         x = KerasTensor([None, 3])

@@ -1535,7 +1535,7 @@ class GetItem(Operation):
         elif num_ellipses == 0:
             # Add an implicit final ellipsis.
             remaining_key.append(Ellipsis)
-        # Consume each slice subkey element incrementally.
+        # Consume slice key element by element.
         while True:
             if not remaining_key:
                 break
@@ -1569,7 +1569,7 @@ class GetItem(Operation):
                         )
             elif isinstance(subkey, slice):
                 if length is not None:
-                    # python3 friendly to compute a slice length.
+                    # python3 friendly way to compute a slice length.
                     new_length = len(range(*subkey.indices(length)))
                     new_shape.append(new_length)
                 else:
