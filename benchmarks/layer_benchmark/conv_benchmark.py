@@ -263,6 +263,11 @@ def main(_):
     batch_size = FLAGS.batch_size
     jit_compile = FLAGS.jit_compile
 
+    if benchmark_name is None:
+        for name, benchmark_fn in BENCHMARK_NAMES:
+            benchmark_fn(num_samples, batch_size, jit_compile)
+        return
+
     if benchmark_name not in BENCHMARK_NAMES:
         raise ValueError(
             f"Invalid benchmark name: {benchmark_name}, `benchmark_name` must "

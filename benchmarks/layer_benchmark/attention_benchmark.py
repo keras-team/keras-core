@@ -20,17 +20,18 @@ from benchmarks.layer_benchmark.base_benchmark import LayerBenchmark
 FLAGS = flags.FLAGS
 
 
-def benchmark_batch_normalization(
+def benchmark_attention(
     num_samples,
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "BatchNormalization"
+    layer_name = "Attention"
     init_args = {}
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 32, 4],
+        input_shape=[[20, 16], [20, 16]],
+        flat_call_inputs=False,
         jit_compile=jit_compile,
     )
 
@@ -45,19 +46,21 @@ def benchmark_batch_normalization(
     )
 
 
-def benchmark_group_normalization(
+def benchmark_multi_head_attention(
     num_samples,
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "GroupNormalization"
+    layer_name = "MultiHeadAttention"
     init_args = {
-        "groups": 2,
+        "num_heads": 4,
+        "key_dim": 4,
     }
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 32, 4],
+        input_shape=[[20, 16], [20, 16], [20, 16]],
+        flat_call_inputs=True,
         jit_compile=jit_compile,
     )
 
@@ -72,17 +75,18 @@ def benchmark_group_normalization(
     )
 
 
-def benchmark_layer_normalization(
+def benchmark_additive_attention(
     num_samples,
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "LayerNormalization"
+    layer_name = "AdditiveAttention"
     init_args = {}
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 32, 4],
+        input_shape=[[20, 16], [20, 16], [20, 16]],
+        flat_call_inputs=False,
         jit_compile=jit_compile,
     )
 
@@ -98,9 +102,9 @@ def benchmark_layer_normalization(
 
 
 BENCHMARK_NAMES = {
-    "benchmark_batch_normalization": benchmark_batch_normalization,
-    "benchmark_group_normalization": benchmark_group_normalization,
-    "benchmark_layer_normalization": benchmark_layer_normalization,
+    "benchmark_attention": benchmark_attention,
+    "benchmark_multi_head_attention": benchmark_multi_head_attention,
+    "benchmark_additive_attention": benchmark_additive_attention,
 }
 
 

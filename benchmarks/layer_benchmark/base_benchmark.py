@@ -11,7 +11,8 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string(
     "benchmark_name",
     None,
-    "The name of benchmark to run.",
+    "The name of benchmark to run. If None, all benchmarks in the file will be "
+    "run.",
 )
 
 flags.DEFINE_integer(
@@ -105,18 +106,24 @@ class LayerBenchmark:
         layer_name,
         init_args,
         input_shape,
+        flat_call_inputs=True,
         jit_compile=True,
     ):
         self.layer_name = layer_name
         self.input_shape = input_shape
+
         _keras_core_layer_class = getattr(keras_core.layers, layer_name)
         _tf_keras_layer_class = getattr(tf.keras.layers, layer_name)
 
         self._keras_core_layer = _keras_core_layer_class(**init_args)
         self._tf_keras_layer = _tf_keras_layer_class(**init_args)
 
-        self._keras_core_model = keras_core.Sequential([self._keras_core_layer])
-        self._tf_keras_model = tf.keras.Sequential([self._tf_keras_layer])
+        self._keras_core_model = self._build_keras_core_model(
+            input_shape, flat_call_inputs
+        )
+        self._tf_keras_model = self._build_tf_keras_model(
+            input_shape, flat_call_inputs
+        )
 
         self._keras_core_model.compile(
             loss="mse", optimizer="sgd", jit_compile=jit_compile
@@ -125,12 +132,49 @@ class LayerBenchmark:
             loss="mse", optimizer="sgd", jit_compile=jit_compile
         )
 
+        self.flat_call_inputs = flat_call_inputs
         self.jit_compile = jit_compile
         self.input_shape = input_shape
 
+    def _build_keras_core_model(self, input_shape, flat_call_inputs=True):
+        inputs = []
+        if not isinstance(input_shape[0], (tuple, list)):
+            input_shape = [input_shape]
+
+        for shape in input_shape:
+            inputs.append(keras_core.Input(shape=shape))
+
+        if flat_call_inputs:
+            outputs = self._keras_core_layer(*inputs)
+        else:
+            outputs = self._keras_core_layer(inputs)
+        return keras_core.Model(inputs=inputs, outputs=outputs)
+
+    def _build_tf_keras_model(self, input_shape, flat_call_inputs=True):
+        inputs = []
+        if not isinstance(input_shape[0], (tuple, list)):
+            input_shape = [input_shape]
+
+        for shape in input_shape:
+            inputs.append(tf.keras.Input(shape=shape))
+
+        if flat_call_inputs:
+            outputs = self._tf_keras_layer(*inputs)
+        else:
+            outputs = self._tf_keras_layer(inputs)
+        return tf.keras.Model(inputs=inputs, outputs=outputs)
+
     def benchmark_predict(self, num_samples, batch_size):
-        data_shape = [num_samples] + list(self.input_shape)
-        data = np.random.normal(size=data_shape)
+        if isinstance(self.input_shape[0], (tuple, list)):
+            # The layer has multiple inputs.
+            data = []
+            for data_shape in self.input_shape:
+                data_shape = [num_samples] + list(data_shape)
+                data.append(np.random.normal(size=data_shape))
+        else:
+            data_shape = [num_samples] + list(self.input_shape)
+            data = np.random.normal(size=data_shape)
+
         num_iterations = num_samples // batch_size - 1
         callback = KerasCoreBenchmarkMetricsCallback(stop_batch=num_iterations)
         tf_keras_callback = TFKerasBenchmarkMetricsCallback(
@@ -153,18 +197,28 @@ class LayerBenchmark:
         tf_keras_throughput = tf_keras_callback._callback.state["throughput"]
         print(
             f"Keras Core throughput of forward pass of {self.layer_name}: "
-            f"{keras_core_throughput} samples/sec."
+            f"{keras_core_throughput:.2f} samples/sec."
         )
         print(
             f"TF Keras throughput of forward pass of {self.layer_name}: "
-            f"{tf_keras_throughput} samples/sec."
+            f"{tf_keras_throughput:.2f} samples/sec."
         )
 
     def benchmark_train(self, num_samples, batch_size):
-        data_shape = [num_samples] + list(self.input_shape)
-        data = np.random.normal(size=data_shape)
-        # Scale by a small factor to avoid zero gradients.
-        label = np.array(self._keras_core_layer(data)) * 1.001
+        if isinstance(self.input_shape[0], (tuple, list)):
+            # The layer has multiple inputs.
+            data = []
+            for data_shape in self.input_shape:
+                data_shape = [num_samples] + list(data_shape)
+                data.append(np.random.normal(size=data_shape))
+        else:
+            data_shape = [num_samples] + list(self.input_shape)
+            data = [np.random.normal(size=data_shape)]
+        if self.flat_call_inputs:
+            # Scale by a small factor to avoid zero gradients.
+            label = np.array(self._keras_core_layer(*data)) * 1.001
+        else:
+            label = np.array(self._keras_core_layer(data)) * 1.001
 
         num_iterations = num_samples // batch_size - 1
         callback = KerasCoreBenchmarkMetricsCallback(stop_batch=num_iterations)
@@ -189,9 +243,9 @@ class LayerBenchmark:
         tf_keras_throughput = tf_keras_callback._callback.state["throughput"]
         print(
             f"Keras Core throughput of forward & backward pass of "
-            f"{self.layer_name}: {keras_core_throughput} samples/sec."
+            f"{self.layer_name}: {keras_core_throughput:.2f} samples/sec."
         )
         print(
             f"TF Keras  throughput of forward & backward pass of "
-            f"{self.layer_name}: {tf_keras_throughput} samples/sec."
+            f"{self.layer_name}: {tf_keras_throughput:.2f} samples/sec."
         )
