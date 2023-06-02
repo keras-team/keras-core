@@ -20,8 +20,6 @@ class TorchTrainer(base_trainer.Trainer):
         data = data[0]
         x, y, sample_weight = data_adapter_utils.unpack_x_y_sample_weight(data)
 
-        self.train()
-
         # Compute prediction error
         if self._call_has_training_arg():
             y_pred = self(x, training=True)
@@ -78,6 +76,7 @@ class TorchTrainer(base_trainer.Trainer):
         if validation_split and validation_data is None:
             # Create the validation data using the training data. Only supported
             # for TF/numpy/jax arrays.
+            # TODO: Support torch tensors for validation data.
             (
                 x,
                 y,
@@ -124,12 +123,14 @@ class TorchTrainer(base_trainer.Trainer):
             self.reset_metrics()
             callbacks.on_epoch_begin(epoch)
 
+            # Switch the torch Module to training mode. Inform torch layers to
+            # do training behavior in case the user did not use `self.training`
+            # when implementing a custom layer with torch layers.
             self.train()
             for step, data in epoch_iterator.enumerate_epoch(return_type="np"):
                 # Callbacks
                 callbacks.on_train_batch_begin(step)
 
-                # TODO: Train step here.
                 logs = self.train_step(data)
 
                 # Callbacks
@@ -140,9 +141,11 @@ class TorchTrainer(base_trainer.Trainer):
             # Override with model metrics instead of last step logs
             epoch_logs = self._pythonify_logs(self.get_metrics_result())
 
+            # Switch the torch Module back to testing mode.
+            self.eval()
+
             # Run validation.
             if validation_data and self._should_eval(epoch, validation_freq):
-                self.eval()
                 # Create EpochIterator for evaluation and cache it.
                 if getattr(self, "_eval_epoch_iterator", None) is None:
                     self._eval_epoch_iterator = EpochIterator(
