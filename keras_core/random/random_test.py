@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from absl.testing import parameterized
 
 import keras_core
@@ -63,9 +64,11 @@ class RandomTest(testing.TestCase, parameterized.TestCase):
         self.assertGreater(knp.max(x_res), knp.max(x))
         self.assertGreater(knp.sum(x_res == 0), 2)
 
-    def test_dropout_jax_jit_stateless_gh248(self):
-        if keras_core.backend.backend() != "jax":
-            self.skipTest("This test requires `jax` as the backend.")
+    @pytest.mark.skipif(
+        keras_core.backend.backend() != "jax",
+        reason="This test requires `jax` as the backend.",
+    )
+    def test_dropout_jax_jit_stateless(self):
         import jax
         import jax.numpy as jnp
 
