@@ -79,10 +79,11 @@ class TensorBoard(Callback):
             override. Please see
             [TensorBoard Scalars tutorial](https://www.tensorflow.org/tensorboard/scalars_and_keras#batch-level_logging)  # noqa: E501
             for more details.
-        profile_batch: Profile the batch(es) to sample compute characteristics.
+        profile_batch: TODO: still not supported.
+            Profile the batch(es) to sample compute characteristics.
             profile_batch must be a non-negative integer or a tuple of integers.
             A pair of positive integers signify a range of batches to profile.
-            By default, profiling is disabled. Not yet supported for JAX.
+            By default, profiling is disabled.
         embeddings_freq: frequency (in epochs) at which embedding layers will be
             visualized. If set to 0, embeddings won't be visualized.
         embeddings_metadata: Dictionary which maps embedding layer names to the
@@ -181,7 +182,7 @@ class TensorBoard(Callback):
         self.update_freq = 1 if update_freq == "batch" else update_freq
         self.embeddings_freq = embeddings_freq
         self.embeddings_metadata = embeddings_metadata
-        self._init_profile_batch(profile_batch)
+        self._init_profile_batch(0)  # TODO: profiling not available in JAX
         self._global_train_batch = 0
         self._previous_epoch_iterations = 0
         self._train_accumulated_time = 0
