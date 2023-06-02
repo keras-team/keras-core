@@ -1,13 +1,13 @@
-""" Benchmark normalization layers.
+""" Benchmark attention layers.
 
 To run benchmarks, see the following command for an example, please change the
 flag to your custom value:
 
 ```
-python3 -m benchmarks.layer_benchmark.normalization_benchmark \
-    --benchmark_name=benchmark_batch_normalization \
-    --num_samples=1000 \
-    --batch_size=20 \
+python3 -m benchmarks.layer_benchmark.attention_benchmark \
+    --benchmark_name=benchmark_attention \
+    --num_samples=8192 \
+    --batch_size=1024 \
     --jit_compile=True
 ```
 """
@@ -30,7 +30,7 @@ def benchmark_attention(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[[20, 16], [20, 16]],
+        input_shape=[[256, 64], [256, 64]],
         flat_call_inputs=False,
         jit_compile=jit_compile,
     )
@@ -54,12 +54,12 @@ def benchmark_multi_head_attention(
     layer_name = "MultiHeadAttention"
     init_args = {
         "num_heads": 4,
-        "key_dim": 4,
+        "key_dim": 16,
     }
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[[20, 16], [20, 16], [20, 16]],
+        input_shape=[[256, 64], [256, 64], [256, 64]],
         flat_call_inputs=True,
         jit_compile=jit_compile,
     )
@@ -85,7 +85,7 @@ def benchmark_additive_attention(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[[20, 16], [20, 16], [20, 16]],
+        input_shape=[[256, 64], [256, 64], [256, 64]],
         flat_call_inputs=False,
         jit_compile=jit_compile,
     )

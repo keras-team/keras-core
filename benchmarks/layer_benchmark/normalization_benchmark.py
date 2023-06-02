@@ -6,8 +6,8 @@ flag to your custom value:
 ```
 python3 -m benchmarks.layer_benchmark.normalization_benchmark \
     --benchmark_name=benchmark_batch_normalization \
-    --num_samples=1000 \
-    --batch_size=20 \
+    --num_samples=2400 \
+    --batch_size=300 \
     --jit_compile=True
 ```
 """
@@ -30,7 +30,7 @@ def benchmark_batch_normalization(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 32, 4],
+        input_shape=[256, 256, 4],
         jit_compile=jit_compile,
     )
 
@@ -57,7 +57,7 @@ def benchmark_group_normalization(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 32, 4],
+        input_shape=[256, 256, 4],
         jit_compile=jit_compile,
     )
 
@@ -82,7 +82,7 @@ def benchmark_layer_normalization(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 32, 4],
+        input_shape=[256, 256, 4],
         jit_compile=jit_compile,
     )
 

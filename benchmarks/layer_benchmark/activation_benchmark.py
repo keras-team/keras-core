@@ -1,13 +1,13 @@
-""" Benchmark normalization layers.
+""" Benchmark activation layers.
 
 To run benchmarks, see the following command for an example, please change the
 flag to your custom value:
 
 ```
-python3 -m benchmarks.layer_benchmark.normalization_benchmark \
-    --benchmark_name=benchmark_batch_normalization \
-    --num_samples=1000 \
-    --batch_size=20 \
+python3 -m benchmarks.layer_benchmark.activation_benchmark \
+    --benchmark_name=benchmark_elu \
+    --num_samples=8192 \
+    --batch_size=1024 \
     --jit_compile=True
 ```
 """
@@ -30,7 +30,7 @@ def benchmark_elu(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[16, 16],
+        input_shape=[256, 256],
         jit_compile=jit_compile,
     )
 
@@ -50,7 +50,7 @@ def benchmark_prelu(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[16, 16],
+        input_shape=[256, 256],
         jit_compile=jit_compile,
     )
 
@@ -70,7 +70,7 @@ def benchmark_softmax(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[16, 16],
+        input_shape=[256, 256],
         jit_compile=jit_compile,
     )
 

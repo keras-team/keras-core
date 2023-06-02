@@ -35,7 +35,7 @@ flags.DEFINE_bool(
 
 
 class BenchmarkMetricsCallback:
-    def __init__(self, start_batch=2, stop_batch=None):
+    def __init__(self, start_batch=1, stop_batch=None):
         self.start_batch = start_batch
         self.stop_batch = stop_batch
 
@@ -48,7 +48,7 @@ class BenchmarkMetricsCallback:
     def on_train_batch_end(self, batch, logs=None):
         if batch == self.stop_batch:
             self.state["benchmark_end"] = time.time()
-            throughput = (self.stop_batch - self.start_batch) / (
+            throughput = (self.stop_batch - self.start_batch + 1) / (
                 self.state["benchmark_end"] - self.state["benchmark_begin"]
             )
             self.state["throughput"] = throughput
@@ -60,14 +60,14 @@ class BenchmarkMetricsCallback:
     def on_predict_batch_end(self, batch, logs=None):
         if batch == self.stop_batch:
             self.state["benchmark_end"] = time.time()
-            throughput = (self.stop_batch - self.start_batch) / (
+            throughput = (self.stop_batch - self.start_batch + 1) / (
                 self.state["benchmark_end"] - self.state["benchmark_begin"]
             )
             self.state["throughput"] = throughput
 
 
 class KerasCoreBenchmarkMetricsCallback(keras_core.callbacks.Callback):
-    def __init__(self, start_batch=2, stop_batch=None):
+    def __init__(self, start_batch=1, stop_batch=None):
         self._callback = BenchmarkMetricsCallback(start_batch, stop_batch)
 
     def on_train_batch_begin(self, batch, logs=None):
@@ -84,7 +84,7 @@ class KerasCoreBenchmarkMetricsCallback(keras_core.callbacks.Callback):
 
 
 class TFKerasBenchmarkMetricsCallback(tf.keras.callbacks.Callback):
-    def __init__(self, start_batch=2, stop_batch=None):
+    def __init__(self, start_batch=1, stop_batch=None):
         self._callback = BenchmarkMetricsCallback(start_batch, stop_batch)
 
     def on_train_batch_begin(self, batch, logs=None):

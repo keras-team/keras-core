@@ -34,7 +34,7 @@ def benchmark_conv1D(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 4],
+        input_shape=[256, 16],
         jit_compile=jit_compile,
     )
 
@@ -62,7 +62,7 @@ def benchmark_conv2D(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 32, 4],
+        input_shape=[128, 128, 4],
         jit_compile=jit_compile,
     )
 
@@ -146,7 +146,7 @@ def benchmark_depthwise_conv2D(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 32, 4],
+        input_shape=[128, 128, 4],
         jit_compile=jit_compile,
     )
 
@@ -202,7 +202,7 @@ def benchmark_conv2D_transpose(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 32, 4],
+        input_shape=[128, 128, 4],
         jit_compile=jit_compile,
     )
 

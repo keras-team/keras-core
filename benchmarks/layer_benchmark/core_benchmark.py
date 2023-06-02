@@ -1,13 +1,13 @@
-""" Benchmark normalization layers.
+""" Benchmark core layers.
 
 To run benchmarks, see the following command for an example, please change the
 flag to your custom value:
 
 ```
-python3 -m benchmarks.layer_benchmark.normalization_benchmark \
-    --benchmark_name=benchmark_batch_normalization \
-    --num_samples=1000 \
-    --batch_size=20 \
+python3 -m benchmarks.layer_benchmark.core_benchmark \
+    --benchmark_name=benchmark_dense \
+    --num_samples=8192 \
+    --batch_size=1024 \
     --jit_compile=True
 ```
 """
@@ -26,12 +26,12 @@ def benchmark_dense(
     jit_compile=True,
 ):
     layer_name = "Dense"
-    init_args = {"units": 16}
+    init_args = {"units": 128}
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
         input_shape=[
-            64,
+            256,
         ],
         jit_compile=jit_compile,
     )
@@ -55,12 +55,12 @@ def benchmark_einsum_dense(
     layer_name = "EinsumDense"
     init_args = {
         "equation": "abc,cd->abd",
-        "output_shape": (None, 64),
+        "output_shape": (None, 128),
     }
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[16, 8],
+        input_shape=[64, 32],
         jit_compile=jit_compile,
     )
 
