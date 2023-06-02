@@ -36,16 +36,27 @@ def to_torch_dtype(dtype):
 class Variable(KerasVariable):
     def _initialize(self, value):
         self._value = convert_to_tensor(value, dtype=self._dtype)
+        self._value.requires_grad_(self.trainable)
 
     def _direct_assign(self, value):
-        self._value = value
+        self._value.copy_(value)
 
     def _convert_to_tensor(self, value, dtype=None):
         return convert_to_tensor(value, dtype=dtype)
 
     # Overload native accessor.
-    def __torch_function__(self, func, types, args=(), kwargs=None):
-        return func(self.value, *args, **kwargs)
+    @classmethod
+    def __torch_function__(cls, func, types, args=(), kwargs=None):
+        args = [
+            arg.value if isinstance(arg, KerasVariable) else arg for arg in args
+        ]
+        if kwargs is None:
+            kwargs = {}
+        kwargs = {
+            key: value.value if isinstance(value, KerasVariable) else value
+            for key, value in kwargs.items()
+        }
+        return func(*args, **kwargs)
 
 
 def convert_to_tensor(x, dtype=None):
@@ -68,7 +79,11 @@ def shape(x):
 
 def cast(x, dtype):
     dtype = to_torch_dtype(dtype)
-    return x.to(dtype)
+    if isinstance(x, KerasVariable):
+        x = x.value
+    if is_tensor(x):
+        return x.to(dtype)
+    return convert_to_tensor(x, dtype)
 
 
 def name_scope(name):
@@ -130,3 +145,23 @@ def block_update(inputs, start_indices, updates):
     ]
     inputs[slices] = updates
     return inputs
+
+
+def while_loop(
+    cond,
+    body,
+    loop_vars,
+    maximum_iterations=None,
+):
+    current_iter = 0
+    iteration_check = (
+        lambda iter: maximum_iterations is None or iter < maximum_iterations
+    )
+    loop_vars = tuple([convert_to_tensor(v) for v in loop_vars])
+    while cond(*loop_vars) and iteration_check(current_iter):
+        loop_vars = body(*loop_vars)
+        if not isinstance(loop_vars, (list, tuple)):
+            loop_vars = (loop_vars,)
+        loop_vars = tuple(loop_vars)
+        current_iter += 1
+    return loop_vars

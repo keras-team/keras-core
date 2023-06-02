@@ -16,3 +16,5 @@ h5py
 protobuf
 google
 tensorboard-plugin-profile
+rich
+build
