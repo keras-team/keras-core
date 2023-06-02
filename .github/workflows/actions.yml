@@ -18,6 +18,13 @@ jobs:
       KERAS_BACKEND: ${{ matrix.backend }}
     steps:
       - uses: actions/checkout@v3
+      - name: Check for changes in keras_core/applications
+        uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            applications:
+              - 'keras_core/applications/**'
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
@@ -36,9 +43,13 @@ jobs:
         run: |
           pip install -r requirements.txt --progress-bar off --upgrade
           pip install -e "." --progress-bar off --upgrade
+      - name: Test applications with pytest
+        if: ${{ steps.filter.outputs.applications == 'true' }}
+        run: |
+          pytest keras_core/applications
       - name: Test with pytest
         run: |
-          pytest keras_core
+          pytest keras_core --ignore keras_core/applications
 
   format:
     name: Check the code format

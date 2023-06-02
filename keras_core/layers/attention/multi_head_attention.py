@@ -15,7 +15,7 @@ from keras_core.layers.layer import Layer
 from keras_core.layers.regularization.dropout import Dropout
 
 
-@keras_core_export("keras_core.layers.Attention")
+@keras_core_export("keras_core.layers.MultiHeadAttention")
 class MultiHeadAttention(Layer):
     """MultiHeadAttention layer.
 
@@ -134,7 +134,6 @@ class MultiHeadAttention(Layer):
                 f"Received: attention_axes={attention_axes}"
             )
         self._attention_axes = attention_axes
-        self._built_from_signature = False
 
     def get_config(self):
         base_config = super().get_config()

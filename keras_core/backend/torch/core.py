@@ -44,8 +44,18 @@ class Variable(KerasVariable):
         return convert_to_tensor(value, dtype=dtype)
 
     # Overload native accessor.
-    def __torch_function__(self, func, types, args=(), kwargs=None):
-        return func(self.value, *args, **kwargs)
+    @classmethod
+    def __torch_function__(cls, func, types, args=(), kwargs=None):
+        args = [
+            arg.value if isinstance(arg, KerasVariable) else arg for arg in args
+        ]
+        if kwargs is None:
+            kwargs = {}
+        kwargs = {
+            key: value.value if isinstance(value, KerasVariable) else value
+            for key, value in kwargs.items()
+        }
+        return func(*args, **kwargs)
 
 
 def convert_to_tensor(x, dtype=None):
@@ -130,3 +140,23 @@ def block_update(inputs, start_indices, updates):
     ]
     inputs[slices] = updates
     return inputs
+
+
+def while_loop(
+    cond,
+    body,
+    loop_vars,
+    maximum_iterations=None,
+):
+    current_iter = 0
+    iteration_check = (
+        lambda iter: maximum_iterations is None or iter < maximum_iterations
+    )
+    loop_vars = tuple([convert_to_tensor(v) for v in loop_vars])
+    while cond(*loop_vars) and iteration_check(current_iter):
+        loop_vars = body(*loop_vars)
+        if not isinstance(loop_vars, (list, tuple)):
+            loop_vars = (loop_vars,)
+        loop_vars = tuple(loop_vars)
+        current_iter += 1
+    return loop_vars
