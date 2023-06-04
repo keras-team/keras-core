@@ -47,7 +47,7 @@ class Variable(KerasVariable):
 
     def _convert_to_tensor(self, value, dtype=None):
         return convert_to_tensor(value, dtype=dtype)
-    
+
     def numpy(self):
         return self.value.detach().numpy()
 
