@@ -44,6 +44,8 @@ elif backend.backend() == "jax":
     from keras_core.backend.jax.layer import JaxLayer as BackendLayer
 elif backend.backend() == "torch":
     from keras_core.backend.torch.layer import TorchLayer as BackendLayer
+elif backend.backend() == "numpy":
+    from keras_core.backend.numpy.layer import NumpyLayer as BackendLayer
 else:
     raise RuntimeError(
         f"Backend '{backend.backend()}' must implement a layer mixin class."

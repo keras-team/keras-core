@@ -1,13 +1,13 @@
 import numpy as np
 
-from keras_core.backend.common.random import SeedGenerator
-from keras_core.backend.common.random import draw_seed
-from keras_core.backend.common.random import make_default_seed
 from keras_core.backend.config import floatx
+from keras_core.random.seed_generator import SeedGenerator
+from keras_core.random.seed_generator import draw_seed
+from keras_core.random.seed_generator import make_default_seed
 
 
 def normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
-    """Produce random number based on the normal distribution.
+    """Draw random samples from a normal (Gaussian) distribution.
 
     Args:
         shape: The shape of the random values to generate.
@@ -34,7 +34,7 @@ def normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
 
 
 def uniform(shape, minval=0.0, maxval=1.0, dtype=None, seed=None):
-    """Produce random number based on the uniform distribution.
+    """Draw samples from a uniform distribution.
 
     Args:
         shape: The shape of the random values to generate.
@@ -62,7 +62,7 @@ def uniform(shape, minval=0.0, maxval=1.0, dtype=None, seed=None):
 
 
 def truncated_normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
-    """Produce random number based on the truncated normal distribution.
+    """Draw samples from a truncated normal distribution.
 
     Args:
         shape: The shape of the random values to generate.

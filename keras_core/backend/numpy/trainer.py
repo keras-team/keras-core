@@ -1,0 +1,2 @@
+class NumpyTrainer:
+    pass
