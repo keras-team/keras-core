@@ -42,6 +42,8 @@ ALL_OBJECTS = {
 }
 
 ALL_OBJECTS_DICT = {fn.__name__: fn for fn in ALL_OBJECTS}
+# Additional aliases
+ALL_OBJECTS_DICT["swish"] = silu
 
 
 @keras_core_export("keras_core.activations.serialize")
@@ -89,9 +91,11 @@ def get(identifier):
     if identifier is None:
         return linear
     if isinstance(identifier, (str, dict)):
-        return deserialize(identifier)
-    elif callable(identifier):
-        return identifier
-    raise TypeError(
+        obj = deserialize(identifier)
+    else:
+        obj = identifier
+    if callable(obj):
+        return obj
+    raise ValueError(
         f"Could not interpret activation function identifier: {identifier}"
     )

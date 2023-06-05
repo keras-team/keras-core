@@ -42,6 +42,7 @@ import types
 import warnings
 
 import tensorflow as tf
+from tensorflow import nest
 
 from keras_core.trainers.data_adapters import array_data_adapter
 from keras_core.trainers.data_adapters import data_adapter_utils
@@ -60,11 +61,15 @@ class EpochIterator:
         steps_per_epoch=None,
         shuffle=False,
         class_weight=None,
+        steps_per_execution=1,
     ):
         self.steps_per_epoch = steps_per_epoch
+        self.steps_per_execution = steps_per_execution
         if steps_per_epoch:
             self._current_iterator = None
-        if isinstance(x, data_adapter_utils.ARRAY_TYPES):
+            self._insufficient_data = False
+        first_element = next(iter(nest.flatten(x)), None)
+        if isinstance(first_element, data_adapter_utils.ARRAY_TYPES):
             self.data_adapter = array_data_adapter.ArrayDataAdapter(
                 x,
                 y,
@@ -93,7 +98,7 @@ class EpochIterator:
             #     "(via `.shuffle(tf.data.AUTOTUNE)`)"
             # )
         elif isinstance(x, py_dataset_adapter.PyDataset):
-            self.data_adapter = tf_dataset_adapter.PyDatasetAdapter(
+            self.data_adapter = py_dataset_adapter.PyDatasetAdapter(
                 x, class_weight=class_weight, shuffle=shuffle
             )
             if y is not None:
@@ -103,9 +108,7 @@ class EpochIterator:
                     "sample_weights", "the sample weights", "PyDataset"
                 )
         elif isinstance(x, types.GeneratorType):
-            self.data_adapter = generator_data_adapter.GeneratorDataAdapter(
-                x, shuffle=shuffle
-            )
+            self.data_adapter = generator_data_adapter.GeneratorDataAdapter(x)
             if y is not None:
                 raise_unsupported_arg("y", "the targets", "PyDataset")
             if sample_weight is not None:
@@ -114,8 +117,8 @@ class EpochIterator:
                 )
             if class_weight is not None:
                 raise ValueError(
-                    "Argument `class_weight` is not supported for Python generator "
-                    f"inputs. Received: class_weight={class_weight}"
+                    "Argument `class_weight` is not supported for Python "
+                    f"generator inputs. Received: class_weight={class_weight}"
                 )
             if shuffle:
                 raise ValueError(
@@ -141,13 +144,21 @@ class EpochIterator:
         return iterator
 
     def enumerate_epoch(self, return_type="np"):
+        buffer = []
         if self.steps_per_epoch:
             if not self._current_iterator:
                 self._current_iterator = self._get_iterator(return_type)
+                self._insufficient_data = False
+
             for step in range(self.steps_per_epoch):
+                if self._insufficient_data:
+                    break
                 try:
                     data = next(self._current_iterator)
-                    yield step, data
+                    buffer.append(data)
+                    if len(buffer) == self.steps_per_execution:
+                        yield step - len(buffer) + 1, buffer
+                        buffer = []
                 except (StopIteration, tf.errors.OutOfRangeError):
                     warnings.warn(
                         "Your input ran out of data; interrupting epoch. "
@@ -158,9 +169,17 @@ class EpochIterator:
                         stacklevel=2,
                     )
                     self._current_iterator = None
+                    self._insufficient_data = True
+            if buffer:
+                yield step - len(buffer) + 1, buffer
         else:
             for step, data in enumerate(self._get_iterator(return_type)):
-                yield step, data
+                buffer.append(data)
+                if len(buffer) == self.steps_per_execution:
+                    yield step - len(buffer) + 1, buffer
+                    buffer = []
+            if buffer:
+                yield step - len(buffer) + 1, buffer
             if not self._num_batches:
                 # Infer the number of batches returned by the data_adater.
                 # Assumed static.
@@ -169,6 +188,8 @@ class EpochIterator:
 
     @property
     def num_batches(self):
+        if self.steps_per_epoch:
+            return self.steps_per_epoch
         # Either copied from the data_adapter, or
         # inferred at the end of an iteration.
         return self._num_batches

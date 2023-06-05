@@ -29,11 +29,11 @@ in_top_k
 ctc ??
 """
 
-import numpy as np
-
 from keras_core import backend
+from keras_core.api_export import keras_core_export
 from keras_core.backend import KerasTensor
 from keras_core.backend import any_symbolic_tensors
+from keras_core.backend import standardize_data_format
 from keras_core.backend.common.backend_utils import (
     compute_conv_transpose_output_shape,
 )
@@ -49,6 +49,9 @@ class Relu(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export(
+    ["keras_core.operations.relu", "keras_core.operations.nn.relu"]
+)
 def relu(x):
     if any_symbolic_tensors((x,)):
         return Relu().symbolic_call(x)
@@ -63,6 +66,9 @@ class Relu6(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export(
+    ["keras_core.operations.relu6", "keras_core.operations.nn.relu6"]
+)
 def relu6(x):
     if any_symbolic_tensors((x,)):
         return Relu6().symbolic_call(x)
@@ -77,6 +83,9 @@ class Sigmoid(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export(
+    ["keras_core.operations.sigmoid", "keras_core.operations.nn.sigmoid"]
+)
 def sigmoid(x):
     if any_symbolic_tensors((x,)):
         return Sigmoid().symbolic_call(x)
@@ -91,6 +100,9 @@ class Tanh(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export(
+    ["keras_core.operations.tanh", "keras_core.operations.nn.tanh"]
+)
 def tanh(x):
     if any_symbolic_tensors((x,)):
         return Tanh().symbolic_call(x)
@@ -105,6 +117,9 @@ class Softplus(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export(
+    ["keras_core.operations.softplus", "keras_core.operations.nn.softplus"]
+)
 def softplus(x):
     if any_symbolic_tensors((x,)):
         return Softplus().symbolic_call(x)
@@ -119,6 +134,9 @@ class Softsign(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export(
+    ["keras_core.operations.softsign", "keras_core.operations.nn.softsign"]
+)
 def softsign(x):
     if any_symbolic_tensors((x,)):
         return Softsign().symbolic_call(x)
@@ -133,6 +151,9 @@ class Silu(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export(
+    ["keras_core.operations.silu", "keras_core.operations.nn.silu"]
+)
 def silu(x):
     if any_symbolic_tensors((x,)):
         return Silu().symbolic_call(x)
@@ -147,6 +168,9 @@ class Swish(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export(
+    ["keras_core.operations.swish", "keras_core.operations.nn.swish"]
+)
 def swish(x):
     if any_symbolic_tensors((x,)):
         return Swish().symbolic_call(x)
@@ -161,6 +185,12 @@ class LogSigmoid(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export(
+    [
+        "keras_core.operations.log_sigmoid",
+        "keras_core.operations.nn.log_sigmoid",
+    ]
+)
 def log_sigmoid(x):
     if any_symbolic_tensors((x,)):
         return LogSigmoid().symbolic_call(x)
@@ -179,6 +209,9 @@ class LeakyRelu(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export(
+    ["keras_core.operations.leaky_relu", "keras_core.operations.nn.leaky_relu"]
+)
 def leaky_relu(x, negative_slope=0.2):
     if any_symbolic_tensors((x,)):
         return LeakyRelu(negative_slope).symbolic_call(x)
@@ -193,6 +226,12 @@ class HardSigmoid(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export(
+    [
+        "keras_core.operations.hard_sigmoid",
+        "keras_core.operations.nn.hard_sigmoid",
+    ]
+)
 def hard_sigmoid(x):
     if any_symbolic_tensors((x,)):
         return HardSigmoid().symbolic_call(x)
@@ -200,17 +239,24 @@ def hard_sigmoid(x):
 
 
 class Elu(Operation):
+    def __init__(self, alpha=1.0):
+        super().__init__()
+        self.alpha = alpha
+
     def call(self, x):
-        return backend.nn.elu(x)
+        return backend.nn.elu(x, alpha=self.alpha)
 
     def compute_output_spec(self, x):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
-def elu(x):
+@keras_core_export(
+    ["keras_core.operations.elu", "keras_core.operations.nn.elu"]
+)
+def elu(x, alpha=1.0):
     if any_symbolic_tensors((x,)):
-        return Elu().symbolic_call(x)
-    return backend.nn.elu(x)
+        return Elu(alpha).symbolic_call(x)
+    return backend.nn.elu(x, alpha=alpha)
 
 
 class Selu(Operation):
@@ -221,6 +267,9 @@ class Selu(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export(
+    ["keras_core.operations.selu", "keras_core.operations.nn.selu"]
+)
 def selu(x):
     if any_symbolic_tensors((x,)):
         return Selu().symbolic_call(x)
@@ -239,6 +288,9 @@ class Gelu(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export(
+    ["keras_core.operations.gelu", "keras_core.operations.nn.gelu"]
+)
 def gelu(x, approximate=True):
     if any_symbolic_tensors((x,)):
         return Gelu(approximate).symbolic_call(x)
@@ -257,6 +309,9 @@ class Softmax(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export(
+    ["keras_core.operations.softmax", "keras_core.operations.nn.softmax"]
+)
 def softmax(x, axis=None):
     if any_symbolic_tensors((x,)):
         return Softmax(axis).symbolic_call(x)
@@ -275,6 +330,12 @@ class LogSoftmax(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export(
+    [
+        "keras_core.operations.log_softmax",
+        "keras_core.operations.nn.log_softmax",
+    ]
+)
 def log_softmax(x, axis=None):
     if any_symbolic_tensors((x,)):
         return LogSoftmax(axis).symbolic_call(x)
@@ -287,7 +348,7 @@ class MaxPool(Operation):
         pool_size,
         strides=None,
         padding="valid",
-        data_format="channels_last",
+        data_format=None,
     ):
         super().__init__()
         self.pool_size = pool_size
@@ -315,12 +376,15 @@ class MaxPool(Operation):
         return KerasTensor(output_shape, dtype=inputs.dtype)
 
 
+@keras_core_export(
+    ["keras_core.operations.max_pool", "keras_core.operations.nn.max_pool"]
+)
 def max_pool(
     inputs,
     pool_size,
     strides=None,
     padding="valid",
-    data_format="channels_last",
+    data_format=None,
 ):
     """Max pooling operation.
 
@@ -354,6 +418,7 @@ def max_pool(
     Returns:
         A tensor of rank N+2, the result of the max pooling operation.
     """
+    data_format = standardize_data_format(data_format)
     if any_symbolic_tensors((inputs,)):
         return MaxPool(
             pool_size,
@@ -370,7 +435,7 @@ class AveragePool(Operation):
         pool_size,
         strides=None,
         padding="valid",
-        data_format="channels_last",
+        data_format=None,
     ):
         super().__init__()
         self.pool_size = pool_size
@@ -398,12 +463,18 @@ class AveragePool(Operation):
         return KerasTensor(output_shape, dtype=inputs.dtype)
 
 
+@keras_core_export(
+    [
+        "keras_core.operations.average_pool",
+        "keras_core.operations.nn.average_pool",
+    ]
+)
 def average_pool(
     inputs,
     pool_size,
     strides=None,
     padding="valid",
-    data_format="channels_last",
+    data_format=None,
 ):
     """Average pooling operation.
 
@@ -437,6 +508,7 @@ def average_pool(
     Returns:
         A tensor of rank N+2, the result of the average pooling operation.
     """
+    data_format = standardize_data_format(data_format)
     if any_symbolic_tensors((inputs,)):
         return AveragePool(
             pool_size,
@@ -454,7 +526,7 @@ class Conv(Operation):
         self,
         strides=1,
         padding="valid",
-        data_format="channel_last",
+        data_format=None,
         dilation_rate=1,
     ):
         super().__init__()
@@ -486,12 +558,15 @@ class Conv(Operation):
         return KerasTensor(output_shape, dtype=inputs.dtype)
 
 
+@keras_core_export(
+    ["keras_core.operations.conv", "keras_core.operations.nn.conv"]
+)
 def conv(
     inputs,
     kernel,
     strides=1,
     padding="valid",
-    data_format="channels_last",
+    data_format=None,
     dilation_rate=1,
 ):
     """General N-D convolution.
@@ -531,6 +606,7 @@ def conv(
     Returns:
         A tensor of rank N+2, the result of the conv operation.
     """
+    data_format = standardize_data_format(data_format)
     if any_symbolic_tensors((inputs,)):
         return Conv(strides, padding, data_format, dilation_rate).symbolic_call(
             inputs, kernel
@@ -545,7 +621,7 @@ class DepthwiseConv(Operation):
         self,
         strides=1,
         padding="valid",
-        data_format="channels_last",
+        data_format=None,
         dilation_rate=1,
     ):
         super().__init__()
@@ -565,76 +641,30 @@ class DepthwiseConv(Operation):
         )
 
     def compute_output_spec(self, inputs, kernel):
-        input_shape = inputs.shape
-        if self.data_format == "channels_last":
-            spatial_shape = input_shape[1:-1]
-        else:
-            spatial_shape = input_shape[2:]
-        if len(kernel.shape) != len(inputs.shape):
-            raise ValueError(
-                "Kernel shape must have the same length as input, but received "
-                f"kernel of shape {kernel.shape} and "
-                f"input of shape {input_shape}."
-            )
-        if isinstance(self.dilation_rate, int):
-            dilation_rate = (self.dilation_rate,) * len(spatial_shape)
-        else:
-            dilation_rate = self.dilation_rate
-        if len(dilation_rate) != len(spatial_shape):
-            raise ValueError(
-                "Dilation must be None, scalar or tuple/list of length of "
-                "inputs' spatial shape, but received "
-                f"`dilation_rate={self.dilation_rate}` and input of "
-                f"shape {input_shape}."
-            )
-        spatial_shape = np.array(spatial_shape)
-        kernel_spatial_shape = np.array(kernel.shape[:-2])
-        dilation_rate = np.array(self.dilation_rate)
-        if self.padding == "valid":
-            output_spatial_shape = (
-                np.floor(
-                    (
-                        spatial_shape
-                        - dilation_rate * (kernel_spatial_shape - 1)
-                        - 1
-                    )
-                    / self.strides
-                )
-                + 1
-            )
-            negative_in_shape = np.all(output_spatial_shape < 0)
-            if negative_in_shape:
-                raise ValueError(
-                    "Computed output size would be negative. Received "
-                    f"`inputs shape={inputs.shape}`, "
-                    f"`kernel spatial size={kernel.size}`, "
-                    f"`dilation_rate={self.dilation_rate}`."
-                )
-        elif self.padding == "same":
-            output_spatial_shape = (
-                np.floor((spatial_shape - 1) / self.strides) + 1
-            )
-
-        output_spatial_shape = [int(i) for i in output_spatial_shape]
-        output_channels = kernel.shape[-1] * kernel.shape[-2]
-        if self.data_format == "channels_last":
-            output_shape = (
-                [input_shape[0]] + output_spatial_shape + [output_channels]
-            )
-        else:
-            output_shape = [
-                input_shape[0],
-                output_channels,
-            ] + output_spatial_shape
+        output_shape = operation_utils.compute_conv_output_shape(
+            inputs.shape,
+            kernel.shape[-1] * kernel.shape[-2],
+            kernel.shape[:-2],
+            self.strides,
+            self.padding,
+            self.data_format,
+            self.dilation_rate,
+        )
         return KerasTensor(output_shape, dtype=inputs.dtype)
 
 
+@keras_core_export(
+    [
+        "keras_core.operations.depthwise_conv",
+        "keras_core.operations.nn.depthwise_conv",
+    ]
+)
 def depthwise_conv(
     inputs,
     kernel,
     strides=1,
     padding="valid",
-    data_format="channels_last",
+    data_format=None,
     dilation_rate=1,
 ):
     """General N-D depthwise convolution.
@@ -674,6 +704,7 @@ def depthwise_conv(
     Returns:
         A tensor of rank N+2, the result of the depthwise conv operation.
     """
+    data_format = standardize_data_format(data_format)
     if any_symbolic_tensors((inputs,)):
         return DepthwiseConv(
             strides, padding, data_format, dilation_rate
@@ -693,7 +724,7 @@ class SeparableConv(Operation):
         self,
         strides=1,
         padding="valid",
-        data_format="channels_last",
+        data_format=None,
         dilation_rate=1,
     ):
         super().__init__()
@@ -731,13 +762,19 @@ class SeparableConv(Operation):
         return KerasTensor(output_shape, dtype=inputs.dtype)
 
 
+@keras_core_export(
+    [
+        "keras_core.operations.separable_conv",
+        "keras_core.operations.nn.separable_conv",
+    ]
+)
 def separable_conv(
     inputs,
     depthwise_kernel,
     pointwise_kernel,
     strides=1,
     padding="valid",
-    data_format="channels_last",
+    data_format=None,
     dilation_rate=1,
 ):
     """General N-D separable convolution.
@@ -781,6 +818,7 @@ def separable_conv(
     Returns:
         A tensor of rank N+2, the result of the depthwise conv operation.
     """
+    data_format = standardize_data_format(data_format)
     if any_symbolic_tensors((inputs,)):
         return SeparableConv(
             strides,
@@ -805,7 +843,7 @@ class ConvTranspose(Operation):
         strides,
         padding="valid",
         output_padding=None,
-        data_format="channels_last",
+        data_format=None,
         dilation_rate=1,
     ):
         super().__init__()
@@ -831,9 +869,12 @@ class ConvTranspose(Operation):
         )
 
     def compute_output_spec(self, inputs, kernel):
+        kernel_size = kernel.shape[:-2]
+        filters = kernel.shape[-2]
         output_shape = compute_conv_transpose_output_shape(
-            inputs,
-            kernel,
+            inputs.shape,
+            kernel_size,
+            filters,
             self.strides,
             self.padding,
             self.output_padding,
@@ -843,13 +884,19 @@ class ConvTranspose(Operation):
         return KerasTensor(output_shape, dtype=inputs.dtype)
 
 
+@keras_core_export(
+    [
+        "keras_core.operations.conv_transpose",
+        "keras_core.operations.nn.conv_transpose",
+    ]
+)
 def conv_transpose(
     inputs,
     kernel,
     strides,
     padding="valid",
     output_padding=None,
-    data_format="channels_last",
+    data_format=None,
     dilation_rate=1,
 ):
     """General N-D convolution transpose.
@@ -896,6 +943,7 @@ def conv_transpose(
     Returns:
         A tensor of rank N+2, the result of the conv operation.
     """
+    data_format = standardize_data_format(data_format)
     if any_symbolic_tensors((inputs,)):
         return ConvTranspose(
             strides, padding, output_padding, data_format, dilation_rate
@@ -934,6 +982,9 @@ class OneHot(Operation):
         return KerasTensor(x_shape)
 
 
+@keras_core_export(
+    ["keras_core.operations.one_hot", "keras_core.operations.nn.one_hot"]
+)
 def one_hot(x, num_classes, axis=-1):
     if any_symbolic_tensors((x,)):
         return OneHot(num_classes, axis=axis).symbolic_call(x)
@@ -960,6 +1011,12 @@ class BinaryCrossentropy(Operation):
         return KerasTensor(output.shape, dtype=output.dtype)
 
 
+@keras_core_export(
+    [
+        "keras_core.operations.binary_crossentropy",
+        "keras_core.operations.nn.binary_crossentropy",
+    ]
+)
 def binary_crossentropy(target, output, from_logits=False):
     if any_symbolic_tensors((target, output)):
         return BinaryCrossentropy(from_logits=from_logits).symbolic_call(
@@ -997,6 +1054,12 @@ class CategoricalCrossentropy(Operation):
         return KerasTensor(output.shape[:-1], dtype=output.dtype)
 
 
+@keras_core_export(
+    [
+        "keras_core.operations.categorical_crossentropy",
+        "keras_core.operations.nn.categorical_crossentropy",
+    ]
+)
 def categorical_crossentropy(target, output, from_logits=False, axis=-1):
     if any_symbolic_tensors((target, output)):
         return CategoricalCrossentropy(
@@ -1037,6 +1100,12 @@ class SparseCategoricalCrossentropy(Operation):
         return KerasTensor(output.shape[:-1], dtype=output.dtype)
 
 
+@keras_core_export(
+    [
+        "keras_core.operations.sparse_categorical_crossentropy",
+        "keras_core.operations.nn.sparse_categorical_crossentropy",
+    ]
+)
 def sparse_categorical_crossentropy(target, output, from_logits=False, axis=-1):
     if any_symbolic_tensors((target, output)):
         return SparseCategoricalCrossentropy(

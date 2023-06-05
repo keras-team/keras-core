@@ -1,3 +1,4 @@
+import json
 import os
 import warnings
 
@@ -9,6 +10,7 @@ from keras_core.saving import saving_api
 from keras_core.saving import saving_lib
 from keras_core.utils import io_utils
 from keras_core.utils import summary_utils
+from keras_core.utils import traceback_utils
 
 if backend.backend() == "tensorflow":
     from keras_core.backend.tensorflow.trainer import (
@@ -16,25 +18,118 @@ if backend.backend() == "tensorflow":
     )
 elif backend.backend() == "jax":
     from keras_core.backend.jax.trainer import JAXTrainer as Trainer
+elif backend.backend() == "torch":
+    from keras_core.backend.torch.trainer import TorchTrainer as Trainer
 else:
-    Trainer = None
+    raise RuntimeError(
+        f"Backend '{backend.backend()}' must implement the Trainer class."
+    )
 
 
 @keras_core_export(["keras_core.Model", "keras_core.models.Model"])
 class Model(Trainer, Layer):
-    """
+    """A model grouping layers into an object with training/inference features.
 
-    Combination of a Layer and Trainer. Adds:
+    There are three ways to instantiate a `Model`:
 
-    - layer surfacing
-    - saving
-    - export
-    - summary
+    ## With the "Functional API"
 
-    Limitations:
+    You start from `Input`,
+    you chain layer calls to specify the model's forward pass,
+    and finally you create your model from inputs and outputs:
 
-    - call must have a single inputs argument
-    - no masking support
+    ```python
+    inputs = keras_core.Input(shape=(37,))
+    x = keras_core.layers.Dense(32, activation="relu")(inputs)
+    outputs = keras_core.layers.Dense(5, activation="softmax")(x)
+    model = keras_core.Model(inputs=inputs, outputs=outputs)
+    ```
+
+    Note: Only dicts, lists, and tuples of input tensors are supported. Nested
+    inputs are not supported (e.g. lists of list or dicts of dict).
+
+    A new Functional API model can also be created by using the
+    intermediate tensors. This enables you to quickly extract sub-components
+    of the model.
+
+    Example:
+
+    ```python
+    inputs = keras_core.Input(shape=(None, None, 3))
+    processed = keras_core.layers.RandomCrop(width=128, height=128)(inputs)
+    conv = keras_core.layers.Conv2D(filters=32, kernel_size=3)(processed)
+    pooling = keras_core.layers.GlobalAveragePooling2D()(conv)
+    feature = keras_core.layers.Dense(10)(pooling)
+
+    full_model = keras_core.Model(inputs, feature)
+    backbone = keras_core.Model(processed, conv)
+    activations = keras_core.Model(conv, feature)
+    ```
+
+    Note that the `backbone` and `activations` models are not
+    created with `keras_core.Input` objects, but with the tensors that originate
+    from `keras_core.Input` objects. Under the hood, the layers and weights will
+    be shared across these models, so that user can train the `full_model`, and
+    use `backbone` or `activations` to do feature extraction.
+    The inputs and outputs of the model can be nested structures of tensors as
+    well, and the created models are standard Functional API models that support
+    all the existing APIs.
+
+    ## By subclassing the `Model` class
+
+    In that case, you should define your
+    layers in `__init__()` and you should implement the model's forward pass
+    in `call()`.
+
+    ```python
+    class MyModel(keras_core.Model):
+        def __init__(self):
+            super().__init__()
+            self.dense1 = keras_core.layers.Dense(32, activation="relu")
+            self.dense2 = keras_core.layers.Dense(5, activation="softmax")
+
+        def call(self, inputs):
+            x = self.dense1(inputs)
+            return self.dense2(x)
+
+    model = MyModel()
+    ```
+
+    If you subclass `Model`, you can optionally have
+    a `training` argument (boolean) in `call()`, which you can use to specify
+    a different behavior in training and inference:
+
+    ```python
+    class MyModel(keras_core.Model):
+        def __init__(self):
+            super().__init__()
+            self.dense1 = keras_core.layers.Dense(32, activation="relu")
+            self.dense2 = keras_core.layers.Dense(5, activation="softmax")
+            self.dropout = keras_core.layers.Dropout(0.5)
+
+        def call(self, inputs, training=False):
+            x = self.dense1(inputs)
+            x = self.dropout(x, training=training)
+            return self.dense2(x)
+
+    model = MyModel()
+    ```
+
+    Once the model is created, you can config the model with losses and metrics
+    with `model.compile()`, train the model with `model.fit()`, or use the model
+    to do prediction with `model.predict()`.
+
+    ## With the `Sequential` class
+
+    In addition, `keras_core.Sequential` is a special case of model where
+    the model is purely a stack of single-input, single-output layers.
+
+    ```python
+    model = keras_core.Sequential([
+        keras_core.Input(shape=(None, None, 3)),
+        keras_core.layers.Conv2D(filters=32, kernel_size=3),
+    ])
+    ```
     """
 
     def __new__(cls, *args, **kwargs):
@@ -71,6 +166,7 @@ class Model(Trainer, Layer):
             "Please use another name."
         )
 
+    @traceback_utils.filter_traceback
     def get_layer(self, name=None, index=None):
         """Retrieves a layer based on either its name (unique) or index.
 
@@ -111,6 +207,7 @@ class Model(Trainer, Layer):
             "Provide either a layer name or layer index at `get_layer`."
         )
 
+    @traceback_utils.filter_traceback
     def summary(
         self,
         line_length=None,
@@ -160,6 +257,7 @@ class Model(Trainer, Layer):
             layer_range=layer_range,
         )
 
+    @traceback_utils.filter_traceback
     def save(self, filepath, overwrite=True):
         if not str(filepath).endswith(".keras"):
             raise ValueError(
@@ -176,6 +274,7 @@ class Model(Trainer, Layer):
                 return
         saving_lib.save_model(self, filepath)
 
+    @traceback_utils.filter_traceback
     def save_weights(self, filepath, overwrite=True):
         if not str(filepath).endswith(".weights.h5"):
             raise ValueError(
@@ -192,6 +291,7 @@ class Model(Trainer, Layer):
                 return
         saving_lib.save_weights_only(self, filepath)
 
+    @traceback_utils.filter_traceback
     def load_weights(self, filepath, skip_mismatch=False, **kwargs):
         saving_api.load_weights(
             self, filepath, skip_mismatch=skip_mismatch, **kwargs
@@ -242,8 +342,56 @@ class Model(Trainer, Layer):
                 stacklevel=2,
             )
 
+    def to_json(self, **kwargs):
+        """Returns a JSON string containing the network configuration.
+
+        To load a network from a JSON save file, use
+        `keras.models.model_from_json(json_string, custom_objects={...})`.
+
+        Args:
+            **kwargs: Additional keyword arguments to be passed to
+                `json.dumps()`.
+
+        Returns:
+            A JSON string.
+        """
+        from keras_core.saving import serialization_lib
+
+        model_config = serialization_lib.serialize_keras_object(self)
+        return json.dumps(model_config, **kwargs)
+
+    @traceback_utils.filter_traceback
     def export(self, filepath):
         raise NotImplementedError
+
+
+@keras_core_export("keras_core.models.model_from_json")
+def model_from_json(json_string, custom_objects=None):
+    """Parses a JSON model configuration string and returns a model instance.
+
+    Usage:
+
+    >>> model = keras_core.Sequential([
+    ...     keras_core.layers.Dense(5, input_shape=(3,)),
+    ...     keras_core.layers.Softmax()])
+    >>> config = model.to_json()
+    >>> loaded_model = keras_core.models.model_from_json(config)
+
+    Args:
+        json_string: JSON string encoding a model configuration.
+        custom_objects: Optional dictionary mapping names
+            (strings) to custom classes or functions to be
+            considered during deserialization.
+
+    Returns:
+        A Keras model instance (uncompiled).
+    """
+    from keras_core.saving import serialization_lib
+
+    model_config = json.loads(json_string)
+    return serialization_lib.deserialize_keras_object(
+        model_config, custom_objects=custom_objects
+    )
 
 
 def functional_init_arguments(args, kwargs):

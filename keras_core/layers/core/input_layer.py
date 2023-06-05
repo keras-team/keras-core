@@ -1,8 +1,10 @@
 from keras_core import backend
+from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
 from keras_core.operations.node import Node
 
 
+@keras_core_export("keras_core.layers.InputLayer")
 class InputLayer(Layer):
     def __init__(
         self,
@@ -31,7 +33,7 @@ class InputLayer(Layer):
         if shape:
             shape = backend.standardize_shape(shape)
             batch_shape = (batch_size,) + shape
-        self.batch_shape = batch_shape
+        self.batch_shape = tuple(batch_shape)
         self._dtype = backend.standardize_dtype(dtype)
 
         if input_tensor is not None:
@@ -64,6 +66,7 @@ class InputLayer(Layer):
         }
 
 
+@keras_core_export(["keras_core.layers.Input", "keras_core.Input"])
 def Input(shape=None, batch_size=None, dtype=None, batch_shape=None, name=None):
     layer = InputLayer(
         shape=shape,

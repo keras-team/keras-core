@@ -12,6 +12,51 @@ from keras_core.utils import tracking
 
 @keras_core_export(["keras_core.Sequential", "keras_core.models.Sequential"])
 class Sequential(Model):
+    """`Sequential` groups a linear stack of layers into a `Model`.
+
+    Examples:
+
+    ```python
+    model = keras_core.Sequential()
+    model.add(keras_core.Input(shape=(16,)))
+    model.add(keras_core.layers.Dense(8))
+
+    # Note that you can also omit the initial `Input`.
+    # In that case the model doesn't have any weights until the first call
+    # to a training/evaluation method (since it isn't yet built):
+    model = keras_core.Sequential()
+    model.add(keras_core.layers.Dense(8))
+    model.add(keras_core.layers.Dense(4))
+    # model.weights not created yet
+
+    # Whereas if you specify an `Input`, the model gets built
+    # continuously as you are adding layers:
+    model = keras_core.Sequential()
+    model.add(keras_core.Input(shape=(16,)))
+    model.add(keras_core.layers.Dense(8))
+    len(model.weights)  # Returns "2"
+
+    # When using the delayed-build pattern (no input shape specified), you can
+    # choose to manually build your model by calling
+    # `build(batch_input_shape)`:
+    model = keras_core.Sequential()
+    model.add(keras_core.layers.Dense(8))
+    model.add(keras_core.layers.Dense(4))
+    model.build((None, 16))
+    len(model.weights)  # Returns "4"
+
+    # Note that when using the delayed-build pattern (no input shape specified),
+    # the model gets built the first time you call `fit`, `eval`, or `predict`,
+    # or the first time you call the model on some input data.
+    model = keras_core.Sequential()
+    model.add(keras_core.layers.Dense(8))
+    model.add(keras_core.layers.Dense(1))
+    model.compile(optimizer='sgd', loss='mse')
+    # This builds the model for the first time:
+    model.fit(x, y, batch_size=32, epochs=10)
+    ```
+    """
+
     @tracking.no_automatic_dependency_tracking
     def __init__(self, layers=None, trainable=True, name=None):
         super().__init__(trainable=trainable, name=name)
@@ -23,6 +68,12 @@ class Sequential(Model):
             self._maybe_rebuild()
 
     def add(self, layer, rebuild=True):
+        # Legacy case: if the first layer has an input_shape arg,
+        # use it to build an InputLayer.
+        if not self._layers:
+            if getattr(layer, "_input_shape_arg", None) is not None:
+                self.add(InputLayer(shape=layer._input_shape_arg))
+
         # If we are passed a Keras tensor created by keras.Input(), we
         # extract the input layer from its keras history and use that.
         if hasattr(layer, "_keras_history"):
@@ -112,11 +163,6 @@ class Sequential(Model):
         self._functional = Functional(inputs=inputs, outputs=outputs)
         self.built = True
 
-    def __call__(self, inputs, training=None, mask=None):
-        if self._functional:
-            return self._functional(inputs, training=training, mask=mask)
-        return super().__call__(inputs, training=training, mask=mask)
-
     def call(self, inputs, training=None, mask=None):
         if self._functional:
             return self._functional.call(inputs, training=training, mask=mask)
@@ -164,6 +210,22 @@ class Sequential(Model):
             )  # Ignore mask
             inputs = outputs
         return outputs
+
+    @property
+    def input_shape(self):
+        if self._functional:
+            return self._functional.input_shape
+        raise ValueError(
+            f"Sequential model '{self.name}' has no defined input shape yet."
+        )
+
+    @property
+    def output_shape(self):
+        if self._functional:
+            return self._functional.output_shape
+        raise ValueError(
+            f"Sequential model '{self.name}' has no defined output shape yet."
+        )
 
     def _is_layer_name_unique(self, layer):
         for ref_layer in self._layers:

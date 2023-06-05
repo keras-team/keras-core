@@ -1,23 +1,44 @@
 import jax.numpy as jnp
 
+from keras_core.backend.jax.core import convert_to_tensor
+
 
 def add(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.add(x1, x2)
 
 
+def bincount(x, weights=None, minlength=0):
+    if len(x.shape) == 2:
+        bincounts = [
+            jnp.bincount(arr, weights=weights, minlength=minlength)
+            for arr in list(x)
+        ]
+        return jnp.stack(bincounts)
+    return jnp.bincount(x, weights=weights, minlength=minlength)
+
+
 def einsum(subscripts, *operands, **kwargs):
+    operands = [convert_to_tensor(x) for x in operands]
     return jnp.einsum(subscripts, *operands, **kwargs)
 
 
 def subtract(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.subtract(x1, x2)
 
 
 def matmul(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.matmul(x1, x2)
 
 
 def multiply(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.multiply(x1, x2)
 
 
@@ -69,7 +90,7 @@ def append(
     return jnp.append(x1, x2, axis=axis)
 
 
-def arange(start, stop=None, step=None, dtype=None):
+def arange(start, stop=None, step=1, dtype=None):
     return jnp.arange(start, stop, step=step, dtype=dtype)
 
 
@@ -363,6 +384,10 @@ def ones_like(x, dtype=None):
     return jnp.ones_like(x, dtype=dtype)
 
 
+def zeros_like(x, dtype=None):
+    return jnp.zeros_like(x, dtype=dtype)
+
+
 def outer(x1, x2):
     return jnp.outer(x1, x2)
 
@@ -432,6 +457,8 @@ def swapaxes(x, axis1, axis2):
 
 
 def take(x, indices, axis=None):
+    x = convert_to_tensor(x)
+    indices = convert_to_tensor(indices)
     return jnp.take(x, indices, axis=axis)
 
 
@@ -484,6 +511,8 @@ def where(condition, x1, x2):
 
 
 def divide(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.divide(x1, x2)
 
 
@@ -520,6 +549,7 @@ def var(x, axis=None, keepdims=False):
 
 
 def sum(x, axis=None, keepdims=False):
+    x = convert_to_tensor(x)
     return jnp.sum(x, axis=axis, keepdims=keepdims)
 
 

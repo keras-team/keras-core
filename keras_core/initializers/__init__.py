@@ -47,6 +47,8 @@ ALL_OBJECTS_DICT.update(
         "uniform": RandomUniform,
         "normal": RandomNormal,
         "orthogonal": OrthogonalInitializer,
+        "one": Ones,
+        "zero": Zeros,
     }
 )
 
@@ -96,19 +98,21 @@ def get(identifier):
     Returns:
         Initializer instance base on the input identifier.
     """
-
     if identifier is None:
         return None
     if isinstance(identifier, dict):
-        identifier = deserialize(identifier)
+        obj = deserialize(identifier)
     elif isinstance(identifier, str):
         config = {"class_name": str(identifier), "config": {}}
-        identifier = deserialize(config)
+        obj = deserialize(config)
+    else:
+        obj = identifier
 
-    if callable(identifier):
-        if inspect.isclass(identifier):
-            identifier = identifier()
-        return identifier
-    raise ValueError(
-        f"Could not interpret initializer object identifier: {identifier}"
-    )
+    if callable(obj):
+        if inspect.isclass(obj):
+            obj = obj()
+        return obj
+    else:
+        raise ValueError(
+            f"Could not interpret initializer identifier: {identifier}"
+        )

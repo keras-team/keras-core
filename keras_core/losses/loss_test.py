@@ -1,5 +1,7 @@
 import numpy as np
 
+from keras_core import backend
+from keras_core import losses as losses_module
 from keras_core import operations as ops
 from keras_core import testing
 from keras_core.losses.loss import Loss
@@ -18,19 +20,19 @@ class LossTest(testing.TestCase):
         # No reduction
         loss_fn = ExampleLoss(reduction=None)
         loss = loss_fn(y_true, y_pred)
-        self.assertEqual(loss.dtype.name, "float32")
+        self.assertEqual(backend.standardize_dtype(loss.dtype), "float32")
         self.assertAllClose((y_true - y_pred) ** 2, loss)
 
         # sum
         loss_fn = ExampleLoss(reduction="sum")
         loss = loss_fn(y_true, y_pred)
-        self.assertEqual(loss.dtype.name, "float32")
+        self.assertEqual(backend.standardize_dtype(loss.dtype), "float32")
         self.assertAllClose(np.sum((y_true - y_pred) ** 2), loss)
 
         # sum_over_batch_size
         loss_fn = ExampleLoss(reduction="sum_over_batch_size")
         loss = loss_fn(y_true, y_pred)
-        self.assertEqual(loss.dtype.name, "float32")
+        self.assertEqual(backend.standardize_dtype(loss.dtype), "float32")
         self.assertAllClose(np.sum((y_true - y_pred) ** 2) / 4, loss)
 
         # bad reduction
@@ -52,7 +54,7 @@ class LossTest(testing.TestCase):
 
         loss_fn = ExampleLoss()
         loss = loss_fn(y_true, y_pred)
-        self.assertEqual(loss.dtype.name, "float32")
+        self.assertEqual(backend.standardize_dtype(loss.dtype), "float32")
         self.assertAllClose(
             np.sum((masked_y_true - masked_y_pred) ** 2) / 3, loss
         )
@@ -61,7 +63,7 @@ class LossTest(testing.TestCase):
         mask = np.array([False, False, False, False])
         y_pred._keras_mask = mask
         loss = loss_fn(y_true, y_pred)
-        self.assertEqual(loss.dtype.name, "float32")
+        self.assertEqual(backend.standardize_dtype(loss.dtype), "float32")
         self.assertAllClose(loss, 0)  # No NaN.
 
     def test_sample_weight(self):
@@ -71,7 +73,7 @@ class LossTest(testing.TestCase):
 
         loss_fn = ExampleLoss()
         loss = loss_fn(y_true, y_pred, sample_weight=sample_weight)
-        self.assertEqual(loss.dtype.name, "float32")
+        self.assertEqual(backend.standardize_dtype(loss.dtype), "float32")
         self.assertAllClose(
             np.sum(sample_weight * (y_true - y_pred) ** 2) / 4, loss
         )
@@ -79,7 +81,7 @@ class LossTest(testing.TestCase):
         # Test edge case where every weight is 0.
         sample_weight = np.array([0.0, 0.0, 0.0, 0.0])
         loss = loss_fn(y_true, y_pred, sample_weight=sample_weight)
-        self.assertEqual(loss.dtype.name, "float32")
+        self.assertEqual(backend.standardize_dtype(loss.dtype), "float32")
         self.assertAllClose(loss, 0)  # No NaN.
 
     def test_mask_and_sample_weight(self):
@@ -99,7 +101,7 @@ class LossTest(testing.TestCase):
 
         loss_fn = ExampleLoss()
         loss = loss_fn(y_true, y_pred, sample_weight=sample_weight)
-        self.assertEqual(loss.dtype.name, "float32")
+        self.assertEqual(backend.standardize_dtype(loss.dtype), "float32")
         self.assertAllClose(
             np.sum(masked_sample_weight * (masked_y_true - masked_y_pred) ** 2)
             / 3,
@@ -135,7 +137,7 @@ class LossTest(testing.TestCase):
 
             loss_fn = ExampleLoss()
             loss = loss_fn(y_true, y_pred, sample_weight=sample_weight)
-            self.assertEqual(loss.dtype.name, "float32")
+            self.assertEqual(backend.standardize_dtype(loss.dtype), "float32")
             self.assertAllClose(
                 np.sum(
                     masked_sample_weight * (masked_y_true - masked_y_pred) ** 2
@@ -151,12 +153,18 @@ class LossTest(testing.TestCase):
 
         loss_fn = ExampleLoss()
         loss = loss_fn(y_true, y_pred, sample_weight=sample_weight)
-        self.assertEqual(loss.dtype.name, "float32")
+        self.assertEqual(backend.standardize_dtype(loss.dtype), "float32")
         self.assertAllClose(
             np.sum(sample_weight * (y_true - y_pred) ** 2) / 4,
             loss,
         )
 
-    def test_serialization(self):
-        # TODO
-        pass
+    def test_get_method(self):
+        loss = losses_module.get("mse")
+        self.assertEqual(loss, losses_module.mean_squared_error)
+
+        loss = losses_module.get(None)
+        self.assertEqual(loss, None)
+
+        with self.assertRaises(ValueError):
+            losses_module.get("typo")

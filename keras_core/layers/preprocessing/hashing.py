@@ -167,7 +167,9 @@ class Hashing(Layer):
                     "of 2 integers, or a single integer. "
                     f"Received: salt={salt}."
                 )
+        self._convert_input_args = False
         self._allow_non_tensor_positional_args = True
+        self.supports_jit = False
 
     def call(self, inputs):
         if not isinstance(inputs, (tf.Tensor, np.ndarray, list, tuple)):

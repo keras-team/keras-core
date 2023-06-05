@@ -74,6 +74,7 @@ class Embedding(Layer):
         self.embeddings_constraint = constraints.get(embeddings_constraint)
         self.mask_zero = mask_zero
         self.supports_masking = mask_zero
+        self.autocast = False
 
     def build(self, input_shape=None):
         self.embeddings = self.add_weight(
@@ -83,15 +84,14 @@ class Embedding(Layer):
             regularizer=self.embeddings_regularizer,
             constraint=self.embeddings_constraint,
             trainable=True,
-            # autocast=False,  # TODO
         )
         self.built = True
 
     def call(self, inputs):
         if inputs.dtype != "int32" and inputs.dtype != "int64":
             inputs = ops.cast(inputs, "int32")
-        one_hot_data = ops.one_hot(inputs, num_classes=self.input_dim)
-        return ops.matmul(one_hot_data, self.embeddings)
+        outputs = ops.take(self.embeddings, inputs, axis=0)
+        return ops.cast(outputs, dtype=self.compute_dtype)
 
     def compute_mask(self, inputs, mask=None):
         if not self.mask_zero:

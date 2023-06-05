@@ -15,17 +15,75 @@ from keras_core.utils import tracking
 
 
 class Functional(Function, Model):
-    """
-    Add support for extra call arguments compared to Function:
-    training, masks
+    """A `Functional` model is a `Model` defined as a directed graph of layers.
 
-    Add support for arg standardization:
-    - list/dict duality
-    - upranking
+    Three types of `Model` exist: subclassed `Model`, `Functional` model,
+    and `Sequential` (a special case of `Functional`).
 
-    Override .layers
+    A `Functional` model can be instantiated by passing two arguments to
+    `__init__()`. The first argument is the `keras_core.Input` objects
+    that represent the inputs to the model.
+    The second argument specifies the output tensors that represent
+    the outputs of this model. Both arguments can be a nested structure
+    of tensors.
 
-    Symbolic add_loss
+    Example:
+
+    ```
+    inputs = {'x1': keras_core.Input(shape=(10,)),
+              'x2': keras_core.Input(shape=(1,))}
+    t = keras_core.layers.Dense(1, activation='relu')(inputs['x1'])
+    outputs = keras_core.layers.Add()([t, inputs['x2'])
+    model = keras_core.Model(inputs, outputs)
+    ```
+
+    A `Functional` model constructed using the Functional API can also
+    include raw Keras Core ops.
+
+    Example:
+
+    ```python
+    inputs = keras_core.Input(shape=(10,))
+    x = keras_core.layers.Dense(1)(inputs)
+    outputs = ops.nn.relu(x)
+    model = keras_core.Model(inputs, outputs)
+    ```
+
+    A new `Functional` model can also be created by using the
+    intermediate tensors. This enables you to quickly extract sub-components
+    of the model.
+
+    Example:
+
+    ```python
+    inputs = keras_core.Input(shape=(None, None, 3))
+    processed = keras_core.layers.RandomCrop(width=32, height=32)(inputs)
+    conv = keras_core.layers.Conv2D(filters=2, kernel_size=3)(processed)
+    pooling = keras_core.layers.GlobalAveragePooling2D()(conv)
+    feature = keras_core.layers.Dense(10)(pooling)
+
+    full_model = keras_core.Model(inputs, feature)
+    backbone = keras_core.Model(processed, conv)
+    activations = keras_core.Model(conv, feature)
+    ```
+
+    Note that the `backbone` and `activations` models are not
+    created with `keras_core.Input` objects, but with the tensors
+    that are originated from `keras_core.Input` objects.
+    Under the hood, the layers and weights will
+    be shared across these models, so that user can train the `full_model`, and
+    use `backbone` or `activations` to do feature extraction.
+    The inputs and outputs of the model can be nested structures of tensors as
+    well, and the created models are standard `Functional` model that support
+    all the existing API.
+
+    Args:
+        inputs: List of input tensors (must be created via `keras_core.Input()`
+            or originated from `keras_core.Input()`).
+        outputs: List of output tensors.
+        name: String, optional. Name of the model.
+        trainable: Boolean, optional. If the model's variables should be
+            trainable.
     """
 
     @tracking.no_automatic_dependency_tracking
@@ -85,7 +143,13 @@ class Functional(Function, Model):
                 f"(of type {type(outputs)})"
             )
 
+        trainable = kwargs.pop("trainable", None)
+
         Function.__init__(self, inputs, outputs, name=name, **kwargs)
+
+        if trainable is not None:
+            self.trainable = trainable
+
         self._layers = self.layers
         self.built = True
 
@@ -117,6 +181,20 @@ class Functional(Function, Model):
 
     def build(self, input_shape):
         self.built = True
+
+    @property
+    def input_shape(self):
+        input_shapes = nest.map_structure(lambda x: x.shape, self.inputs)
+        if isinstance(input_shapes, list) and len(input_shapes) == 1:
+            return input_shapes[0]
+        return input_shapes
+
+    @property
+    def output_shape(self):
+        output_shapes = nest.map_structure(lambda x: x.shape, self.outputs)
+        if isinstance(output_shapes, list) and len(output_shapes) == 1:
+            return output_shapes[0]
+        return output_shapes
 
     def _assert_input_compatibility(self, *args):
         return super(Model, self)._assert_input_compatibility(*args)
@@ -185,6 +263,17 @@ class Functional(Function, Model):
     def _standardize_inputs(self, inputs):
         flat_inputs = self._flatten_to_reference_inputs(inputs)
         return self._adjust_input_rank(flat_inputs)
+
+    @property
+    def input(self):
+        # For backwards compatibility,
+        # override `input` to retrieve the used-provided
+        # constructor inputs
+        return self._inputs_struct
+
+    @property
+    def output(self):
+        return self._outputs_struct
 
     def add_loss(self, loss):
         # Symbolic only. TODO
@@ -416,6 +505,7 @@ class Functional(Function, Model):
 
         # Create lits of input and output tensors and return new class
         name = config.get("name")
+        trainable = config.get("trainable")
         input_tensors = []
         output_tensors = []
         for layer_data in config["input_layers"]:
@@ -434,7 +524,12 @@ class Functional(Function, Model):
                 node_index
             ].output_tensors
             output_tensors.append(layer_output_tensors[tensor_index])
-        return cls(inputs=input_tensors, outputs=output_tensors, name=name)
+        return cls(
+            inputs=input_tensors,
+            outputs=output_tensors,
+            name=name,
+            trainable=trainable,
+        )
 
 
 def operation_fn(operation, training):
@@ -526,7 +621,7 @@ def deserialize_node(node_data, created_layers):
             if layer is None:
                 raise ValueError(f"Unknown layer: {history[0]}")
             inbound_node_index = history[1]
-            inbound_tensor_index = history[1]
+            inbound_tensor_index = history[2]
             if len(layer._inbound_nodes) <= inbound_node_index:
                 raise ValueError(
                     "Layer node index out of bounds.\n"

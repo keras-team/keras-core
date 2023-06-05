@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from tensorflow.python.ops.numpy_ops import np_config
 
 from keras_core import backend
@@ -11,10 +10,6 @@ from keras_core.operations import numpy as knp
 np_config.enable_numpy_behavior()
 
 
-@pytest.mark.skipif(
-    not backend.DYNAMIC_SHAPES_OK,
-    reason="Backend does not support dynamic shapes",
-)
 class NumpyTwoInputOpsDynamicShapeTest(testing.TestCase):
     def test_add(self):
         x = KerasTensor((None, 3))
@@ -623,10 +618,6 @@ class NumpyTwoInputOpsStaticShapeTest(testing.TestCase):
         self.assertEqual(knp.where(condition, x, y).shape, (2, 3))
 
 
-@pytest.mark.skipif(
-    not backend.DYNAMIC_SHAPES_OK,
-    reason="Backend does not support dynamic shapes",
-)
 class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
     def test_mean(self):
         x = KerasTensor([None, 3])
@@ -891,8 +882,26 @@ class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
         self.assertEqual(knp.floor(x).shape, (None, 3))
 
     def test_get_item(self):
-        x = KerasTensor([None, None])
-        self.assertEqual(knp.get_item(x, 5).shape, (None,))
+        x = KerasTensor([None, 5, 16])
+        # Simple slice.
+        sliced = knp.get_item(x, 5)
+        self.assertEqual(sliced.shape, (5, 16))
+        # Ellipsis slice.
+        sliced = knp.get_item(x, np.s_[..., -1])
+        self.assertEqual(sliced.shape, (None, 5))
+        # `newaxis` slice.
+        sliced = knp.get_item(x, np.s_[:, np.newaxis, ...])
+        self.assertEqual(sliced.shape, (None, 1, 5, 16))
+        # Strided slice.
+        sliced = knp.get_item(x, np.s_[:5, 3:, 3:12:2])
+        self.assertEqual(sliced.shape, (None, 2, 5))
+        # Error states.
+        with self.assertRaises(ValueError):
+            sliced = knp.get_item(x, np.s_[:, 17, :])
+        with self.assertRaises(ValueError):
+            sliced = knp.get_item(x, np.s_[..., 5, ...])
+        with self.assertRaises(ValueError):
+            sliced = knp.get_item(x, np.s_[:, :, :, :])
 
     def test_hstack(self):
         x = KerasTensor([None, 3])
@@ -975,6 +984,12 @@ class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
     def test_ones_like(self):
         x = KerasTensor([None, 3])
         self.assertEqual(knp.ones_like(x).shape, (None, 3))
+        self.assertEqual(knp.ones_like(x).dtype, x.dtype)
+
+    def test_zeros_like(self):
+        x = KerasTensor([None, 3])
+        self.assertEqual(knp.zeros_like(x).shape, (None, 3))
+        self.assertEqual(knp.zeros_like(x).dtype, x.dtype)
 
     def test_pad(self):
         x = KerasTensor([None, 3])
@@ -1407,6 +1422,12 @@ class NumpyOneInputOpsStaticShapeTest(testing.TestCase):
     def test_ones_like(self):
         x = KerasTensor([2, 3])
         self.assertEqual(knp.ones_like(x).shape, (2, 3))
+        self.assertEqual(knp.ones_like(x).dtype, x.dtype)
+
+    def test_zeros_like(self):
+        x = KerasTensor([2, 3])
+        self.assertEqual(knp.zeros_like(x).shape, (2, 3))
+        self.assertEqual(knp.zeros_like(x).dtype, x.dtype)
 
     def test_pad(self):
         x = KerasTensor([2, 3])
@@ -1653,13 +1674,19 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         y3 = np.ones([1, 5, 4, 2])
         self.assertAllClose(np.array(knp.cross(x1, y1)), np.cross(x1, y1))
         self.assertAllClose(np.array(knp.cross(x1, y2)), np.cross(x1, y2))
-        self.assertAllClose(np.array(knp.cross(x1, y3)), np.cross(x1, y3))
-        self.assertAllClose(np.array(knp.cross(x2, y3)), np.cross(x2, y3))
+        if backend.backend() != "torch":
+            # API divergence between `torch.cross` and `np.cross`
+            # `torch.cross` only allows dim 3, `np.cross` allows dim 2 or 3
+            self.assertAllClose(np.array(knp.cross(x1, y3)), np.cross(x1, y3))
+            self.assertAllClose(np.array(knp.cross(x2, y3)), np.cross(x2, y3))
 
         self.assertAllClose(np.array(knp.Cross()(x1, y1)), np.cross(x1, y1))
         self.assertAllClose(np.array(knp.Cross()(x1, y2)), np.cross(x1, y2))
-        self.assertAllClose(np.array(knp.Cross()(x1, y3)), np.cross(x1, y3))
-        self.assertAllClose(np.array(knp.Cross()(x2, y3)), np.cross(x2, y3))
+        if backend.backend() != "torch":
+            # API divergence between `torch.cross` and `np.cross`
+            # `torch.cross` only allows dim 3, `np.cross` allows dim 2 or 3
+            self.assertAllClose(np.array(knp.Cross()(x1, y3)), np.cross(x1, y3))
+            self.assertAllClose(np.array(knp.Cross()(x2, y3)), np.cross(x2, y3))
 
     def test_einsum(self):
         x = np.arange(24).reshape([2, 3, 4])
@@ -1700,22 +1727,22 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         self.assertAllClose(np.array(knp.full_like(x, 2)), np.full_like(x, 2))
         self.assertAllClose(
-            np.array(knp.full_like(x, np.ones([2, 3]))),
-            np.full_like(x, np.ones([2, 3])),
-        )
-        self.assertAllClose(
             np.array(knp.full_like(x, 2, dtype="float32")),
             np.full_like(x, 2, dtype="float32"),
+        )
+        self.assertAllClose(
+            np.array(knp.full_like(x, np.ones([2, 3]))),
+            np.full_like(x, np.ones([2, 3])),
         )
 
         self.assertAllClose(np.array(knp.FullLike()(x, 2)), np.full_like(x, 2))
         self.assertAllClose(
-            np.array(knp.FullLike()(x, np.ones([2, 3]))),
-            np.full_like(x, np.ones([2, 3])),
-        )
-        self.assertAllClose(
             np.array(knp.FullLike()(x, 2, dtype="float32")),
             np.full_like(x, 2, dtype="float32"),
+        )
+        self.assertAllClose(
+            np.array(knp.FullLike()(x, np.ones([2, 3]))),
+            np.full_like(x, np.ones([2, 3])),
         )
 
     def test_greater(self):
@@ -1919,6 +1946,7 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
 
         start = np.zeros([2, 3, 4])
         stop = np.ones([2, 3, 4])
+
         self.assertAllClose(
             np.array(knp.logspace(start, stop, 5, base=10)),
             np.logspace(start, stop, 5, base=10),
@@ -2320,6 +2348,19 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(
             np.array(knp.Average(axis=1)(x, weights=weights_1d)),
             np.average(x, axis=1, weights=weights_1d),
+        )
+
+    def test_bincount(self):
+        x = np.array([1, 1, 2, 3, 2, 4, 4, 5])
+        weights = np.array([0, 0, 3, 2, 1, 1, 4, 2])
+        minlength = 3
+        self.assertAllClose(
+            np.array(knp.bincount(x, weights=weights, minlength=minlength)),
+            np.bincount(x, weights=weights, minlength=minlength),
+        )
+        self.assertAllClose(
+            np.array(knp.Bincount(weights=weights, minlength=minlength)(x)),
+            np.bincount(x, weights=weights, minlength=minlength),
         )
 
     def test_broadcast_to(self):
@@ -2742,6 +2783,15 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
             np.array(knp.pad(x, ((1, 1), (1, 1)))),
             np.pad(x, ((1, 1), (1, 1))),
         )
+
+        self.assertAllClose(
+            np.array(knp.Pad(((1, 1), (1, 1)))(x)), np.pad(x, ((1, 1), (1, 1)))
+        )
+        self.assertAllClose(
+            np.array(knp.Pad(((1, 1), (1, 1)))(x)),
+            np.pad(x, ((1, 1), (1, 1))),
+        )
+
         self.assertAllClose(
             np.array(knp.pad(x, ((1, 1), (1, 1)), mode="reflect")),
             np.pad(x, ((1, 1), (1, 1)), mode="reflect"),
@@ -2751,13 +2801,6 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
             np.pad(x, ((1, 1), (1, 1)), mode="symmetric"),
         )
 
-        self.assertAllClose(
-            np.array(knp.Pad(((1, 1), (1, 1)))(x)), np.pad(x, ((1, 1), (1, 1)))
-        )
-        self.assertAllClose(
-            np.array(knp.Pad(((1, 1), (1, 1)))(x)),
-            np.pad(x, ((1, 1), (1, 1))),
-        )
         self.assertAllClose(
             np.array(knp.Pad(((1, 1), (1, 1)), mode="reflect")(x)),
             np.pad(x, ((1, 1), (1, 1)), mode="reflect"),
@@ -2882,16 +2925,32 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_split(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
-        self.assertAllClose(np.array(knp.split(x, 2)), np.split(x, 2))
-        self.assertAllClose(np.array(knp.Split(2)(x)), np.split(x, 2))
-        self.assertAllClose(
-            np.array(knp.split(x, [1, 2], axis=1)),
-            np.split(x, [1, 2], axis=1),
-        )
-        self.assertAllClose(
-            np.array(knp.Split([1, 2], axis=1)(x)),
-            np.split(x, [1, 2], axis=1),
-        )
+        if backend.backend() == "torch":
+            self.assertAllClose(
+                [t.numpy() for t in knp.split(x, 2)], np.split(x, 2)
+            )
+            self.assertAllClose(
+                [t.numpy() for t in knp.Split(2)(x)], np.split(x, 2)
+            )
+            self.assertAllClose(
+                [t.numpy() for t in knp.split(x, [1, 2], axis=1)],
+                np.split(x, [1, 2], axis=1),
+            )
+            self.assertAllClose(
+                [t.numpy() for t in knp.Split([1, 2], axis=1)(x)],
+                np.split(x, [1, 2], axis=1),
+            )
+        else:
+            self.assertAllClose(np.array(knp.split(x, 2)), np.split(x, 2))
+            self.assertAllClose(np.array(knp.Split(2)(x)), np.split(x, 2))
+            self.assertAllClose(
+                np.array(knp.split(x, [1, 2], axis=1)),
+                np.split(x, [1, 2], axis=1),
+            )
+            self.assertAllClose(
+                np.array(knp.Split([1, 2], axis=1)(x)),
+                np.split(x, [1, 2], axis=1),
+            )
 
     def test_sqrt(self):
         x = np.array([[1, 4, 9], [16, 25, 36]])

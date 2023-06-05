@@ -1,5 +1,10 @@
-import json
-import os
+from keras_core.backend.config import backend
+
+if backend() == "torch":
+    # When using the torch backend,
+    # torch needs to be imported first, otherwise it will segfault
+    # upon import.
+    import torch
 
 from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.backend.common.keras_tensor import any_symbolic_tensors
@@ -12,7 +17,6 @@ from keras_core.backend.common.variables import get_autocast_scope
 from keras_core.backend.common.variables import is_float_dtype
 from keras_core.backend.common.variables import standardize_dtype
 from keras_core.backend.common.variables import standardize_shape
-from keras_core.backend.config import backend
 from keras_core.backend.config import epsilon
 from keras_core.backend.config import floatx
 from keras_core.backend.config import image_data_format
@@ -29,6 +33,9 @@ if backend() == "tensorflow":
 elif backend() == "jax":
     print_msg("Using JAX backend.")
     from keras_core.backend.jax import *  # noqa: F403
+elif backend() == "torch":
+    print_msg("Using PyTorch backend.")
+    from keras_core.backend.torch import *  # noqa: F403
 elif backend() == "numpy":
     print_msg("Using NumPy backend.")
     from keras_core.backend.numpy import *  # noqa: F403

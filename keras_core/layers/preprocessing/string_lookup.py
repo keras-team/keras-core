@@ -301,8 +301,11 @@ class StringLookup(Layer):
         sparse=False,
         encoding="utf-8",
         name=None,
-        **kwargs
+        dtype=None,
+        **kwargs,
     ):
+        if output_mode == "int" and dtype is None:
+            dtype = "int64"
         super().__init__(name=name)
         if sparse and backend.backend() != "tensorflow":
             raise ValueError(
@@ -322,9 +325,12 @@ class StringLookup(Layer):
             sparse=sparse,
             encoding=encoding,
             name=name,
+            dtype=dtype,
             **kwargs,
         )
+        self._convert_input_args = False
         self._allow_non_tensor_positional_args = True
+        self.supports_jit = False
 
     def adapt(self, data, batch_size=None, steps=None):
         """Computes a vocabulary of interger terms from tokens in a dataset.

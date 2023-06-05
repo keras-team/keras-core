@@ -22,6 +22,7 @@ class TestEpochIterator(testing.TestCase):
         )
         steps_seen = []
         for step, batch in iterator.enumerate_epoch(return_type=return_type):
+            batch = batch[0]
             steps_seen.append(step)
             self.assertEqual(len(batch), 3)
             if return_type == "np":
@@ -35,3 +36,25 @@ class TestEpochIterator(testing.TestCase):
 
     def test_basic_flow_tf(self):
         self._test_basic_flow("tf")
+
+    def test_insufficient_data(self):
+        batch_size = 8
+        steps_per_epoch = 6
+        dataset_size = batch_size * (steps_per_epoch - 2)
+
+        x = np.arange(dataset_size).reshape((dataset_size, 1))
+        y = x * 2
+
+        iterator = epoch_iterator.EpochIterator(
+            x=x,
+            y=y,
+            batch_size=batch_size,
+            steps_per_epoch=steps_per_epoch,
+        )
+
+        steps_seen = []
+        for step, _ in iterator.enumerate_epoch():
+            steps_seen.append(step)
+
+        self.assertLen(steps_seen, steps_per_epoch - 2)
+        self.assertTrue(iterator._insufficient_data)

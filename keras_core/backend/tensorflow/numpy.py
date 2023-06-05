@@ -1,9 +1,17 @@
 import tensorflow as tf
 from tensorflow.experimental import numpy as tfnp
 
+from keras_core.backend.tensorflow.core import convert_to_tensor
+
 
 def add(x1, x2):
     return tfnp.add(x1, x2)
+
+
+def bincount(x, weights=None, minlength=None):
+    if minlength is not None:
+        x = tf.cast(x, tf.int32)
+    return tf.math.bincount(x, weights=weights, minlength=minlength, axis=-1)
 
 
 def einsum(subscripts, *operands, **kwargs):
@@ -36,9 +44,10 @@ def max(x, axis=None, keepdims=False, initial=None):
 
     # TensorFlow returns -inf by default for an empty list, but for consistency
     # with other backends and the numpy API we want to throw in this case.
+    size_x = size(x)
     tf.assert_greater(
-        size(x),
-        tf.constant(0, dtype=tf.int64),
+        size_x,
+        tf.constant(0, dtype=size_x.dtype),
         message="Cannot compute the max of an empty tensor.",
     )
 
@@ -85,7 +94,7 @@ def append(
     return tfnp.append(x1, x2, axis=axis)
 
 
-def arange(start, stop=None, step=None, dtype=None):
+def arange(start, stop=None, step=1, dtype=None):
     return tfnp.arange(start, stop, step=step, dtype=dtype)
 
 
@@ -403,6 +412,10 @@ def ones_like(x, dtype=None):
     return tfnp.ones_like(x, dtype=dtype)
 
 
+def zeros_like(x, dtype=None):
+    return tf.zeros_like(x, dtype=dtype)
+
+
 def outer(x1, x2):
     return tfnp.outer(x1, x2)
 
@@ -492,7 +505,22 @@ def round(x, decimals=0):
 
 
 def tile(x, repeats):
-    return tfnp.tile(x, repeats)
+    # The TFNP implementation is buggy, we roll our own.
+    x = convert_to_tensor(x)
+    repeats = tf.reshape(convert_to_tensor(repeats, dtype="int32"), [-1])
+    repeats_size = tf.size(repeats)
+    repeats = tf.pad(
+        repeats,
+        [[tf.maximum(x.shape.rank - repeats_size, 0), 0]],
+        constant_values=1,
+    )
+    x_shape = tf.pad(
+        tf.shape(x),
+        [[tf.maximum(repeats_size - x.shape.rank, 0), 0]],
+        constant_values=1,
+    )
+    x = tf.reshape(x, x_shape)
+    return tf.tile(x, repeats)
 
 
 def trace(x, offset=0, axis1=0, axis2=1):

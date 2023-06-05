@@ -7,25 +7,30 @@ from keras_core import optimizers
 from keras_core.saving import serialization_lib
 from keras_core.trainers.compile_utils import CompileLoss
 from keras_core.trainers.compile_utils import CompileMetrics
+from keras_core.utils import traceback_utils
 from keras_core.utils import tracking
 
 
 class Trainer:
     def __init__(self):
+        self._lock = False
         self._run_eagerly = False
         self._jit_compile = True
         self.compiled = False
+        self.steps_per_execution = 1
 
+    @traceback_utils.filter_traceback
     @tracking.no_automatic_dependency_tracking
     def compile(
         self,
-        optimizer,
+        optimizer="rmsprop",
         loss=None,
         loss_weights=None,
         metrics=None,
         weighted_metrics=None,
         run_eagerly=False,
-        jit_compile=True,
+        steps_per_execution=1,
+        jit_compile="auto",
     ):
         self.optimizer = optimizers.get(optimizer)
         if loss is not None:
@@ -36,6 +41,11 @@ class Trainer:
             self._compile_metrics = CompileMetrics(metrics, weighted_metrics)
         else:
             self._compile_metrics = None
+        if jit_compile == "auto":
+            if all(x.supports_jit for x in self._flatten_layers()):
+                jit_compile = True
+            else:
+                jit_compile = False
         if jit_compile and run_eagerly:
             jit_compile = False
             warnings.warn(
@@ -48,6 +58,7 @@ class Trainer:
         self.stop_training = False
         self.compiled = True
         self._loss_tracker = metrics_module.Mean(name="loss")
+        self.steps_per_execution = steps_per_execution
 
         self._compile_config = serialization_lib.SerializableDict(
             optimizer=optimizer,
@@ -56,6 +67,7 @@ class Trainer:
             metrics=metrics,
             weighted_metrics=weighted_metrics,
             run_eagerly=run_eagerly,
+            steps_per_execution=steps_per_execution,
             jit_compile=jit_compile,
         )
 

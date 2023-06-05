@@ -2,6 +2,7 @@ import warnings
 
 import tensorflow as tf
 
+from keras_core.backend import standardize_data_format
 from keras_core.backend.common.backend_utils import (
     compute_conv_transpose_output_shape,
 )
@@ -56,8 +57,12 @@ def hard_sigmoid(x):
     return tf.clip_by_value(x, 0.0, 1.0)
 
 
-def elu(x):
-    return tf.nn.elu(x)
+def elu(x, alpha=1.0):
+    res = tf.nn.elu(x)
+    if alpha == 1:
+        return res
+    else:
+        return tf.where(x > 0, res, alpha * res)
 
 
 def selu(x):
@@ -70,12 +75,24 @@ def gelu(x, approximate=True):
 
 def softmax(x, axis=None):
     logits = x
-    output = tf.nn.softmax(x, axis=axis)
+    if axis is None:
+        # Unlike numpy, tf will handle axis=None as axis=-1.
+        # We need this workaround for the reduction on every dim.
+        logits_exp = tf.exp(logits)
+        output = logits_exp / tf.reduce_sum(logits_exp, keepdims=True)
+    else:
+        output = tf.nn.softmax(x, axis=axis)
     output._keras_logits = logits
     return output
 
 
 def log_softmax(x, axis=None):
+    if axis is None:
+        # Unlike numpy, tf will handle axis=None as axis=-1.
+        # We need this workaround for the reduction on every dim.
+        logits = x
+        logits_exp = tf.exp(logits)
+        return logits - tf.math.log(tf.reduce_sum(logits_exp, keepdims=True))
     return tf.nn.log_softmax(x, axis=axis)
 
 
@@ -114,8 +131,9 @@ def max_pool(
     pool_size,
     strides=None,
     padding="valid",
-    data_format="channels_last",
+    data_format=None,
 ):
+    data_format = standardize_data_format(data_format)
     strides = pool_size if strides is None else strides
     padding = padding.upper()
     tf_data_format = _convert_data_format("channels_last", len(inputs.shape))
@@ -141,8 +159,9 @@ def average_pool(
     pool_size,
     strides=None,
     padding="valid",
-    data_format="channels_last",
+    data_format=None,
 ):
+    data_format = standardize_data_format(data_format)
     strides = pool_size if strides is None else strides
     padding = padding.upper()
     tf_data_format = _convert_data_format("channels_last", len(inputs.shape))
@@ -200,7 +219,7 @@ def conv(
     kernel,
     strides=1,
     padding="valid",
-    data_format="channel_last",
+    data_format=None,
     dilation_rate=1,
 ):
     def _conv():
@@ -220,6 +239,7 @@ def conv(
     def _conv_xla():
         return _conv()
 
+    data_format = standardize_data_format(data_format)
     if data_format == "channels_last":
         channels = inputs.shape[-1]
     else:
@@ -236,16 +256,19 @@ def depthwise_conv(
     kernel,
     strides=1,
     padding="valid",
-    data_format="channels_last",
+    data_format=None,
     dilation_rate=1,
 ):
+    data_format = standardize_data_format(data_format)
     num_spatial_dims = len(inputs.shape) - 2
     if num_spatial_dims > 2:
         raise ValueError(
             "`inputs` rank must be 3 (1D conv) or 4 (2D conv). Received: "
             "{inputs.ndim}."
         )
-    tf_data_format = _convert_data_format(data_format, len(inputs.shape))
+    # Because we use `tf.nn.depthwise_conv2d` for both 1D and 2D convs, we set
+    # `tf_data_format` using 2D conv format.
+    tf_data_format = _convert_data_format(data_format, 4)
     padding = padding.upper()
     if isinstance(strides, int):
         strides = (strides,) * num_spatial_dims
@@ -296,16 +319,19 @@ def separable_conv(
     pointwise_kernel,
     strides=1,
     padding="valid",
-    data_format="channels_last",
+    data_format=None,
     dilation_rate=1,
 ):
+    data_format = standardize_data_format(data_format)
     num_spatial_dims = len(inputs.shape) - 2
     if num_spatial_dims > 2:
         raise ValueError(
             "`num_spatial_dims` must be 1 or 2. Received: "
             f"num_spatial_dims={num_spatial_dims}."
         )
-    tf_data_format = _convert_data_format(data_format, len(inputs.shape))
+    # Because we use `tf.nn.separable_conv2d` for both 1D and 2D convs, we set
+    # `tf_data_format` using 2D conv format.
+    tf_data_format = _convert_data_format(data_format, 4)
     padding = padding.upper()
     if isinstance(strides, int):
         strides = (strides,) * num_spatial_dims
@@ -356,13 +382,22 @@ def conv_transpose(
     strides=1,
     padding="valid",
     output_padding=None,
-    data_format="channels_last",
+    data_format=None,
     dilation_rate=1,
 ):
+    data_format = standardize_data_format(data_format)
     tf_data_format = _convert_data_format(data_format, len(inputs.shape))
+    kernel_size = kernel.shape[:-2]
+    filters = kernel.shape[-2]
+    input_shape = list(inputs.shape)
+    symbolic_shape = tf.shape(inputs)
+    for i, e in enumerate(input_shape):
+        if e is None:
+            input_shape[i] = symbolic_shape[i]
     output_shape = compute_conv_transpose_output_shape(
-        inputs,
-        kernel,
+        input_shape,
+        kernel_size,
+        filters,
         strides,
         padding,
         output_padding,
@@ -461,18 +496,25 @@ def categorical_crossentropy(target, output, from_logits=False, axis=-1):
     target = tf.convert_to_tensor(target)
     output = tf.convert_to_tensor(output)
 
-    if target.shape != output.shape:
-        raise ValueError(
-            "Arguments `target` and `output` must have the same shape. "
-            "Received: "
-            f"target.shape={target.shape}, output.shape={output.shape}"
-        )
     if len(target.shape) < 1:
         raise ValueError(
             "Arguments `target` and `output` must be at least rank 1. "
             "Received: "
             f"target.shape={target.shape}, output.shape={output.shape}"
         )
+    if len(target.shape) != len(output.shape):
+        raise ValueError(
+            "Arguments `target` and `output` must have the same rank "
+            "(ndim). Received: "
+            f"target.shape={target.shape}, output.shape={output.shape}"
+        )
+    for e1, e2 in zip(target.shape, output.shape):
+        if e1 is not None and e2 is not None and e1 != e2:
+            raise ValueError(
+                "Arguments `target` and `output` must have the same shape. "
+                "Received: "
+                f"target.shape={target.shape}, output.shape={output.shape}"
+            )
 
     output, from_logits = _get_logits(
         output, from_logits, "Softmax", "categorical_crossentropy"
@@ -527,12 +569,19 @@ def sparse_categorical_crossentropy(target, output, from_logits=False, axis=-1):
             "Received: "
             f"output.shape={output.shape}"
         )
-    if target.shape != output.shape[:-1]:
+    if len(target.shape) != len(output.shape[:-1]):
         raise ValueError(
-            "Arguments `target` and `output` must have the same shape "
-            "up until the last dimension: "
+            "Argument `output` must have rank (ndim) `target.ndim - 1`. "
+            "Received: "
             f"target.shape={target.shape}, output.shape={output.shape}"
         )
+    for e1, e2 in zip(target.shape, output.shape[:-1]):
+        if e1 is not None and e2 is not None and e1 != e2:
+            raise ValueError(
+                "Arguments `target` and `output` must have the same shape "
+                "up until the last dimension: "
+                f"target.shape={target.shape}, output.shape={output.shape}"
+            )
 
     output, from_logits = _get_logits(
         output, from_logits, "Softmax", "sparse_categorical_crossentropy"
@@ -563,12 +612,19 @@ def binary_crossentropy(target, output, from_logits=False):
     target = tf.convert_to_tensor(target)
     output = tf.convert_to_tensor(output)
 
-    if target.shape != output.shape:
+    if len(target.shape) != len(output.shape):
         raise ValueError(
-            "Arguments `target` and `output` must have the same shape. "
-            "Received: "
+            "Arguments `target` and `output` must have the same rank "
+            "(ndim). Received: "
             f"target.shape={target.shape}, output.shape={output.shape}"
         )
+    for e1, e2 in zip(target.shape, output.shape):
+        if e1 is not None and e2 is not None and e1 != e2:
+            raise ValueError(
+                "Arguments `target` and `output` must have the same shape. "
+                "Received: "
+                f"target.shape={target.shape}, output.shape={output.shape}"
+            )
 
     output, from_logits = _get_logits(
         output, from_logits, "Sigmoid", "binary_crossentropy"

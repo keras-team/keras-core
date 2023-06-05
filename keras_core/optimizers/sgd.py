@@ -1,7 +1,9 @@
 from keras_core import operations as ops
+from keras_core.api_export import keras_core_export
 from keras_core.optimizers import optimizer
 
 
+@keras_core_export("keras_core.optimizers.SGD")
 class SGD(optimizer.Optimizer):
     """Gradient descent (with momentum) optimizer.
 
@@ -26,16 +28,16 @@ class SGD(optimizer.Optimizer):
     ```
 
     Args:
-      learning_rate: A `Tensor`, floating point value, or a schedule that is a
-        `tf.keras.optimizers.schedules.LearningRateSchedule`, or a callable
-        that takes no arguments and returns the actual value to use. The
-        learning rate. Defaults to 0.001.
-      momentum: float hyperparameter >= 0 that accelerates gradient descent in
-        the relevant direction and dampens oscillations. Defaults to 0, i.e.,
-        vanilla gradient descent.
-      nesterov: boolean. Whether to apply Nesterov momentum.
-        Defaults to `False`.
-      {{base_optimizer_keyword_args}}
+        learning_rate: A float, a
+            `keras_core.optimizers.schedules.LearningRateSchedule` instance, or
+            a callable that takes no arguments and returns the actual value to
+            use. The learning rate. Defaults to 0.01.
+        momentum: float hyperparameter >= 0 that accelerates gradient descent in
+            the relevant direction and dampens oscillations. Defaults to 0,
+            i.e., vanilla gradient descent.
+        nesterov: boolean. Whether to apply Nesterov momentum.
+            Defaults to `False`.
+        {{base_optimizer_keyword_args}}
     """
 
     def __init__(
@@ -81,22 +83,24 @@ class SGD(optimizer.Optimizer):
             return
         super().build(variables)
         self.momentums = []
-        for variable in variables:
-            self.momentums.append(
-                self.add_variable_from_reference(
-                    reference_variable=variable, name="m"
+        if self.momentum != 0:
+            for variable in variables:
+                self.momentums.append(
+                    self.add_variable_from_reference(
+                        reference_variable=variable, name="m"
+                    )
                 )
-            )
 
     def update_step(self, gradient, variable, learning_rate):
         """Update step given gradient and the associated model variable."""
         learning_rate = ops.cast(learning_rate, variable.dtype)
         gradient = ops.cast(gradient, variable.dtype)
         m = None
-        momentum = ops.cast(self.momentum, variable.dtype)
-        m = self.momentums[self._get_variable_index(variable)]
+        if self.momentum != 0:
+            m = self.momentums[self._get_variable_index(variable)]
 
         if m is not None:
+            momentum = ops.cast(self.momentum, variable.dtype)
             m.assign(-gradient * learning_rate + m * momentum)
             if self.nesterov:
                 variable.assign(

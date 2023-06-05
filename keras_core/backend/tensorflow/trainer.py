@@ -6,10 +6,12 @@ import tensorflow as tf
 from tensorflow.python.eager import context as tf_context
 
 from keras_core import callbacks as callbacks_module
+from keras_core import metrics as metrics_module
 from keras_core import optimizers as optimizers_module
 from keras_core.trainers import trainer as base_trainer
 from keras_core.trainers.data_adapters import data_adapter_utils
 from keras_core.trainers.epoch_iterator import EpochIterator
+from keras_core.utils import traceback_utils
 
 
 class TensorFlowTrainer(base_trainer.Trainer):
@@ -55,7 +57,6 @@ class TensorFlowTrainer(base_trainer.Trainer):
         self._loss_tracker.update_state(loss)
 
         # Compute gradients
-        # TODO: move value conversion to TF
         if self.trainable_weights:
             trainable_weights = [v.value for v in self.trainable_weights]
             gradients = tape.gradient(loss, trainable_weights)
@@ -88,10 +89,10 @@ class TensorFlowTrainer(base_trainer.Trainer):
         return y_pred
 
     def make_train_function(self, force=False):
-        # TODO: support tf.distribute and steps_per_execution.
         if self.train_function is not None and not force:
             return self.train_function
 
+        @tf.autograph.experimental.do_not_convert
         def one_step_on_data(data):
             """Runs a single training step on a batch of data."""
             return self.train_step(data)
@@ -101,30 +102,41 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 one_step_on_data, jit_compile=True, reduce_retracing=True
             )
 
+        @tf.autograph.experimental.do_not_convert
         def one_step_on_iterator(iterator):
             """Runs a single training step given a Dataset iterator."""
             data = next(iterator)
             outputs = self.distribute_strategy.run(
-                one_step_on_data, args=(data,))
+                one_step_on_data, args=(data,)
+            )
             outputs = reduce_per_replica(
-                outputs, self.distribute_strategy,
-                reduction=self.distribute_reduction_method
+                outputs,
+                self.distribute_strategy,
+                reduction=self.distribute_reduction_method,
             )
             return outputs
 
-        if not self.run_eagerly:
-            train_function = tf.function(
-                one_step_on_iterator, reduce_retracing=True
-            )
+        @tf.autograph.experimental.do_not_convert
+        def multi_step_on_iterator(iterator):
+            for _ in range(self.steps_per_execution):
+                outputs = one_step_on_iterator(iterator)
+            return outputs
+
+        if self.steps_per_execution > 1:
+            train_function = multi_step_on_iterator
         else:
             train_function = one_step_on_iterator
+
+        if not self.run_eagerly:
+            train_function = tf.function(train_function, reduce_retracing=True)
+
         self.train_function = train_function
 
     def make_test_function(self, force=False):
-        # TODO: support tf.distribute and steps_per_execution.
         if self.test_function is not None and not force:
             return self.test_function
 
+        @tf.autograph.experimental.do_not_convert
         def one_step_on_data(data):
             """Runs a single test step on a batch of data."""
             return self.test_step(data)
@@ -134,30 +146,41 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 one_step_on_data, jit_compile=True, reduce_retracing=True
             )
 
+        @tf.autograph.experimental.do_not_convert
         def one_step_on_iterator(iterator):
             """Runs a single test step given a Dataset iterator."""
             data = next(iterator)
             outputs = self.distribute_strategy.run(
-                one_step_on_data, args=(data,))
+                one_step_on_data, args=(data,)
+            )
             outputs = reduce_per_replica(
-                outputs, self.distribute_strategy,
-                reduction=self.distribute_reduction_method
+                outputs,
+                self.distribute_strategy,
+                reduction=self.distribute_reduction_method,
             )
             return outputs
 
-        if not self.run_eagerly:
-            test_function = tf.function(
-                one_step_on_iterator, reduce_retracing=True
-            )
+        @tf.autograph.experimental.do_not_convert
+        def multi_step_on_iterator(iterator):
+            for _ in range(self.steps_per_execution):
+                outputs = one_step_on_iterator(iterator)
+            return outputs
+
+        if self.steps_per_execution > 1:
+            test_function = multi_step_on_iterator
         else:
             test_function = one_step_on_iterator
+
+        if not self.run_eagerly:
+            test_function = tf.function(test_function, reduce_retracing=True)
+
         self.test_function = test_function
 
     def make_predict_function(self, force=False):
-        # TODO: support tf.distribute and steps_per_execution.
         if self.predict_function is not None and not force:
             return self.predict_function
 
+        @tf.autograph.experimental.do_not_convert
         def one_step_on_data(data):
             """Runs a predict test step on a batch of data."""
             return self.predict_step(data)
@@ -167,25 +190,42 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 one_step_on_data, jit_compile=True, reduce_retracing=True
             )
 
-        def one_step_on_iterator(iterator):
-            """Runs a single predict step given a Dataset iterator."""
-            data = next(iterator)
+        @tf.autograph.experimental.do_not_convert
+        def one_step_on_data_distributed(data):
+            data = data[0]
             outputs = self.distribute_strategy.run(
-                one_step_on_data, args=(data,))
+                one_step_on_data, args=(data,)
+            )
             outputs = reduce_per_replica(
-                outputs, self.distribute_strategy,
-                reduction=self.distribute_reduction_method
+                outputs,
+                self.distribute_strategy,
+                reduction=self.distribute_reduction_method,
             )
             return outputs
 
+        @tf.autograph.experimental.do_not_convert
+        def multi_step_on_data(data):
+            outputs = one_step_on_data_distributed(data[:1])
+            for single_step_data in data[1:]:
+                step_outputs = one_step_on_data_distributed([single_step_data])
+                outputs = tf.nest.map_structure(
+                    lambda t1, t2: concat([t1, t2]), outputs, step_outputs
+                )
+            return outputs
+
+        if self.steps_per_execution > 1:
+            predict_function = multi_step_on_data
+        else:
+            predict_function = one_step_on_data_distributed
+
         if not self.run_eagerly:
             predict_function = tf.function(
-                one_step_on_iterator, reduce_retracing=True
+                predict_function, reduce_retracing=True
             )
-        else:
-            predict_function = one_step_on_iterator
+
         self.predict_function = predict_function
 
+    @traceback_utils.filter_traceback
     def fit(
         self,
         x=None,
@@ -237,6 +277,8 @@ class TensorFlowTrainer(base_trainer.Trainer):
             steps_per_epoch=steps_per_epoch,
             shuffle=shuffle,
             class_weight=class_weight,
+            distribute_strategy=self.distribute_strategy,
+            steps_per_execution=self.steps_per_execution,
         )
 
         # Container that configures and calls callbacks.
@@ -279,6 +321,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
                         y=val_y,
                         sample_weight=val_sample_weight,
                         batch_size=validation_batch_size or batch_size,
+                        distribute_strategy=self.distribute_strategy,
                     )
                 val_logs = self.evaluate(
                     x=val_x,
@@ -312,6 +355,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
         callbacks.on_train_end(logs=training_logs)
         return self.history
 
+    @traceback_utils.filter_traceback
     def evaluate(
         self,
         x=None,
@@ -340,6 +384,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 batch_size=batch_size,
                 steps_per_epoch=steps,
                 shuffle=False,
+                distribute_strategy=self.distribute_strategy,
             )
 
         # Container that configures and calls callbacks.
@@ -370,6 +415,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
             return logs
         return self._flatten_metrics_in_order(logs)
 
+    @traceback_utils.filter_traceback
     def predict(
         self, x, batch_size=None, verbose="auto", steps=None, callbacks=None
     ):
@@ -379,6 +425,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
             batch_size=batch_size,
             steps_per_epoch=steps,
             shuffle=False,
+            distribute_strategy=self.distribute_strategy,
         )
 
         # Container that configures and calls callbacks.
@@ -393,56 +440,127 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 model=self,
             )
 
+        def append_to_outputs(batch_outputs, outputs):
+            if outputs is None:
+                outputs = tf.nest.map_structure(
+                    lambda batch_output: [batch_output],
+                    batch_outputs,
+                )
+            else:
+                tf.__internal__.nest.map_structure_up_to(
+                    batch_outputs,
+                    lambda output, batch_output: output.append(batch_output),
+                    outputs,
+                    batch_outputs,
+                )
+            return outputs
+
+        def get_data(iterator):
+            """Returns data for the next execution."""
+            data = []
+            for _ in range(self.steps_per_execution):
+                try:
+                    single_step_data = next(iterator)
+                except (StopIteration, tf.errors.OutOfRangeError) as e:
+                    if len(data) > 0:
+                        # Suppress the error when still have remaining data.
+                        return data
+                    else:
+                        # Re-raise the error for
+                        # TFEpochIterator.catch_stop_iteration() to catch when
+                        # no data left.
+                        raise e
+                data.append(single_step_data)
+            return data
+
         self.make_predict_function()
         callbacks.on_predict_begin()
         outputs = None
         with epoch_iterator.catch_stop_iteration():
             for step, iterator in epoch_iterator.enumerate_epoch():
                 callbacks.on_predict_batch_begin(step)
-                batch_outputs = self.predict_function(iterator)
-                if outputs is None:
-                    outputs = tf.nest.map_structure(
-                        lambda batch_output: [batch_output],
-                        batch_outputs,
-                    )
-                else:
-                    tf.__internal__.nest.map_structure_up_to(
-                        batch_outputs,
-                        lambda output, batch_output: output.append(
-                            batch_output
-                        ),
-                        outputs,
-                        batch_outputs,
-                    )
+                data = get_data(iterator)
+                batch_outputs = self.predict_function(data)
+                outputs = append_to_outputs(batch_outputs, outputs)
                 callbacks.on_predict_batch_end(step, {"outputs": batch_outputs})
         callbacks.on_predict_end()
         return tf.__internal__.nest.map_structure_up_to(
             batch_outputs, np.concatenate, outputs
         )
 
+    # Backwards compatibility shims.
+    @property
+    def compiled_metrics(self):
+        class DeprecatedCompiledMetric:
+            def update_state(_, y, y_pred, sample_weight=None):
+                return self._compiled_metrics_update_state(
+                    y, y_pred, sample_weight=sample_weight
+                )
+
+        return DeprecatedCompiledMetric()
+
+    def _compiled_metrics_update_state(self, y, y_pred, sample_weight=None):
+        warnings.warn(
+            "`model.compiled_metrics()` is deprecated. "
+            "Instead, use e.g.:\n"
+            "```\n"
+            "for metric in self.metrics:\n"
+            "    metric.update_state(y, y_pred)\n"
+            "```\n",
+            stacklevel=2,
+        )
+        for metric in self.metrics:
+            if isinstance(metric, metrics_module.Mean):
+                metric.update_state(y_pred, sample_weight=sample_weight)
+            else:
+                metric.update_state(y, y_pred, sample_weight=sample_weight)
+
+    def compiled_loss(
+        self, y, y_pred, sample_weight=None, regularization_losses=None
+    ):
+        warnings.warn(
+            "`model.compiled_loss()` is deprecated. "
+            "Instead, use `model.compute_loss(x, y, y_pred, sample_weight)`.",
+            stacklevel=2,
+        )
+        return self.compute_loss(
+            x=None, y=y, y_pred=y_pred, sample_weight=sample_weight
+        )
+
 
 class TFEpochIterator(EpochIterator):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, distribute_strategy=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._distribute_strategy = distribute_strategy
         self._steps_seen = 0
 
     def enumerate_epoch(self):
         if self.steps_per_epoch:
             if not self._current_iterator:
                 self._current_iterator = iter(
-                    self.data_adapter.get_tf_dataset()
+                    self._distribute_strategy.experimental_distribute_dataset(
+                        self.data_adapter.get_tf_dataset()
+                    )
                 )
-            for step in range(self.steps_per_epoch):
+            for step in range(
+                0, self.steps_per_epoch, self.steps_per_execution
+            ):
                 yield step, self._current_iterator
         else:
-            iterator = iter(self.data_adapter.get_tf_dataset())
+            iterator = iter(
+                self._distribute_strategy.experimental_distribute_dataset(
+                    self.data_adapter.get_tf_dataset()
+                )
+            )
             if self.num_batches:
-                for step in range(self.num_batches):
+                for step in range(
+                    0, self.num_batches, self.steps_per_execution
+                ):
                     yield step, iterator
             else:
                 step = -1
                 while True:
-                    step += 1
+                    step += self.steps_per_execution
                     self._steps_seen = step + 1
                     yield step, iterator
         self.data_adapter.on_epoch_end()
@@ -636,6 +754,7 @@ def _is_tpu_strategy(strategy):
 def _is_tpu_strategy_class(clz):
     def is_tpu_strat(k):
         return k.__name__.startswith("TPUStrategy")
+
     if is_tpu_strat(clz):
         return True
     return any(map(_is_tpu_strategy_class, clz.__bases__))
