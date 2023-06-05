@@ -78,7 +78,7 @@ def convert_to_tensor(x, dtype=None):
             return x.to(dtype)
         return x
 
-    # Convert to np first in case of scalar tf.Tensor.
+    # Convert to np first in case of any non-numpy, numpy-compatible array.
     x = np.array(x)
     return torch.as_tensor(x, dtype=dtype)
 
