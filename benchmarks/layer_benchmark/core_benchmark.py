@@ -32,6 +32,7 @@ def benchmark_dense(
         init_args,
         input_shape=[
             256,
+            256,
         ],
         jit_compile=jit_compile,
     )

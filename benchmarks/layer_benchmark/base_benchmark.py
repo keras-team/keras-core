@@ -236,10 +236,7 @@ class LayerBenchmark:
             callbacks=[callback],
         )
         self._tf_keras_model.fit(
-            data,
-            label,
-            batch_size=batch_size,
-            callbacks=[tf_keras_callback],
+            data, label, batch_size=batch_size, callbacks=[tf_keras_callback]
         )
 
         keras_core_throughput = (
