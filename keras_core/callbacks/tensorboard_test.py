@@ -1,9 +1,9 @@
 import collections
 import os
-import pytest
 import random
 
 import numpy as np
+import pytest
 import tensorflow.summary as summary
 from tensorflow.compat.v1 import SummaryMetadata
 from tensorflow.core.util import event_pb2
