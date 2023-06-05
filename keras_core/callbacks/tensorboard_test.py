@@ -708,7 +708,7 @@ class TestTensorBoardV2(testing.TestCase):
 
     @pytest.mark.skipif(
         backend.backend() != "tensorflow",
-        reason="The distribute test can only run with TF backend.",
+        reason="The profiling test can only run with TF backend.",
     )
     def test_TensorBoard_auto_trace(self):
         # TODO: Waiting for implementation for torch/jax for profiling ops
