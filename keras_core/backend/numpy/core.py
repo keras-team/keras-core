@@ -23,7 +23,7 @@ class Variable(KerasVariable):
 
     # Overload native accessor.
     def __array__(self):
-        return self
+        return self.value
 
 
 def convert_to_tensor(x, dtype=None):
