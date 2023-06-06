@@ -46,16 +46,15 @@ os.environ["KERAS_BACKEND"] = "jax"
 import json
 import math
 import keras_cv
-from keras_cv.backend import keras
-from keras_cv.backend import ops
+import keras_core as keras
+from keras_core import operations as ops
+from keras_core import losses
+from keras_core import optimizers
+from keras_core.optimizers import schedules
+from keras_core import metrics
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import numpy as np
-
-losses = keras.losses
-optimizers = keras.optimizers
-schedules = keras.optimizers.schedules
-metrics = keras.metrics
 
 """## Inference with a pretrained classifier
 
