@@ -40,6 +40,9 @@ class KerasTensor:
         self.name = name or auto_name(self.__class__.__name__)
         self.record_history = record_history
 
+    def get_shape(self):
+        return self.shape
+
     @property
     def ndim(self):
         return len(self.shape)
