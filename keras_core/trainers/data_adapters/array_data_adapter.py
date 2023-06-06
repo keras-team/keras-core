@@ -196,7 +196,6 @@ class ArrayDataAdapter(DataAdapter):
             tf.data.experimental.AutoShardPolicy.DATA
         )
         dataset = dataset.with_options(options)
-
         return dataset.prefetch(tf.data.AUTOTUNE)
 
     def slice_inputs(self, indices_dataset, inputs):
@@ -207,7 +206,7 @@ class ArrayDataAdapter(DataAdapter):
         and produces a dataset of input batches.
 
         Args:
-            indices_dataset: A Dataset of batched indices
+            indices_dataset: A Dataset of batched indices.
             inputs: A python data structure that contains the inputs, targets,
                 and possibly sample weights.
 
