@@ -14,6 +14,7 @@ class KerasVariable:
         self.name = name or auto_name(self.__class__.__name__)
         dtype = standardize_dtype(dtype)
         self._dtype = dtype
+        self._shape = None
         self._initializer = None
         self.trainable = trainable
         if callable(initializer):
@@ -80,7 +81,7 @@ class KerasVariable:
         return value
 
     def numpy(self):
-        return np.array(self.value)
+        return np.array(self)
 
     @property
     def value(self):
@@ -395,6 +396,8 @@ def standardize_dtype(dtype):
             dtype = "int32"
     if hasattr(dtype, "name"):
         dtype = dtype.name
+    elif config.backend() == "torch":
+        dtype = str(dtype).split(".")[-1]
 
     if dtype not in ALLOWED_DTYPES:
         raise ValueError(f"Invalid dtype: {dtype}")
@@ -454,12 +457,7 @@ def shape_equal(a, b):
 
 
 def is_float_dtype(dtype):
-    if hasattr(dtype, "name"):
-        dtype = dtype.name
-    # The is a torch.dtype when using torch backend.
-    # Need to convert it to a str.
-    if not isinstance(dtype, str):
-        dtype = str(dtype).split(".")[-1]
+    dtype = standardize_dtype(dtype)
     return dtype.startswith("float") or dtype.startswith("bfloat")
 
 

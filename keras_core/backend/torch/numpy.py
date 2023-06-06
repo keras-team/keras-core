@@ -58,18 +58,22 @@ def max(x, axis=None, keepdims=False, initial=None):
         result = result.values
 
     if initial is not None:
-        return torch.maximum(result, initial)
+        return torch.maximum(result, torch.full(result.shape, initial))
     return result
 
 
 def ones(shape, dtype="float32"):
     dtype = to_torch_dtype(dtype)
-    return torch.ones(*shape, dtype=dtype)
+    if isinstance(shape, int):
+        shape = (shape,)
+    return torch.ones(size=shape, dtype=dtype)
 
 
 def zeros(shape, dtype="float32"):
     dtype = to_torch_dtype(dtype)
-    return torch.zeros(*shape, dtype=dtype)
+    if isinstance(shape, int):
+        shape = (shape,)
+    return torch.zeros(size=shape, dtype=dtype)
 
 
 def absolute(x):
@@ -128,11 +132,8 @@ def append(
     return torch.cat((x1, x2), dim=axis)
 
 
-def arange(start, stop=None, step=None, dtype=None):
+def arange(start, stop=None, step=1, dtype=None):
     dtype = to_torch_dtype(dtype)
-    if stop is None:
-        return torch.arange(start, step=step, dtype=dtype)
-    step = step or 1
     return torch.arange(start, stop, step=step, dtype=dtype)
 
 
@@ -303,7 +304,7 @@ def empty(shape, dtype="float32"):
 
 def equal(x1, x2):
     x1, x2 = convert_to_tensor(x1), convert_to_tensor(x2)
-    return torch.equal(x1, x2)
+    return torch.eq(x1, x2)
 
 
 def exp(x):

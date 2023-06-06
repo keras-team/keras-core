@@ -1,3 +1,4 @@
+import json
 import os
 import warnings
 
@@ -9,6 +10,7 @@ from keras_core.saving import saving_api
 from keras_core.saving import saving_lib
 from keras_core.utils import io_utils
 from keras_core.utils import summary_utils
+from keras_core.utils import traceback_utils
 
 if backend.backend() == "tensorflow":
     from keras_core.backend.tensorflow.trainer import (
@@ -164,6 +166,7 @@ class Model(Trainer, Layer):
             "Please use another name."
         )
 
+    @traceback_utils.filter_traceback
     def get_layer(self, name=None, index=None):
         """Retrieves a layer based on either its name (unique) or index.
 
@@ -204,6 +207,7 @@ class Model(Trainer, Layer):
             "Provide either a layer name or layer index at `get_layer`."
         )
 
+    @traceback_utils.filter_traceback
     def summary(
         self,
         line_length=None,
@@ -253,6 +257,7 @@ class Model(Trainer, Layer):
             layer_range=layer_range,
         )
 
+    @traceback_utils.filter_traceback
     def save(self, filepath, overwrite=True):
         if not str(filepath).endswith(".keras"):
             raise ValueError(
@@ -269,6 +274,7 @@ class Model(Trainer, Layer):
                 return
         saving_lib.save_model(self, filepath)
 
+    @traceback_utils.filter_traceback
     def save_weights(self, filepath, overwrite=True):
         if not str(filepath).endswith(".weights.h5"):
             raise ValueError(
@@ -285,6 +291,7 @@ class Model(Trainer, Layer):
                 return
         saving_lib.save_weights_only(self, filepath)
 
+    @traceback_utils.filter_traceback
     def load_weights(self, filepath, skip_mismatch=False, **kwargs):
         saving_api.load_weights(
             self, filepath, skip_mismatch=skip_mismatch, **kwargs
@@ -335,8 +342,56 @@ class Model(Trainer, Layer):
                 stacklevel=2,
             )
 
+    def to_json(self, **kwargs):
+        """Returns a JSON string containing the network configuration.
+
+        To load a network from a JSON save file, use
+        `keras.models.model_from_json(json_string, custom_objects={...})`.
+
+        Args:
+            **kwargs: Additional keyword arguments to be passed to
+                `json.dumps()`.
+
+        Returns:
+            A JSON string.
+        """
+        from keras_core.saving import serialization_lib
+
+        model_config = serialization_lib.serialize_keras_object(self)
+        return json.dumps(model_config, **kwargs)
+
+    @traceback_utils.filter_traceback
     def export(self, filepath):
         raise NotImplementedError
+
+
+@keras_core_export("keras_core.models.model_from_json")
+def model_from_json(json_string, custom_objects=None):
+    """Parses a JSON model configuration string and returns a model instance.
+
+    Usage:
+
+    >>> model = keras_core.Sequential([
+    ...     keras_core.layers.Dense(5, input_shape=(3,)),
+    ...     keras_core.layers.Softmax()])
+    >>> config = model.to_json()
+    >>> loaded_model = keras_core.models.model_from_json(config)
+
+    Args:
+        json_string: JSON string encoding a model configuration.
+        custom_objects: Optional dictionary mapping names
+            (strings) to custom classes or functions to be
+            considered during deserialization.
+
+    Returns:
+        A Keras model instance (uncompiled).
+    """
+    from keras_core.saving import serialization_lib
+
+    model_config = json.loads(json_string)
+    return serialization_lib.deserialize_keras_object(
+        model_config, custom_objects=custom_objects
+    )
 
 
 def functional_init_arguments(args, kwargs):

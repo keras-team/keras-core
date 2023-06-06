@@ -3,6 +3,7 @@ import queue
 import random
 import threading
 import time
+import warnings
 import weakref
 from contextlib import closing
 
@@ -94,18 +95,30 @@ class PyDataset:
         self._use_multiprocessing = use_multiprocessing
         self._max_queue_size = max_queue_size
 
-    def _raise_if_super_not_called(self):
-        raise RuntimeError(
-            "Your `PyDataset` class should call "
-            "`super().__init__(**kwargs)` in its constructor. "
-            "`**kwargs` can include `workers`, "
-            "`use_multiprocessing`, `max_queue_size`."
-        )
+    def _warn_if_super_not_called(self):
+        warn = False
+        if not hasattr(self, "_workers"):
+            self._workers = 1
+            warn = True
+        if not hasattr(self, "_use_multiprocessing"):
+            self._use_multiprocessing = False
+            warn = True
+        if not hasattr(self, "_max_queue_size"):
+            self._max_queue_size = 10
+            warn = True
+        if warn:
+            warnings.warn(
+                "Your `PyDataset` class should call "
+                "`super().__init__(**kwargs)` in its constructor. "
+                "`**kwargs` can include `workers`, "
+                "`use_multiprocessing`, `max_queue_size`. Do not pass "
+                "these arguments to `fit()`, as they will be ignored.",
+                stacklevel=2,
+            )
 
     @property
     def workers(self):
-        if not hasattr(self, "_workers"):
-            self._raise_if_super_not_called()
+        self._warn_if_super_not_called()
         return self._workers
 
     @workers.setter
@@ -114,8 +127,7 @@ class PyDataset:
 
     @property
     def use_multiprocessing(self):
-        if not hasattr(self, "_use_multiprocessing"):
-            self._raise_if_super_not_called()
+        self._warn_if_super_not_called()
         return self._use_multiprocessing
 
     @use_multiprocessing.setter
@@ -124,8 +136,7 @@ class PyDataset:
 
     @property
     def max_queue_size(self):
-        if not hasattr(self, "_max_queue_size"):
-            self._raise_if_super_not_called()
+        self._warn_if_super_not_called()
         return self._max_queue_size
 
     @max_queue_size.setter
@@ -176,25 +187,9 @@ class PyDatasetAdapter(DataAdapter):
         self.shuffle = shuffle
 
         # Grab the first example
-        data = self.py_dataset[0]
-        if not isinstance(data, tuple):
-            raise ValueError(
-                "PyDataset.__getitem__() must return a tuple, either "
-                "(input,) or (inputs, targets) or "
-                "(inputs, targets, sample_weights). "
-                f"Received: {data}"
-            )
-        if self.class_weight is not None:
-            if len(data) == 3:
-                raise ValueError(
-                    "You cannot `class_weight` and `sample_weight` "
-                    "at the same time."
-                )
-            if len(data) == 2:
-                sw = data_adapter_utils.class_weight_to_sample_weights(
-                    data[1], class_weight
-                )
-                data = data + (sw,)
+        batch = self.py_dataset[0]
+        # Run checks on it and format it
+        batch = self._standardize_batch(batch)
 
         def get_tensor_spec(x):
             shape = x.shape
@@ -208,7 +203,32 @@ class PyDatasetAdapter(DataAdapter):
             shape[0] = None  # The batch size is not guaranteed to be static.
             return tf.TensorSpec(shape=shape, dtype=x.dtype.name)
 
-        self._output_signature = tf.nest.map_structure(get_tensor_spec, data)
+        self._output_signature = tf.nest.map_structure(get_tensor_spec, batch)
+
+    def _standardize_batch(self, batch):
+        if isinstance(batch, np.ndarray):
+            batch = (batch,)
+        if isinstance(batch, list):
+            batch = tuple(batch)
+        if not isinstance(batch, tuple) or len(batch) not in {1, 2, 3}:
+            raise ValueError(
+                "PyDataset.__getitem__() must return a tuple, either "
+                "(input,) or (inputs, targets) or "
+                "(inputs, targets, sample_weights). "
+                f"Received: {str(batch)[:100]}... of type {type(batch)}"
+            )
+        if self.class_weight is not None:
+            if len(batch) == 3:
+                raise ValueError(
+                    "You cannot specify `class_weight` "
+                    "and `sample_weight` at the same time."
+                )
+            if len(batch) == 2:
+                sw = data_adapter_utils.class_weight_to_sample_weights(
+                    batch[1], self.class_weight
+                )
+                batch = batch + (sw,)
+        return batch
 
     def _make_multiprocessed_generator_fn(self):
         workers = self.py_dataset.workers
@@ -244,11 +264,7 @@ class PyDatasetAdapter(DataAdapter):
     def get_numpy_iterator(self):
         gen_fn = self._make_multiprocessed_generator_fn()
         for i, batch in enumerate(gen_fn()):
-            if len(batch) == 2 and self.class_weight is not None:
-                sw = data_adapter_utils.class_weight_to_sample_weights(
-                    batch[1], self.class_weight
-                )
-                batch = batch + (sw,)
+            batch = self._standardize_batch(batch)
             yield batch
             if i >= len(self.py_dataset) - 1 and self.enqueuer:
                 self.enqueuer.stop()
@@ -266,11 +282,11 @@ class PyDatasetAdapter(DataAdapter):
     def on_epoch_end(self):
         if self.enqueuer:
             self.enqueuer.stop()
-        self._py_dataset.on_epoch_end()
+        self.py_dataset.on_epoch_end()
 
     @property
     def num_batches(self):
-        return len(self._py_dataset)
+        return len(self.py_dataset)
 
     @property
     def batch_size(self):

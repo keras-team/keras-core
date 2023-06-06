@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+import numpy as np
 from tensorflow import nest
 
 from keras_core.backend.common import KerasVariable
@@ -33,6 +34,10 @@ def convert_to_tensor(x, dtype=None):
             return x.value.astype(dtype)
         return x.value
     return jnp.array(x, dtype=dtype)
+
+
+def convert_to_numpy(x):
+    return np.array(x)
 
 
 def is_tensor(x):
@@ -205,3 +210,35 @@ def block_update(inputs, start_indices, updates):
     ]
     inputs[tuple(slices)] = updates
     return inputs
+
+
+def while_loop(
+    cond,
+    body,
+    loop_vars,
+    maximum_iterations=None,
+):
+    loop_vars = tuple(loop_vars)
+    if maximum_iterations is not None:
+        current_iter = 0
+        loop_vars = loop_vars + (current_iter,)
+
+        # Unpack list/tuple args. The last argument is `current_iter`.
+        def _cond(args):
+            return cond(*args[:-1]) & (args[-1] < maximum_iterations)
+
+        def _body(args):
+            return tuple(body(*args[:-1])) + (args[-1] + 1,)
+
+    else:
+
+        def _cond(args):
+            return cond(*args)
+
+        def _body(args):
+            return tuple(body(*args))
+
+    outputs = jax.lax.while_loop(_cond, _body, loop_vars)
+    if maximum_iterations is not None:
+        outputs = outputs[:-1]
+    return outputs

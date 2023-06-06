@@ -6,10 +6,12 @@ import tensorflow as tf
 from tensorflow.python.eager import context as tf_context
 
 from keras_core import callbacks as callbacks_module
+from keras_core import metrics as metrics_module
 from keras_core import optimizers as optimizers_module
 from keras_core.trainers import trainer as base_trainer
 from keras_core.trainers.data_adapters import data_adapter_utils
 from keras_core.trainers.epoch_iterator import EpochIterator
+from keras_core.utils import traceback_utils
 
 
 class TensorFlowTrainer(base_trainer.Trainer):
@@ -100,6 +102,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 one_step_on_data, jit_compile=True, reduce_retracing=True
             )
 
+        @tf.autograph.experimental.do_not_convert
         def one_step_on_iterator(iterator):
             """Runs a single training step given a Dataset iterator."""
             data = next(iterator)
@@ -113,8 +116,9 @@ class TensorFlowTrainer(base_trainer.Trainer):
             )
             return outputs
 
+        @tf.autograph.experimental.do_not_convert
         def multi_step_on_iterator(iterator):
-            for _ in tf.range(self.steps_per_execution):
+            for _ in range(self.steps_per_execution):
                 outputs = one_step_on_iterator(iterator)
             return outputs
 
@@ -142,6 +146,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 one_step_on_data, jit_compile=True, reduce_retracing=True
             )
 
+        @tf.autograph.experimental.do_not_convert
         def one_step_on_iterator(iterator):
             """Runs a single test step given a Dataset iterator."""
             data = next(iterator)
@@ -155,8 +160,9 @@ class TensorFlowTrainer(base_trainer.Trainer):
             )
             return outputs
 
+        @tf.autograph.experimental.do_not_convert
         def multi_step_on_iterator(iterator):
-            for _ in tf.range(self.steps_per_execution):
+            for _ in range(self.steps_per_execution):
                 outputs = one_step_on_iterator(iterator)
             return outputs
 
@@ -184,6 +190,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 one_step_on_data, jit_compile=True, reduce_retracing=True
             )
 
+        @tf.autograph.experimental.do_not_convert
         def one_step_on_data_distributed(data):
             data = data[0]
             outputs = self.distribute_strategy.run(
@@ -196,6 +203,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
             )
             return outputs
 
+        @tf.autograph.experimental.do_not_convert
         def multi_step_on_data(data):
             outputs = one_step_on_data_distributed(data[:1])
             for single_step_data in data[1:]:
@@ -217,6 +225,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
 
         self.predict_function = predict_function
 
+    @traceback_utils.filter_traceback
     def fit(
         self,
         x=None,
@@ -346,6 +355,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
         callbacks.on_train_end(logs=training_logs)
         return self.history
 
+    @traceback_utils.filter_traceback
     def evaluate(
         self,
         x=None,
@@ -405,6 +415,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
             return logs
         return self._flatten_metrics_in_order(logs)
 
+    @traceback_utils.filter_traceback
     def predict(
         self, x, batch_size=None, verbose="auto", steps=None, callbacks=None
     ):
@@ -475,6 +486,45 @@ class TensorFlowTrainer(base_trainer.Trainer):
         callbacks.on_predict_end()
         return tf.__internal__.nest.map_structure_up_to(
             batch_outputs, np.concatenate, outputs
+        )
+
+    # Backwards compatibility shims.
+    @property
+    def compiled_metrics(self):
+        class DeprecatedCompiledMetric:
+            def update_state(_, y, y_pred, sample_weight=None):
+                return self._compiled_metrics_update_state(
+                    y, y_pred, sample_weight=sample_weight
+                )
+
+        return DeprecatedCompiledMetric()
+
+    def _compiled_metrics_update_state(self, y, y_pred, sample_weight=None):
+        warnings.warn(
+            "`model.compiled_metrics()` is deprecated. "
+            "Instead, use e.g.:\n"
+            "```\n"
+            "for metric in self.metrics:\n"
+            "    metric.update_state(y, y_pred)\n"
+            "```\n",
+            stacklevel=2,
+        )
+        for metric in self.metrics:
+            if isinstance(metric, metrics_module.Mean):
+                metric.update_state(y_pred, sample_weight=sample_weight)
+            else:
+                metric.update_state(y, y_pred, sample_weight=sample_weight)
+
+    def compiled_loss(
+        self, y, y_pred, sample_weight=None, regularization_losses=None
+    ):
+        warnings.warn(
+            "`model.compiled_loss()` is deprecated. "
+            "Instead, use `model.compute_loss(x, y, y_pred, sample_weight)`.",
+            stacklevel=2,
+        )
+        return self.compute_loss(
+            x=None, y=y, y_pred=y_pred, sample_weight=sample_weight
         )
 
 

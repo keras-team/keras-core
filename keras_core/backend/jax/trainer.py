@@ -11,12 +11,27 @@ from keras_core.trainers.epoch_iterator import EpochIterator
 
 
 class JAXTrainer(base_trainer.Trainer):
+    def __init__(self):
+        super().__init__()
+        self.train_function = None
+        self.test_function = None
+        self.predict_function = None
+
     def compute_loss_and_updates(
-        self, trainable_variables, non_trainable_variables, x, y, sample_weight
+        self,
+        trainable_variables,
+        non_trainable_variables,
+        x,
+        y,
+        sample_weight,
+        training=False,
     ):
         """This method is stateless and is intended for use with jax.grad."""
+        kwargs = {}
+        if self._call_has_training_arg():
+            kwargs["training"] = training
         y_pred, non_trainable_variables = self.stateless_call(
-            trainable_variables, non_trainable_variables, x
+            trainable_variables, non_trainable_variables, x, **kwargs
         )
 
         loss = self.compute_loss(x, y, y_pred, sample_weight)
@@ -136,6 +151,7 @@ class JAXTrainer(base_trainer.Trainer):
                 x,
                 y,
                 sample_weight,
+                training=True,
             )
 
             (
@@ -182,14 +198,16 @@ class JAXTrainer(base_trainer.Trainer):
         else:
             _train_function = _train_step
 
+        self.train_function = _train_function
+
         if not self.run_eagerly and self.jit_compile:
 
             @jax.jit
             def train_step(state, data):
-                return _train_function(state, data)
+                return self.train_function(state, data)
 
         else:
-            train_step = _train_function
+            train_step = self.train_function
 
         self.stop_training = False
         callbacks.on_train_begin()
@@ -367,6 +385,7 @@ class JAXTrainer(base_trainer.Trainer):
                 x,
                 y,
                 sample_weight,
+                training=False,
             )
 
             with backend.StatelessScope(
@@ -488,8 +507,11 @@ class JAXTrainer(base_trainer.Trainer):
             )
 
         def _predict_step(trainable_variables, non_trainable_variables, data):
+            kwargs = {}
+            if self._call_has_training_arg():
+                kwargs["training"] = False
             outputs, _ = self.stateless_call(
-                trainable_variables, non_trainable_variables, data[0]
+                trainable_variables, non_trainable_variables, data[0], **kwargs
             )
             return outputs
 

@@ -35,8 +35,8 @@ from keras_core.metrics.metric import Metric
 from keras_core.operations.operation import Operation
 from keras_core.utils import summary_utils
 from keras_core.utils import traceback_utils
+from keras_core.utils import tracking
 from keras_core.utils.shape_utils import map_shape_structure
-from keras_core.utils.tracking import Tracker
 
 if backend.backend() == "tensorflow":
     from keras_core.backend.tensorflow.layer import TFLayer as BackendLayer
@@ -59,7 +59,7 @@ class Layer(BackendLayer, Operation):
     in the `call()` method, and a *state* (weight variables). State can be
     created:
 
-    * in `__init__()`, for instancce via `self.add_weight()`;
+    * in `__init__()`, for instance via `self.add_weight()`;
     * in the optional `build()` method, which is invoked by the first
       `__call__()` to the layer, and supplies the shape(s) of the input(s),
       which may not have been known at initialization time.
@@ -245,12 +245,8 @@ class Layer(BackendLayer, Operation):
         self.supports_jit = True
 
         self._trainable = trainable
-        self._layers = []
-        self._metrics = []
-        self._seed_generators = []
         self._losses = []
-        self._trainable_variables = []
-        self._non_trainable_variables = []
+
         self._supports_masking = not utils.is_default(self.compute_mask)
         # Whether to automatically convert (+ auto-cast) inputs to `call()`.
         self._convert_input_args = True
@@ -261,30 +257,46 @@ class Layer(BackendLayer, Operation):
         self._call_signature_parameters = [
             p.name for p in inspect.signature(self.call).parameters.values()
         ]
+        self._initializer_tracker()
 
-        self._tracker = Tracker(
+    @tracking.no_automatic_dependency_tracking
+    def _initializer_tracker(self):
+        if hasattr(self, "_tracker"):
+            return
+
+        trainable_variables = []
+        non_trainable_variables = []
+        layers = []
+        metrics = []
+        seed_generators = []
+        self._tracker = tracking.Tracker(
             {
                 "trainable_variables": (
                     lambda x: isinstance(x, backend.Variable) and x.trainable,
-                    self._trainable_variables,
+                    trainable_variables,
                 ),
                 "non_trainable_variables": (
                     lambda x: isinstance(x, backend.Variable)
                     and not x.trainable,
-                    self._non_trainable_variables,
+                    non_trainable_variables,
                 ),
-                "metrics": (lambda x: isinstance(x, Metric), self._metrics),
+                "metrics": (lambda x: isinstance(x, Metric), metrics),
                 "layers": (
                     lambda x: isinstance(x, Layer)
                     and not isinstance(x, Metric),
-                    self._layers,
+                    layers,
                 ),
                 "seed_generators": (
                     lambda x: isinstance(x, backend.random.SeedGenerator),
-                    self._seed_generators,
+                    seed_generators,
                 ),
             }
         )
+        self._trainable_variables = trainable_variables
+        self._non_trainable_variables = non_trainable_variables
+        self._layers = layers
+        self._metrics = metrics
+        self._seed_generators = seed_generators
 
     @utils.default
     def build(self, input_shape):
@@ -357,16 +369,7 @@ class Layer(BackendLayer, Operation):
         # Will be added to layer.losses
         variable.regularizer = regularizer
         variable.constraint = constraint
-        if trainable:
-            self._trainable_variables.append(variable)
-            # Prevent double-tracking
-            self._tracker.stored_ids["trainable_variables"].add(id(variable))
-        else:
-            self._non_trainable_variables.append(variable)
-            # Prevent double-tracking
-            self._tracker.stored_ids["non_trainable_variables"].add(
-                id(variable)
-            )
+        self._track_variable(variable)
         return variable
 
     def add_weight(self, *args, **kwargs):
@@ -896,6 +899,12 @@ class Layer(BackendLayer, Operation):
         for layer in self._layers:
             layer._clear_losses()
 
+    def _track_variable(self, variable):
+        if variable.trainable:
+            self._tracker.add_to_store("trainable_variables", variable)
+        else:
+            self._tracker.add_to_store("non_trainable_variables", variable)
+
     def add_metric(self):
         # Permanently disabled
         raise NotImplementedError
@@ -963,6 +972,19 @@ class Layer(BackendLayer, Operation):
             # Check input spec again (after build, since self.input_spec
             # may have been updated
             self._assert_input_compatibility(call_spec.first_arg)
+            # Hook used to do post-build actions
+            self._post_build()
+        if not self._tracker.locked:
+            # No state updates past this point.
+            self._tracker.lock(
+                msg=(
+                    "You cannot add new elements of state "
+                    "(variables or sub-layers) "
+                    "to a layer that is already built. All state "
+                    "must be created in the `__init__()` method or "
+                    "in the`build()` method."
+                )
+            )
 
     def _build_by_run_for_single_pos_arg(self, input_shape):
         # Case: all inputs are in the first arg (possibly nested).
@@ -1016,14 +1038,11 @@ class Layer(BackendLayer, Operation):
         )
 
     def __setattr__(self, name, value):
-        # Prevent users from attaching state to the
-        # layer before `super()` is called -- since that
-        # state would silently not be tracked.
-        if name != "_lock":
-            self._check_super_called()
         # Track Variables, Layers, Metrics, SeedGenerators.
         if hasattr(self, "_tracker"):
             value = self._tracker.track(value)
+        elif name != "_tracker":
+            self._initializer_tracker()
         return super().__setattr__(name, value)
 
     def _check_super_called(self):

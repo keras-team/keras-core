@@ -30,10 +30,10 @@ class InputLayer(Layer):
         if shape is None and batch_shape is None:
             raise ValueError("You must pass a `shape` argument.")
 
-        if shape:
+        if shape is not None:
             shape = backend.standardize_shape(shape)
             batch_shape = (batch_size,) + shape
-        self.batch_shape = batch_shape
+        self.batch_shape = tuple(batch_shape)
         self._dtype = backend.standardize_dtype(dtype)
 
         if input_tensor is not None:
@@ -67,12 +67,20 @@ class InputLayer(Layer):
 
 
 @keras_core_export(["keras_core.layers.Input", "keras_core.Input"])
-def Input(shape=None, batch_size=None, dtype=None, batch_shape=None, name=None):
+def Input(
+    shape=None,
+    batch_size=None,
+    dtype=None,
+    batch_shape=None,
+    name=None,
+    tensor=None,
+):
     layer = InputLayer(
         shape=shape,
         batch_size=batch_size,
         dtype=dtype,
         batch_shape=batch_shape,
         name=name,
+        input_tensor=tensor,
     )
     return layer.output

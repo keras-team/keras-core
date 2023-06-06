@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 from tensorflow.compiler.tf2xla.python.xla import dynamic_update_slice
 
@@ -10,7 +11,11 @@ from keras_core.utils.naming import auto_name
 DYNAMIC_SHAPES_OK = True
 
 
-class Variable(KerasVariable, tf.__internal__.types.Tensor):
+class Variable(
+    KerasVariable,
+    tf.__internal__.types.Tensor,
+    tf.__internal__.tracking.Trackable,
+):
     _should_act_as_resource_variable = True
 
     @property
@@ -39,6 +44,29 @@ class Variable(KerasVariable, tf.__internal__.types.Tensor):
     def __tf_tensor__(self, dtype=None, name=None):
         return tf.convert_to_tensor(self.value, dtype=dtype, name=name)
 
+    # Methods below are for SavedModel support
+    @property
+    def _shared_name(self):
+        return self.value._shared_name
+
+    def _serialize_to_tensors(self):
+        return self.value._serialize_to_tensors()
+
+    def _restore_from_tensors(self, restored_tensors):
+        return self.value._restore_from_tensors(restored_tensors)
+
+    def _export_to_saved_model_graph(
+        self, object_map, tensor_map, options, **kwargs
+    ):
+        resource_list = self.value._export_to_saved_model_graph(
+            object_map, tensor_map, options, **kwargs
+        )
+        object_map[self] = tf.Variable(object_map[self.value])
+        return resource_list
+
+    def _write_object_proto(self, proto, options):
+        return self.value._write_object_proto(proto, options)
+
 
 def convert_to_tensor(x, dtype=None):
     if dtype is not None:
@@ -46,6 +74,10 @@ def convert_to_tensor(x, dtype=None):
         if tf.is_tensor(x):
             return tf.cast(x, dtype=dtype)
     return tf.convert_to_tensor(x, dtype=dtype)
+
+
+def convert_to_numpy(x):
+    return np.array(x)
 
 
 def is_tensor(x):
@@ -111,3 +143,17 @@ def scatter_update(inputs, indices, updates):
 
 def block_update(inputs, start_indices, updates):
     return dynamic_update_slice(inputs, updates, start_indices)
+
+
+def while_loop(
+    cond,
+    body,
+    loop_vars,
+    maximum_iterations=None,
+):
+    return tf.while_loop(
+        cond,
+        body,
+        loop_vars,
+        maximum_iterations=maximum_iterations,
+    )

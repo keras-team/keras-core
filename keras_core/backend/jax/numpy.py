@@ -90,7 +90,7 @@ def append(
     return jnp.append(x1, x2, axis=axis)
 
 
-def arange(start, stop=None, step=None, dtype=None):
+def arange(start, stop=None, step=1, dtype=None):
     return jnp.arange(start, stop, step=step, dtype=dtype)
 
 
@@ -457,6 +457,8 @@ def swapaxes(x, axis1, axis2):
 
 
 def take(x, indices, axis=None):
+    x = convert_to_tensor(x)
+    indices = convert_to_tensor(indices)
     return jnp.take(x, indices, axis=axis)
 
 
