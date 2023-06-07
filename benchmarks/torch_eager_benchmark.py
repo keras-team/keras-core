@@ -1,14 +1,15 @@
+import time
+
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from keras_core import layers
-import keras_core
-import numpy as np
 
-import time
+import keras_core
+from keras_core import layers
 
 num_classes = 2
-input_shape = (3, 28, 28)
+input_shape = (3, 256, 256)
 batch_size = 128
 num_batches = 20
 
@@ -77,10 +78,10 @@ def train(model, train_loader, num_epochs, optimizer, loss_fn, framework):
     print(f"Total time in {framework}: {end - start}")
 
 
-def run_keras_core_fit():
+def run_keras_core_custom_training_loop():
     keras_model = keras_core.Sequential(
         [
-            layers.Input(shape=(3, 28, 28)),
+            layers.Input(shape=input_shape),
             layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
             layers.MaxPooling2D(pool_size=(2, 2)),
             layers.Flatten(),
@@ -114,5 +115,5 @@ def run_torch_custom_training_loop():
     )
 
 
-run_keras_core_fit()
+run_keras_core_custom_training_loop()
 run_torch_custom_training_loop()
