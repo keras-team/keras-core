@@ -1138,8 +1138,6 @@ def is_backend_tensor_or_symbolic(x):
 
 class CallSpec:
     def __init__(self, call_fn, args, kwargs):
-        self._training_in_kwargs = False
-
         sig = inspect.signature(call_fn)
 
         # `training` and `mask` are special kwargs that are always available in
