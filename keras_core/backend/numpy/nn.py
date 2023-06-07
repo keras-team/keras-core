@@ -54,23 +54,38 @@ def leaky_relu(x, alpha=0.2):
 
 
 def hard_sigmoid(x):
-    return np.maximum(0.0, np.minimum(1.0, x * 0.2 + 0.5))
+    x = (x / 6.0) + 0.5
+    return np.where(x <= 0.0, 0.0, np.where(x >= 1.0, 1.0, x))
 
 
 def elu(x, alpha=1.0):
     return np.where(x >= 0.0, x, alpha * (np.exp(x) - 1.0))
 
 
-def selu(x, alpha=1.67326, scale=1.0507):
+def selu(
+    x,
+    alpha=1.6732632423543772848170429916717,
+    scale=1.0507009873554804934193349852946,
+):
     return scale * np.where(x >= 0.0, x, alpha * (np.exp(x) - 1.0))
 
 
-def gelu(x):
-    cdf = 0.5 * (
-        1.0
-        + np.tanh((np.sqrt(2.0 / np.pi) * (x + 0.044715 * np.power(x, 3.0))))
-    )
-    return x * cdf
+def gelu(x, approximate=False):
+    if approximate:
+        return (
+            0.5
+            * x
+            * (
+                1.0
+                + np.tanh(
+                    np.sqrt(2.0 / np.pi) * (x + 0.044715 * np.power(x, 3))
+                )
+            )
+        )
+    else:
+        from scipy.stats import norm
+
+        return x * norm.cdf(x)
 
 
 def softmax(x, axis=None):

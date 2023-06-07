@@ -16,7 +16,7 @@ class Variable(KerasVariable):
         self._value = np.array(value, dtype=self._dtype)
 
     def _direct_assign(self, value):
-        self._value = value
+        self._value = np.array(value, dtype=self._dtype)
 
     def _convert_to_tensor(self, value, dtype=None):
         return convert_to_tensor(value, dtype=dtype)
@@ -54,8 +54,8 @@ def cast(x, dtype):
 
 def cond(pred, true_fn, false_fn):
     if pred:
-        return true_fn
-    return false_fn
+        return true_fn()
+    return false_fn()
 
 
 def name_scope(name):
