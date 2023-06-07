@@ -4,6 +4,7 @@ import tensorflow as tf
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
+from keras_core.utils import backend_utils
 
 
 @keras_core_export("keras_core.layers.RandomRotation")
@@ -28,6 +29,9 @@ class RandomRotation(Layer):
     It can also always be used as part of an input preprocessing pipeline
     with any backend (outside the model itself), which is how we recommend
     to use this layer.
+
+    **Note:** This layer is safe to use inside a `tf.data` pipeline
+    (independently of which backend you're using).
 
     Input shape:
         3D (unbatched) or 4D (batched) tensor with shape:
@@ -94,12 +98,17 @@ class RandomRotation(Layer):
             **kwargs,
         )
         self.supports_jit = False
+        self._convert_input_args = False
+        self._allow_non_tensor_positional_args = True
 
     def call(self, inputs, training=True):
         if not isinstance(inputs, (tf.Tensor, np.ndarray, list, tuple)):
             inputs = tf.convert_to_tensor(np.array(inputs))
-        outputs = self.layer.call(inputs)
-        if backend.backend() != "tensorflow":
+        outputs = self.layer.call(inputs, training=training)
+        if (
+            backend.backend() != "tensorflow"
+            and not backend_utils.in_tf_graph()
+        ):
             outputs = backend.convert_to_tensor(outputs)
         return outputs
 

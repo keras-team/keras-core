@@ -640,3 +640,26 @@ class LayerTest(testing.TestCase):
         layer = NoTrainingSpecified()
         inputs = ops.random.uniform(shape=(1, 100, 100, 3))
         layer(inputs, training=True)
+
+    def test_tracker_locking(self):
+        class BadLayer(layers.Layer):
+            def call(self, x):
+                self.w = self.add_weight(initializer="zeros", shape=())
+                return x
+
+        layer = BadLayer()
+        with self.assertRaisesRegex(
+            ValueError,
+            "cannot add new elements of state",
+        ):
+            layer(np.random.random((3, 2)))
+
+    def test_init_after_state_tracking(self):
+        class MyLayer(layers.Layer):
+            def __init__(self):
+                self.some_attr = True
+                self.w = backend.Variable(np.random.random((2,)))
+                super().__init__()
+
+        layer = MyLayer()
+        self.assertEqual(len(layer.weights), 1)
