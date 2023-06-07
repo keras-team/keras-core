@@ -1142,8 +1142,8 @@ class CallSpec:
 
         sig = inspect.signature(call_fn)
 
-        # `training` and `mask` are special kwargs that are always available in a
-        # layer, if user specifies them in their call without adding to spec,
+        # `training` and `mask` are special kwargs that are always available in 
+        # a layer, if user specifies them in their call without adding to spec,
         # we remove them to be able to bind variables. User is not using
         # `training` anyway so we can ignore.
         # TODO: If necessary use workaround for `mask`
