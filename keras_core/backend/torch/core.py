@@ -277,4 +277,4 @@ def while_loop(
 
 
 def stop_gradient(variable):
-    return variable.detach()
+    return variable.requires_grad_(False)
