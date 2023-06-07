@@ -199,7 +199,7 @@ class StopGradient(Operation):
         return backend.core.stop_gradient(variable)
 
     def compute_output_spec(self, variable):
-        return [KerasTensor(variable.shape, dtype=variable.dtype)]
+        return KerasTensor(variable.shape, dtype=variable.dtype)
 
 
 @keras_core_export("keras_core.operations.stop_gradient")
