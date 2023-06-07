@@ -94,7 +94,7 @@ def run_keras_core_custom_training_loop():
     train(
         keras_model,
         train_loader,
-        num_epochs=3,
+        num_epochs=1,
         optimizer=optimizer,
         loss_fn=loss_fn,
         framework="keras_core",
@@ -108,7 +108,7 @@ def run_torch_custom_training_loop():
     train(
         torch_model,
         train_loader,
-        num_epochs=3,
+        num_epochs=1,
         optimizer=optimizer,
         loss_fn=loss_fn,
         framework="torch",
