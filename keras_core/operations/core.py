@@ -189,3 +189,34 @@ def while_loop(
         loop_vars,
         maximum_iterations=maximum_iterations,
     )
+
+
+class StopGradient(Operation):
+    def __init__(self):
+        super().__init__()
+
+    def call(self, variable):
+        return backend.core.stop_gradient(variable)
+
+    def compute_output_spec(self, variable):
+        return [KerasTensor(variable.shape, dtype=variable.dtype)]
+
+
+@keras_core_export("keras_core.operations.stop_gradient")
+def stop_gradient(variable):
+    """Stops gradient computation.
+
+    Args:
+        variable: A tensor variable for which the gradient
+            computation is to be disabled.
+
+    Returns:
+        The variable with gradient computation disabled.
+
+    Examples:
+
+    >>> var = tf.constant([1., 2., 3.], dtype=tf.float32)
+    >>> var = keras_core.operations.stop_gradient(var)
+    """
+
+    return backend.core.stop_gradient(variable)
