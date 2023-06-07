@@ -568,7 +568,7 @@ class Layer(BackendLayer, Operation):
         call_context = self._get_call_context()
 
         # This is the value explicity passed by the user
-        training = call_spec.user_arguments_dict.get("training", None) or call_spec.training_in_kwargs
+        training = call_spec.user_arguments_dict.get("training", None)
         if training is None:
             # Wasn't passed explicitly: use context value
             training = call_context.training
@@ -1118,10 +1118,10 @@ class CallSpec:
 
         # `training` and `mask` are special kwargs that are always available in a
         # layer, if user specifies them in their call without adding to spec,
-        # we remove them to be able to bind variables.
+        # we remove them to be able to bind variables. User is not using
+        # `training` anyway so we can ignore.
         # TODO: If necessary use workaround for `mask`
         if "training" in kwargs and "training" not in sig.parameters:
-            self._training_in_kwargs = True
             kwargs.pop("training")
             bound_args = sig.bind(*args, **kwargs)
         else:
@@ -1169,12 +1169,6 @@ class CallSpec:
             self.eager = True
         else:
             self.eager = False
-
-    @property
-    def training_in_kwargs(self):
-        """Whether `training` was specified as a kwargs
-        """
-        return self._training_in_kwargs
 
 
 def get_arguments_dict(fn, args, kwargs):
