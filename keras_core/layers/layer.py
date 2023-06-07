@@ -568,7 +568,7 @@ class Layer(BackendLayer, Operation):
         call_context = self._get_call_context()
 
         # This is the value explicity passed by the user
-        training = call_spec.user_arguments_dict.get("training", None)
+        training = call_spec.user_arguments_dict.get("training", None) or call_spec.training_in_kwargs
         if training is None:
             # Wasn't passed explicitly: use context value
             training = call_context.training
@@ -1112,8 +1112,20 @@ def is_backend_tensor_or_symbolic(x):
 
 class CallSpec:
     def __init__(self, call_fn, args, kwargs):
+        self._training_in_kwargs = False
+
         sig = inspect.signature(call_fn)
-        bound_args = sig.bind(*args, **kwargs)
+
+        # `training` and `mask` are special kwargs that are always available in a
+        # layer, if user specifies them in their call without adding to spec,
+        # we remove them to be able to bind variables.
+        # TODO: If necessary use workaround for `mask`
+        if "training" in kwargs and "training" not in sig.parameters:
+            self._training_in_kwargs = True
+            kwargs.pop("training")
+            bound_args = sig.bind(*args, **kwargs)
+        else:
+            bound_args = sig.bind(*args, **kwargs)
         self.user_arguments_dict = {
             k: v for k, v in bound_args.arguments.items()
         }
@@ -1157,6 +1169,12 @@ class CallSpec:
             self.eager = True
         else:
             self.eager = False
+
+    @property
+    def training_in_kwargs(self):
+        """Whether `training` was specified as a kwargs
+        """
+        return self._training_in_kwargs
 
 
 def get_arguments_dict(fn, args, kwargs):
