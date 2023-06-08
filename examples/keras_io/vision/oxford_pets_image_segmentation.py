@@ -79,8 +79,15 @@ from tensorflow import image as tf_image
 from tensorflow import io as tf_io
 
 
-def get_dataset(batch_size, img_size, input_img_paths, target_img_paths, max_dataset_len=None):
+def get_dataset(
+    batch_size,
+    img_size,
+    input_img_paths,
+    target_img_paths,
+    max_dataset_len=None,
+):
     """Returns a TF Dataset."""
+
     def load_img_masks(input_img_path, target_img_path):
         input_img = tf_io.read_file(input_img_path)
         input_img = tf_io.decode_png(input_img, channels=3)
@@ -100,9 +107,12 @@ def get_dataset(batch_size, img_size, input_img_paths, target_img_paths, max_dat
     if max_dataset_len:
         input_img_paths = input_img_paths[:max_dataset_len]
         target_img_paths = target_img_paths[:max_dataset_len]
-    dataset = tf_data.Dataset.from_tensor_slices((input_img_paths, target_img_paths))
+    dataset = tf_data.Dataset.from_tensor_slices(
+        (input_img_paths, target_img_paths)
+    )
     dataset = dataset.map(load_img_masks, num_parallel_calls=tf_data.AUTOTUNE)
     return dataset.batch(batch_size)
+
 
 """
 ## Prepare U-Net Xception-style model
@@ -162,11 +172,14 @@ def get_model(img_size, num_classes):
         previous_block_activation = x  # Set aside next residual
 
     # Add a per-pixel classification layer
-    outputs = layers.Conv2D(num_classes, 3, activation="softmax", padding="same")(x)
+    outputs = layers.Conv2D(
+        num_classes, 3, activation="softmax", padding="same"
+    )(x)
 
     # Define the model
     model = keras.Model(inputs, outputs)
     return model
+
 
 # Build model
 model = get_model(img_size, num_classes)
@@ -191,9 +204,19 @@ val_target_img_paths = target_img_paths[-val_samples:]
 # Limit to 100 input files for faster epoch training time.
 # Remove the `max_dataset_len` arg when running with full dataset.
 train_dataset = get_dataset(
-    batch_size, img_size, train_input_img_paths, train_target_img_paths, max_dataset_len=100
+    batch_size,
+    img_size,
+    train_input_img_paths,
+    train_target_img_paths,
+    max_dataset_len=100,
 )
-valid_dataset = get_dataset(batch_size, img_size, val_input_img_paths, val_target_img_paths, max_dataset_len=100)
+valid_dataset = get_dataset(
+    batch_size,
+    img_size,
+    val_input_img_paths,
+    val_target_img_paths,
+    max_dataset_len=100,
+)
 
 """
 ## Train the model
@@ -205,12 +228,19 @@ valid_dataset = get_dataset(batch_size, img_size, val_input_img_paths, val_targe
 model.compile(optimizer="rmsprop", loss="sparse_categorical_crossentropy")
 
 callbacks = [
-    keras.callbacks.ModelCheckpoint("oxford_segmentation.keras", save_best_only=True)
+    keras.callbacks.ModelCheckpoint(
+        "oxford_segmentation.keras", save_best_only=True
+    )
 ]
 
 # Train the model, doing validation at the end of each epoch.
 epochs = 15
-model.fit(train_dataset, epochs=epochs, validation_data=valid_dataset, callbacks=callbacks)
+model.fit(
+    train_dataset,
+    epochs=epochs,
+    validation_data=valid_dataset,
+    callbacks=callbacks,
+)
 
 """
 ## Visualize predictions
@@ -218,7 +248,9 @@ model.fit(train_dataset, epochs=epochs, validation_data=valid_dataset, callbacks
 
 # Generate predictions for all images in the validation set
 
-val_dataset = get_dataset(batch_size, img_size, val_input_img_paths, val_target_img_paths)
+val_dataset = get_dataset(
+    batch_size, img_size, val_input_img_paths, val_target_img_paths
+)
 val_preds = model.predict(val_dataset)
 
 
