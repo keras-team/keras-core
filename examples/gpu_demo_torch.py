@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -63,6 +64,9 @@ def train(model, train_loader, num_epochs, optimizer, loss_fn):
     for epoch in range(num_epochs):
         running_loss = 0.0
         for batch_idx, (inputs, targets) in enumerate(train_loader):
+            inputs = inputs.cuda(non_blocking=True)
+            targets = targets.cuda(non_blocking=True)
+
             # Forward pass
             outputs = model(inputs)
             loss = loss_fn(outputs, targets)
@@ -85,6 +89,8 @@ def train(model, train_loader, num_epochs, optimizer, loss_fn):
 
 def setup(rank, world_size):
     # Device setup
+    os.environ['MASTER_ADDR'] = 'keras-core-torch'
+    os.environ['MASTER_PORT'] = '56492'
     device = torch.device("cuda:{}".format(rank))
     dist.init_process_group(
         backend='nccl',
@@ -137,9 +143,9 @@ def main(rank, world_size):
 
     # Put model on device
     model = model.to(rank)
-    ddp_model = DDP(model, device_ids=[rank])
+    ddp_model = DDP(model, device_ids=[rank], output_device=rank)
 
-    train(ddp_model, train_loader, num_epochs, optimizer, loss_fn)
+    train(ddp_model, dataloader, num_epochs, optimizer, loss_fn)
 
     cleanup()
 
@@ -185,6 +191,7 @@ if __name__ == "__main__":
 
     torch.multiprocessing.spawn(
         main,
-        args=(world_size),
-        nprocs=world_size
+        args=(world_size, ),
+        nprocs=world_size,
+        join=True,
     )
