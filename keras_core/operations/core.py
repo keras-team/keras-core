@@ -215,7 +215,10 @@ def stop_gradient(variable):
 
     Examples:
 
-    >>> var = keras_core.backend.convert_to_tensor([1., 2., 3.], dtype=tf.float32)
+    >>> var = keras_core.backend.convert_to_tensor(
+    ...     [1., 2., 3.],
+    ...     dtype="float32"
+    ... )
     >>> var = keras_core.operations.stop_gradient(var)
-    """  # noqa: E501
+    """
     return backend.core.stop_gradient(variable)
