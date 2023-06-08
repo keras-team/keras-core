@@ -114,7 +114,7 @@ def cleanup():
     dist.destroy_process_group()
 
 
-def main(rank, world_size):
+def master(rank, world_size):
     # setup the process groups
     setup(rank, world_size)
 
@@ -141,7 +141,7 @@ def main(rank, world_size):
 world_size = torch.cuda.device_count()
 
 torch.multiprocessing.spawn(
-    main,
+    master,
     args=(world_size),
     nprocs=world_size
 )
