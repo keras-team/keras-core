@@ -1,16 +1,17 @@
-""" Benchmark activation layers.
+""" Benchmark pooling layers.
 
 To run benchmarks, see the following command for an example, please change the
 flag to your custom value:
 
 ```
-python3 -m benchmarks.layer_benchmark.activation_benchmark \
-    --benchmark_name=benchmark_elu \
-    --num_samples=8192 \
-    --batch_size=1024 \
+python3 -m benchmarks.layer_benchmark.pooling_benchmark \
+    --benchmark_name=benchmark_max_pool1d \
+    --num_samples=2048 \
+    --batch_size=256 \
     --jit_compile=True
 ```
 """
+
 
 from absl import app
 from absl import flags
@@ -20,13 +21,41 @@ from benchmarks.layer_benchmark.base_benchmark import LayerBenchmark
 FLAGS = flags.FLAGS
 
 
-def benchmark_elu(
+def benchmark_average_pooling1d(
     num_samples,
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "ELU"
-    init_args = {}
+    layer_name = "AveragePooling1D"
+    init_args = {
+        "pool_size": 2,
+    }
+    benchmark = LayerBenchmark(
+        layer_name,
+        init_args,
+        input_shape=[256],
+        jit_compile=jit_compile,
+    )
+
+    benchmark.benchmark_predict(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
+
+    benchmark.benchmark_fit(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
+
+def benchmark_average_pooling2d(
+    num_samples,
+    batch_size,
+    jit_compile=True,
+):
+    layer_name = "AveragePooling2D"
+    init_args = {
+        "pool_size": 2,
+    }
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
@@ -39,18 +68,24 @@ def benchmark_elu(
         batch_size=batch_size,
     )
 
+    benchmark.benchmark_fit(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
 
-def benchmark_prelu(
+def benchmark_average_pooling3d(
     num_samples,
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "PReLU"
-    init_args = {}
+    layer_name = "AveragePooling3D"
+    init_args = {
+        "pool_size": 2,
+    }
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[256, 256],
+        input_shape=[256],
         jit_compile=jit_compile,
     )
 
@@ -59,73 +94,20 @@ def benchmark_prelu(
         batch_size=batch_size,
     )
 
-
-def benchmark_relu(
-    num_samples,
-    batch_size,
-    jit_compile=True,
-):
-    layer_name = "ReLU"
-    init_args = {}
-    benchmark = LayerBenchmark(
-        layer_name,
-        init_args,
-        input_shape=[256, 256],
-        jit_compile=jit_compile,
-    )
-
-    benchmark.benchmark_predict(
+    benchmark.benchmark_fit(
         num_samples=num_samples,
         batch_size=batch_size,
     )
-
-
-def benchmark_leaky_relu(
-    num_samples,
-    batch_size,
-    jit_compile=True,
-):
-    layer_name = "LeakyReLU"
-    init_args = {}
-    benchmark = LayerBenchmark(
-        layer_name,
-        init_args,
-        input_shape=[256, 256],
-        jit_compile=jit_compile,
-    )
-
-    benchmark.benchmark_predict(
-        num_samples=num_samples,
-        batch_size=batch_size,
-    )
-
-
-def benchmark_softmax(
-    num_samples,
-    batch_size,
-    jit_compile=True,
-):
-    layer_name = "Softmax"
-    init_args = {}
-    benchmark = LayerBenchmark(
-        layer_name,
-        init_args,
-        input_shape=[256, 256],
-        jit_compile=jit_compile,
-    )
-
-    benchmark.benchmark_predict(
-        num_samples=num_samples,
-        batch_size=batch_size,
-    )
-
 
 BENCHMARK_NAMES = {
-    "benchmark_elu": benchmark_elu,
-    "benchmark_relu": benchmark_relu,
-    "benchmark_leaky_relu": benchmark_leaky_relu,
-    "benchmark_prelu": benchmark_prelu,
-    "benchmark_softmax": benchmark_softmax,
+    "benchmark_add": benchmark_add,
+    "benchmark_average": benchmark_average,
+    "benchmark_concatenate": benchmark_concatenate,
+    "benchmark_dot": benchmark_dot,
+    "benchmark_maximum": benchmark_maximum,
+    "benchmark_minimum": benchmark_minimum,
+    "benchmark_multiply": benchmark_multiply,
+    "benchmark_subtract": benchmark_subtract,
 }
 
 

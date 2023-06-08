@@ -16,6 +16,7 @@ from absl import app
 from absl import flags
 
 from benchmarks.layer_benchmark.base_benchmark import LayerBenchmark
+import numpy as np
 
 FLAGS = flags.FLAGS
 
@@ -70,6 +71,37 @@ def benchmark_einsum_dense(
     benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
+    )
+
+
+def benchmark_embedding(
+    num_samples,
+    batch_size,
+    jit_compile=True,
+):
+    layer_name = "Embedding"
+    init_args = {
+        "input_dim": 30,
+        "output_shape": 128,
+    }
+    benchmark = LayerBenchmark(
+        layer_name,
+        init_args,
+        input_shape=[64, 32],
+        jit_compile=jit_compile,
+    )
+
+    data = np.random.randint(30, size=(num_samples, 32))
+    benchmark.benchmark_predict(
+        num_samples=num_samples,
+        batch_size=batch_size,
+        data=data,
+    )
+
+    benchmark.benchmark_train(
+        num_samples=num_samples,
+        batch_size=batch_size,
+        data=data,
     )
 
 

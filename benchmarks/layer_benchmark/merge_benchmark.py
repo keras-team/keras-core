@@ -1,11 +1,11 @@
-""" Benchmark activation layers.
+""" Benchmark merge layers.
 
 To run benchmarks, see the following command for an example, please change the
 flag to your custom value:
 
 ```
-python3 -m benchmarks.layer_benchmark.activation_benchmark \
-    --benchmark_name=benchmark_elu \
+python3 -m benchmarks.layer_benchmark.merge_benchmark \
+    --benchmark_name=benchmark_add \
     --num_samples=8192 \
     --batch_size=1024 \
     --jit_compile=True
@@ -16,21 +16,22 @@ from absl import app
 from absl import flags
 
 from benchmarks.layer_benchmark.base_benchmark import LayerBenchmark
+import numpy as np
 
 FLAGS = flags.FLAGS
 
 
-def benchmark_elu(
+def benchmark_add(
     num_samples,
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "ELU"
+    layer_name = "Add"
     init_args = {}
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[256, 256],
+        input_shape=[[256, 256], [256, 256]],
         jit_compile=jit_compile,
     )
 
@@ -40,17 +41,17 @@ def benchmark_elu(
     )
 
 
-def benchmark_prelu(
+def benchmark_average(
     num_samples,
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "PReLU"
+    layer_name = "Average"
     init_args = {}
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[256, 256],
+        input_shape=[[256, 256], [256, 256]],
         jit_compile=jit_compile,
     )
 
@@ -60,17 +61,17 @@ def benchmark_prelu(
     )
 
 
-def benchmark_relu(
+def benchmark_concatenate(
     num_samples,
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "ReLU"
+    layer_name = "Concatenate"
     init_args = {}
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[256, 256],
+        input_shape=[[256, 256], [256, 256]],
         jit_compile=jit_compile,
     )
 
@@ -80,17 +81,17 @@ def benchmark_relu(
     )
 
 
-def benchmark_leaky_relu(
+def benchmark_dot(
     num_samples,
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "LeakyReLU"
+    layer_name = "Dot"
     init_args = {}
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[256, 256],
+        input_shape=[[256, 32], [32, 64]],
         jit_compile=jit_compile,
     )
 
@@ -100,17 +101,77 @@ def benchmark_leaky_relu(
     )
 
 
-def benchmark_softmax(
+def benchmark_maximum(
     num_samples,
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "Softmax"
+    layer_name = "Maximum"
     init_args = {}
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[256, 256],
+        input_shape=[[256, 256], [256, 256]],
+        jit_compile=jit_compile,
+    )
+
+    benchmark.benchmark_predict(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
+
+
+def benchmark_minimum(
+    num_samples,
+    batch_size,
+    jit_compile=True,
+):
+    layer_name = "Minimum"
+    init_args = {}
+    benchmark = LayerBenchmark(
+        layer_name,
+        init_args,
+        input_shape=[[256, 256], [256, 256]],
+        jit_compile=jit_compile,
+    )
+
+    benchmark.benchmark_predict(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
+
+
+def benchmark_multiply(
+    num_samples,
+    batch_size,
+    jit_compile=True,
+):
+    layer_name = "Multiply"
+    init_args = {}
+    benchmark = LayerBenchmark(
+        layer_name,
+        init_args,
+        input_shape=[[256, 256], [256, 32]],
+        jit_compile=jit_compile,
+    )
+
+    benchmark.benchmark_predict(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
+
+
+def benchmark_subtract(
+    num_samples,
+    batch_size,
+    jit_compile=True,
+):
+    layer_name = "Subtract"
+    init_args = {}
+    benchmark = LayerBenchmark(
+        layer_name,
+        init_args,
+        input_shape=[[256, 256], [256, 256]],
         jit_compile=jit_compile,
     )
 
@@ -121,11 +182,14 @@ def benchmark_softmax(
 
 
 BENCHMARK_NAMES = {
-    "benchmark_elu": benchmark_elu,
-    "benchmark_relu": benchmark_relu,
-    "benchmark_leaky_relu": benchmark_leaky_relu,
-    "benchmark_prelu": benchmark_prelu,
-    "benchmark_softmax": benchmark_softmax,
+    "benchmark_add": benchmark_add,
+    "benchmark_average": benchmark_average,
+    "benchmark_concatenate": benchmark_concatenate,
+    "benchmark_dot": benchmark_dot,
+    "benchmark_maximum": benchmark_maximum,
+    "benchmark_minimum": benchmark_minimum,
+    "benchmark_multiply": benchmark_multiply,
+    "benchmark_subtract": benchmark_subtract,
 }
 
 
