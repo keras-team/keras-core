@@ -45,20 +45,9 @@ model = keras_core.Sequential(
     ]
 )
 
-# GPU parameters
-world_size = torch.cuda.device_count()
-
-torch.multiprocessing.spawn(
-    main,
-    args=(world_size),
-    nprocs=world_size
-)
-
 #################################################################
 ######## Writing a torch training loop for a Keras model ########
 #################################################################
-
-
 
 
 def train(model, train_loader, num_epochs, optimizer, loss_fn):
@@ -146,6 +135,16 @@ def main(rank, world_size):
     train(ddp_model, train_loader, num_epochs, optimizer, loss_fn)
 
     cleanup()
+
+
+# GPU parameters
+world_size = torch.cuda.device_count()
+
+torch.multiprocessing.spawn(
+    main,
+    args=(world_size),
+    nprocs=world_size
+)
 
 
 ################################################################
