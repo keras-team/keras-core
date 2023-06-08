@@ -189,6 +189,8 @@ def main(rank, world_size):
 if __name__ == "__main__":
     # GPU parameters
     world_size = torch.cuda.device_count()
+    
+    print(f"Running on {world_size} GPUs")
 
     torch.multiprocessing.spawn(
         main,
