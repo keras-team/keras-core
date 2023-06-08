@@ -155,7 +155,6 @@ def main(current_gpu_index, num_gpu):
     dataloader = prepare(dataset, current_gpu_index, num_gpu, batch_size)
 
     # Instantiate the torch optimizer
-    print("Num params:", len(list(model.parameters())))
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     # Instantiate the torch loss function
@@ -175,7 +174,6 @@ def main(current_gpu_index, num_gpu):
     ddp_torch_module = DDP(torch_module, device_ids=[current_gpu_index], output_device=current_gpu_index)
 
     # Instantiate the torch optimizer
-    print("Num params:", len(list(torch_module.parameters())))
     optimizer = optim.Adam(torch_module.parameters(), lr=learning_rate)
 
     # Instantiate the torch loss function
