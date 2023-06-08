@@ -55,9 +55,25 @@ def get_model():
     )
     return model
 
-#################################################################
-######## Writing a torch training loop for a Keras model ########
-#################################################################
+
+class MyModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.model = keras_core.Sequential(
+            [
+                layers.Input(shape=(28, 28, 1)),
+                layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
+                layers.MaxPooling2D(pool_size=(2, 2)),
+                layers.Conv2D(64, kernel_size=(3, 3), activation="relu"),
+                layers.MaxPooling2D(pool_size=(2, 2)),
+                layers.Flatten(),
+                layers.Dropout(0.5),
+                layers.Dense(num_classes),
+            ]
+        )
+
+    def forward(self, x):
+        return self.model(x)
 
 
 def train(model, train_loader, num_epochs, optimizer, loss_fn):
@@ -128,6 +144,10 @@ def main(rank, world_size):
     # setup the process groups
     setup(rank, world_size)
 
+    #################################################################
+    ######## Writing a torch training loop for a Keras model ########
+    #################################################################
+
     dataset = get_data()
     model = get_model()
 
@@ -147,43 +167,24 @@ def main(rank, world_size):
 
     train(ddp_model, dataloader, num_epochs, optimizer, loss_fn)
 
+    ################################################################
+    ######## Using a Keras model or layer in a torch Module ########
+    ################################################################
+
+    torch_module = MyModel().to(rank)
+    ddp_torch_module = DDP(torch_module, device_ids=[rank], output_device=rank)
+
+    # Instantiate the torch optimizer
+    print("Num params:", len(list(torch_module.parameters())))
+    optimizer = optim.Adam(torch_module.parameters(), lr=learning_rate)
+
+    # Instantiate the torch loss function
+    loss_fn = nn.CrossEntropyLoss()
+
+    train(ddp_torch_module, dataloader, num_epochs, optimizer, loss_fn)
+
     cleanup()
 
-
-################################################################
-######## Using a Keras model or layer in a torch Module ########
-################################################################
-
-class MyModel(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.model = keras_core.Sequential(
-            [
-                layers.Input(shape=(28, 28, 1)),
-                layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
-                layers.MaxPooling2D(pool_size=(2, 2)),
-                layers.Conv2D(64, kernel_size=(3, 3), activation="relu"),
-                layers.MaxPooling2D(pool_size=(2, 2)),
-                layers.Flatten(),
-                layers.Dropout(0.5),
-                layers.Dense(num_classes),
-            ]
-        )
-
-    def forward(self, x):
-        return self.model(x)
-
-
-# torch_module = MyModel()
-
-# # Instantiate the torch optimizer
-# print("Num params:", len(list(torch_module.parameters())))
-# optimizer = optim.Adam(torch_module.parameters(), lr=learning_rate)
-
-# # Instantiate the torch loss function
-# loss_fn = nn.CrossEntropyLoss()
-
-# train(torch_module, train_loader, num_epochs, optimizer, loss_fn)
 
 if __name__ == "__main__":
     # GPU parameters
