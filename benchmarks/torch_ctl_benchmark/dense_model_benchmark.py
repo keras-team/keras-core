@@ -1,23 +1,23 @@
-""" Benchmark Keras performance with torch custom training loop.
+"""Benchmark Keras performance with torch custom training loop.
 
 In this file we use a model with 3 dense layers. Training loop is written in the
 vanilla torch way, and we compare the performance between building model with
 Keras and torch.
 """
-import time
-
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
 import keras_core
+from benchmarks.torch_ctl_benchmark.benchmark_utils import train_loop
 from keras_core import layers
 
 num_classes = 2
 input_shape = (8192,)
 batch_size = 4096
 num_batches = 20
+num_epochs = 1
 
 x_train = np.random.normal(
     size=(num_batches * batch_size, *input_shape)
@@ -55,44 +55,6 @@ class TorchModel(torch.nn.Module):
         return x
 
 
-def train(model, train_loader, num_epochs, optimizer, loss_fn, framework):
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model.to(device)
-    start = None
-    average_batch_time_per_epoch = []
-    for epoch in range(num_epochs):
-        running_loss = 0.0
-        for batch_idx, (inputs, targets) in enumerate(train_loader):
-            if batch_idx == 1:
-                start = time.time()
-            inputs = inputs.to(device)
-            targets = targets.to(device)
-            # Forward pass
-            outputs = model(inputs)
-            loss = loss_fn(outputs, targets)
-
-            # Backward and optimize
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-            running_loss += loss.item()
-
-            # Print loss statistics
-            if (batch_idx + 1) % 10 == 0:
-                print(
-                    f"Epoch [{epoch+1}/{num_epochs}], "
-                    f"Batch [{batch_idx+1}/{len(train_loader)}], "
-                    f"Loss: {running_loss / 10}"
-                )
-                running_loss = 0.0
-        end = time.time()
-        average_batch_time_per_epoch.append((end - start) / (num_batches - 1))
-    average_time = np.mean(average_batch_time_per_epoch)
-
-    print(f"Time per batch in {framework}: {average_time:.2f}")
-
-
 def run_keras_core_custom_training_loop():
     keras_model = keras_core.Sequential(
         [
@@ -105,10 +67,10 @@ def run_keras_core_custom_training_loop():
     )
     optimizer = optim.Adam(keras_model.parameters(), lr=0.001)
     loss_fn = nn.CrossEntropyLoss()
-    train(
+    train_loop(
         keras_model,
         train_loader,
-        num_epochs=1,
+        num_epochs=num_epochs,
         optimizer=optimizer,
         loss_fn=loss_fn,
         framework="keras_core",
@@ -119,10 +81,10 @@ def run_torch_custom_training_loop():
     torch_model = TorchModel()
     optimizer = optim.Adam(torch_model.parameters(), lr=0.001)
     loss_fn = nn.CrossEntropyLoss()
-    train(
+    train_loop(
         torch_model,
         train_loader,
-        num_epochs=1,
+        num_epochs=num_epochs,
         optimizer=optimizer,
         loss_fn=loss_fn,
         framework="torch",
