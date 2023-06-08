@@ -103,25 +103,25 @@ def train(model, train_loader, num_epochs, optimizer, loss_fn):
                 )
                 running_loss = 0.0
 
-def setup(rank, world_size):
+def setup(current_gpu_index, num_gpu):
     # Device setup
     os.environ['MASTER_ADDR'] = 'keras-core-torch'
     os.environ['MASTER_PORT'] = '56492'
-    device = torch.device("cuda:{}".format(rank))
+    device = torch.device("cuda:{}".format(current_gpu_index))
     dist.init_process_group(
         backend='nccl',
         init_method='env://',
-        world_size=world_size,
-        rank=rank
+        world_size=num_gpu,
+        rank=current_gpu_index
     )
     torch.cuda.set_device(device)
 
 
-def prepare(dataset, rank, world_size, batch_size):
+def prepare(dataset, current_gpu_index, num_gpu, batch_size):
     sampler = DistributedSampler(
         dataset,
-        num_replicas=world_size,
-        rank=rank,
+        num_replicas=num_gpu,
+        rank=current_gpu_index,
         shuffle=False,
     )
 
@@ -140,9 +140,9 @@ def cleanup():
     dist.destroy_process_group()
 
 
-def main(rank, world_size):
+def main(current_gpu_index, num_gpu):
     # setup the process groups
-    setup(rank, world_size)
+    setup(current_gpu_index, num_gpu)
 
     #################################################################
     ######## Writing a torch training loop for a Keras model ########
@@ -152,7 +152,7 @@ def main(rank, world_size):
     model = get_model()
 
     # prepare the dataloader
-    dataloader = prepare(dataset, rank, world_size, batch_size)
+    dataloader = prepare(dataset, current_gpu_index, num_gpu, batch_size)
 
     # Instantiate the torch optimizer
     print("Num params:", len(list(model.parameters())))
@@ -162,8 +162,8 @@ def main(rank, world_size):
     loss_fn = nn.CrossEntropyLoss()
 
     # Put model on device
-    model = model.to(rank)
-    ddp_model = DDP(model, device_ids=[rank], output_device=rank)
+    model = model.to(current_gpu_index)
+    ddp_model = DDP(model, device_ids=[current_gpu_index], output_device=current_gpu_index)
 
     train(ddp_model, dataloader, num_epochs, optimizer, loss_fn)
 
@@ -171,8 +171,8 @@ def main(rank, world_size):
     ######## Using a Keras model or layer in a torch Module ########
     ################################################################
 
-    torch_module = MyModel().to(rank)
-    ddp_torch_module = DDP(torch_module, device_ids=[rank], output_device=rank)
+    torch_module = MyModel().to(current_gpu_index)
+    ddp_torch_module = DDP(torch_module, device_ids=[current_gpu_index], output_device=current_gpu_index)
 
     # Instantiate the torch optimizer
     print("Num params:", len(list(torch_module.parameters())))
@@ -188,13 +188,13 @@ def main(rank, world_size):
 
 if __name__ == "__main__":
     # GPU parameters
-    world_size = torch.cuda.device_count()
+    num_gpu = torch.cuda.device_count()
     
-    print(f"Running on {world_size} GPUs")
+    print(f"Running on {num_gpu} GPUs")
 
     torch.multiprocessing.spawn(
         main,
-        args=(world_size, ),
-        nprocs=world_size,
+        args=(num_gpu, ),
+        nprocs=num_gpu,
         join=True,
     )
