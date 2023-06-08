@@ -45,16 +45,20 @@ model = keras_core.Sequential(
     ]
 )
 
+# GPU parameters
+world_size = torch.cuda.device_count()
+
+torch.multiprocessing.spawn(
+    main,
+    args=(world_size),
+    nprocs=world_size
+)
+
 #################################################################
 ######## Writing a torch training loop for a Keras model ########
 #################################################################
 
-# Instantiate the torch optimizer
-print("Num params:", len(list(model.parameters())))
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-# Instantiate the torch loss function
-loss_fn = nn.CrossEntropyLoss()
 
 
 def train(model, train_loader, num_epochs, optimizer, loss_fn):
@@ -81,40 +85,67 @@ def train(model, train_loader, num_epochs, optimizer, loss_fn):
                 )
                 running_loss = 0.0
 
-
-# Device setup
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-rank = dist.get_rank()
-world_size = torch.cuda.device_count()
-dist.init_process_group(
-    backend='nccl',
-    init_method='env://',
-    world_size=world_size,
-    rank=rank
-)
-torch.cuda.set_device(device)
+def setup(rank, world_size):
+    # Device setup
+    device = torch.device("cuda:{}".format(rank))
+    dist.init_process_group(
+        backend='nccl',
+        init_method='env://',
+        world_size=world_size,
+        rank=rank
+    )
+    torch.cuda.set_device(device)
 
 
-# Put model on device
-model = model.to(rank)
-ddp_model = DDP(model, device_ids=[rank])
+def prepare(rank, world_size, batch_size):
+    # Create a TensorDataset
+    dataset = torch.utils.data.TensorDataset(
+        torch.from_numpy(x_train), torch.from_numpy(y_train)
+    )
+
+    sampler = DistributedSampler(
+        dataset,
+        num_replicas=world_size,
+        rank=rank,
+        shuffle=False,
+    )
+
+    # Create a DataLoader
+    train_loader = DataLoader(
+        dataset,
+        sampler=sampler,
+        batch_size=batch_size,
+        shuffle=False,
+    )
+
+    return train_loader
+
+def cleanup():
+    # Cleanup
+    dist.destroy_process_group()
 
 
-# Create a TensorDataset
-dataset = torch.utils.data.TensorDataset(
-    torch.from_numpy(x_train), torch.from_numpy(y_train)
-)
+def main(rank, world_size):
+    # setup the process groups
+    setup(rank, world_size)
 
+    # prepare the dataloader
+    dataloader = prepare(rank, world_size, batch_size)
 
-sampler = DistributedSampler(dataset)
+    # Instantiate the torch optimizer
+    print("Num params:", len(list(model.parameters())))
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
+    # Instantiate the torch loss function
+    loss_fn = nn.CrossEntropyLoss()
 
-# Create a DataLoader
-train_loader = DataLoader(
-    dataset, sampler=sampler, batch_size=batch_size, shuffle=False
-)
+    # Put model on device
+    model = model.to(rank)
+    ddp_model = DDP(model, device_ids=[rank])
 
-train(ddp_model, train_loader, num_epochs, optimizer, loss_fn)
+    train(ddp_model, train_loader, num_epochs, optimizer, loss_fn)
+
+    cleanup()
 
 
 ################################################################
@@ -141,18 +172,14 @@ class MyModel(nn.Module):
         return self.model(x)
 
 
-torch_module = MyModel()
+# torch_module = MyModel()
 
-# Instantiate the torch optimizer
-print("Num params:", len(list(torch_module.parameters())))
-optimizer = optim.Adam(torch_module.parameters(), lr=learning_rate)
+# # Instantiate the torch optimizer
+# print("Num params:", len(list(torch_module.parameters())))
+# optimizer = optim.Adam(torch_module.parameters(), lr=learning_rate)
 
-# Instantiate the torch loss function
-loss_fn = nn.CrossEntropyLoss()
+# # Instantiate the torch loss function
+# loss_fn = nn.CrossEntropyLoss()
 
-train(torch_module, train_loader, num_epochs, optimizer, loss_fn)
+# train(torch_module, train_loader, num_epochs, optimizer, loss_fn)
 
-
-
-# Cleanup
-dist.destroy_process_group()
