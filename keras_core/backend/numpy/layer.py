@@ -1,2 +1,3 @@
 class NumpyLayer:
-    pass
+    def _post_build(self):
+        pass
