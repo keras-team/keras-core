@@ -12,11 +12,11 @@ python3 -m benchmarks.layer_benchmark.core_benchmark \
 ```
 """
 
+import numpy as np
 from absl import app
 from absl import flags
 
 from benchmarks.layer_benchmark.base_benchmark import LayerBenchmark
-import numpy as np
 
 FLAGS = flags.FLAGS
 

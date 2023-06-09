@@ -1,13 +1,13 @@
-""" Benchmark merge layers.
+""" Benchmark regularization layers.
 
 To run benchmarks, see the following command for an example, please change the
 flag to your custom value:
 
 ```
-python3 -m benchmarks.layer_benchmark.merge_benchmark \
-    --benchmark_name=benchmark_add \
-    --num_samples=8192 \
-    --batch_size=1024 \
+python3 -m benchmarks.layer_benchmark.regularization_benchmark \
+    --benchmark_name=benchmark_dropout\
+    --num_samples=2048 \
+    --batch_size=256 \
     --jit_compile=True
 ```
 """
@@ -20,18 +20,19 @@ from benchmarks.layer_benchmark.base_benchmark import LayerBenchmark
 FLAGS = flags.FLAGS
 
 
-def benchmark_add(
+def benchmark_dropout(
     num_samples,
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "Add"
-    init_args = {}
+    layer_name = "Dropout"
+    init_args = {
+        "rate": 0.5,
+    }
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[[256, 256], [256, 256]],
-        flat_call_inputs=False,
+        input_shape=[256, 256, 4],
         jit_compile=jit_compile,
     )
 
@@ -40,19 +41,25 @@ def benchmark_add(
         batch_size=batch_size,
     )
 
+    benchmark.benchmark_train(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
 
-def benchmark_average(
+
+def benchmark_gaussian_dropout(
     num_samples,
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "Average"
-    init_args = {}
+    layer_name = "GaussionDropout"
+    init_args = {
+        "rate": 0.5,
+    }
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[[256, 256], [256, 256]],
-        flat_call_inputs=False,
+        input_shape=[256, 256, 4],
         jit_compile=jit_compile,
     )
 
@@ -61,19 +68,25 @@ def benchmark_average(
         batch_size=batch_size,
     )
 
+    benchmark.benchmark_train(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
 
-def benchmark_concatenate(
+
+def benchmark_gaussian_noise(
     num_samples,
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "Concatenate"
-    init_args = {}
+    layer_name = "GaussionNoise"
+    init_args = {
+        "stddev": 0.5,
+    }
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[[256, 256], [256, 256]],
-        flat_call_inputs=False,
+        input_shape=[256, 256, 4],
         jit_compile=jit_compile,
     )
 
@@ -82,19 +95,25 @@ def benchmark_concatenate(
         batch_size=batch_size,
     )
 
+    benchmark.benchmark_train(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
 
-def benchmark_dot(
+
+def benchmark_spatial_dropout1D(
     num_samples,
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "Dot"
-    init_args = {}
+    layer_name = "SpatialDropout1D"
+    init_args = {
+        "rate": 0.5,
+    }
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[[256, 32], [32, 64]],
-        flat_call_inputs=False,
+        input_shape=[256, 3],
         jit_compile=jit_compile,
     )
 
@@ -103,19 +122,25 @@ def benchmark_dot(
         batch_size=batch_size,
     )
 
+    benchmark.benchmark_train(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
 
-def benchmark_maximum(
+
+def benchmark_spatial_dropout2D(
     num_samples,
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "Maximum"
-    init_args = {}
+    layer_name = "SpatialDropout2D"
+    init_args = {
+        "rate": 0.5,
+    }
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[[256, 256], [256, 256]],
-        flat_call_inputs=False,
+        input_shape=[256, 256, 3],
         jit_compile=jit_compile,
     )
 
@@ -124,19 +149,25 @@ def benchmark_maximum(
         batch_size=batch_size,
     )
 
+    benchmark.benchmark_train(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
 
-def benchmark_minimum(
+
+def benchmark_spatial_dropout3D(
     num_samples,
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "Minimum"
-    init_args = {}
+    layer_name = "SpatialDropout3D"
+    init_args = {
+        "rate": 0.5,
+    }
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[[256, 256], [256, 256]],
-        flat_call_inputs=False,
+        input_shape=[32, 32, 32, 3],
         jit_compile=jit_compile,
     )
 
@@ -145,58 +176,19 @@ def benchmark_minimum(
         batch_size=batch_size,
     )
 
-
-def benchmark_multiply(
-    num_samples,
-    batch_size,
-    jit_compile=True,
-):
-    layer_name = "Multiply"
-    init_args = {}
-    benchmark = LayerBenchmark(
-        layer_name,
-        init_args,
-        input_shape=[[256, 256], [256, 32]],
-        flat_call_inputs=False,
-        jit_compile=jit_compile,
-    )
-
-    benchmark.benchmark_predict(
-        num_samples=num_samples,
-        batch_size=batch_size,
-    )
-
-
-def benchmark_subtract(
-    num_samples,
-    batch_size,
-    jit_compile=True,
-):
-    layer_name = "Subtract"
-    init_args = {}
-    benchmark = LayerBenchmark(
-        layer_name,
-        init_args,
-        input_shape=[[256, 256], [256, 256]],
-        flat_call_inputs=False,
-        jit_compile=jit_compile,
-    )
-
-    benchmark.benchmark_predict(
+    benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
     )
 
 
 BENCHMARK_NAMES = {
-    "benchmark_add": benchmark_add,
-    "benchmark_average": benchmark_average,
-    "benchmark_concatenate": benchmark_concatenate,
-    "benchmark_dot": benchmark_dot,
-    "benchmark_maximum": benchmark_maximum,
-    "benchmark_minimum": benchmark_minimum,
-    "benchmark_multiply": benchmark_multiply,
-    "benchmark_subtract": benchmark_subtract,
+    "benchmark_dropout": benchmark_dropout,
+    "benchmark_gaussian_dropout": benchmark_gaussian_dropout,
+    "benchmark_gaussian_noise": benchmark_gaussian_noise,
+    "benchmark_spatial_dropout1D": benchmark_spatial_dropout1D,
+    "benchmark_spatial_dropout2D": benchmark_spatial_dropout2D,
+    "benchmark_spatial_dropout3D": benchmark_spatial_dropout3D,
 }
 
 
