@@ -5,7 +5,6 @@ Date created: 2021/04/24
 Last modified: 2021/04/24
 Description: Contrastive pretraining with SimCLR for semi-supervised image classification on the STL-10 dataset.
 Accelerator: GPU
-Converted to Keras Core by: Gabriel Rasskin
 """
 """
 ## Introduction
