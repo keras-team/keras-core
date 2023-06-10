@@ -127,7 +127,7 @@ def benchmark_permute(
 ):
     layer_name = "Permute"
     init_args = {
-        "dim": (2, 1),
+        "dims": (2, 1),
     }
     benchmark = LayerBenchmark(
         layer_name,
@@ -182,7 +182,7 @@ def benchmark_up_sampling2d(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[256, 256, 3],
+        input_shape=[128, 128, 3],
         jit_compile=jit_compile,
     )
 
@@ -207,7 +207,7 @@ def benchmark_up_sampling3d(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 32, 32, 3],
+        input_shape=[32, 32, 16, 3],
         jit_compile=jit_compile,
     )
 
@@ -298,14 +298,14 @@ def benchmark_zero_padding3d(
 
 
 BENCHMARK_NAMES = {
-    "benchmark_cropping1d": benchmark_cropping1d,
-    "benchmark_cropping2d": benchmark_cropping2d,
-    "benchmark_cropping3d": benchmark_cropping3d,
-    "benchmark_flatten": benchmark_flatten,
-    "benchmark_permute": benchmark_permute,
-    "benchmark_up_sampling1d": benchmark_up_sampling1d,
-    "benchmark_up_sampling2d": benchmark_up_sampling2d,
-    "benchmark_up_sampling3d": benchmark_up_sampling3d,
+    # "benchmark_cropping1d": benchmark_cropping1d,
+    # "benchmark_cropping2d": benchmark_cropping2d,
+    # "benchmark_cropping3d": benchmark_cropping3d,
+    # "benchmark_flatten": benchmark_flatten,
+    # "benchmark_permute": benchmark_permute,
+    # "benchmark_up_sampling1d": benchmark_up_sampling1d,
+    # "benchmark_up_sampling2d": benchmark_up_sampling2d,
+    # "benchmark_up_sampling3d": benchmark_up_sampling3d,
     "benchmark_zero_padding1d": benchmark_zero_padding1d,
     "benchmark_zero_padding2d": benchmark_zero_padding2d,
     "benchmark_zero_padding3d": benchmark_zero_padding3d,
@@ -319,7 +319,7 @@ def main(_):
     jit_compile = FLAGS.jit_compile
 
     if benchmark_name is None:
-        for name, benchmark_fn in BENCHMARK_NAMES:
+        for name, benchmark_fn in BENCHMARK_NAMES.items():
             benchmark_fn(num_samples, batch_size, jit_compile)
         return
 

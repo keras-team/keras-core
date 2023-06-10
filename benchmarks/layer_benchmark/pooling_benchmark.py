@@ -114,7 +114,7 @@ def benchmark_max_pooling1d(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[256, 3],
+        input_shape=[1024, 256],
         jit_compile=jit_compile,
     )
 
@@ -243,7 +243,7 @@ def benchmark_global_average_pooling3d(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[64, 64, 64, 3],
+        input_shape=[64, 64, 32, 3],
         jit_compile=jit_compile,
     )
 
@@ -268,7 +268,7 @@ def benchmark_global_max_pooling1d(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[256, 3],
+        input_shape=[1024, 256],
         jit_compile=jit_compile,
     )
 
@@ -318,7 +318,7 @@ def benchmark_global_max_pooling3d(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[64, 64, 64, 3],
+        input_shape=[64, 64, 32, 3],
         jit_compile=jit_compile,
     )
 

@@ -52,7 +52,7 @@ def benchmark_gaussian_dropout(
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "GaussionDropout"
+    layer_name = "GaussianDropout"
     init_args = {
         "rate": 0.5,
     }
@@ -79,7 +79,7 @@ def benchmark_gaussian_noise(
     batch_size,
     jit_compile=True,
 ):
-    layer_name = "GaussionNoise"
+    layer_name = "GaussianNoise"
     init_args = {
         "stddev": 0.5,
     }
