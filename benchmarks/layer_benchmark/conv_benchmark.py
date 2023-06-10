@@ -34,7 +34,7 @@ def benchmark_conv1D(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[256, 16],
+        input_shape=[256, 64],
         jit_compile=jit_compile,
     )
 
@@ -118,7 +118,7 @@ def benchmark_depthwise_conv1D(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 4],
+        input_shape=[256, 64],
         jit_compile=jit_compile,
     )
 
@@ -175,7 +175,7 @@ def benchmark_separable_conv1D(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 4],
+        input_shape=[256, 64],
         jit_compile=jit_compile,
     )
 
@@ -226,13 +226,13 @@ def benchmark_conv1D_transpose(
 ):
     layer_name = "Conv1DTranspose"
     init_args = {
-        "filters": 16,
-        "kernel_size": 2,
+        "filters": 32,
+        "kernel_size": 4,
     }
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 4],
+        input_shape=[256, 256],
         jit_compile=jit_compile,
     )
 

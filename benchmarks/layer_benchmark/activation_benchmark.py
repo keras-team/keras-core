@@ -38,6 +38,10 @@ def benchmark_elu(
         num_samples=num_samples,
         batch_size=batch_size,
     )
+    benchmark.benchmark_train(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
 
 
 def benchmark_prelu(
@@ -55,6 +59,10 @@ def benchmark_prelu(
     )
 
     benchmark.benchmark_predict(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
+    benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
     )
@@ -78,6 +86,10 @@ def benchmark_relu(
         num_samples=num_samples,
         batch_size=batch_size,
     )
+    benchmark.benchmark_train(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
 
 
 def benchmark_leaky_relu(
@@ -95,6 +107,10 @@ def benchmark_leaky_relu(
     )
 
     benchmark.benchmark_predict(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
+    benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
     )
@@ -118,6 +134,10 @@ def benchmark_softmax(
         num_samples=num_samples,
         batch_size=batch_size,
     )
+    benchmark.benchmark_train(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
 
 
 BENCHMARK_NAMES = {
@@ -136,7 +156,7 @@ def main(_):
     jit_compile = FLAGS.jit_compile
 
     if benchmark_name is None:
-        for name, benchmark_fn in BENCHMARK_NAMES:
+        for name, benchmark_fn in BENCHMARK_NAMES.items():
             benchmark_fn(num_samples, batch_size, jit_compile)
         return
 

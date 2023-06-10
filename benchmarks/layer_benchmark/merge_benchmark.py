@@ -39,6 +39,11 @@ def benchmark_add(
         num_samples=num_samples,
         batch_size=batch_size,
     )
+    
+    benchmark.benchmark_train(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
 
 
 def benchmark_average(
@@ -57,6 +62,11 @@ def benchmark_average(
     )
 
     benchmark.benchmark_predict(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
+    
+    benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
     )
@@ -81,6 +91,11 @@ def benchmark_concatenate(
         num_samples=num_samples,
         batch_size=batch_size,
     )
+    
+    benchmark.benchmark_train(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
 
 
 def benchmark_dot(
@@ -89,7 +104,7 @@ def benchmark_dot(
     jit_compile=True,
 ):
     layer_name = "Dot"
-    init_args = {}
+    init_args = {"axes": [2, 1]}
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
@@ -103,6 +118,10 @@ def benchmark_dot(
         batch_size=batch_size,
     )
 
+    benchmark.benchmark_train(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
 
 def benchmark_maximum(
     num_samples,
@@ -120,6 +139,11 @@ def benchmark_maximum(
     )
 
     benchmark.benchmark_predict(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
+    
+    benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
     )
@@ -144,6 +168,11 @@ def benchmark_minimum(
         num_samples=num_samples,
         batch_size=batch_size,
     )
+    
+    benchmark.benchmark_train(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
 
 
 def benchmark_multiply(
@@ -156,12 +185,17 @@ def benchmark_multiply(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[[256, 256], [256, 32]],
+        input_shape=[[256, 64], [256, 64]],
         flat_call_inputs=False,
         jit_compile=jit_compile,
     )
 
     benchmark.benchmark_predict(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
+    
+    benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
     )
@@ -186,6 +220,11 @@ def benchmark_subtract(
         num_samples=num_samples,
         batch_size=batch_size,
     )
+    
+    benchmark.benchmark_train(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
 
 
 BENCHMARK_NAMES = {
@@ -207,7 +246,7 @@ def main(_):
     jit_compile = FLAGS.jit_compile
 
     if benchmark_name is None:
-        for name, benchmark_fn in BENCHMARK_NAMES:
+        for name, benchmark_fn in BENCHMARK_NAMES.items():
             benchmark_fn(num_samples, batch_size, jit_compile)
         return
 

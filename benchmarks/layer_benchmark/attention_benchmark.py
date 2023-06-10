@@ -102,7 +102,7 @@ def benchmark_additive_attention(
 
 
 BENCHMARK_NAMES = {
-    "benchmark_attention": benchmark_attention,
+    # "benchmark_attention": benchmark_attention,
     "benchmark_multi_head_attention": benchmark_multi_head_attention,
     "benchmark_additive_attention": benchmark_additive_attention,
 }
@@ -115,7 +115,7 @@ def main(_):
     jit_compile = FLAGS.jit_compile
 
     if benchmark_name is None:
-        for name, benchmark_fn in BENCHMARK_NAMES:
+        for name, benchmark_fn in BENCHMARK_NAMES.items():
             benchmark_fn(num_samples, batch_size, jit_compile)
         return
 
