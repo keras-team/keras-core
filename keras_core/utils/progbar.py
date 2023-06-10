@@ -5,9 +5,9 @@ import time
 
 import numpy as np
 
+from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.utils import io_utils
-from keras_core import backend
 
 
 @keras_core_export("keras_core.utils.Progbar")

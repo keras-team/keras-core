@@ -1,9 +1,9 @@
 import numpy as np
 import tensorflow as tf
 
+from keras_core import backend
 from keras_core import layers
 from keras_core import testing
-from keras_core import backend
 
 
 class RandomBrightnessTest(testing.TestCase):

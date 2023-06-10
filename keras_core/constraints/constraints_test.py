@@ -1,8 +1,8 @@
 import numpy as np
 
+from keras_core import backend
 from keras_core import constraints
 from keras_core import testing
-from keras_core import backend
 
 
 def get_example_array():
