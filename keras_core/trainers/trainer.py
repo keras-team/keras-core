@@ -1,3 +1,4 @@
+import platform
 import warnings
 
 from keras_core import backend
@@ -42,7 +43,7 @@ class Trainer:
         else:
             self._compile_metrics = None
         if jit_compile == "auto":
-            if all(x.supports_jit for x in self._flatten_layers()):
+            if model_supports_jit(self):
                 jit_compile = True
             else:
                 jit_compile = False
@@ -230,7 +231,7 @@ class Trainer:
                 return_metrics.update(result)
             else:
                 return_metrics[metric.name] = result
-        return return_metrics
+        return self._pythonify_logs(return_metrics)
 
     def fit(
         self,
@@ -357,3 +358,15 @@ class Trainer:
             else:
                 msg += f"calling `{method_name}()`."
             raise ValueError(msg)
+
+
+def model_supports_jit(model):
+    if platform.system() == "Darwin" and "arm" in platform.processor().lower():
+        if backend.backend() == "tensorflow":
+            import tensorflow as tf
+
+            if tf.config.list_physical_devices("GPU"):
+                return False
+    if all(x.supports_jit for x in model._flatten_layers()):
+        return True
+    return False
