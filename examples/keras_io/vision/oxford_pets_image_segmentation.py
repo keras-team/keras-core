@@ -201,21 +201,17 @@ val_input_img_paths = input_img_paths[-val_samples:]
 val_target_img_paths = target_img_paths[-val_samples:]
 
 # Instantiate dataset for each split
-# Limit to 100 input files for faster epoch training time.
+# Limit input files in `max_dataset_len` for faster epoch training time.
 # Remove the `max_dataset_len` arg when running with full dataset.
 train_dataset = get_dataset(
     batch_size,
     img_size,
     train_input_img_paths,
     train_target_img_paths,
-    max_dataset_len=100,
+    max_dataset_len=1000,
 )
 valid_dataset = get_dataset(
-    batch_size,
-    img_size,
-    val_input_img_paths,
-    val_target_img_paths,
-    max_dataset_len=100,
+    batch_size, img_size, val_input_img_paths, val_target_img_paths
 )
 
 """
