@@ -161,9 +161,7 @@ class Progbar:
                 info += f" - {k}:"
                 if isinstance(self._values[k], list):
                     avg = np.mean(
-                        backend.convert_to_numpy(
                             self._values[k][0] / max(1, self._values[k][1])
-                        )
                     )
                     if abs(avg) > 1e-3:
                         info += f" {avg:.4f}"
@@ -192,9 +190,7 @@ class Progbar:
                 for k in self._values_order:
                     info += f" - {k}:"
                     avg = np.mean(
-                        backend.convert_to_numpy(
                             self._values[k][0] / max(1, self._values[k][1])
-                        )
                     )
                     if avg > 1e-3:
                         info += f" {avg:.4f}"
