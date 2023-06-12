@@ -332,7 +332,7 @@ class Trainer:
 
     def _pythonify_logs(self, logs):
         result = {}
-        for key, value in logs.items():
+        for key, value in sorted(logs.items()):
             try:
                 value = float(value)
             except:
