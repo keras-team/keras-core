@@ -2,18 +2,37 @@ import numpy as np
 import torch
 
 from tensorflow import nest
+from tensorflow import while_loop
 from keras_core.backend.torch.core import cast
 from keras_core.backend.torch.core import convert_to_tensor
 from keras_core.backend.torch.core import to_torch_dtype
 
 
-def rnn(*args, **kwargs):
+def rnn(
+    step_function,
+    inputs,
+    initial_states,
+    go_backwards=False,
+    mask=None,
+    constants=None,
+    unroll=False,
+    input_length=None,
+    time_major=False,
+    zero_output_for_mask=False,
+    return_all_outputs=True,
+):
+    def swap_batch_timestep(input_t):
+        # Swap the batch and timestep dim for the incoming tensor.
+        axes = list(range(len(input_t.shape)))
+        axes[0], axes[1] = 1, 0
+        return torch.permute(input_t, axes)
 
     if not time_major:
         inputs = nest.map_structure(swap_batch_timestep, inputs)
 
     flattened_inputs = nest.flatten(inputs)
     time_steps = flattened_inputs[0].shape[0]
+    time_steps_t = time_steps
 
     if mask is not None:
         if mask.dtype != "bool":
@@ -155,17 +174,12 @@ def rnn(*args, **kwargs):
         #     )
         #     for i, inp in enumerate(flattened_inputs)
         # )
-        input_ta = tuple(
-            []*time_steps_t
-            for i, inp in enumerate(flattened_inputs)
-        )
-
 
         input_ta = tuple(
-            ta.unstack(input_)
+            list(torch.unbind(input_))
             if not go_backwards
-            else ta.unstack(torch.flip(input_, [0]))
-            for ta, input_ in zip(input_ta, flattened_inputs)
+            else list(torch.unbind(torch.flip(input_, [0])))
+            for input_ in flattened_inputs
         )
 
         # Get the time(0) input and compute the output for that, the output will
@@ -181,22 +195,23 @@ def rnn(*args, **kwargs):
         )
 
         output_ta_size = time_steps_t if return_all_outputs else 1
-        output_ta = tuple(
-            tf.TensorArray(
-                dtype=out.dtype,
-                size=output_ta_size,
-                element_shape=out.shape,
-                tensor_array_name=f"output_ta_{i}",
-            )
-            for i, out in enumerate(nest.flatten(output_time_zero))
-        )
+        output_ta = tuple([out for out in enumerate(nest.flatten(output_time_zero))])
+        # output_ta = tuple(
+        #     tf.TensorArray(
+        #         dtype=out.dtype,
+        #         size=output_ta_size,
+        #         element_shape=out.shape,
+        #         tensor_array_name=f"output_ta_{i}",
+        #     )
+        #     for i, out in enumerate(nest.flatten(output_time_zero))
+        # )
 
-        time = tf.constant(0, dtype="int32", name="time")
+        time = torch.tensor(0, dtype=torch.int32)
 
         if input_length is None:
             max_iterations = time_steps_t
         else:
-            max_iterations = tf.reduce_max(input_length)
+            max_iterations = input_length
 
         while_loop_kwargs = {
             "cond": lambda time, *_: time < time_steps_t,
@@ -208,13 +223,14 @@ def rnn(*args, **kwargs):
             if go_backwards:
                 mask = torch.flip(mask, [0])
 
-            mask_ta = tf.TensorArray(
-                dtype=tf.bool, size=time_steps_t, tensor_array_name="mask_ta"
-            )
-            mask_ta = mask_ta.unstack(mask)
+            # mask_ta = tf.TensorArray(
+            #     dtype=tf.bool, size=time_steps_t, tensor_array_name="mask_ta"
+            # )
+            # mask_ta = mask_ta.unstack(mask)
+            mask_ta = list(torch.unbind(mask))
 
             def masking_fn(time):
-                return mask_ta.read(time)
+                return mask_ta[time]
 
             def compute_masked_output(mask_t, flat_out, flat_mask):
                 tiled_mask_t = tuple(
@@ -222,26 +238,26 @@ def rnn(*args, **kwargs):
                     for o in flat_out
                 )
                 return tuple(
-                    tf.where(m, o, fm)
+                    torch.where(m, o, fm)
                     for m, o, fm in zip(tiled_mask_t, flat_out, flat_mask)
                 )
 
-        elif isinstance(input_length, tf.Tensor):
+        elif isinstance(input_length, torch.Tensor):
             if go_backwards:
-                max_len = tf.reduce_max(input_length, axis=0)
-                rev_input_length = tf.subtract(max_len - 1, input_length)
+                max_len = torch.max(input_length, dim=0)
+                rev_input_length = torch.subtract(max_len - 1, input_length)
 
                 def masking_fn(time):
-                    return tf.less(rev_input_length, time)
+                    return torch.less(rev_input_length, time)
 
             else:
 
                 def masking_fn(time):
-                    return tf.greater(input_length, time)
+                    return torch.greater(input_length, time)
 
             def compute_masked_output(mask_t, flat_out, flat_mask):
                 return tuple(
-                    tf.where(mask_t, o, zo)
+                    torch.where(mask_t, o, zo)
                     for (o, zo) in zip(flat_out, flat_mask)
                 )
 
@@ -252,7 +268,7 @@ def rnn(*args, **kwargs):
             # Mask for the T output will be base on the output of T - 1. In the
             # case T = 0, a zero filled tensor will be used.
             flat_zero_output = tuple(
-                tf.zeros_like(o) for o in tf.nest.flatten(output_time_zero)
+                torch.zeros_like(o) for o in nest.flatten(output_time_zero)
             )
 
             def _step(time, output_ta_t, prev_output, *states):
@@ -269,43 +285,47 @@ def rnn(*args, **kwargs):
                 """
                 current_input = tuple(ta[time] for ta in input_ta)
                 # maybe set shape.
-                current_input = tf.nest.pack_sequence_as(inputs, current_input)
+                current_input = nest.pack_sequence_as(inputs, current_input)
                 mask_t = masking_fn(time)
                 output, new_states = step_function(
                     current_input, tuple(states) + tuple(constants)
                 )
                 # mask output
-                flat_output = tf.nest.flatten(output)
+                flat_output = nest.flatten(output)
                 flat_mask_output = (
                     flat_zero_output
                     if zero_output_for_mask
-                    else tf.nest.flatten(prev_output)
+                    else nest.flatten(prev_output)
                 )
                 flat_new_output = compute_masked_output(
                     mask_t, flat_output, flat_mask_output
                 )
 
                 # mask states
-                flat_state = tf.nest.flatten(states)
-                flat_new_state = tf.nest.flatten(new_states)
+                flat_state = nest.flatten(states)
+                flat_new_state = nest.flatten(new_states)
                 flat_final_state = compute_masked_output(
                     mask_t, flat_new_state, flat_state
                 )
-                new_states = tf.nest.pack_sequence_as(
+                new_states = nest.pack_sequence_as(
                     new_states, flat_final_state
                 )
 
                 ta_index_to_write = time if return_all_outputs else 0
-                output_ta_t = tuple(
-                    ta.write(ta_index_to_write, out)
-                    for ta, out in zip(output_ta_t, flat_new_output)
-                )
+                for ta, out in zip(output_ta_t, flat_new_output):
+                    ta[ta_index_to_write] = out
+                output_ta_t = tuple(output_ta_t)
+
+                # output_ta_t = tuple(
+                #     ta.write(ta_index_to_write, out)
+                #     for ta, out in zip(output_ta_t, flat_new_output)
+                # )
 
                 return (time + 1, output_ta_t, tuple(flat_new_output)) + tuple(
                     new_states
                 )
 
-            final_outputs = tf.while_loop(
+            final_outputs = while_loop(
                 body=_step,
                 loop_vars=(time, output_ta, flat_zero_output) + states,
                 **while_loop_kwargs,
@@ -326,25 +346,28 @@ def rnn(*args, **kwargs):
                     Tuple: `(time + 1,output_ta_t) + tuple(new_states)`
                 """
                 current_input = tuple(ta[time] for ta in input_ta)
-                current_input = tf.nest.pack_sequence_as(inputs, current_input)
+                current_input = nest.pack_sequence_as(inputs, current_input)
                 output, new_states = step_function(
                     current_input, tuple(states) + tuple(constants)
                 )
-                flat_new_state = tf.nest.flatten(new_states)
+                flat_new_state = nest.flatten(new_states)
 
-                flat_output = tf.nest.flatten(output)
+                flat_output = nest.flatten(output)
                 ta_index_to_write = time if return_all_outputs else 0
-                output_ta_t = tuple(
-                    ta.write(ta_index_to_write, out)
-                    for ta, out in zip(output_ta_t, flat_output)
-                )
+                for ta, out in zip(output_ta_t, flat_output):
+                    ta[ta_index_to_write] = out
 
-                new_states = tf.nest.pack_sequence_as(
+                # output_ta_t = tuple(
+                #     ta.write(ta_index_to_write, out)
+                #     for ta, out in zip(output_ta_t, flat_output)
+                # )
+
+                new_states = nest.pack_sequence_as(
                     initial_states, flat_new_state
                 )
                 return (time + 1, output_ta_t) + tuple(new_states)
 
-            final_outputs = tf.while_loop(
+            final_outputs = while_loop(
                 body=_step,
                 loop_vars=(time, output_ta) + states,
                 **while_loop_kwargs,
@@ -356,11 +379,11 @@ def rnn(*args, **kwargs):
         outputs = tuple(o.stack() for o in output_ta)
         last_output = tuple(o[-1] for o in outputs)
 
-        outputs = tf.nest.pack_sequence_as(output_time_zero, outputs)
-        last_output = tf.nest.pack_sequence_as(output_time_zero, last_output)
+        outputs = nest.pack_sequence_as(output_time_zero, outputs)
+        last_output = nest.pack_sequence_as(output_time_zero, last_output)
 
     if not time_major:
-        outputs = tf.nest.map_structure(swap_batch_timestep, outputs)
+        outputs = nest.map_structure(swap_batch_timestep, outputs)
 
     return last_output, outputs, new_states
 
