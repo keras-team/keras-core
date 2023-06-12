@@ -77,7 +77,7 @@ def rnn(
         def _process_single_input_t(input_t):
             input_t = torch.unbind(input_t)  # unstack for time_step dim
             if go_backwards:
-                input_t = torch.flip(input_t, dims=input_t.shape)
+                input_t = input_t[::-1]
             return input_t
 
         if nest.is_nested(inputs):
@@ -411,10 +411,11 @@ def rnn(
 
             def _stack(tensor_list):
                 max_ndims = max([t.ndim for t in tensor_list])
-                for i,t in enumerate(tensor_list):
-                    if t.ndim < max_ndims:
-                        tensor_list[i] = t.unsqueeze(0)
-                return torch.cat(tensor_list, dim=0)
+                max_list = []
+                for i, t in enumerate(tensor_list):
+                    if t.ndim == max_ndims:
+                        max_list.append(t)
+                return torch.stack(max_list)
 
 
         output_ta = final_outputs[1]
