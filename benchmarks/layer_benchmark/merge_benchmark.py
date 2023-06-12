@@ -39,7 +39,7 @@ def benchmark_add(
         num_samples=num_samples,
         batch_size=batch_size,
     )
-    
+
     benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
@@ -65,7 +65,7 @@ def benchmark_average(
         num_samples=num_samples,
         batch_size=batch_size,
     )
-    
+
     benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
@@ -91,7 +91,7 @@ def benchmark_concatenate(
         num_samples=num_samples,
         batch_size=batch_size,
     )
-    
+
     benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
@@ -123,6 +123,7 @@ def benchmark_dot(
         batch_size=batch_size,
     )
 
+
 def benchmark_maximum(
     num_samples,
     batch_size,
@@ -142,7 +143,7 @@ def benchmark_maximum(
         num_samples=num_samples,
         batch_size=batch_size,
     )
-    
+
     benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
@@ -168,7 +169,7 @@ def benchmark_minimum(
         num_samples=num_samples,
         batch_size=batch_size,
     )
-    
+
     benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
@@ -194,7 +195,7 @@ def benchmark_multiply(
         num_samples=num_samples,
         batch_size=batch_size,
     )
-    
+
     benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,
@@ -220,7 +221,7 @@ def benchmark_subtract(
         num_samples=num_samples,
         batch_size=batch_size,
     )
-    
+
     benchmark.benchmark_train(
         num_samples=num_samples,
         batch_size=batch_size,

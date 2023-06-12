@@ -87,7 +87,9 @@ def benchmark_embedding(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[256,],
+        input_shape=[
+            256,
+        ],
         jit_compile=jit_compile,
     )
 

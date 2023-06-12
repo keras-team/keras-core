@@ -82,7 +82,7 @@ def benchmark_layer_normalization(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[256, 256, 4],
+        input_shape=[256, 128, 4],
         jit_compile=jit_compile,
     )
 
@@ -107,7 +107,7 @@ def benchmark_unit_normalization(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[256, 256, 4],
+        input_shape=[256, 128, 4],
         jit_compile=jit_compile,
     )
 
@@ -116,10 +116,15 @@ def benchmark_unit_normalization(
         batch_size=batch_size,
     )
 
+    benchmark.benchmark_train(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
+
 
 BENCHMARK_NAMES = {
-    "benchmark_batch_normalization": benchmark_batch_normalization,
-    "benchmark_group_normalization": benchmark_group_normalization,
+    # "benchmark_batch_normalization": benchmark_batch_normalization,
+    # "benchmark_group_normalization": benchmark_group_normalization,
     "benchmark_layer_normalization": benchmark_layer_normalization,
     "benchmark_unit_normalization": benchmark_unit_normalization,
 }

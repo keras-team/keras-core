@@ -207,7 +207,7 @@ def benchmark_up_sampling3d(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 32, 16, 3],
+        input_shape=[32, 16, 16, 3],
         jit_compile=jit_compile,
     )
 
@@ -298,14 +298,14 @@ def benchmark_zero_padding3d(
 
 
 BENCHMARK_NAMES = {
-    # "benchmark_cropping1d": benchmark_cropping1d,
-    # "benchmark_cropping2d": benchmark_cropping2d,
-    # "benchmark_cropping3d": benchmark_cropping3d,
-    # "benchmark_flatten": benchmark_flatten,
-    # "benchmark_permute": benchmark_permute,
-    # "benchmark_up_sampling1d": benchmark_up_sampling1d,
-    # "benchmark_up_sampling2d": benchmark_up_sampling2d,
-    # "benchmark_up_sampling3d": benchmark_up_sampling3d,
+    "benchmark_cropping1d": benchmark_cropping1d,
+    "benchmark_cropping2d": benchmark_cropping2d,
+    "benchmark_cropping3d": benchmark_cropping3d,
+    "benchmark_flatten": benchmark_flatten,
+    "benchmark_permute": benchmark_permute,
+    "benchmark_up_sampling1d": benchmark_up_sampling1d,
+    "benchmark_up_sampling2d": benchmark_up_sampling2d,
+    "benchmark_up_sampling3d": benchmark_up_sampling3d,
     "benchmark_zero_padding1d": benchmark_zero_padding1d,
     "benchmark_zero_padding2d": benchmark_zero_padding2d,
     "benchmark_zero_padding3d": benchmark_zero_padding3d,
