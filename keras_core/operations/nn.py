@@ -960,7 +960,7 @@ def conv_transpose(
 
 
 class OneHot(Operation):
-    def __init__(self, num_classes, axis=-1, dtype="float32"):
+    def __init__(self, num_classes, axis=-1, dtype=None):
         super().__init__()
         self.num_classes = num_classes
         self.axis = axis
@@ -968,7 +968,10 @@ class OneHot(Operation):
 
     def call(self, x):
         return backend.nn.one_hot(
-            x, self.num_classes, axis=self.axis, dtype=self.dtype
+            x,
+            self.num_classes,
+            axis=self.axis,
+            dtype=self.dtype or backend.floatx(),
         )
 
     def compute_output_spec(self, x):
@@ -988,10 +991,12 @@ class OneHot(Operation):
 @keras_core_export(
     ["keras_core.operations.one_hot", "keras_core.operations.nn.one_hot"]
 )
-def one_hot(x, num_classes, axis=-1, dtype="float32"):
+def one_hot(x, num_classes, axis=-1, dtype=None):
     if any_symbolic_tensors((x,)):
         return OneHot(num_classes, axis=axis, dtype=dtype).symbolic_call(x)
-    return backend.nn.one_hot(x, num_classes, axis=axis, dtype=dtype)
+    return backend.nn.one_hot(
+        x, num_classes, axis=axis, dtype=dtype or backend.floatx()
+    )
 
 
 class BinaryCrossentropy(Operation):
