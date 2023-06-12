@@ -1,4 +1,4 @@
-""" Benchmark reshaping layers.
+"""Benchmark reshaping layers.
 
 To run benchmarks, see the following command for an example, please change the
 flag to your custom value:
@@ -30,7 +30,7 @@ def benchmark_cropping1d(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[256, 3],
+        input_shape=[1024, 256],
         jit_compile=jit_compile,
     )
 

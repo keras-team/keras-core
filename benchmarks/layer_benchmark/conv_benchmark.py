@@ -1,4 +1,4 @@
-""" Benchmark conv layers.
+"""Benchmark conv layers.
 
 To run benchmarks, see the following command for an example, please change the
 flag to your custom value:
@@ -6,8 +6,8 @@ flag to your custom value:
 ```
 python3 -m benchmarks.layer_benchmark.conv_benchmark \
     --benchmark_name=benchmark_conv2D \
-    --num_samples=2000 \
-    --batch_size=20 \
+    --num_samples=2046 \
+    --batch_size=256 \
     --jit_compile=True
 ```
 """
@@ -28,13 +28,13 @@ def benchmark_conv1D(
 ):
     layer_name = "Conv1D"
     init_args = {
-        "filters": 16,
+        "filters": 64,
         "kernel_size": 2,
     }
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[256, 64],
+        input_shape=[1024, 256],
         jit_compile=jit_compile,
     )
 

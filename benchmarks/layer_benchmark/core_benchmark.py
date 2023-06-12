@@ -1,4 +1,4 @@
-""" Benchmark core layers.
+"""Benchmark core layers.
 
 To run benchmarks, see the following command for an example, please change the
 flag to your custom value:
@@ -6,8 +6,8 @@ flag to your custom value:
 ```
 python3 -m benchmarks.layer_benchmark.core_benchmark \
     --benchmark_name=benchmark_dense \
-    --num_samples=8192 \
-    --batch_size=1024 \
+    --num_samples=2048 \
+    --batch_size=256 \
     --jit_compile=True
 ```
 """

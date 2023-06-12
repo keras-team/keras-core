@@ -1,4 +1,4 @@
-""" Benchmark rnn layers.
+"""Benchmark rnn layers.
 
 To run benchmarks, see the following command for an example, please change the
 flag to your custom value:
@@ -234,7 +234,7 @@ def benchmark_time_distributed(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[10, 64, 64, 3],
+        input_shape=[10, 32, 32, 3],
         jit_compile=jit_compile,
         keras_core_layer=keras_core_layer,
         tf_keras_layer=tf_keras_layer,
@@ -270,7 +270,7 @@ def main(_):
     jit_compile = FLAGS.jit_compile
 
     if benchmark_name is None:
-        for name, benchmark_fn in BENCHMARK_NAMES:
+        for name, benchmark_fn in BENCHMARK_NAMES.items():
             benchmark_fn(num_samples, batch_size, jit_compile)
         return
 

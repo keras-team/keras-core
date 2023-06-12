@@ -1,4 +1,4 @@
-""" Benchmark regularization layers.
+"""Benchmark regularization layers.
 
 To run benchmarks, see the following command for an example, please change the
 flag to your custom value:

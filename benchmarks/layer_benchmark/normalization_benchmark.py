@@ -1,4 +1,4 @@
-""" Benchmark normalization layers.
+"""Benchmark normalization layers.
 
 To run benchmarks, see the following command for an example, please change the
 flag to your custom value:
@@ -6,8 +6,8 @@ flag to your custom value:
 ```
 python3 -m benchmarks.layer_benchmark.normalization_benchmark \
     --benchmark_name=benchmark_batch_normalization \
-    --num_samples=2400 \
-    --batch_size=300 \
+    --num_samples=2048 \
+    --batch_size=256 \
     --jit_compile=True
 ```
 """
@@ -123,8 +123,8 @@ def benchmark_unit_normalization(
 
 
 BENCHMARK_NAMES = {
-    # "benchmark_batch_normalization": benchmark_batch_normalization,
-    # "benchmark_group_normalization": benchmark_group_normalization,
+    "benchmark_batch_normalization": benchmark_batch_normalization,
+    "benchmark_group_normalization": benchmark_group_normalization,
     "benchmark_layer_normalization": benchmark_layer_normalization,
     "benchmark_unit_normalization": benchmark_unit_normalization,
 }

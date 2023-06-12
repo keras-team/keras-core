@@ -1,4 +1,4 @@
-""" Benchmark pooling layers.
+"""Benchmark pooling layers.
 
 To run benchmarks, see the following command for an example, please change the
 flag to your custom value:

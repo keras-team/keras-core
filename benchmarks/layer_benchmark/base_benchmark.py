@@ -177,7 +177,6 @@ class LayerBenchmark:
         return tf.keras.Model(inputs=inputs, outputs=outputs)
 
     def benchmark_predict(self, num_samples, batch_size, data=None):
-        return
         if data is None:
             # Generate default data if not provided.
             if isinstance(self.input_shape[0], (tuple, list)):
