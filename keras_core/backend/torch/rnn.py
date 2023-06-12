@@ -325,13 +325,28 @@ def rnn(
                     new_states
                 )
 
-            final_outputs = while_loop(
-                body=_step,
-                loop_vars=(time, output_ta, flat_zero_output) + states,
-                **while_loop_kwargs,
-            )
+            # while_loop_kwargs = {
+            #     "cond": lambda time, *_: time < time_steps_t,
+            #     "maximum_iterations": max_iterations,
+            #     "parallel_iterations": 32,
+            #     "swap_memory": True,
+            # }
+            # final_outputs = while_loop(
+            #     body=_step,
+            #     loop_vars=(time, output_ta, flat_zero_output) + states,
+            #     **while_loop_kwargs,
+            # )
+            it = 0
+            output_ta_t = output_ta
+            new_states = states
+            while time < time_steps_t and it < max_iterations:
+                final_outputs = _step(time, output_ta_t, flat_zero_output, new_states)
+                time, output_ta_t, flat_zero_output = final_outputs[:3]
+                new_states = final_outputs[3:]
+                it += 1
+
             # Skip final_outputs[2] which is the output for final timestep.
-            new_states = final_outputs[3:]
+            # new_states = final_outputs[3:]
         else:
 
             def _step(time, output_ta_t, *states):
@@ -367,12 +382,22 @@ def rnn(
                 )
                 return (time + 1, output_ta_t) + tuple(new_states)
 
-            final_outputs = while_loop(
-                body=_step,
-                loop_vars=(time, output_ta) + states,
-                **while_loop_kwargs,
-            )
-            new_states = final_outputs[2:]
+            # final_outputs = while_loop(
+            #     body=_step,
+            #     loop_vars=(time, output_ta) + states,
+            #     **while_loop_kwargs,
+            # )
+            it = 0
+            output_ta_t = output_ta
+            new_states = states
+            while time < time_steps_t and it < max_iterations:
+                final_outputs = _step(time, output_ta_t, new_states)
+                time, output_ta_t = final_outputs[:2]
+                new_states = final_outputs[2:]
+                it += 1
+
+
+            # new_states = final_outputs[2:]
 
         output_ta = final_outputs[1]
 
