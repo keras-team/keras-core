@@ -964,14 +964,11 @@ class OneHot(Operation):
         super().__init__()
         self.num_classes = num_classes
         self.axis = axis
-        self.dtype = dtype
+        self.dtype = dtype or backend.floatx()
 
     def call(self, x):
         return backend.nn.one_hot(
-            x,
-            self.num_classes,
-            axis=self.axis,
-            dtype=self.dtype or backend.floatx(),
+            x, self.num_classes, axis=self.axis, dtype=self.dtype
         )
 
     def compute_output_spec(self, x):
