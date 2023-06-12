@@ -21,6 +21,8 @@ def rnn(
     zero_output_for_mask=False,
     return_all_outputs=True,
 ):
+    input_length = input_length or inputs.shape[1]
+
     def swap_batch_timestep(input_t):
         # Swap the batch and timestep dim for the incoming tensor.
         axes = list(range(len(input_t.shape)))
@@ -195,7 +197,14 @@ def rnn(
         )
 
         output_ta_size = time_steps_t if return_all_outputs else 1
-        output_ta = tuple([out for out in enumerate(nest.flatten(output_time_zero))])
+        output_ta = []
+        for out in nest.flatten(output_time_zero):
+            out_list = list(out)
+            if len(out) < output_ta_size:
+                out_list.extend([[]]*(output_ta_size - len(out)))
+            output_ta.append(out_list)
+        # output_ta = [list(out) for out in nest.flatten(output_time_zero)]
+ 
         # output_ta = tuple(
         #     tf.TensorArray(
         #         dtype=out.dtype,
@@ -211,7 +220,11 @@ def rnn(
         if input_length is None:
             max_iterations = time_steps_t
         else:
-            max_iterations = input_length
+            if hasattr(input_length, "__len__"):
+                input_length = convert_to_tensor(input_length)
+                max_iterations = torch.max(input_length)
+            else:
+                max_iterations = input_length
 
         while_loop_kwargs = {
             "cond": lambda time, *_: time < time_steps_t,
@@ -314,7 +327,7 @@ def rnn(
                 ta_index_to_write = time if return_all_outputs else 0
                 for ta, out in zip(output_ta_t, flat_new_output):
                     ta[ta_index_to_write] = out
-                output_ta_t = tuple(output_ta_t)
+                # output_ta_t = tuple(output_ta_t)
 
                 # output_ta_t = tuple(
                 #     ta.write(ta_index_to_write, out)
@@ -340,7 +353,7 @@ def rnn(
             output_ta_t = output_ta
             new_states = states
             while time < time_steps_t and it < max_iterations:
-                final_outputs = _step(time, output_ta_t, flat_zero_output, new_states)
+                final_outputs = _step(time, output_ta_t, flat_zero_output, *new_states)
                 time, output_ta_t, flat_zero_output = final_outputs[:3]
                 new_states = final_outputs[3:]
                 it += 1
@@ -391,17 +404,22 @@ def rnn(
             output_ta_t = output_ta
             new_states = states
             while time < time_steps_t and it < max_iterations:
-                final_outputs = _step(time, output_ta_t, new_states)
+                final_outputs = _step(time, output_ta_t, *new_states)
                 time, output_ta_t = final_outputs[:2]
                 new_states = final_outputs[2:]
                 it += 1
 
+            def _stack(tensor_list):
+                max_ndims = max([t.ndim for t in tensor_list])
+                for i,t in enumerate(tensor_list):
+                    if t.ndim < max_ndims:
+                        tensor_list[i] = t.unsqueeze(0)
+                return torch.cat(tensor_list, dim=0)
 
-            # new_states = final_outputs[2:]
 
         output_ta = final_outputs[1]
 
-        outputs = tuple(o.stack() for o in output_ta)
+        outputs = tuple(_stack(o) for o in output_ta)
         last_output = tuple(o[-1] for o in outputs)
 
         outputs = nest.pack_sequence_as(output_time_zero, outputs)

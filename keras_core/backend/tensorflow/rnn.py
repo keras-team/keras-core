@@ -419,6 +419,8 @@ def rnn(
                 new_states = tf.nest.pack_sequence_as(
                     initial_states, flat_new_state
                 )
+                import pdb
+                pdb.set_trace()
                 return (time + 1, output_ta_t) + tuple(new_states)
 
             final_outputs = tf.while_loop(
