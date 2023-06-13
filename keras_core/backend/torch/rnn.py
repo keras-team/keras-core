@@ -168,14 +168,6 @@ def rnn(
         # Create input tensor array, if the inputs is nested tensors, then it
         # will be flattened first, and tensor array will be created one per
         # flattened tensor.
-        # input_ta = tuple(
-        #     tf.TensorArray(
-        #         dtype=inp.dtype,
-        #         size=time_steps_t,
-        #         tensor_array_name=f"input_ta_{i}",
-        #     )
-        #     for i, inp in enumerate(flattened_inputs)
-        # )
 
         input_ta = tuple(
             list(torch.unbind(input_))
@@ -203,17 +195,6 @@ def rnn(
             if len(out) < output_ta_size:
                 out_list.extend([[]]*(output_ta_size - len(out)))
             output_ta.append(out_list)
-        # output_ta = [list(out) for out in nest.flatten(output_time_zero)]
- 
-        # output_ta = tuple(
-        #     tf.TensorArray(
-        #         dtype=out.dtype,
-        #         size=output_ta_size,
-        #         element_shape=out.shape,
-        #         tensor_array_name=f"output_ta_{i}",
-        #     )
-        #     for i, out in enumerate(nest.flatten(output_time_zero))
-        # )
 
         time = torch.tensor(0, dtype=torch.int32)
 
@@ -236,10 +217,6 @@ def rnn(
             if go_backwards:
                 mask = torch.flip(mask, [0])
 
-            # mask_ta = tf.TensorArray(
-            #     dtype=tf.bool, size=time_steps_t, tensor_array_name="mask_ta"
-            # )
-            # mask_ta = mask_ta.unstack(mask)
             mask_ta = list(torch.unbind(mask))
 
             def masking_fn(time):
@@ -327,39 +304,19 @@ def rnn(
                 ta_index_to_write = time if return_all_outputs else 0
                 for ta, out in zip(output_ta_t, flat_new_output):
                     ta[ta_index_to_write] = out
-                # output_ta_t = tuple(output_ta_t)
-
-                # output_ta_t = tuple(
-                #     ta.write(ta_index_to_write, out)
-                #     for ta, out in zip(output_ta_t, flat_new_output)
-                # )
 
                 return (time + 1, output_ta_t, tuple(flat_new_output)) + tuple(
                     new_states
                 )
 
-            # while_loop_kwargs = {
-            #     "cond": lambda time, *_: time < time_steps_t,
-            #     "maximum_iterations": max_iterations,
-            #     "parallel_iterations": 32,
-            #     "swap_memory": True,
-            # }
-            # final_outputs = while_loop(
-            #     body=_step,
-            #     loop_vars=(time, output_ta, flat_zero_output) + states,
-            #     **while_loop_kwargs,
-            # )
             it = 0
-            output_ta_t = output_ta
-            new_states = states
+            output_ta_t, new_states, prev_output = output_ta, states, flat_zero_output
             while time < time_steps_t and it < max_iterations:
-                final_outputs = _step(time, output_ta_t, flat_zero_output, *new_states)
-                time, output_ta_t, flat_zero_output = final_outputs[:3]
+                final_outputs = _step(time, output_ta_t, prev_output, *new_states)
+                time, output_ta_t, prev_output = final_outputs[:3]
                 new_states = final_outputs[3:]
                 it += 1
 
-            # Skip final_outputs[2] which is the output for final timestep.
-            # new_states = final_outputs[3:]
         else:
 
             def _step(time, output_ta_t, *states):
@@ -385,21 +342,11 @@ def rnn(
                 for ta, out in zip(output_ta_t, flat_output):
                     ta[ta_index_to_write] = out
 
-                # output_ta_t = tuple(
-                #     ta.write(ta_index_to_write, out)
-                #     for ta, out in zip(output_ta_t, flat_output)
-                # )
-
                 new_states = nest.pack_sequence_as(
                     initial_states, flat_new_state
                 )
                 return (time + 1, output_ta_t) + tuple(new_states)
 
-            # final_outputs = while_loop(
-            #     body=_step,
-            #     loop_vars=(time, output_ta) + states,
-            #     **while_loop_kwargs,
-            # )
             it = 0
             output_ta_t = output_ta
             new_states = states
