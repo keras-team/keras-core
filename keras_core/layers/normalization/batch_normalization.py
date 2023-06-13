@@ -193,13 +193,11 @@ class BatchNormalization(Layer):
         if training and self.trainable:
             mean = ops.mean(inputs, axis=self._reduction_axes, keepdims=True)
             variance = ops.mean(
-                ops.square(inputs - mean),
-                axis=self._reduction_axes,
-                keepdims=True,
-            )
+                ops.square(inputs), axis=self._reduction_axes, keepdims=True
+            ) - ops.square(mean)
             outputs = (inputs - mean) / ops.sqrt(variance + self.epsilon)
             mean = ops.squeeze(mean, self._reduction_axes)
-            variance = ops.squeeze(variance, self._reduction_axes)
+            self.moving_variance = ops.squeeze(variance, self._reduction_axes)
             self.moving_mean.assign(
                 self.moving_mean * self.momentum + mean * (1.0 - self.momentum)
             )
