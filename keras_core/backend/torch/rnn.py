@@ -1,11 +1,7 @@
-import numpy as np
 import torch
-
 from tensorflow import nest
-from tensorflow import while_loop
-from keras_core.backend.torch.core import cast
+
 from keras_core.backend.torch.core import convert_to_tensor
-from keras_core.backend.torch.core import to_torch_dtype
 
 
 def rnn(
@@ -193,7 +189,7 @@ def rnn(
         for out in nest.flatten(output_time_zero):
             out_list = list(out)
             if len(out) < output_ta_size:
-                out_list.extend([[]]*(output_ta_size - len(out)))
+                out_list.extend([[]] * (output_ta_size - len(out)))
             output_ta.append(out_list)
 
         time = torch.tensor(0, dtype=torch.int32)
@@ -207,12 +203,6 @@ def rnn(
             else:
                 max_iterations = input_length
 
-        while_loop_kwargs = {
-            "cond": lambda time, *_: time < time_steps_t,
-            "maximum_iterations": max_iterations,
-            "parallel_iterations": 32,
-            "swap_memory": True,
-        }
         if mask is not None:
             if go_backwards:
                 mask = torch.flip(mask, [0])
@@ -297,9 +287,7 @@ def rnn(
                 flat_final_state = compute_masked_output(
                     mask_t, flat_new_state, flat_state
                 )
-                new_states = nest.pack_sequence_as(
-                    new_states, flat_final_state
-                )
+                new_states = nest.pack_sequence_as(new_states, flat_final_state)
 
                 ta_index_to_write = time if return_all_outputs else 0
                 for ta, out in zip(output_ta_t, flat_new_output):
@@ -310,9 +298,15 @@ def rnn(
                 )
 
             it = 0
-            output_ta_t, new_states, prev_output = output_ta, states, flat_zero_output
+            output_ta_t, new_states, prev_output = (
+                output_ta,
+                states,
+                flat_zero_output,
+            )
             while time < time_steps_t and it < max_iterations:
-                final_outputs = _step(time, output_ta_t, prev_output, *new_states)
+                final_outputs = _step(
+                    time, output_ta_t, prev_output, *new_states
+                )
                 time, output_ta_t, prev_output = final_outputs[:3]
                 new_states = final_outputs[3:]
                 it += 1
@@ -364,7 +358,6 @@ def rnn(
                     max_list.append(t)
             return torch.stack(max_list)
 
-
         output_ta = final_outputs[1]
 
         outputs = tuple(_stack(o) for o in output_ta)
@@ -377,6 +370,7 @@ def rnn(
         outputs = nest.map_structure(swap_batch_timestep, outputs)
 
     return last_output, outputs, new_states
+
 
 def lstm(*args, **kwargs):
     raise NotImplementedError
