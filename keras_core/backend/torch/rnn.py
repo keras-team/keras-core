@@ -172,14 +172,11 @@ def rnn(
             for input_ in flattened_inputs
         )
 
-        # Get the time(0) input and compute the output for that, the output will
-        # be used to determine the dtype of output tensor array. Don't read from
-        # input_ta due to TensorArray clear_after_read default to True.
+        # Get the time(0) input and compute the output for that.
         input_time_zero = nest.pack_sequence_as(
             inputs, [inp[0] for inp in flattened_inputs]
         )
-        # output_time_zero is used to determine the cell output shape and its
-        # dtype.  the value is discarded.
+        # output_time_zero is used to determine the cell output shape.
         output_time_zero, _ = step_function(
             input_time_zero, tuple(initial_states) + tuple(constants)
         )
