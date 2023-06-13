@@ -527,15 +527,7 @@ class Layer(BackendLayer, Operation):
         #####################################
         # 1. Convert any array arguments to tensors of correct dtype.
         def maybe_convert(x):
-            if backend.is_tensor(x):
-                if (
-                    self.autocast
-                    and backend.is_float_dtype(x.dtype)
-                    and x.dtype != self.compute_dtype
-                ):
-                    return backend.cast(x, dtype=self.compute_dtype)
-                return x
-            elif isinstance(x, backend.KerasTensor):
+            if isinstance(x, backend.KerasTensor):
                 if (
                     self.autocast
                     and backend.is_float_dtype(x.dtype)
@@ -543,9 +535,7 @@ class Layer(BackendLayer, Operation):
                 ):
                     x.dtype = self.compute_dtype
                 return x
-            elif hasattr(x, "__array__"):
-                return backend.convert_to_tensor(x, dtype=self.compute_dtype)
-            return x
+            return backend.convert_to_tensor(x, dtype=self.compute_dtype)
 
         if self._convert_input_args:
             args = nest.map_structure(maybe_convert, args)

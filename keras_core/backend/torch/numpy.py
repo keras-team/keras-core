@@ -845,6 +845,8 @@ def var(x, axis=None, keepdims=False):
 
 
 def sum(x, axis=None, keepdims=False):
+    if isinstance(x, list):
+        x = stack(x)
     x = convert_to_tensor(x)
     if axis is not None:
         return torch.sum(x, axis=axis, keepdim=keepdims)
