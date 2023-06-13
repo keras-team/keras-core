@@ -37,8 +37,8 @@ def rnn(
     time_steps_t = time_steps
 
     if mask is not None:
-        if mask.dtype != "bool":
-            mask = mask.astype("bool")
+        if mask.dtype != torch.bool:
+            mask = mask.type(torch.bool)
         if len(mask.shape) == 2:
             mask = torch.unsqueeze(mask, -1)
         if not time_major:
@@ -409,13 +409,13 @@ def rnn(
                 new_states = final_outputs[2:]
                 it += 1
 
-            def _stack(tensor_list):
-                max_ndims = max([t.ndim for t in tensor_list])
-                max_list = []
-                for i, t in enumerate(tensor_list):
-                    if t.ndim == max_ndims:
-                        max_list.append(t)
-                return torch.stack(max_list)
+        def _stack(tensor_list):
+            max_ndims = max([t.ndim for t in tensor_list])
+            max_list = []
+            for i, t in enumerate(tensor_list):
+                if t.ndim == max_ndims:
+                    max_list.append(t)
+            return torch.stack(max_list)
 
 
         output_ta = final_outputs[1]
