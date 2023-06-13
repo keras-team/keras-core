@@ -1,6 +1,8 @@
 import numpy as np
+import pytest
 from absl.testing import parameterized
 
+import keras_core
 from keras_core import backend
 from keras_core import initializers
 from keras_core import layers
@@ -12,10 +14,14 @@ from keras_core.callbacks.callback import Callback
 
 if backend.backend() == "jax":
     from keras_core.backend.jax.trainer import JAXTrainer as Trainer
-else:
+elif backend.backend() == "torch":
+    from keras_core.backend.torch.trainer import TorchTrainer as Trainer
+elif backend.backend() == "tensorflow":
     from keras_core.backend.tensorflow.trainer import (
         TensorFlowTrainer as Trainer,
     )
+else:
+    raise ImportError(f"Invalid backend: {backend.backend()}")
 
 
 # A model is just a layer mixed in with a Trainer.
@@ -213,6 +219,10 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(outputs["y_one"], 4 * np.ones((100, 3)))
         self.assertAllClose(outputs["y_two"], 4 * np.ones((100, 3)))
 
+    @pytest.mark.skipif(
+        backend.backend() == "torch",
+        reason="`steps_per_execution` not implemented for torch yet",
+    )
     def test_steps_per_execution_steps_count(self):
         class StepCount(Callback):
             def __init__(self):
@@ -315,3 +325,25 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         # With class weights
         logs = model.train_on_batch(x, y, class_weight={1: 0.3, 0: 0.2})
         self.assertAlmostEqual(logs[0], 12.899)
+
+    def test_nested_input_predict(self):
+        # https://github.com/keras-team/keras-core/issues/325
+
+        class TupleInputModel(keras_core.Model):
+            def call(self, inputs):
+                a, b = inputs
+                return a + b
+
+        model = TupleInputModel()
+        x1, x2 = np.random.rand(2, 3, 4)
+        out = model.predict((x1, x2))
+        self.assertEqual(out.shape, (3, 4))
+
+        class DictInputModel(keras_core.Model):
+            def call(self, inputs):
+                return inputs["a"] + inputs["b"]
+
+        model = DictInputModel()
+        x1, x2 = np.random.rand(2, 3, 4)
+        out = model.predict({"a": x1, "b": x2})
+        self.assertEqual(out.shape, (3, 4))
