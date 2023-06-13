@@ -121,6 +121,8 @@ def convert_to_tensor(x, dtype=None):
 
 
 def convert_to_numpy(x):
+    if isinstance(x, KerasVariable):
+        x = x.value
     if is_tensor(x) and x.is_cuda:
         # Tensor has to be moved to CPU before converting to numpy.
         x = x.cpu()
