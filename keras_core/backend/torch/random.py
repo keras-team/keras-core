@@ -115,8 +115,15 @@ def truncated_normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
 
 
 def dropout(inputs, rate, noise_shape=None, seed=None):
-    # TODO: setting seed globally via `manual_seed` might create side effects.
-    if seed is not None:
-        seed_val, _ = draw_seed(seed)
-        torch.manual_seed(int(seed_val))
-    return tnn.dropout(inputs, p=rate)
+    seed, _ = draw_seed(seed)
+    generator = torch.Generator()
+    generator.manual_seed(int(seed))
+
+    keep_prob = 1.0 - rate
+    keep_prob_matrix = torch.full(noise_shape, keep_prob)
+    mask = torch.bernoulli(keep_prob_matrix, generator=generator).bool()
+    mask = torch.broadcast_to(mask, inputs.shape)
+
+    return torch.where(
+        mask, inputs / keep_prob, torch.zeros_like(inputs, dtype=inputs.dtype)
+    )
