@@ -96,6 +96,9 @@ class Dense(Layer):
                 initializer=self.bias_initializer,
                 regularizer=self.bias_regularizer,
             )
+        import pdb
+
+        pdb.set_trace()
         self.input_spec = InputSpec(min_ndim=2, axes={-1: input_dim})
         self.built = True
 

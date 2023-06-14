@@ -58,7 +58,7 @@ def to_torch_dtype(dtype):
 class Variable(KerasVariable):
     def _initialize(self, value):
         self._value = torch.nn.Parameter(
-            convert_to_tensor(value, dtype=self._dtype).to(get_device()),
+            convert_to_tensor(value, dtype=self._dtype),
             requires_grad=self.trainable,
         ).to(get_device())
 
@@ -89,13 +89,13 @@ class Variable(KerasVariable):
     @property
     def value(self):
         value = super().value
-        # Create and use a symbolic tensor stub in symbolic calls.
-        if get_device() == "meta" and value.device != "meta":
-            return torch.empty(
-                size=value.shape,
-                dtype=value.dtype,
-                device="meta",
-            )
+        # # Create and use a symbolic tensor stub in symbolic calls.
+        # if get_device() == "meta" and value.device != "meta":
+        #     return torch.empty(
+        #         size=value.shape,
+        #         dtype=value.dtype,
+        #         device="meta",
+        #     )
         return value
 
 
@@ -179,22 +179,20 @@ def compute_output_spec(fn, *args, **kwargs):
                 )
             return x
 
-        with device_scope("meta"):
-            args_1, kwargs_1 = nest.map_structure(
-                lambda x: convert_keras_tensor_to_torch(x, fill_value=83),
-                (args, kwargs),
-            )
-            outputs_1 = fn(*args_1, **kwargs_1)
+        args_1, kwargs_1 = nest.map_structure(
+            lambda x: convert_keras_tensor_to_torch(x, fill_value=83),
+            (args, kwargs),
+        )
+        outputs_1 = fn(*args_1, **kwargs_1)
 
         outputs = outputs_1
 
         if none_in_shape:
-            with device_scope("meta"):
-                args_2, kwargs_2 = nest.map_structure(
-                    lambda x: convert_keras_tensor_to_torch(x, fill_value=89),
-                    (args, kwargs),
-                )
-                outputs_2 = fn(*args_2, **kwargs_2)
+            args_2, kwargs_2 = nest.map_structure(
+                lambda x: convert_keras_tensor_to_torch(x, fill_value=89),
+                (args, kwargs),
+            )
+            outputs_2 = fn(*args_2, **kwargs_2)
 
             flat_out_1 = nest.flatten(outputs_1)
             flat_out_2 = nest.flatten(outputs_2)

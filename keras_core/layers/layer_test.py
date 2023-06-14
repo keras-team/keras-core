@@ -220,6 +220,9 @@ class LayerTest(testing.TestCase):
                 self.dense1 = layers.Dense(units)
 
             def call(self, x):
+                import pdb
+
+                pdb.set_trace()
                 return self.dense1(x)
 
         layer = LayerWithUnbuiltState(2)
