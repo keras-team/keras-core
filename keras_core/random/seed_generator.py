@@ -41,14 +41,12 @@ def draw_seed(seed):
     from keras_core.backend import convert_to_tensor
 
     if isinstance(seed, SeedGenerator):
-        seed_state = backend.convert_to_numpy(seed.state)
+        seed_state = seed.state
         # Use * 1 to create a copy
-        new_seed_value = seed_state * 1
-        seed.state.assign(
-            backend.convert_to_tensor(
-                seed_state + np.array([0, 1], dtype="uint32")
-            )
-        )
+        new_seed_value = seed_state.value * 1
+        seed.state.assign(seed_state + np.array([0, 1], dtype="uint32"))
+        if backend.backend() == "torch":
+            return backend.convert_to_numpy(new_seed_value)
         return new_seed_value
     elif isinstance(seed, int):
         return convert_to_tensor([seed, 0], dtype="uint32")

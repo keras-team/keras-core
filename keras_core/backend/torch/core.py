@@ -103,7 +103,9 @@ def convert_to_tensor(x, dtype=None):
     elif len(x) > 0 and isinstance(x[0], torch.Tensor):
         # Handle list or tuple of torch tensors
         return torch.stack(x)
-
+    if isinstance(x, np.ndarray) and x.dtype == np.uint32:
+        # Torch backend does not support uint32.
+        x = x.astype(np.int64)
     return torch.as_tensor(x, dtype=dtype, device=get_device())
 
 
