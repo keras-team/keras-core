@@ -131,7 +131,7 @@ def _apply_same_padding(
             padding_size = _compute_padding_length(
                 spatial_shape[i], kernel_size[i], strides[i]
             )
-            mode = "zeros"
+            mode = "replicate"
         else:
             dilation_rate = standardize_tuple(
                 dilation_rate, num_spatial_dims, "dilation_rate"
@@ -257,10 +257,6 @@ def average_pool(
         inputs = _apply_same_padding(
             inputs, pool_size, strides, operation_type="pooling"
         )
-
-    import pdb
-
-    pdb.set_trace()
 
     if num_spatial_dims == 1:
         outputs = tnn.avg_pool1d(inputs, kernel_size=pool_size, stride=strides)

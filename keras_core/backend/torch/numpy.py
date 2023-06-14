@@ -600,7 +600,7 @@ def outer(x1, x2):
 
 def pad(x, pad_width, mode="constant"):
     x = convert_to_tensor(x)
-    pad_sum = ()
+    pad_sum = []
     pad_width = list(pad_width)[::-1]  # torch uses reverse order
     for pad in pad_width:
         pad_sum += pad

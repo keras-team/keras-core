@@ -950,6 +950,7 @@ class Layer(BackendLayer, Operation):
             shapes_dict = get_shapes_dict(self.build, call_spec, self.__class__)
             self._build_shapes_dict = shapes_dict
             failure = False
+
             if len(shapes_dict) == 1:
                 # Single arg: pass it positionally
                 input_shape = tuple(shapes_dict.values())[0]

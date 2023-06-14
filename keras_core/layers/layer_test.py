@@ -223,7 +223,8 @@ class LayerTest(testing.TestCase):
                 return self.dense1(x)
 
         layer = LayerWithUnbuiltState(2)
-        layer(backend.KerasTensor((3, 4)))
+        layer.build(input_shape=(5,))
+        layer(np.ones((3, 5)))
         self.assertLen(layer.weights, 2)
 
         class KwargsLayerWithUnbuiltState(layers.Layer):
@@ -363,13 +364,20 @@ class LayerTest(testing.TestCase):
         y = layer(x)
         self.assertEqual(layer.compute_dtype, "float16")
         self.assertEqual(layer.variable_dtype, "float16")
-        self.assertEqual(y.dtype.name, "float16")
+        if backend.backend() == "torch":
+            self.assertEqual(y.dtype, backend.to_torch_dtype("float16"))
+        else:
+            self.assertEqual(y.dtype.name, "float16")
 
         layer = layers.Dense(2, dtype="mixed_float16")
         y = layer(x)
         self.assertEqual(layer.compute_dtype, "float16")
         self.assertEqual(layer.variable_dtype, "float32")
-        self.assertEqual(y.dtype.name, "float16")
+        if backend.backend() == "torch":
+            self.assertEqual(y.dtype, backend.to_torch_dtype("float16"))
+        else:
+            self.assertEqual(y.dtype.name, "float16")
+
         self.assertEqual(layer.kernel.dtype, "float32")
 
     def test_masking(self):
