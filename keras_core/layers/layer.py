@@ -528,12 +528,14 @@ class Layer(BackendLayer, Operation):
         # 1. Convert any array arguments to tensors of correct dtype.
         def maybe_convert(x):
             if backend.is_tensor(x):
+                # Handle device placement.
+                x = backend.convert_to_tensor(x)
                 if (
                     self.autocast
                     and backend.is_float_dtype(x.dtype)
                     and x.dtype != self.compute_dtype
                 ):
-                    return backend.cast(x, dtype=self.compute_dtype)
+                    x = backend.cast(x, dtype=self.compute_dtype)
                 return x
             elif isinstance(x, backend.KerasTensor):
                 if (

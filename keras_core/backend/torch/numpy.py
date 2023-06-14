@@ -4,6 +4,7 @@ import torch
 from keras_core.backend.torch.core import cast
 from keras_core.backend.torch.core import convert_to_tensor
 from keras_core.backend.torch.core import to_torch_dtype
+from keras_core.backend.torch.core import get_device
 
 TORCH_INT_TYPES = (
     torch.int8,
@@ -62,14 +63,14 @@ def ones(shape, dtype="float32"):
     dtype = to_torch_dtype(dtype)
     if isinstance(shape, int):
         shape = (shape,)
-    return torch.ones(size=shape, dtype=dtype)
+    return torch.ones(size=shape, dtype=dtype).to(get_device())
 
 
 def zeros(shape, dtype="float32"):
     dtype = to_torch_dtype(dtype)
     if isinstance(shape, int):
         shape = (shape,)
-    return torch.zeros(size=shape, dtype=dtype)
+    return torch.zeros(size=shape, dtype=dtype).to(get_device())
 
 
 def zeros_like(x, dtype=None):
@@ -857,7 +858,7 @@ def eye(N, M=None, k=None, dtype="float32"):
     M = N if M is None else M
     k = 0 if k is None else k
     if k == 0:
-        return torch.eye(N, M, dtype=dtype)
+        return torch.eye(N, M, dtype=dtype).to(get_device())
     diag_length = np.maximum(N, M)
     diag = torch.ones(diag_length, dtype=dtype)
-    return torch.diag(diag, diagonal=k)[:N, :M]
+    return torch.diag(diag, diagonal=k)[:N, :M].to(get_device())

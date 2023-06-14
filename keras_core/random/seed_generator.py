@@ -1,6 +1,8 @@
 import random as python_random
 
 from keras_core.api_export import keras_core_export
+from keras_core import backend
+import numpy as np
 
 
 @keras_core_export("keras_core.random.SeedGenerator")
@@ -36,12 +38,13 @@ def make_default_seed():
 
 def draw_seed(seed):
     from keras_core.backend import convert_to_tensor
-
+    
     if isinstance(seed, SeedGenerator):
+        seed_state = backend.convert_to_numpy(seed.state)
         # Use * 1 to create a copy
-        new_seed_value = seed.state.value * 1
+        new_seed_value = seed_state * 1
         seed.state.assign(
-            seed.state + convert_to_tensor([0, 1], dtype="uint32")
+            backend.convert_to_tensor(seed_state + np.array([0, 1], dtype="uint32"))
         )
         return new_seed_value
     elif isinstance(seed, int):

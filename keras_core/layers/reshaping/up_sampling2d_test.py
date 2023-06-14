@@ -103,7 +103,7 @@ class UpSampling2dTest(testing.TestCase, parameterized.TestCase):
     def test_upsampling_2d_correctness(self):
         input_shape = (2, 2, 1, 3)
         x = np.arange(np.prod(input_shape)).reshape(input_shape)
-        np.testing.assert_array_equal(
+        self.assertAllClose(
             layers.UpSampling2D(size=(1, 2))(x),
             # fmt: off
             np.array(
