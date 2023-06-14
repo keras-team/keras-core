@@ -7,7 +7,6 @@ from keras_core import Sequential
 from keras_core import backend
 from keras_core import layers
 from keras_core import testing
-from keras_core import backend
 
 
 class ResizingTest(testing.TestCase, parameterized.TestCase):

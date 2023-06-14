@@ -32,6 +32,7 @@ class MaskingTest(testing.TestCase):
         self.assertAllClose(layer.compute_mask(x), expected_mask)
 
         test_obj = self
+
         class TestLayer(layers.Layer):
             def __init__(self, **kwargs):
                 super().__init__(**kwargs)

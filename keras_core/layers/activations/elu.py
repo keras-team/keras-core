@@ -1,7 +1,7 @@
 from keras_core import activations
 from keras_core.api_export import keras_core_export
-from keras_core.layers.layer import Layer
 from keras_core.backend import KerasTensor
+from keras_core.layers.layer import Layer
 
 
 @keras_core_export("keras_core.layers.ELU")
@@ -27,7 +27,9 @@ class ELU(Layer):
 
     def call(self, inputs):
         if isinstance(inputs, KerasTensor):
-            import pdb; pdb.set_trace()
+            import pdb
+
+            pdb.set_trace()
         return activations.elu(inputs, alpha=self.alpha)
 
     def compute_output_shape(self, input_shape):

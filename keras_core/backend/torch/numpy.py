@@ -3,8 +3,8 @@ import torch
 
 from keras_core.backend.torch.core import cast
 from keras_core.backend.torch.core import convert_to_tensor
-from keras_core.backend.torch.core import to_torch_dtype
 from keras_core.backend.torch.core import get_device
+from keras_core.backend.torch.core import to_torch_dtype
 
 TORCH_INT_TYPES = (
     torch.int8,

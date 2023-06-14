@@ -86,19 +86,6 @@ class Variable(KerasVariable):
     def __array__(self, dtype=None):
         return _prepare_for_numpy(self.value).__array__(dtype)
 
-    @property
-    def value(self):
-        value = super().value
-        # # Create and use a symbolic tensor stub in symbolic calls.
-        # if get_device() == "meta" and value.device != "meta":
-        #     return torch.empty(
-        #         size=value.shape,
-        #         dtype=value.dtype,
-        #         device="meta",
-        #     )
-        return value
-
-
 def convert_to_tensor(x, dtype=None):
     dtype = to_torch_dtype(dtype or getattr(x, "dtype", None))
     if isinstance(x, Variable):

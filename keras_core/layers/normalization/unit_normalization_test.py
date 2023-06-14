@@ -1,8 +1,8 @@
 import numpy as np
 
+from keras_core import backend
 from keras_core import layers
 from keras_core import testing
-from keras_core import backend
 
 
 def squared_l2_norm(x):

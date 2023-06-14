@@ -2,12 +2,11 @@ import torch
 import torch.nn.functional as tnn
 
 from keras_core.backend.config import floatx
-from keras_core.backend.torch.core import to_torch_dtype
 from keras_core.backend.torch.core import get_device
+from keras_core.backend.torch.core import to_torch_dtype
 from keras_core.random.seed_generator import SeedGenerator
 from keras_core.random.seed_generator import draw_seed
 from keras_core.random.seed_generator import make_default_seed
-from keras_core.backend.torch.core import get_device
 
 
 def torch_seed_generator(seed):

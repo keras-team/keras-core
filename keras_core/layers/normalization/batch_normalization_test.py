@@ -89,7 +89,9 @@ class BatchNormalizationTest(testing.TestCase, parameterized.TestCase):
         broadcast_shape[axis] = input_shape[axis]
         out = backend.convert_to_numpy(out)
         out -= np.reshape(backend.convert_to_numpy(layer.beta), broadcast_shape)
-        out /= np.reshape(backend.convert_to_numpy(layer.gamma), broadcast_shape)
+        out /= np.reshape(
+            backend.convert_to_numpy(layer.gamma), broadcast_shape
+        )
 
         reduction_axes = list(range(len(input_shape)))
         del reduction_axes[axis]
