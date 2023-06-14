@@ -114,12 +114,26 @@ def truncated_normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
     return trunc_x
 
 
+def _get_concrete_noise_shape(inputs, noise_shape):
+    if noise_shape is None:
+        return inputs.shape
+
+    concrete_inputs_shape = inputs.shape
+    concrete_noise_shape = []
+    for i, value in enumerate(noise_shape):
+        concrete_noise_shape.append(
+            concrete_inputs_shape[i] if value is None else value
+        )
+    return concrete_noise_shape
+
+
 def dropout(inputs, rate, noise_shape=None, seed=None):
     seed, _ = draw_seed(seed)
     generator = torch.Generator()
     generator.manual_seed(int(seed))
 
     keep_prob = 1.0 - rate
+    noise_shape = _get_concrete_noise_shape(inputs, noise_shape)
     keep_prob_matrix = torch.full(noise_shape, keep_prob)
     mask = torch.bernoulli(keep_prob_matrix, generator=generator).bool()
     mask = torch.broadcast_to(mask, inputs.shape)

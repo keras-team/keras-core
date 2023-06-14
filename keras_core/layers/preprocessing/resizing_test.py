@@ -7,6 +7,7 @@ from keras_core import Sequential
 from keras_core import backend
 from keras_core import layers
 from keras_core import testing
+from keras_core import backend
 
 
 class ResizingTest(testing.TestCase, parameterized.TestCase):
@@ -65,24 +66,26 @@ class ResizingTest(testing.TestCase, parameterized.TestCase):
             supports_masking=False,
             run_training_check=False,
         )
-        self.run_layer_test(
-            layers.Resizing,
-            init_kwargs={
-                "height": 6,
-                "width": 6,
-                "data_format": "channels_first",
-                "interpolation": "lanczos5",
-                "crop_to_aspect_ratio": False,
-            },
-            input_shape=(2, 3, 12, 12),
-            expected_output_shape=(2, 3, 6, 6),
-            expected_num_trainable_weights=0,
-            expected_num_non_trainable_weights=0,
-            expected_num_seed_generators=0,
-            expected_num_losses=0,
-            supports_masking=False,
-            run_training_check=False,
-        )
+        if backend.backend() != "torch":
+            # Torch does not support lanczos interpolation.
+            self.run_layer_test(
+                layers.Resizing,
+                init_kwargs={
+                    "height": 6,
+                    "width": 6,
+                    "data_format": "channels_first",
+                    "interpolation": "lanczos5",
+                    "crop_to_aspect_ratio": False,
+                },
+                input_shape=(2, 3, 12, 12),
+                expected_output_shape=(2, 3, 6, 6),
+                expected_num_trainable_weights=0,
+                expected_num_non_trainable_weights=0,
+                expected_num_seed_generators=0,
+                expected_num_losses=0,
+                supports_masking=False,
+                run_training_check=False,
+            )
 
     @parameterized.parameters(
         [
