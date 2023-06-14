@@ -73,6 +73,8 @@ def uniform(shape, minval=0.0, maxval=1.0, dtype=None, seed=None):
     dtype = dtype or floatx()
     dtype = to_torch_dtype(dtype)
     generator = torch_seed_generator(seed)
+    if len(shape) == 0:
+        shape = (1,)
     return (maxval - minval) * torch.rand(
         *shape, generator=generator, dtype=dtype
     ) + minval
