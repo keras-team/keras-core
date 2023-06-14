@@ -86,6 +86,7 @@ class Variable(KerasVariable):
     def __array__(self, dtype=None):
         return _prepare_for_numpy(self.value).__array__(dtype)
 
+
 def convert_to_tensor(x, dtype=None):
     dtype = to_torch_dtype(dtype or getattr(x, "dtype", None))
     if isinstance(x, Variable):
