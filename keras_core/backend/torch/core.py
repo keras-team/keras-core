@@ -90,8 +90,9 @@ class Variable(KerasVariable):
         return value
 
 
-def convert_to_tensor(x, dtype=None):
+def convert_to_tensor(x, dtype=None, device=None):
     dtype = to_torch_dtype(dtype or getattr(x, "dtype", None))
+    device = device or get_device()
     if isinstance(x, int):
         dtype = torch.int32
     if isinstance(x, float):
@@ -102,7 +103,7 @@ def convert_to_tensor(x, dtype=None):
     if is_tensor(x):
         if dtype and dtype != x.dtype:
             x = x.to(dtype)
-        return x.to(get_device())
+        return x.to(device)
 
     # Convert to np in case of any array-like that is not list or tuple.
     if not isinstance(x, (list, tuple)):
@@ -113,7 +114,7 @@ def convert_to_tensor(x, dtype=None):
     if isinstance(x, np.ndarray) and x.dtype == np.uint32:
         # Torch backend does not support uint32.
         x = x.astype(np.int64)
-    return torch.as_tensor(x, dtype=dtype, device=get_device())
+    return torch.as_tensor(x, dtype=dtype, device=device)
 
 
 def convert_to_numpy(x):

@@ -443,7 +443,7 @@ class TestTensorBoardV2(testing.TestCase):
             with summary.experimental.summary_scope(
                 name, "scalar_summary", values=[data, step]
             ) as (tag, _):
-                tensor = ops.convert_to_tensor(data, "float32")
+                tensor = ops.convert_to_tensor(data, "float32", device="cpu")
                 summary.write(
                     tag=tag,
                     tensor=tensor,
@@ -584,6 +584,9 @@ class TestTensorBoardV2(testing.TestCase):
                     result.add(s)
         return result
 
+    @pytest.mark.skipif(
+        backend.backend() == "torch", reason="Torch backend requires blocking numpy conversion.",
+    )
     def test_TensorBoard_non_blocking(self):
         logdir, _, _ = self._get_log_dirs()
         model = models.Sequential([layers.Dense(1)])
