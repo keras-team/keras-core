@@ -528,9 +528,9 @@ class Layer(BackendLayer, Operation):
         # 1. Convert any array arguments to tensors of correct dtype.
         def maybe_convert(x):
             if backend.is_tensor(x):
-                if backend.backend() == "torch":
-                    # Handle device placement.
-                    x = backend.convert_to_tensor(x)
+                # Handle things like Torch device placement via
+                # `convert_to_tensor`.
+                x = backend.convert_to_tensor(x)
                 if (
                     self.autocast
                     and backend.is_float_dtype(x.dtype)

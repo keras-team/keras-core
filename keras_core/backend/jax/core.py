@@ -33,7 +33,11 @@ def convert_to_tensor(x, dtype=None):
         if dtype and dtype != x.dtype:
             return x.value.astype(dtype)
         return x.value
-    return jnp.array(x, dtype=dtype)
+
+    output = jnp.array(x, dtype=dtype)
+    if hasattr(x, "_keras_mask"):
+        output._keras_mask = x._keras_mask
+    return output
 
 
 def convert_to_numpy(x):
