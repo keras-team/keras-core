@@ -54,7 +54,7 @@ def is_binary_or_sparse_categorical(y_true, y_pred):
     return is_binary, is_sparse_categorical
 
 
-def get_metric(identifier, y_true, y_pred):
+def get_metric(identifier, y_true, y_pred, name_prefix=None):
     if identifier is None:
         return None  # Ok to have no metric for an output.
 
@@ -85,10 +85,12 @@ def get_metric(identifier, y_true, y_pred):
         metric_obj = metrics_module.MeanMetricWrapper(
             metric_obj, name=metric_name
         )
+    if name_prefix:
+        metric_obj.name = "_".join([name_prefix, metric_obj.name])
     return metric_obj
 
 
-def get_loss(identifier, y_true, y_pred):
+def get_loss(identifier, y_true, y_pred, name_prefix=None):
     if identifier is None:
         return None  # Ok to have no loss for an output.
 
@@ -113,11 +115,19 @@ def get_loss(identifier, y_true, y_pred):
         else:
             loss_name = get_object_name(loss_obj)
         loss_obj = losses_module.LossFunctionWrapper(loss_obj, name=loss_name)
+    if name_prefix:
+        loss_obj.name = "_".join([name_prefix, loss_obj.name])
     return loss_obj
 
 
 class CompileMetrics(metrics_module.Metric):
-    def __init__(self, metrics, weighted_metrics, name="compile_metric"):
+    def __init__(
+        self,
+        metrics,
+        weighted_metrics,
+        name="compile_metric",
+        output_names=None,
+    ):
         super().__init__(name=name)
         if metrics and not isinstance(metrics, (list, tuple, dict)):
             raise ValueError(
@@ -136,6 +146,7 @@ class CompileMetrics(metrics_module.Metric):
         self._user_weighted_metrics = weighted_metrics
         self.built = False
         self.name = "compile_metrics"
+        self.output_names = output_names
 
     @property
     def variables(self):
@@ -151,16 +162,10 @@ class CompileMetrics(metrics_module.Metric):
 
     def build(self, y_true, y_pred):
         if isinstance(y_pred, dict):
-            output_names = sorted(list(y_pred.keys()))
-            num_outputs = len(output_names)
+            num_outputs = len(self.output_names)
         elif isinstance(y_pred, (list, tuple)):
             num_outputs = len(y_pred)
-            if all(hasattr(x, "_keras_history") for x in y_pred):
-                output_names = [x._keras_history.operation.name for x in y_pred]
-            else:
-                output_names = None
         else:
-            output_names = None
             num_outputs = 1
 
         y_pred = nest.flatten(y_pred)
@@ -168,13 +173,11 @@ class CompileMetrics(metrics_module.Metric):
 
         metrics = self._user_metrics
         weighted_metrics = self._user_weighted_metrics
-        if output_names and not num_outputs:
-            num_outputs = len(output_names)
 
         self._flat_metrics = self._build_metrics_set(
             metrics,
             num_outputs,
-            output_names,
+            self.output_names,
             y_true,
             y_pred,
             argument_name="metrics",
@@ -182,7 +185,7 @@ class CompileMetrics(metrics_module.Metric):
         self._flat_weighted_metrics = self._build_metrics_set(
             weighted_metrics,
             num_outputs,
-            output_names,
+            self.output_names,
             y_true,
             y_pred,
             argument_name="weighted_metrics",
@@ -238,32 +241,15 @@ class CompileMetrics(metrics_module.Metric):
                         "(the list of metrics corresponding to that output). "
                         f"Received:\n{argument_name}={metrics}"
                     )
-                for mls, yt, yp in zip(metrics, y_true, y_pred):
-                    if not all(is_function_like(e) for e in mls):
-                        raise ValueError(
-                            f"All entries in the sublists of the "
-                            f"`{argument_name}` list should be metric objects. "
-                            f"Found the following sublist with unknown "
-                            f"types: {mls}"
-                        )
-                    flat_metrics.append(
-                        MetricsList(
-                            [
-                                get_metric(m, yt, yp)
-                                for m in mls
-                                if m is not None
-                            ]
-                        )
-                    )
             elif isinstance(metrics, dict):
-                if output_names is None:
+                if self.output_names is None:
                     raise ValueError(
                         f"Argument `{argument_name}` can only be provided as a "
                         "dict when the model also returns a dict of outputs. "
                         f"Received {argument_name}={metrics}"
                     )
                 for name in metrics.keys():
-                    if name not in output_names:
+                    if name not in self.output_names:
                         raise ValueError(
                             f"In the dict argument `{argument_name}`, key "
                             f"'{name}' does not correspond to any model "
@@ -285,19 +271,37 @@ class CompileMetrics(metrics_module.Metric):
                             f"At key '{name}', found the following sublist "
                             f"with unknown types: {metrics[name]}"
                         )
-                for name, yt, yp in zip(output_names, y_true, y_pred):
-                    if name in metrics:
-                        flat_metrics.append(
-                            MetricsList(
-                                [
-                                    get_metric(m, yt, yp)
-                                    for m in metrics[name]
-                                    if m is not None
-                                ]
-                            )
+                # Change metrics to list in same order as output names
+                metrics = [metrics.get(name) for name in self.output_names]
+
+            if isinstance(metrics, (list, tuple)):
+                use_name_prefix = len(self.output_names) > 1
+                name_prefix = None
+                for name, mls, yt, yp in zip(
+                    self.output_names, metrics, y_true, y_pred
+                ):
+                    if use_name_prefix:
+                        name_prefix = name
+                    if mls is None:
+                        continue
+                    if not all(is_function_like(e) for e in mls):
+                        raise ValueError(
+                            f"All entries in the sublists of the "
+                            f"`{argument_name}` list should be metric objects. "
+                            f"Found the following sublist with unknown "
+                            f"types: {mls}"
                         )
-                    else:
-                        flat_metrics.append(None)
+                    flat_metrics.append(
+                        MetricsList(
+                            [
+                                get_metric(m, yt, yp, name_prefix=name_prefix)
+                                for m in mls
+                                if m is not None
+                            ]
+                        )
+                    )
+            else:
+                flat_metrics.append(None)
         return flat_metrics
 
     def update_state(self, y_true, y_pred, sample_weight=None):
@@ -375,7 +379,11 @@ class CompileMetrics(metrics_module.Metric):
 
 class CompileLoss(losses_module.Loss):
     def __init__(
-        self, loss, loss_weights=None, reduction="sum_over_batch_size"
+        self,
+        loss,
+        loss_weights=None,
+        reduction="sum_over_batch_size",
+        output_names=None,
     ):
         if loss_weights and not isinstance(loss_weights, (list, tuple, dict)):
             raise ValueError(
@@ -386,20 +394,15 @@ class CompileLoss(losses_module.Loss):
         self._user_loss = loss
         self._user_loss_weights = loss_weights
         self.built = False
+        self.output_names = output_names
         super().__init__(name="compile_loss", reduction=reduction)
 
     def build(self, y_true, y_pred):
         if isinstance(y_pred, dict):
-            output_names = sorted(list(y_pred.keys()))
-            num_outputs = len(output_names)
+            num_outputs = len(self.output_names)
         elif isinstance(y_pred, (list, tuple)):
             num_outputs = len(y_pred)
-            if all(hasattr(x, "_keras_history") for x in y_pred):
-                output_names = [x._keras_history.operation.name for x in y_pred]
-            else:
-                output_names = None
         else:
-            output_names = None
             num_outputs = 1
 
         y_pred = nest.flatten(y_pred)
@@ -453,9 +456,6 @@ class CompileLoss(losses_module.Loss):
                     "corresponding to that output). "
                     f"Received: loss={loss}"
                 )
-            flat_losses = [
-                get_loss(fn, y_true, y_pred) for fn in loss if fn is not None
-            ]
             if loss_weights:
                 if not isinstance(loss_weights, (list, tuple)):
                     raise ValueError(
@@ -485,14 +485,14 @@ class CompileLoss(losses_module.Loss):
             else:
                 flat_loss_weights = [1.0 for _ in loss]
         elif isinstance(loss, dict):
-            if output_names is None:
+            if self.output_names is None:
                 raise ValueError(
                     "Argument `loss` can only be provided as a dict "
                     "when the model also returns a dict of outputs. "
                     f"Received loss={loss}"
                 )
             for name in loss.keys():
-                if name not in output_names:
+                if name not in self.output_names:
                     raise ValueError(
                         "In the dict argument `loss`, key "
                         f"'{name}' does not correspond to any model output. "
@@ -506,14 +506,8 @@ class CompileLoss(losses_module.Loss):
                         "function corresponding to that output). "
                         f"At key '{name}', received invalid type:\n{loss[name]}"
                     )
-            for name, yt, yp in zip(output_names, y_true, y_pred):
-                if name in loss:
-                    if loss[name]:
-                        flat_losses.append(get_loss(loss[name], yt, yp))
-                    else:
-                        flat_losses.append(None)
-                else:
-                    flat_losses.append(None)
+            # Change loss to list in same order as output names
+            loss = [loss.get(name) for name in self.output_names]
             if loss_weights:
                 if not isinstance(loss_weights, dict):
                     raise ValueError(
@@ -522,7 +516,7 @@ class CompileLoss(losses_module.Loss):
                         f"a dict. Received: loss_weights={loss_weights}"
                     )
                 for name in loss_weights.keys():
-                    if name not in output_names:
+                    if name not in self.output_names:
                         raise ValueError(
                             "In the dict argument `loss_weights`, key "
                             f"'{name}' does not correspond to any model "
@@ -537,13 +531,26 @@ class CompileLoss(losses_module.Loss):
                             f"loss for that output). At key '{name}', "
                             f"received invalid type:\n{loss_weights[name]}"
                         )
-                for name in output_names:
+                for name in self.output_names:
                     if name in loss_weights:
                         flat_loss_weights.append(loss_weights[name])
                     else:
                         flat_loss_weights.append(1.0)
             else:
-                flat_loss_weights = [1.0 for _ in flat_losses]
+                flat_loss_weights = [1.0 for _ in loss]
+        # When model has multiple outputs, prefix loss name with output name.
+        if isinstance(loss, (list, tuple)):
+            use_name_prefix = len(self.output_names) > 1
+            name_prefix = None
+            for name, loss_fn, yt, yp in zip(
+                self.output_names, loss, y_true, y_pred
+            ):
+                if use_name_prefix:
+                    name_prefix = name
+                if loss_fn is not None:
+                    flat_losses.append(
+                        get_loss(loss_fn, yt, yp, name_prefix=name_prefix)
+                    )
         self.flat_losses = flat_losses
         self.flat_loss_weights = flat_loss_weights
         self.built = True
@@ -565,6 +572,7 @@ class CompileLoss(losses_module.Loss):
             sample_weight = [None for _ in y_true]
 
         loss_values = []
+<<<<<<< HEAD
 
         for loss, y_t, y_p, loss_weight, sample_weight in zip(
             self.flat_losses,
@@ -572,6 +580,10 @@ class CompileLoss(losses_module.Loss):
             y_pred,
             self.flat_loss_weights,
             sample_weight,
+=======
+        for loss, y_t, y_p, w in zip(
+            self.flat_losses, y_true, y_pred, self.flat_loss_weights
+>>>>>>> 2c0114f (Update compile loss and metrics to handle multi-output dict and list)
         ):
             if loss:
                 value = loss_weight * ops.cast(
