@@ -27,17 +27,19 @@ class Variable(KerasVariable):
 
 
 def convert_to_tensor(x, dtype=None):
-    if dtype is not None:
+    dtype_is_none = dtype is None
+    if not dtype_is_none:
         dtype = standardize_dtype(dtype)
+    if isinstance(x, jnp.ndarray):
+        if not dtype_is_none and x.dtype != dtype:
+            return x.astype(dtype)
+        return x
     if isinstance(x, Variable):
         if dtype and dtype != x.dtype:
             return x.value.astype(dtype)
         return x.value
 
-    output = jnp.array(x, dtype=dtype)
-    if hasattr(x, "_keras_mask"):
-        output._keras_mask = x._keras_mask
-    return output
+    return jnp.array(x, dtype=dtype)
 
 
 def convert_to_numpy(x):
