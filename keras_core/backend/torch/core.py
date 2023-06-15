@@ -84,7 +84,10 @@ class Variable(KerasVariable):
         return func(*args, **kwargs)
 
     def __array__(self, dtype=None):
-        return _prepare_for_numpy(self.value).__array__(dtype)
+        value = convert_to_numpy(self.value)
+        if dtype:
+            return value.astype(dtype)
+        return value
 
 
 def convert_to_tensor(x, dtype=None):
@@ -109,18 +112,19 @@ def convert_to_tensor(x, dtype=None):
     return torch.as_tensor(x, dtype=dtype, device=get_device())
 
 
-def _prepare_for_numpy(x):
-    if is_tensor(x):
-        if x.requires_grad:
-            x = x.detach()
-        # Tensor has to be moved to CPU before converting to numpy.
-        if x.is_cuda:
-            x = x.cpu()
-    return x
-
-
 def convert_to_numpy(x):
-    return np.array(_prepare_for_numpy(x))
+    def transform(x):
+        if is_tensor(x):
+            if x.requires_grad:
+                x = x.detach()
+            # Tensor has to be moved to CPU before converting to numpy.
+            if x.is_cuda:
+                x = x.cpu()
+        return np.array(x)
+
+    if isinstance(x, (list, tuple)):
+        return np.array([transform(e) for e in x])
+    return transform(x)
 
 
 def is_tensor(x):
@@ -218,7 +222,7 @@ def vectorized_map(function, elements):
 def scatter(indices, values, shape):
     indices = convert_to_tensor(indices)
     values = convert_to_tensor(values)
-    zeros = torch.zeros(shape, dtype=values.dtype)
+    zeros = torch.zeros(shape, dtype=values.dtype).to(get_device())
 
     index_length = indices.shape[-1]
     value_shape = shape[index_length:]

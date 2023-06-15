@@ -178,6 +178,9 @@ class FunctionalTest(testing.TestCase):
         int_output = int_input + 2
         model = Functional((float_input, int_input), (float_output, int_output))
         float_data, int_data = model((np.ones((2, 2)), np.ones((2, 2))))
+        import pdb
+
+        pdb.set_trace()
         self.assertEqual(backend.standardize_dtype(float_data.dtype), "float16")
         self.assertEqual(backend.standardize_dtype(int_data.dtype), "int32")
 

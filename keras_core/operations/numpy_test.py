@@ -1677,8 +1677,8 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
             self.assertAllClose(knp.Cross()(x2, y3), np.cross(x2, y3))
 
     def test_einsum(self):
-        x = np.arange(24).reshape([2, 3, 4])
-        y = np.arange(24).reshape([2, 4, 3])
+        x = np.arange(24).reshape([2, 3, 4]).astype("float32")
+        y = np.arange(24).reshape([2, 4, 3]).astype("float32")
         self.assertAllClose(
             knp.einsum("ijk,lkj->il", x, y),
             np.einsum("ijk,lkj->il", x, y),
@@ -1821,13 +1821,13 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
             np.linspace(start, stop, 5, retstep=True)[0],
         )
         self.assertAllClose(
-            np.array(
+            backend.convert_to_numpy(
                 knp.linspace(start, stop, 5, endpoint=False, retstep=True)[0]
             ),
             np.linspace(start, stop, 5, endpoint=False, retstep=True)[0],
         )
         self.assertAllClose(
-            np.array(
+            backend.convert_to_numpy(
                 knp.linspace(
                     start, stop, 5, endpoint=False, retstep=True, dtype="int32"
                 )[0]
@@ -1842,13 +1842,13 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
             np.linspace(start, stop, 5, retstep=True)[0],
         )
         self.assertAllClose(
-            np.array(
+            backend.convert_to_numpy(
                 knp.Linspace(5, endpoint=False, retstep=True)(start, stop)[0]
             ),
             np.linspace(start, stop, 5, endpoint=False, retstep=True)[0],
         )
         self.assertAllClose(
-            np.array(
+            backend.convert_to_numpy(
                 knp.Linspace(5, endpoint=False, retstep=True, dtype="int32")(
                     start, stop
                 )[0]
@@ -2003,8 +2003,8 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         )
 
     def test_tensordot(self):
-        x = np.arange(24).reshape([1, 2, 3, 4])
-        y = np.arange(24).reshape([3, 4, 1, 2])
+        x = np.arange(24).reshape([1, 2, 3, 4]).astype("float32")
+        y = np.arange(24).reshape([3, 4, 1, 2]).astype("float32")
         self.assertAllClose(
             knp.tensordot(x, y, axes=2), np.tensordot(x, y, axes=2)
         )
@@ -2022,8 +2022,8 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         )
 
     def test_vdot(self):
-        x = np.array([1, 2, 3])
-        y = np.array([4, 5, 6])
+        x = np.array([1.0, 2.0, 3.0])
+        y = np.array([4.0, 5.0, 6.0])
         self.assertAllClose(knp.vdot(x, y), np.vdot(x, y))
         self.assertAllClose(knp.Vdot()(x, y), np.vdot(x, y))
 
@@ -2465,9 +2465,9 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         )
 
     def test_dot(self):
-        x = np.arange(24).reshape([2, 3, 4])
-        y = np.arange(12).reshape([4, 3])
-        z = np.arange(4)
+        x = np.arange(24).reshape([2, 3, 4]).astype("float32")
+        y = np.arange(12).reshape([4, 3]).astype("float32")
+        z = np.arange(4).astype("float32")
         self.assertAllClose(knp.dot(x, y), np.dot(x, y))
         self.assertAllClose(knp.dot(x, z), np.dot(x, z))
         self.assertAllClose(knp.dot(x, 2), np.dot(x, 2))
@@ -2670,16 +2670,18 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
     def test_pad(self):
         x = np.array([[1, 2], [3, 4]])
-        self.assertAllClose(knp.pad(x, ((1, 1), (1, 1)))), np.pad(
-            x, ((1, 1, (1, 1)))
+        self.assertAllClose(
+            knp.pad(x, ((1, 1), (1, 1))),
+            np.pad(x, ((1, 1), (1, 1))),
         )
         self.assertAllClose(
             knp.pad(x, ((1, 1), (1, 1))),
             np.pad(x, ((1, 1), (1, 1))),
         )
 
-        self.assertAllClose(knp.Pad(((1, 1), (1, 1)))(x)), np.pad(
-            x, ((1, 1, (1, 1)))
+        self.assertAllClose(
+            knp.Pad(((1, 1), (1, 1)))(x),
+            np.pad(x, ((1, 1), (1, 1))),
         )
         self.assertAllClose(
             knp.Pad(((1, 1), (1, 1)))(x),

@@ -177,7 +177,7 @@ def argsort(x, axis=-1):
     if axis is None:
         axis = -1
         x = x.reshape(-1)
-    return torch.argsort(x, dim=axis)
+    return torch.argsort(x, dim=axis, stable=True)
 
 
 def array(x, dtype=None):
@@ -430,7 +430,7 @@ def linspace(
     if hasattr(start, "__len__") and hasattr(stop, "__len__"):
         start, stop = convert_to_tensor(start), convert_to_tensor(stop)
         stop = cast(stop, dtype) if endpoint is False and dtype else stop
-        steps = torch.arange(num, dtype=dtype) / (num - 1)
+        steps = torch.arange(num, dtype=dtype).to(get_device()) / (num - 1)
 
         # reshape `steps` to allow for broadcasting
         for i in range(start.ndim):
@@ -504,7 +504,7 @@ def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
     if hasattr(start, "__len__") and hasattr(stop, "__len__"):
         start, stop = convert_to_tensor(start), convert_to_tensor(stop)
         stop = cast(stop, dtype) if endpoint is False and dtype else stop
-        steps = torch.arange(num, dtype=dtype) / (num - 1)
+        steps = torch.arange(num, dtype=dtype).to(get_device()) / (num - 1)
 
         # reshape `steps` to allow for broadcasting
         for i in range(start.ndim):
@@ -531,8 +531,7 @@ def maximum(x1, x2):
 
 def meshgrid(*x, indexing="xy"):
     x = [convert_to_tensor(sc_tensor) for sc_tensor in x]
-    result = torch.meshgrid(x, indexing=indexing)
-    return [arr.numpy() for arr in result]
+    return torch.meshgrid(x, indexing=indexing)
 
 
 def min(x, axis=None, keepdims=False, initial=None):
