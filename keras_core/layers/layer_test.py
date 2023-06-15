@@ -364,19 +364,13 @@ class LayerTest(testing.TestCase):
         y = layer(x)
         self.assertEqual(layer.compute_dtype, "float16")
         self.assertEqual(layer.variable_dtype, "float16")
-        if backend.backend() == "torch":
-            self.assertEqual(y.dtype, backend.to_torch_dtype("float16"))
-        else:
-            self.assertEqual(y.dtype.name, "float16")
+        self.assertEqual(backend.standardize_dtype(y.dtype), "float16")
 
         layer = layers.Dense(2, dtype="mixed_float16")
         y = layer(x)
         self.assertEqual(layer.compute_dtype, "float16")
         self.assertEqual(layer.variable_dtype, "float32")
-        if backend.backend() == "torch":
-            self.assertEqual(y.dtype, backend.to_torch_dtype("float16"))
-        else:
-            self.assertEqual(y.dtype.name, "float16")
+        self.assertEqual(backend.standardize_dtype(y.dtype), "float16")
 
         self.assertEqual(layer.kernel.dtype, "float32")
 
