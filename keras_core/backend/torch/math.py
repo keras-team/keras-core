@@ -58,9 +58,19 @@ def logsumexp(x, axis=None, keepdims=False):
         max_x = torch.max(x)
         return torch.log(torch.sum(torch.exp(x - max_x))) + max_x
 
-    max_x = torch.max(x, dim=axis, keepdim=True).values
+    max_x = torch.amax(x, dim=axis, keepdim=True)
     result = (
         torch.log(torch.sum(torch.exp(x - max_x), dim=axis, keepdim=True))
         + max_x
     )
     return torch.squeeze(result, dim=axis) if not keepdims else result
+
+
+def qr(x, mode="reduced"):
+    if mode not in {"reduced", "complete"}:
+        raise ValueError(
+            "`mode` argument value not supported. "
+            "Expected one of {'reduced', 'complete'}. "
+            f"Received: mode={mode}"
+        )
+    return torch.linalg.qr(x, mode=mode)

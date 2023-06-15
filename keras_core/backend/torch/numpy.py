@@ -39,6 +39,8 @@ def multiply(x1, x2):
 
 
 def mean(x, axis=None, keepdims=False):
+    if isinstance(x, (list, tuple)):
+        x = stack(x)
     x = convert_to_tensor(x)
     # Conversion to float necessary for `torch.mean`
     x = cast(x, "float32") if x.dtype in TORCH_INT_TYPES else x
@@ -74,6 +76,12 @@ def zeros(shape, dtype="float32"):
     if isinstance(shape, int):
         shape = (shape,)
     return torch.zeros(size=shape, dtype=dtype)
+
+
+def zeros_like(x, dtype=None):
+    x = convert_to_tensor(x)
+    dtype = to_torch_dtype(dtype)
+    return torch.zeros_like(x, dtype=dtype)
 
 
 def absolute(x):
@@ -134,6 +142,8 @@ def append(
 
 def arange(start, stop=None, step=1, dtype=None):
     dtype = to_torch_dtype(dtype)
+    if stop is None:
+        return torch.arange(end=start, dtype=dtype)
     return torch.arange(start, stop, step=step, dtype=dtype)
 
 
@@ -837,6 +847,8 @@ def var(x, axis=None, keepdims=False):
 
 
 def sum(x, axis=None, keepdims=False):
+    if isinstance(x, (list, tuple)):
+        x = stack(x)
     x = convert_to_tensor(x)
     if axis is not None:
         return torch.sum(x, axis=axis, keepdim=keepdims)

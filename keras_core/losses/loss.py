@@ -38,7 +38,7 @@ class Loss:
                 lambda x: ops.convert_to_tensor(x, dtype=dtype), y_pred
             )
             y_true = nest.map_structure(
-                lambda x: ops.convert_to_tensor(x, dtype=y_pred.dtype), y_true
+                lambda x: ops.convert_to_tensor(x, dtype=dtype), y_true
             )
 
             losses = self.call(y_true, y_pred)
@@ -72,7 +72,7 @@ class Loss:
 
 
 def standardize_reduction(reduction):
-    allowed = {"sum_over_batch_size", "sum", None}
+    allowed = {"sum_over_batch_size", "sum", None, "none"}
     if reduction not in allowed:
         raise ValueError(
             "Invalid value for argument `reduction`. "
@@ -100,6 +100,7 @@ def squeeze_to_same_rank(x1, x2):
 def reduce_values(values, reduction="sum_over_batch_size"):
     if (
         reduction is None
+        or reduction == "none"
         or tuple(values.shape) == ()
         or tuple(values.shape) == (0,)
     ):
@@ -146,7 +147,7 @@ def reduce_weighted_values(
         sample_weight = ops.cast(sample_weight, values.dtype)
         # Update dimensions of `sample_weight` to match `losses`.
         values, sample_weight = squeeze_to_same_rank(values, sample_weight)
-        values *= sample_weight
+        values = values * sample_weight
 
     # Apply reduction function to the individual weighted losses.
     loss = reduce_values(values, reduction)

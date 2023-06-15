@@ -1,5 +1,10 @@
 import numpy as np
 
+from keras_core import layers
+from keras_core import losses
+from keras_core import models
+from keras_core import operations as ops
+from keras_core import optimizers
 from keras_core import testing
 from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.operations import core
@@ -27,19 +32,19 @@ class CoreOpsStaticShapeTest(testing.TestCase):
             core.scatter_update(inputs, indices, updates).shape, (4, 4, 4)
         )
 
-    def test_block_update(self):
+    def test_slice_update(self):
         inputs = KerasTensor((4, 4))
         start_indices = KerasTensor((2,))
         updates = KerasTensor((2, 2))
         self.assertEqual(
-            core.block_update(inputs, start_indices, updates).shape, (4, 4)
+            core.slice_update(inputs, start_indices, updates).shape, (4, 4)
         )
 
         inputs = KerasTensor((4, 4, 4))
         start_indices = KerasTensor((3,))
         updates = KerasTensor((2, 2, 2))
         self.assertEqual(
-            core.block_update(inputs, start_indices, updates).shape, (4, 4, 4)
+            core.slice_update(inputs, start_indices, updates).shape, (4, 4, 4)
         )
 
 
@@ -114,13 +119,53 @@ class CoreOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(outputs[1, 1, :], [0, 1, 2, 3])
         self.assertAllClose(outputs[2, 2, :], [3, 2, 1, 0])
 
-    def test_block_update(self):
+    def test_slice(self):
+        # Test 1D.
+        inputs = np.arange(10)
+        start_indices = np.array([1])
+        shape = np.array([4])
+        self.assertAllClose(
+            core.slice(inputs, start_indices, shape),
+            [1, 2, 3, 4],
+        )
+
+        # Test 2D.
+        inputs = np.broadcast_to(np.arange(10), (4, 10))
+        start_indices = np.array([1, 1])
+        shape = np.array([2, 4])
+        self.assertAllClose(
+            core.slice(inputs, start_indices, shape),
+            [[1, 2, 3, 4], [1, 2, 3, 4]],
+        )
+
+        # Test N-D.
+        inputs = np.broadcast_to(np.arange(10), (4, 4, 4, 10))
+        start_indices = np.array([1, 1, 1, 1])
+        shape = np.array([1, 2, 3, 4])
+        outputs = core.slice(inputs, start_indices, shape)
+        expected = np.broadcast_to(np.arange(1, 5), (1, 2, 3, 4))
+        self.assertAllClose(outputs, expected)
+
+    def test_dynamic_slice(self):
+        def cond(index, inputs, sum):
+            return index < 10
+
+        def body(index, inputs, sum):
+            sum = sum + core.slice(inputs, [index], [1])
+            index = index + 1
+            return index, inputs, sum
+
+        index, inputs, sum = 0, np.arange(10), np.array([0])
+        index, inputs, sum = core.while_loop(cond, body, (index, inputs, sum))
+        self.assertAllClose(sum, [45])
+
+    def test_slice_update(self):
         # Test 1D.
         inputs = np.array([0, 0, 0, 0, 0, 0, 0, 0])
         start_indices = [1]
         updates = np.array([9, 10, 11, 12])
         self.assertAllClose(
-            core.block_update(inputs, start_indices, updates),
+            core.slice_update(inputs, start_indices, updates),
             [0, 9, 10, 11, 12, 0, 0, 0],
         )
 
@@ -129,7 +174,7 @@ class CoreOpsCorrectnessTest(testing.TestCase):
         start_indices = [1, 0]
         updates = np.array([[2, 2], [2, 2]])
         self.assertAllClose(
-            core.block_update(inputs, start_indices, updates),
+            core.slice_update(inputs, start_indices, updates),
             [[1, 1], [2, 2], [2, 2]],
         )
 
@@ -137,7 +182,7 @@ class CoreOpsCorrectnessTest(testing.TestCase):
         inputs = np.ones([4, 4, 4, 4])
         start_indices = [1, 1, 2, 2]
         updates = np.zeros([2, 2, 2, 2])
-        outputs = core.block_update(inputs, start_indices, updates)
+        outputs = core.slice_update(inputs, start_indices, updates)
         self.assertAllClose(outputs[1:3, 1:3, 2:4, 2:4], np.zeros([2, 2, 2, 2]))
 
     def test_while_loop(self):
@@ -158,3 +203,31 @@ class CoreOpsCorrectnessTest(testing.TestCase):
         x, y = core.while_loop(cond, body, (x, y), maximum_iterations=5)
         self.assertAllClose(x, np.ones((2, 3)) * 6)
         self.assertAllClose(y, np.ones((3, 2)) * 6)
+
+    def test_stop_gradient(self):
+        class ExampleLayer(layers.Layer):
+            def __init__(self):
+                super().__init__()
+                self.w = self.add_weight(shape=(1,), initializer="zeros")
+                self.b = self.add_weight(shape=(1,), initializer="zeros")
+
+            def call(self, x, training=False):
+                return x * ops.stop_gradient(self.w.value) + self.b
+
+        model = models.Sequential([ExampleLayer()])
+        model.compile(
+            optimizer=optimizers.SGD(), loss=losses.MeanSquaredError()
+        )
+        rng = np.random.default_rng(0)
+        x = np.ones((2, 4), dtype=np.float32)
+        y = rng.standard_normal((2, 4), dtype=np.float32)
+        model.fit(x, y, epochs=1, batch_size=2)
+        self.assertEqual(model.layers[0].w.numpy(), 0.0)
+        self.assertNotEqual(model.layers[0].b.numpy(), 0.0)
+
+    def test_shape(self):
+        x = np.ones((2, 3, 7, 1))
+        self.assertAllEqual(core.shape(x), (2, 3, 7, 1))
+
+        x = KerasTensor((None, 3, None, 1))
+        self.assertAllEqual(core.shape(x), (None, 3, None, 1))

@@ -4,6 +4,7 @@ import tensorflow as tf
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
+from keras_core.utils import backend_utils
 
 
 @keras_core_export("keras_core.layers.Discretization")
@@ -21,6 +22,9 @@ class Discretization(Layer):
     It can also always be used as part of an input preprocessing pipeline
     with any backend (outside the model itself), which is how we recommend
     to use this layer.
+
+    **Note:** This layer is safe to use inside a `tf.data` pipeline
+    (independently of which backend you're using).
 
     Input shape:
         Any array of dimension 2 or higher.
@@ -115,9 +119,12 @@ class Discretization(Layer):
             dtype=dtype,
             **kwargs,
         )
-        self.bin_boundaries = (
-            bin_boundaries if bin_boundaries is not None else []
-        )
+        self.bin_boundaries = bin_boundaries
+        if self.bin_boundaries:
+            self.built = True
+        self._convert_input_args = False
+        self._allow_non_tensor_positional_args = True
+
         self.num_bins = num_bins
         self.epsilon = epsilon
         self.output_mode = output_mode
@@ -175,14 +182,22 @@ class Discretization(Layer):
     def reset_state(self):
         self.layer.reset_state()
 
-    def compute_output_shape(self, input_shape):
-        return input_shape
+    def compute_output_spec(self, inputs):
+        return backend.KerasTensor(shape=inputs.shape, dtype="int32")
+
+    def __call__(self, inputs):
+        if not isinstance(inputs, (tf.Tensor, np.ndarray, backend.KerasTensor)):
+            inputs = tf.convert_to_tensor(np.array(inputs))
+        if not self.built:
+            self.build(inputs.shape)
+        return super().__call__(inputs)
 
     def call(self, inputs):
-        if not isinstance(inputs, (tf.Tensor, np.ndarray)):
-            inputs = tf.convert_to_tensor(np.array(inputs))
         outputs = self.layer.call(inputs)
-        if backend.backend() != "tensorflow":
+        if (
+            backend.backend() != "tensorflow"
+            and not backend_utils.in_tf_graph()
+        ):
             outputs = backend.convert_to_tensor(outputs)
         return outputs
 

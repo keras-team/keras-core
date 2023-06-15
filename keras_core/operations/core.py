@@ -1,7 +1,8 @@
 """
 scatter
 scatter_update
-block_update
+slice
+slice_update
 while_loop
 """
 
@@ -87,17 +88,56 @@ def scatter_update(inputs, indices, updates):
     return backend.core.scatter_update(inputs, indices, updates)
 
 
-class BlockUpdate(Operation):
+class Slice(Operation):
+    def call(self, inputs, start_indices, shape):
+        return backend.core.slice(inputs, start_indices, shape)
+
+    def compute_output_spec(self, inputs, start_indices, shape):
+        return KerasTensor(shape, dtype=inputs.dtype)
+
+
+@keras_core_export("keras_core.operations.slice")
+def slice(inputs, start_indices, shape):
+    """Return a slice of an input tensor.
+
+    At a high level, this operation is an explicit replacement for array slicing
+    e.g. `inputs[start_indices: start_indices + shape]`.
+    Unlike slicing via brackets, this operation will accept tensor start
+    indices on all backends, which is useful when indices dynamically computed
+    via other tensor operations.
+
+    ```python
+    inputs = np.zeros((5, 5))
+    start_indices = np.array([3, 3])
+    shape = np.array([2, 2])
+    inputs = keras_core.operations.slice(inputs, start_indices, updates)
+    ```
+
+    Args:
+        inputs: A tensor, the tensor to be updated.
+        start_indices: A list/tuple of shape `(inputs.ndim,)`, specifying
+            the starting indices for updating.
+        shape: The full shape of the returned slice.
+
+    Returns:
+        A tensor, has the same shape and dtype as `inputs`.
+    """
+    if any_symbolic_tensors((inputs, start_indices, shape)):
+        return Slice().symbolic_call(inputs, start_indices, shape)
+    return backend.core.slice(inputs, start_indices, shape)
+
+
+class SliceUpdate(Operation):
     def call(self, inputs, start_indices, updates):
-        return backend.core.block_update(inputs, start_indices, updates)
+        return backend.core.slice_update(inputs, start_indices, updates)
 
     def compute_output_spec(self, inputs, start_indices, updates):
         return KerasTensor(inputs.shape, dtype=inputs.dtype)
 
 
-@keras_core_export("keras_core.operations.block_update")
-def block_update(inputs, start_indices, updates):
-    """Update inputs block.
+@keras_core_export("keras_core.operations.slice_update")
+def slice_update(inputs, start_indices, updates):
+    """Update an input by slicing in a tensor of updated values.
 
     At a high level, this operation does
     `inputs[start_indices: start_indices + updates.shape] = updates`.
@@ -113,7 +153,7 @@ def block_update(inputs, start_indices, updates):
     inputs = np.zeros((5, 5))
     start_indices = [3, 3]
     updates = np.ones((2, 2))
-    inputs = keras_core.operations.block_update(inputs, start_indices, updates)
+    inputs = keras_core.operations.slice_update(inputs, start_indices, updates)
     ```
 
     Args:
@@ -127,8 +167,8 @@ def block_update(inputs, start_indices, updates):
         A tensor, has the same shape and dtype as `inputs`.
     """
     if any_symbolic_tensors((inputs, start_indices, updates)):
-        return BlockUpdate().symbolic_call(inputs, start_indices, updates)
-    return backend.core.block_update(inputs, start_indices, updates)
+        return SliceUpdate().symbolic_call(inputs, start_indices, updates)
+    return backend.core.slice_update(inputs, start_indices, updates)
 
 
 class WhileLoop(Operation):
@@ -189,3 +229,53 @@ def while_loop(
         loop_vars,
         maximum_iterations=maximum_iterations,
     )
+
+
+class StopGradient(Operation):
+    def __init__(self):
+        super().__init__()
+
+    def call(self, variable):
+        return backend.core.stop_gradient(variable)
+
+    def compute_output_spec(self, variable):
+        return KerasTensor(variable.shape, dtype=variable.dtype)
+
+
+@keras_core_export("keras_core.operations.stop_gradient")
+def stop_gradient(variable):
+    """Stops gradient computation.
+
+    Args:
+        variable: A tensor variable for which the gradient
+            computation is to be disabled.
+
+    Returns:
+        The variable with gradient computation disabled.
+
+    Examples:
+
+    >>> var = keras_core.backend.convert_to_tensor(
+    ...     [1., 2., 3.],
+    ...     dtype="float32"
+    ... )
+    >>> var = keras_core.operations.stop_gradient(var)
+    """
+    return backend.core.stop_gradient(variable)
+
+
+@keras_core_export("keras_core.operations.shape")
+def shape(x):
+    """Gets the shape of the tensor input."""
+    if any_symbolic_tensors((x,)):
+        return x.shape
+    return backend.core.shape(x)
+
+
+@keras_core_export("keras_core.operations.cast")
+def cast(x, dtype):
+    """Cast a tensor to the desired dtype."""
+    dtype = backend.standardize_dtype(dtype)
+    if any_symbolic_tensors((x,)):
+        return backend.KerasTensor(shape=x.shape, dtype=dtype)
+    return backend.core.cast(x, dtype)

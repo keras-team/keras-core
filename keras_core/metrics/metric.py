@@ -131,14 +131,15 @@ class Metric:
             trainable=False,
             name=name,
         )
-        self._variables.append(variable)
         # Prevent double-tracking
-        self._tracker.stored_ids["variables"].add(id(variable))
+        self._tracker.add_to_store("variables", variable)
         return variable
 
-    def add_weight(self, *args, **kwargs):
+    def add_weight(self, shape=(), initializer=None, dtype=None, name=None):
         # Backwards compatibility alias
-        return self.add_variable(*args, **kwargs)
+        return self.add_variable(
+            shape=shape, initializer=initializer, dtype=dtype, name=name
+        )
 
     @property
     def variables(self):
