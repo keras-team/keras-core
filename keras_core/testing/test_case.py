@@ -6,7 +6,9 @@ import unittest
 import numpy as np
 from tensorflow import nest
 
+from keras_core import backend
 from keras_core import operations as ops
+from keras_core import utils
 from keras_core.models import Model
 from keras_core.utils import traceback_utils
 
@@ -25,6 +27,10 @@ class TestCase(unittest.TestCase):
         return temp_dir
 
     def assertAllClose(self, x1, x2, atol=1e-6, rtol=1e-6, msg=None):
+        if not isinstance(x1, np.ndarray):
+            x1 = backend.convert_to_numpy(x1)
+        if not isinstance(x2, np.ndarray):
+            x2 = backend.convert_to_numpy(x2)
         np.testing.assert_allclose(x1, x2, atol=atol, rtol=rtol)
 
     def assertNotAllClose(self, x1, x2, atol=1e-6, rtol=1e-6, msg=None):
@@ -248,7 +254,7 @@ class TestCase(unittest.TestCase):
                     output_dtype = nest.flatten(output)[0].dtype
                     self.assertEqual(
                         expected_output_dtype,
-                        output_dtype,
+                        backend.standardize_dtype(output_dtype),
                         msg="Unexpected output dtype",
                     )
             if eager:
@@ -274,8 +280,12 @@ class TestCase(unittest.TestCase):
 
             model = TestModel(layer)
             model.compile(optimizer="sgd", loss="mse", jit_compile=True)
-            input_data = nest.map_structure(lambda x: np.array(x), input_data)
-            output_data = nest.map_structure(lambda x: np.array(x), output_data)
+            input_data = nest.map_structure(
+                lambda x: backend.convert_to_numpy(x), input_data
+            )
+            output_data = nest.map_structure(
+                lambda x: backend.convert_to_numpy(x), output_data
+            )
             model.fit(input_data, output_data, verbose=0)
 
         # Build test.
@@ -327,7 +337,9 @@ def create_keras_tensors(input_shape, dtype):
         return [keras_tensor.KerasTensor(s, dtype=dtype) for s in input_shape]
     if isinstance(input_shape, dict):
         return {
-            k.removesuffix("_shape"): keras_tensor.KerasTensor(v, dtype=dtype)
+            utils.removesuffix(k, "_shape"): keras_tensor.KerasTensor(
+                v, dtype=dtype
+            )
             for k, v in input_shape.items()
         }
 
@@ -361,6 +373,6 @@ def create_eager_tensors(input_shape, dtype):
         return [create_fn(s, dtype=dtype) for s in input_shape]
     if isinstance(input_shape, dict):
         return {
-            k.removesuffix("_shape"): create_fn(v, dtype=dtype)
+            utils.removesuffix(k, "_shape"): create_fn(v, dtype=dtype)
             for k, v in input_shape.items()
         }

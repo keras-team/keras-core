@@ -419,10 +419,13 @@ def conv_transpose(
     kernel_spatial_shape = kernel.shape[2:]
     padding_arg = []
     output_padding_arg = []
+    if isinstance(dilation_rate, int):
+        dilation_rate = [dilation_rate] * len(kernel_spatial_shape)
     for i, value in enumerate(padding_values):
         total_padding = value[0] + value[1]
         padding_arg.append(
-            dilation_rate * (kernel_spatial_shape[i] - 1) - total_padding // 2
+            dilation_rate[i] * (kernel_spatial_shape[i] - 1)
+            - total_padding // 2
         )
         if total_padding % 2 == 0:
             output_padding_arg.append(0)
@@ -467,11 +470,12 @@ def conv_transpose(
     return outputs
 
 
-def one_hot(x, num_classes, axis=-1):
+def one_hot(x, num_classes, axis=-1, dtype="float32"):
     # Axis is the output axis. By default, PyTorch, outputs to last axis.
     # If axis is not last, change output to axis and shift remaining elements.
     x = convert_to_tensor(x, dtype=torch.long)
     output = tnn.one_hot(x, num_classes)
+    output = convert_to_tensor(output, dtype=dtype)
     dims = output.dim()
     if axis != -1 and axis != dims:
         new_axes_order = list(range(dims))

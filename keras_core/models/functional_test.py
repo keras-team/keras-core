@@ -34,6 +34,17 @@ class FunctionalTest(testing.TestCase):
         out_val = model(in_val)
         self.assertEqual(out_val.shape, (2, 4))
 
+    def test_scalar_input(self):
+        input_a = Input(shape=(3,), batch_size=2, name="input_a")
+        input_b = Input(shape=(), batch_size=2, name="input_b")
+        outputs = input_a + input_b[:, None]
+        model = Functional([input_a, input_b], outputs)
+        model.summary()
+
+        in_val = [np.zeros((2, 3)), np.ones((2,))]
+        out_val = model(in_val)
+        self.assertAllClose(out_val, np.ones((2, 3)))
+
     def test_basic_flow_multi_output(self):
         inputs = Input(shape=(3,), batch_size=2, name="input")
         x = layers.Dense(5)(inputs)
@@ -159,6 +170,16 @@ class FunctionalTest(testing.TestCase):
         model = Functional(inputs, outputs)
         out_val = model(np.random.random((2, 3)))
         self.assertEqual(out_val.shape, (2, 3, 3))
+
+    def test_dtype_standardization(self):
+        float_input = Input(shape=(2,), dtype="float16")
+        int_input = Input(shape=(2,), dtype="int32")
+        float_output = float_input + 2
+        int_output = int_input + 2
+        model = Functional((float_input, int_input), (float_output, int_output))
+        float_data, int_data = model((np.ones((2, 2)), np.ones((2, 2))))
+        self.assertEqual(backend.standardize_dtype(float_data.dtype), "float16")
+        self.assertEqual(backend.standardize_dtype(int_data.dtype), "int32")
 
     def test_serialization(self):
         # Test basic model

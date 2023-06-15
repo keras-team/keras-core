@@ -1,5 +1,7 @@
 import numpy as np
+import tensorflow as tf
 
+from keras_core import backend
 from keras_core import layers
 from keras_core import testing
 
@@ -35,6 +37,7 @@ class RandomBrightnessTest(testing.TestCase):
         inputs = np.random.randint(0, 255, size=(224, 224, 3))
         output = layer(inputs)
         diff = output - inputs
+        diff = backend.convert_to_numpy(diff)
         self.assertTrue(np.amin(diff) >= 0)
         self.assertTrue(np.mean(diff) > 0)
 
@@ -44,5 +47,13 @@ class RandomBrightnessTest(testing.TestCase):
         inputs = np.random.randint(0, 255, size=(224, 224, 3))
         output = layer(inputs)
         diff = output - inputs
+        diff = backend.convert_to_numpy(diff)
         self.assertTrue(np.amax(diff) <= 0)
         self.assertTrue(np.mean(diff) < 0)
+
+    def test_tf_data_compatibility(self):
+        layer = layers.RandomBrightness(factor=0.5, seed=1337)
+        input_data = np.random.random((2, 8, 8, 3))
+        ds = tf.data.Dataset.from_tensor_slices(input_data).batch(2).map(layer)
+        for output in ds.take(1):
+            output.numpy()

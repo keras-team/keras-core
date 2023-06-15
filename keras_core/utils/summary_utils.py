@@ -30,7 +30,7 @@ def weight_memory_size(weights):
     for w in unique_weights:
         weight_shape = math.prod(w.shape)
         dtype = backend.standardize_dtype(w.dtype)
-        per_param_size = dtype_utils.float_dtype_size(dtype)
+        per_param_size = dtype_utils.dtype_size(dtype)
         total_memory_size += weight_shape * per_param_size
     return total_memory_size
 
@@ -82,8 +82,10 @@ def format_layer_shape(layer):
             lambda x: format_shape(x.shape), outputs
         )
     if len(output_shapes) == 1:
-        output_shapes = output_shapes[0]
-    return str(output_shapes)
+        return output_shapes[0]
+    out = str(output_shapes)
+    out = out.replace("'", "")
+    return out
 
 
 def print_summary(

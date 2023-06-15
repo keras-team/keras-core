@@ -1,6 +1,9 @@
-from keras_core import operations as ops
+import tensorflow as tf
+
+from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
+from keras_core.utils import backend_utils
 
 
 @keras_core_export("keras_core.layers.CategoryEncoding")
@@ -12,6 +15,9 @@ class CategoryEncoding(Layer):
     values as inputs, and it outputs a dense or sparse representation of those
     inputs. For integer inputs where the total number of tokens is not known,
     use `keras_core.layers.IntegerLookup` instead.
+
+    **Note:** This layer is safe to use inside a `tf.data` pipeline
+    (independently of which backend you're using).
 
     Examples:
 
@@ -79,12 +85,6 @@ class CategoryEncoding(Layer):
     """
 
     def __init__(self, num_tokens=None, output_mode="multi_hot", **kwargs):
-        # max_tokens is an old name for the num_tokens arg we continue to
-        # support because of usage.
-        if "max_tokens" in kwargs:
-            num_tokens = kwargs["max_tokens"]
-            del kwargs["max_tokens"]
-
         super().__init__(**kwargs)
 
         # Support deprecated names for output_modes.
@@ -104,18 +104,19 @@ class CategoryEncoding(Layer):
             raise ValueError(
                 f"`num_tokens` must be >= 1. Received: num_tokens={num_tokens}."
             )
-
         self.num_tokens = num_tokens
         self.output_mode = output_mode
 
+        self.layer = tf.keras.layers.CategoryEncoding(
+            num_tokens=num_tokens,
+            output_mode=output_mode,
+            **kwargs,
+        )
+        self._allow_non_tensor_positional_args = True
+        self._convert_input_args = False
+
     def compute_output_shape(self, input_shape):
-        input_shape = list(input_shape)
-        if not input_shape:
-            return ops.shape(self.num_tokens)
-        if self.output_mode == "one_hot" and input_shape[-1] != 1:
-            return tuple(input_shape + [self.num_tokens])
-        else:
-            return tuple(input_shape[:-1] + [self.num_tokens])
+        return tuple(self.layer.compute_output_shape(input_shape))
 
     def get_config(self):
         config = {
@@ -125,71 +126,11 @@ class CategoryEncoding(Layer):
         base_config = super().get_config()
         return {**base_config, **config}
 
-    def call(self, inputs, count_weights=None):
-        if count_weights is not None:
-            if self.output_mode != "count":
-                raise ValueError(
-                    "`count_weights` is not used when `output_mode` is not "
-                    "`'count'`. Received `count_weights={count_weights}`."
-                )
-            count_weights = ops.cast(count_weights, self.compute_dtype)
-
-        depth = self.num_tokens
-
-        max_value = ops.amax(inputs)
-        min_value = ops.amin(inputs)
-        condition = ops.logical_and(
-            ops.greater(ops.cast(depth, max_value.dtype), max_value),
-            ops.greater_equal(min_value, ops.cast(0, min_value.dtype)),
-        )
-        if not condition:
-            raise ValueError(
-                "Input values must be in the range 0 <= values < num_tokens"
-                f" with num_tokens={depth}"
-            )
-
-        return self._encode_categorical_inputs(
-            inputs,
-            output_mode=self.output_mode,
-            depth=depth,
-            count_weights=count_weights,
-        )
-
-    def _encode_categorical_inputs(
-        self,
-        inputs,
-        output_mode,
-        depth,
-        count_weights=None,
-    ):
-        # In all cases, we should uprank scalar input to a single sample.
-        if len(inputs.shape) == 0:
-            inputs = ops.expand_dims(inputs, -1)
-        # One hot will uprank only if the final output dimension
-        # is not already 1.
-        if output_mode == "one_hot":
-            if len(inputs.shape) > 1 and inputs.shape[-1] != 1:
-                inputs = ops.expand_dims(inputs, -1)
-
-        # TODO(b/190445202): remove output rank restriction.
-        if len(inputs.shape) > 2:
-            raise ValueError(
-                "When output_mode is not `'int'`, maximum supported "
-                f"output rank is 2. Received output_mode {output_mode} "
-                f"and input shape {inputs.shape}, "
-                f"which would result in output rank {len(inputs.shape)}."
-            )
-
-        binary_output = output_mode in ("multi_hot", "one_hot")
-        inputs = ops.cast(inputs, "int32")
-
-        if binary_output:
-            bincounts = ops.one_hot(inputs, num_classes=depth)
-            if output_mode == "multi_hot":
-                bincounts = ops.sum(bincounts, axis=0)
-        else:
-            bincounts = ops.bincount(
-                inputs, minlength=depth, weights=count_weights
-            )
-
-        return bincounts
+    def call(self, inputs):
+        outputs = self.layer.call(inputs)
+        if (
+            backend.backend() != "tensorflow"
+            and not backend_utils.in_tf_graph()
+        ):
+            outputs = backend.convert_to_tensor(outputs)
+        return outputs

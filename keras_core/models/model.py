@@ -1,3 +1,5 @@
+import inspect
+import json
 import os
 import warnings
 
@@ -7,8 +9,10 @@ from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
 from keras_core.saving import saving_api
 from keras_core.saving import saving_lib
+from keras_core.trainers import trainer as base_trainer
 from keras_core.utils import io_utils
 from keras_core.utils import summary_utils
+from keras_core.utils import traceback_utils
 
 if backend.backend() == "tensorflow":
     from keras_core.backend.tensorflow.trainer import (
@@ -164,6 +168,7 @@ class Model(Trainer, Layer):
             "Please use another name."
         )
 
+    @traceback_utils.filter_traceback
     def get_layer(self, name=None, index=None):
         """Retrieves a layer based on either its name (unique) or index.
 
@@ -204,6 +209,7 @@ class Model(Trainer, Layer):
             "Provide either a layer name or layer index at `get_layer`."
         )
 
+    @traceback_utils.filter_traceback
     def summary(
         self,
         line_length=None,
@@ -253,7 +259,19 @@ class Model(Trainer, Layer):
             layer_range=layer_range,
         )
 
-    def save(self, filepath, overwrite=True):
+    @traceback_utils.filter_traceback
+    def save(self, filepath, overwrite=True, save_format="keras"):
+        if save_format in ["h5", "tf"]:
+            raise ValueError(
+                "`'h5'` and `'t5'` formats are no longer supported via the "
+                "`save_format` option. Please use the new `'keras'` format. "
+                f"Received: save_format={save_format}"
+            )
+        if save_format not in ["keras", "keras_v3"]:
+            raise ValueError(
+                "Unknown `save_format` value. Only the `'keras'` format is "
+                f"currently supported. Received: save_format={save_format}"
+            )
         if not str(filepath).endswith(".keras"):
             raise ValueError(
                 "The filename must end in `.keras`. "
@@ -269,6 +287,7 @@ class Model(Trainer, Layer):
                 return
         saving_lib.save_model(self, filepath)
 
+    @traceback_utils.filter_traceback
     def save_weights(self, filepath, overwrite=True):
         if not str(filepath).endswith(".weights.h5"):
             raise ValueError(
@@ -285,6 +304,7 @@ class Model(Trainer, Layer):
                 return
         saving_lib.save_weights_only(self, filepath)
 
+    @traceback_utils.filter_traceback
     def load_weights(self, filepath, skip_mismatch=False, **kwargs):
         saving_api.load_weights(
             self, filepath, skip_mismatch=skip_mismatch, **kwargs
@@ -335,8 +355,113 @@ class Model(Trainer, Layer):
                 stacklevel=2,
             )
 
-    def export(self, filepath):
-        raise NotImplementedError
+    def to_json(self, **kwargs):
+        """Returns a JSON string containing the network configuration.
+
+        To load a network from a JSON save file, use
+        `keras.models.model_from_json(json_string, custom_objects={...})`.
+
+        Args:
+            **kwargs: Additional keyword arguments to be passed to
+                `json.dumps()`.
+
+        Returns:
+            A JSON string.
+        """
+        from keras_core.saving import serialization_lib
+
+        model_config = serialization_lib.serialize_keras_object(self)
+        return json.dumps(model_config, **kwargs)
+
+    def export(self, filepath, format="tf_saved_model"):
+        raise NotImplementedError(
+            "The export() method is not yet supported. It will "
+            "be added in the next version. For the time being, you "
+            "can use `tf.saved_model.save(model)` to save a "
+            "TensorFlow SavedModel for your Keras Core model."
+        )
+
+    @classmethod
+    def from_config(cls, config, custom_objects=None):
+        from keras_core.models.functional import Functional
+
+        functional_config_keys = [
+            "name",
+            "layers",
+            "input_layers",
+            "output_layers",
+        ]
+        is_functional_config = all(
+            key in config for key in functional_config_keys
+        )
+        argspec = inspect.getfullargspec(cls.__init__)
+        functional_init_args = inspect.getfullargspec(Functional.__init__).args[
+            1:
+        ]
+        revivable_as_functional = (
+            cls in {Functional, Model}
+            or argspec.args[1:] == functional_init_args
+            or (argspec.varargs == "args" and argspec.varkw == "kwargs")
+        )
+        if is_functional_config and revivable_as_functional:
+            # Revive Functional model
+            # (but not Functional subclasses with a custom __init__)
+            if cls == Model:
+                cls = Functional
+            return cls._from_config(config, custom_objects=custom_objects)
+
+        # Either the model has a custom __init__, or the config
+        # does not contain all the information necessary to
+        # revive a Functional model. This happens when the user creates
+        # subclassed models where `get_config()` is returning
+        # insufficient information to be considered a Functional model.
+        # In this case, we fall back to provide all config into the
+        # constructor of the class.
+        try:
+            return cls(**config)
+        except TypeError as e:
+            raise TypeError(
+                "Unable to revive model from config. When overriding "
+                "the `get_config()` method, make sure that the "
+                "returned config contains all items used as arguments "
+                f"in the  constructor to {cls}, "
+                "which is the default behavior. "
+                "You can override this default behavior by defining a "
+                "`from_config(cls, config)` class method to specify "
+                "how to create an "
+                f"instance of {cls.__name__} from its config.\n\n"
+                f"Received config={config}\n\n"
+                f"Error encountered during deserialization: {e}"
+            )
+
+
+@keras_core_export("keras_core.models.model_from_json")
+def model_from_json(json_string, custom_objects=None):
+    """Parses a JSON model configuration string and returns a model instance.
+
+    Usage:
+
+    >>> model = keras_core.Sequential([
+    ...     keras_core.layers.Dense(5, input_shape=(3,)),
+    ...     keras_core.layers.Softmax()])
+    >>> config = model.to_json()
+    >>> loaded_model = keras_core.models.model_from_json(config)
+
+    Args:
+        json_string: JSON string encoding a model configuration.
+        custom_objects: Optional dictionary mapping names
+            (strings) to custom classes or functions to be
+            considered during deserialization.
+
+    Returns:
+        A Keras model instance (uncompiled).
+    """
+    from keras_core.saving import serialization_lib
+
+    model_config = json.loads(json_string)
+    return serialization_lib.deserialize_keras_object(
+        model_config, custom_objects=custom_objects
+    )
 
 
 def functional_init_arguments(args, kwargs):
@@ -366,3 +491,11 @@ def inject_functional_model_class(cls):
     cls.__new__(cls)
 
     return cls
+
+
+Model.fit.__doc__ = base_trainer.Trainer.fit.__doc__
+Model.predict.__doc__ = base_trainer.Trainer.predict.__doc__
+Model.evaluate.__doc__ = base_trainer.Trainer.evaluate.__doc__
+Model.train_on_batch.__doc__ = base_trainer.Trainer.train_on_batch.__doc__
+Model.test_on_batch.__doc__ = base_trainer.Trainer.test_on_batch.__doc__
+Model.predict_on_batch.__doc__ = base_trainer.Trainer.predict_on_batch.__doc__

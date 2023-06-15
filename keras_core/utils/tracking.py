@@ -58,16 +58,17 @@ class Tracker:
     def __init__(self, config):
         self.config = config
         self.stored_ids = {name: set() for name in self.config.keys()}
+        self.locked = False
+        self._lock_violation_msg = None
 
     def track(self, attr):
         if not is_tracking_enabled():
             return attr
 
-        for name, (is_attr_type, store) in self.config.items():
+        for name, (is_attr_type, _) in self.config.items():
             if is_attr_type(attr):
                 if id(attr) not in self.stored_ids[name]:
-                    store.append(attr)
-                    self.stored_ids[name].add(id(attr))
+                    self.add_to_store(name, attr)
                 return attr
         if isinstance(attr, tuple):
             wrapped_attr = []
@@ -78,60 +79,80 @@ class Tracker:
         elif isinstance(attr, list):
             return TrackedList(attr, self)
         elif isinstance(attr, dict):
-            # TODO: OrderedDict
+            # TODO: OrderedDict?
             return TrackedDict(attr, self)
         elif isinstance(attr, set):
             return TrackedSet(attr, self)
         return attr
 
+    def lock(self, msg):
+        self.locked = True
+        self._lock_violation_msg = msg
+
+    def add_to_store(self, store_name, value):
+        if self.locked:
+            raise ValueError(self._lock_violation_msg)
+        self.config[store_name][1].append(value)
+        self.stored_ids[store_name].add(id(value))
+
 
 class TrackedList(list):
-    # TODO(fchollet): override item removal methods?
-    def __init__(self, values, tracker):
+    # TODO: override item removal methods?
+    def __init__(self, values=None, tracker=None):
         self.tracker = tracker
-        values = [tracker.track(v) for v in values]
-        super().__init__(values)
+        if tracker and values:
+            values = [tracker.track(v) for v in values]
+        super().__init__(values or [])
 
     def append(self, value):
-        self.tracker.track(value)
+        if self.tracker:
+            self.tracker.track(value)
         super().append(value)
 
     def insert(self, value):
-        self.tracker.track(value)
+        if self.tracker:
+            self.tracker.track(value)
         super().insert(value)
 
     def extend(self, values):
-        values = [self.tracker.track(v) for v in values]
+        if self.tracker:
+            values = [self.tracker.track(v) for v in values]
         super().extend(values)
 
 
 class TrackedDict(dict):
-    # TODO(fchollet): override item removal methods?
-    def __init__(self, values, tracker):
+    # TODO: override item removal methods?
+    def __init__(self, values=None, tracker=None):
         self.tracker = tracker
-        values = {k: tracker.track(v) for k, v in values.items()}
-        super().__init__(values)
+        if tracker and values:
+            values = {k: tracker.track(v) for k, v in values.items()}
+        super().__init__(values or [])
 
     def __setitem__(self, key, value):
-        self.tracker.track(value)
+        if self.tracker:
+            self.tracker.track(value)
         super().__setitem__(key, value)
 
     def update(self, mapping):
-        mapping = {k: self.tracker.track(v) for k, v in mapping.items()}
+        if self.tracker:
+            mapping = {k: self.tracker.track(v) for k, v in mapping.items()}
         super().update(mapping)
 
 
 class TrackedSet(set):
-    # TODO(fchollet): override item removal methods?
-    def __init__(self, values, tracker):
+    # TODO: override item removal methods?
+    def __init__(self, values=None, tracker=None):
         self.tracker = tracker
-        values = {tracker.track(v) for v in values}
-        super().__init__(values)
+        if tracker and values:
+            values = {tracker.track(v) for v in values}
+        super().__init__(values or [])
 
     def add(self, value):
-        self.tracker.track(value)
+        if self.tracker:
+            self.tracker.track(value)
         super().add(value)
 
     def update(self, values):
-        values = [self.tracker.track(v) for v in values]
+        if self.tracker:
+            values = [self.tracker.track(v) for v in values]
         super().update(values)

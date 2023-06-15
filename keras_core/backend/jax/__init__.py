@@ -9,11 +9,13 @@ from keras_core.backend.jax.core import Variable
 from keras_core.backend.jax.core import cast
 from keras_core.backend.jax.core import compute_output_spec
 from keras_core.backend.jax.core import cond
+from keras_core.backend.jax.core import convert_to_numpy
 from keras_core.backend.jax.core import convert_to_tensor
 from keras_core.backend.jax.core import is_tensor
 from keras_core.backend.jax.core import name_scope
 from keras_core.backend.jax.core import scatter
 from keras_core.backend.jax.core import shape
+from keras_core.backend.jax.core import stop_gradient
 from keras_core.backend.jax.core import vectorized_map
 from keras_core.backend.jax.rnn import gru
 from keras_core.backend.jax.rnn import lstm

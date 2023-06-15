@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 from tensorflow.compiler.tf2xla.python.xla import dynamic_update_slice
 
@@ -75,6 +76,10 @@ def convert_to_tensor(x, dtype=None):
     return tf.convert_to_tensor(x, dtype=dtype)
 
 
+def convert_to_numpy(x):
+    return np.array(x)
+
+
 def is_tensor(x):
     return tf.is_tensor(x)
 
@@ -136,7 +141,11 @@ def scatter_update(inputs, indices, updates):
     return tf.tensor_scatter_nd_update(inputs, indices, updates)
 
 
-def block_update(inputs, start_indices, updates):
+def slice(inputs, start_indices, shape):
+    return tf.slice(inputs, start_indices, shape)
+
+
+def slice_update(inputs, start_indices, updates):
     return dynamic_update_slice(inputs, updates, start_indices)
 
 
@@ -152,3 +161,7 @@ def while_loop(
         loop_vars,
         maximum_iterations=maximum_iterations,
     )
+
+
+def stop_gradient(variable):
+    return tf.stop_gradient(variable)

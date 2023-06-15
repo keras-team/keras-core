@@ -6,10 +6,12 @@ import tensorflow as tf
 from tensorflow.python.eager import context as tf_context
 
 from keras_core import callbacks as callbacks_module
+from keras_core import metrics as metrics_module
 from keras_core import optimizers as optimizers_module
 from keras_core.trainers import trainer as base_trainer
 from keras_core.trainers.data_adapters import data_adapter_utils
 from keras_core.trainers.epoch_iterator import EpochIterator
+from keras_core.utils import traceback_utils
 
 
 class TensorFlowTrainer(base_trainer.Trainer):
@@ -95,11 +97,14 @@ class TensorFlowTrainer(base_trainer.Trainer):
             """Runs a single training step on a batch of data."""
             return self.train_step(data)
 
-        if not self.run_eagerly and self.jit_compile:
+        if not self.run_eagerly:
             one_step_on_data = tf.function(
-                one_step_on_data, jit_compile=True, reduce_retracing=True
+                one_step_on_data,
+                jit_compile=self.jit_compile,
+                reduce_retracing=True,
             )
 
+        @tf.autograph.experimental.do_not_convert
         def one_step_on_iterator(iterator):
             """Runs a single training step given a Dataset iterator."""
             data = next(iterator)
@@ -113,8 +118,9 @@ class TensorFlowTrainer(base_trainer.Trainer):
             )
             return outputs
 
+        @tf.autograph.experimental.do_not_convert
         def multi_step_on_iterator(iterator):
-            for _ in tf.range(self.steps_per_execution):
+            for _ in range(self.steps_per_execution):
                 outputs = one_step_on_iterator(iterator)
             return outputs
 
@@ -142,6 +148,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 one_step_on_data, jit_compile=True, reduce_retracing=True
             )
 
+        @tf.autograph.experimental.do_not_convert
         def one_step_on_iterator(iterator):
             """Runs a single test step given a Dataset iterator."""
             data = next(iterator)
@@ -155,8 +162,9 @@ class TensorFlowTrainer(base_trainer.Trainer):
             )
             return outputs
 
+        @tf.autograph.experimental.do_not_convert
         def multi_step_on_iterator(iterator):
-            for _ in tf.range(self.steps_per_execution):
+            for _ in range(self.steps_per_execution):
                 outputs = one_step_on_iterator(iterator)
             return outputs
 
@@ -184,6 +192,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 one_step_on_data, jit_compile=True, reduce_retracing=True
             )
 
+        @tf.autograph.experimental.do_not_convert
         def one_step_on_data_distributed(data):
             data = data[0]
             outputs = self.distribute_strategy.run(
@@ -196,6 +205,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
             )
             return outputs
 
+        @tf.autograph.experimental.do_not_convert
         def multi_step_on_data(data):
             outputs = one_step_on_data_distributed(data[:1])
             for single_step_data in data[1:]:
@@ -217,6 +227,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
 
         self.predict_function = predict_function
 
+    @traceback_utils.filter_traceback
     def fit(
         self,
         x=None,
@@ -236,10 +247,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
         validation_batch_size=None,
         validation_freq=1,
     ):
-        if not self.compiled:
-            raise ValueError(
-                "You must call `compile()` before calling `fit()`."
-            )
+        self._assert_compile_called("fit")
         # TODO: respect compiled trainable state
         if validation_split and validation_data is None:
             # Create the validation data using the training data. Only supported
@@ -296,12 +304,14 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 for step, iterator in epoch_iterator.enumerate_epoch():
                     callbacks.on_train_batch_begin(step)
                     logs = self.train_function(iterator)
-                    callbacks.on_train_batch_end(step, logs)
+                    callbacks.on_train_batch_end(
+                        step, self._pythonify_logs(logs)
+                    )
                     if self.stop_training:
                         break
 
             # Override with model metrics instead of last step logs
-            epoch_logs = self._pythonify_logs(self.get_metrics_result())
+            epoch_logs = self.get_metrics_result()
 
             # Run validation.
             if validation_data and self._should_eval(epoch, validation_freq):
@@ -327,7 +337,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 val_logs = {
                     "val_" + name: val for name, val in val_logs.items()
                 }
-                epoch_logs.update(self._pythonify_logs(val_logs))
+                epoch_logs.update(val_logs)
 
             callbacks.on_epoch_end(epoch, epoch_logs)
             training_logs = epoch_logs
@@ -346,6 +356,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
         callbacks.on_train_end(logs=training_logs)
         return self.history
 
+    @traceback_utils.filter_traceback
     def evaluate(
         self,
         x=None,
@@ -358,6 +369,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
         return_dict=False,
         **kwargs,
     ):
+        self._assert_compile_called("evaluate")
         # TODO: respect compiled trainable state
         use_cached_eval_dataset = kwargs.pop("_use_cached_eval_dataset", False)
         if kwargs:
@@ -397,14 +409,15 @@ class TensorFlowTrainer(base_trainer.Trainer):
             for step, iterator in epoch_iterator.enumerate_epoch():
                 callbacks.on_test_batch_begin(step)
                 logs = self.test_function(iterator)
-                callbacks.on_test_batch_end(step, logs)
-        logs = self._pythonify_logs(self.get_metrics_result())
+                callbacks.on_test_batch_end(step, self._pythonify_logs(logs))
+        logs = self.get_metrics_result()
         callbacks.on_test_end(logs)
 
         if return_dict:
             return logs
         return self._flatten_metrics_in_order(logs)
 
+    @traceback_utils.filter_traceback
     def predict(
         self, x, batch_size=None, verbose="auto", steps=None, callbacks=None
     ):
@@ -451,7 +464,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
                 try:
                     single_step_data = next(iterator)
                 except (StopIteration, tf.errors.OutOfRangeError) as e:
-                    if len(data) > 0:
+                    if hasattr(data, "__len__") and len(data) > 0:
                         # Suppress the error when still have remaining data.
                         return data
                     else:
@@ -475,6 +488,111 @@ class TensorFlowTrainer(base_trainer.Trainer):
         callbacks.on_predict_end()
         return tf.__internal__.nest.map_structure_up_to(
             batch_outputs, np.concatenate, outputs
+        )
+
+    def train_on_batch(
+        self,
+        x,
+        y=None,
+        sample_weight=None,
+        class_weight=None,
+        return_dict=False,
+    ):
+        self._assert_compile_called("train_on_batch")
+        self.make_train_function()
+        if class_weight is not None:
+            if sample_weight is not None:
+                raise ValueError(
+                    "Arguments `sample_weight` and `class_weight` "
+                    "cannot be specified at the same time. "
+                    f"Received: sample_weight={sample_weight}, "
+                    f"class_weight={class_weight}"
+                )
+            sample_weight = data_adapter_utils.class_weight_to_sample_weights(
+                y, class_weight
+            )
+
+        def data():
+            yield (x, y, sample_weight)
+
+        logs = self.train_function(data())
+        logs = tf.nest.map_structure(lambda x: np.array(x), logs)
+        if return_dict:
+            return logs
+        return self._flatten_metrics_in_order(logs)
+
+    def test_on_batch(
+        self,
+        x,
+        y=None,
+        sample_weight=None,
+        return_dict=False,
+    ):
+        self._assert_compile_called("test_on_batch")
+        self.make_test_function()
+
+        def data():
+            yield (x, y, sample_weight)
+
+        logs = self.test_function(data())
+        logs = tf.nest.map_structure(lambda x: np.array(x), logs)
+        if return_dict:
+            return logs
+        return self._flatten_metrics_in_order(logs)
+
+    def predict_on_batch(self, x):
+        self.make_predict_function()
+        batch_outputs = self.predict_function((x,))
+        batch_outputs = tf.nest.map_structure(
+            lambda x: np.array(x), batch_outputs
+        )
+        return batch_outputs
+
+    # Backwards compatibility shims.
+    @property
+    def compiled_metrics(self):
+        class DeprecatedCompiledMetric:
+            def update_state(_, y, y_pred, sample_weight=None):
+                return self._compiled_metrics_update_state(
+                    y, y_pred, sample_weight=sample_weight
+                )
+
+        return DeprecatedCompiledMetric()
+
+    def _compiled_metrics_update_state(self, y, y_pred, sample_weight=None):
+        warnings.warn(
+            "`model.compiled_metrics()` is deprecated. "
+            "Instead, use e.g.:\n"
+            "```\n"
+            "for metric in self.metrics:\n"
+            "    metric.update_state(y, y_pred)\n"
+            "```\n",
+            stacklevel=2,
+        )
+        for metric in self.metrics:
+            if isinstance(metric, metrics_module.Mean):
+                metric.update_state(y_pred, sample_weight=sample_weight)
+            else:
+                metric.update_state(y, y_pred, sample_weight=sample_weight)
+
+    def compiled_loss(
+        self, y, y_pred, sample_weight=None, regularization_losses=None
+    ):
+        warnings.warn(
+            "`model.compiled_loss()` is deprecated. "
+            "Instead, use `model.compute_loss(x, y, y_pred, sample_weight)`.",
+        )
+        return self.compute_loss(
+            x=None, y=y, y_pred=y_pred, sample_weight=sample_weight
+        )
+
+    def loss(self, y, y_pred, sample_weight=None):
+        warnings.warn(
+            "`model.loss` is deprecated. "
+            "Instead, use `model.compute_loss(x, y, y_pred, sample_weight)`.",
+        )
+        return self.compute_loss(
+            x=None, y=y, y_pred=y_pred, sample_weight=sample_weight
         )
 
 

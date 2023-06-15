@@ -1,7 +1,7 @@
+import keras_core  # isort: skip, keep it on top for torch test
+
 import numpy as np
 from tensorflow import keras
-
-import keras_core
 
 NUM_CLASSES = 10
 
@@ -81,10 +81,11 @@ def numerical_test():
     keras_core_model = build_keras_model(keras_core, NUM_CLASSES)
 
     # Make sure both model have same weights before training
-    keras_core_model.set_weights(keras_model.weights)
+    weights = [weight.numpy() for weight in keras_model.weights]
+    keras_core_model.set_weights(weights)
 
     for kw, kcw in zip(keras_model.weights, keras_core_model.weights):
-        np.testing.assert_allclose(kw, kcw)
+        np.testing.assert_allclose(kw.numpy(), kcw.numpy())
 
     keras_history = train_model(keras_model, x_train, y_train)
     keras_core_history = train_model(keras_core_model, x_train, y_train)

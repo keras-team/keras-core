@@ -1,4 +1,4 @@
-""" Benchmark normalization layers.
+"""Benchmark normalization layers.
 
 To run benchmarks, see the following command for an example, please change the
 flag to your custom value:
@@ -6,8 +6,8 @@ flag to your custom value:
 ```
 python3 -m benchmarks.layer_benchmark.normalization_benchmark \
     --benchmark_name=benchmark_batch_normalization \
-    --num_samples=1000 \
-    --batch_size=20 \
+    --num_samples=2048 \
+    --batch_size=256 \
     --jit_compile=True
 ```
 """
@@ -30,7 +30,7 @@ def benchmark_batch_normalization(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 32, 4],
+        input_shape=[256, 256, 4],
         jit_compile=jit_compile,
     )
 
@@ -57,7 +57,7 @@ def benchmark_group_normalization(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 32, 4],
+        input_shape=[256, 256, 4],
         jit_compile=jit_compile,
     )
 
@@ -82,7 +82,32 @@ def benchmark_layer_normalization(
     benchmark = LayerBenchmark(
         layer_name,
         init_args,
-        input_shape=[32, 32, 4],
+        input_shape=[256, 128, 4],
+        jit_compile=jit_compile,
+    )
+
+    benchmark.benchmark_predict(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
+
+    benchmark.benchmark_train(
+        num_samples=num_samples,
+        batch_size=batch_size,
+    )
+
+
+def benchmark_unit_normalization(
+    num_samples,
+    batch_size,
+    jit_compile=True,
+):
+    layer_name = "UnitNormalization"
+    init_args = {}
+    benchmark = LayerBenchmark(
+        layer_name,
+        init_args,
+        input_shape=[256, 128, 4],
         jit_compile=jit_compile,
     )
 
@@ -101,6 +126,7 @@ BENCHMARK_NAMES = {
     "benchmark_batch_normalization": benchmark_batch_normalization,
     "benchmark_group_normalization": benchmark_group_normalization,
     "benchmark_layer_normalization": benchmark_layer_normalization,
+    "benchmark_unit_normalization": benchmark_unit_normalization,
 }
 
 
@@ -109,6 +135,11 @@ def main(_):
     num_samples = FLAGS.num_samples
     batch_size = FLAGS.batch_size
     jit_compile = FLAGS.jit_compile
+
+    if benchmark_name is None:
+        for name, benchmark_fn in BENCHMARK_NAMES.items():
+            benchmark_fn(num_samples, batch_size, jit_compile)
+        return
 
     if benchmark_name not in BENCHMARK_NAMES:
         raise ValueError(

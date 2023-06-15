@@ -1,3 +1,5 @@
+import warnings
+
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
@@ -14,9 +16,16 @@ class InputLayer(Layer):
         batch_shape=None,
         input_tensor=None,
         name=None,
+        **kwargs,
     ):
         # TODO: support for sparse, ragged.
         super().__init__(name=name)
+        if "input_shape" in kwargs:
+            warnings.warn(
+                "Argument `input_shape` is deprecated. Use `shape` instead."
+            )
+            shape = kwargs.pop("input_shape")
+
         if shape is not None and batch_shape is not None:
             raise ValueError(
                 "You cannot pass both `shape` and `batch_shape` at the "
@@ -30,10 +39,10 @@ class InputLayer(Layer):
         if shape is None and batch_shape is None:
             raise ValueError("You must pass a `shape` argument.")
 
-        if shape:
+        if shape is not None:
             shape = backend.standardize_shape(shape)
             batch_shape = (batch_size,) + shape
-        self.batch_shape = batch_shape
+        self.batch_shape = tuple(batch_shape)
         self._dtype = backend.standardize_dtype(dtype)
 
         if input_tensor is not None:
@@ -67,12 +76,20 @@ class InputLayer(Layer):
 
 
 @keras_core_export(["keras_core.layers.Input", "keras_core.Input"])
-def Input(shape=None, batch_size=None, dtype=None, batch_shape=None, name=None):
+def Input(
+    shape=None,
+    batch_size=None,
+    dtype=None,
+    batch_shape=None,
+    name=None,
+    tensor=None,
+):
     layer = InputLayer(
         shape=shape,
         batch_size=batch_size,
         dtype=dtype,
         batch_shape=batch_shape,
         name=name,
+        input_tensor=tensor,
     )
     return layer.output

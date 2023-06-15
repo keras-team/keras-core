@@ -626,3 +626,41 @@ class LayerTest(testing.TestCase):
             NonMatchingArgument()(foo, bar)
 
         MatchingArguments()(foo, bar)
+
+    def test_training_arg_not_specified(self):
+        class NoTrainingSpecified(layers.Layer):
+            def __init__(self):
+                super().__init__()
+
+            def build(self, input_shape):
+                self.activation = layers.Activation("linear")
+
+            def call(self, inputs):
+                return self.activation(inputs)
+
+        layer = NoTrainingSpecified()
+        inputs = ops.random.uniform(shape=(1, 100, 100, 3))
+        layer(inputs, training=True)
+
+    def test_tracker_locking(self):
+        class BadLayer(layers.Layer):
+            def call(self, x):
+                self.w = self.add_weight(initializer="zeros", shape=())
+                return x
+
+        layer = BadLayer()
+        with self.assertRaisesRegex(
+            ValueError,
+            "cannot add new elements of state",
+        ):
+            layer(np.random.random((3, 2)))
+
+    def test_init_after_state_tracking(self):
+        class MyLayer(layers.Layer):
+            def __init__(self):
+                self.some_attr = True
+                self.w = backend.Variable(np.random.random((2,)))
+                super().__init__()
+
+        layer = MyLayer()
+        self.assertEqual(len(layer.weights), 1)

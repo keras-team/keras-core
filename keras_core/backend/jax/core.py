@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+import numpy as np
 from tensorflow import nest
 
 from keras_core.backend.common import KerasVariable
@@ -33,6 +34,10 @@ def convert_to_tensor(x, dtype=None):
             return x.value.astype(dtype)
         return x.value
     return jnp.array(x, dtype=dtype)
+
+
+def convert_to_numpy(x):
+    return np.array(x)
 
 
 def is_tensor(x):
@@ -197,14 +202,12 @@ def scatter_update(inputs, indices, updates):
     return inputs
 
 
-def block_update(inputs, start_indices, updates):
-    update_shape = updates.shape
-    slices = [
-        slice(start_index, start_index + update_length)
-        for start_index, update_length in zip(start_indices, update_shape)
-    ]
-    inputs[tuple(slices)] = updates
-    return inputs
+def slice(inputs, start_indices, shape):
+    return jax.lax.dynamic_slice(inputs, start_indices, shape)
+
+
+def slice_update(inputs, start_indices, updates):
+    return jax.lax.dynamic_update_slice(inputs, updates, start_indices)
 
 
 def while_loop(
@@ -237,3 +240,7 @@ def while_loop(
     if maximum_iterations is not None:
         outputs = outputs[:-1]
     return outputs
+
+
+def stop_gradient(variable):
+    return jax.lax.stop_gradient(variable)
