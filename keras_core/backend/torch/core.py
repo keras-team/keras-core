@@ -92,6 +92,10 @@ class Variable(KerasVariable):
 
 def convert_to_tensor(x, dtype=None):
     dtype = to_torch_dtype(dtype or getattr(x, "dtype", None))
+    if isinstance(x, int):
+        dtype = torch.int32
+    if isinstance(x, float):
+        dtype = torch.float32
     if isinstance(x, Variable):
         x = x.value
         return x
