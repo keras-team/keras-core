@@ -27,18 +27,12 @@ class Variable(KerasVariable):
 
 
 def convert_to_tensor(x, dtype=None):
-    dtype_is_none = dtype is None
-    if not dtype_is_none:
+    if dtype is not None:
         dtype = standardize_dtype(dtype)
-    if isinstance(x, jnp.ndarray):
-        if not dtype_is_none and x.dtype != dtype:
-            return x.astype(dtype)
-        return x
     if isinstance(x, Variable):
         if dtype and dtype != x.dtype:
             return x.value.astype(dtype)
         return x.value
-
     return jnp.array(x, dtype=dtype)
 
 
