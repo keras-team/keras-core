@@ -272,7 +272,7 @@ class InverseTimeDecayTest(testing.TestCase):
         initial_lr = 0.1
         k = 10
         decay_rate = 0.96
-        step = backend.Variable(0)
+        step = backend.Variable(0.)
         decayed_lr = schedules.InverseTimeDecay(
             initial_lr, k, decay_rate, staircase=True
         )
