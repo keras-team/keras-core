@@ -20,7 +20,7 @@ def dense_bincount(inputs, depth, binary_output, dtype, count_weights=None):
     if len(inputs.shape) == 1:
         result.set_shape(tf.TensorShape((depth,)))
     else:
-        batch_size = inputs.shape.as_list()[0]
+        batch_size = list(inputs.shape)[0]
         result.set_shape(tf.TensorShape((batch_size, depth)))
     return result
 
