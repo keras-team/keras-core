@@ -50,7 +50,12 @@ def mean(x, axis=None, keepdims=False):
 
 def max(x, axis=None, keepdims=False, initial=None):
     x = convert_to_tensor(x)
-    result = amax(x, axis=axis, keepdims=keepdims)
+    if 0 in x.shape:
+        return 0
+    if axis is None:
+        result = torch.max(x)
+    else:
+        result = amax(x, axis=axis, keepdims=keepdims)
     if isinstance(getattr(result, "values", None), torch.Tensor):
         result = result.values
 
