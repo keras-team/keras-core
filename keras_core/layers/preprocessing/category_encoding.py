@@ -6,6 +6,61 @@ from keras_core.layers.layer import Layer
 from keras_core.utils import backend_utils
 
 
+def dense_bincount(inputs, depth, binary_output, dtype, count_weights=None):
+    """Apply binary or count encoding to an input."""
+    result = tf.math.bincount(
+        tf.cast(inputs, tf.int32),
+        weights=count_weights,
+        minlength=depth,
+        maxlength=depth,
+        dtype=dtype,
+        axis=-1,
+        binary_output=binary_output,
+    )
+    if inputs.shape.rank == 1:
+        result.set_shape(tf.TensorShape((depth,)))
+    else:
+        batch_size = inputs.shape.as_list()[0]
+        result.set_shape(tf.TensorShape((batch_size, depth)))
+    return result
+
+
+def encode_categorical_inputs(
+    inputs,
+    output_mode,
+    depth,
+    dtype="float32",
+    count_weights=None,
+):
+    """Encodes categoical inputs according to output_mode."""
+
+    original_shape = inputs.shape
+    # In all cases, we should uprank scalar input to a single sample.
+    if len(inputs.shape) == 0:
+        inputs = tf.expand_dims(inputs, -1)
+    # One hot will unprank only if the final output dimension is not already 1.
+    if output_mode == "one_hot":
+        if inputs.shape[-1] != 1:
+            inputs = tf.expand_dims(inputs, -1)
+
+    # TODO: Check if this has been fixed in TF base or not
+    # (b/190445202): remove output rank restriction.
+    if len(inputs.shape) > 2:
+        raise ValueError(
+            "When output_mode is not `'int'`, maximum supported output rank "
+            f"is 2. Received output_mode {output_mode} and input shape "
+            f"{original_shape}, "
+            f"which would result in output rank {inputs.shape.rank}."
+        )
+
+    binary_output = output_mode in ("multi_hot", "one_hot")
+    bincounts = dense_bincount(
+        inputs, depth, binary_output, dtype, count_weights
+    )
+
+    return bincounts
+
+
 @keras_core_export("keras_core.layers.CategoryEncoding")
 class CategoryEncoding(Layer):
     """A preprocessing layer which encodes integer features.
@@ -60,22 +115,22 @@ class CategoryEncoding(Layer):
             Values can be `"one_hot"`, `"multi_hot"` or `"count"`,
             configuring the layer as follows:
                 - `"one_hot"`: Encodes each individual element in the input
-                    into an array of `num_tokens` size, containing a 1 at the
-                    element index. If the last dimension is size 1, will encode
-                    on that dimension. If the last dimension is not size 1,
-                    will append a new dimension for the encoded output.
+                        into an array of `num_tokens` size, containing a 1
+                        at the element index. If the last dimension is size
+                        1, will encode on that dimension. If the last
+                        dimension is not size 1, will append a new dimension
+                        for the encoded output.
                 - `"multi_hot"`: Encodes each sample in the input into a single
-                    array of `num_tokens` size, containing a 1 for each
-                    vocabulary term present in the sample. Treats the last
-                    dimension as the sample dimension, if input shape is
-                    `(..., sample_length)`, output shape will be
-                    `(..., num_tokens)`.
+                        array of `num_tokens` size, containing a 1 for each
+                        vocabulary term present in the sample. Treats the last
+                        dimension as the sample dimension, if input shape is
+                        `(..., sample_length)`, output shape will be
+                        `(..., num_tokens)`.
                 - `"count"`: Like `"multi_hot"`, but the int array contains a
-                    count of the number of times the token at that index
-                    appeared in the sample.
+                        count of the number of times the token at that index
+                        appeared in the sample.
             For all output modes, currently only output up to rank 2 is
-            supported.
-            Defaults to `"multi_hot"`.
+            supported. Defaults to `"multi_hot"`.
 
     Call arguments:
         inputs: A 1D or 2D tensor of integer inputs.
@@ -126,8 +181,40 @@ class CategoryEncoding(Layer):
         base_config = super().get_config()
         return {**base_config, **config}
 
-    def call(self, inputs):
-        outputs = self.layer.call(inputs)
+    def call(self, inputs, count_weights=None):
+        if count_weights is not None:
+            if self.output_mode != "count":
+                raise ValueError(
+                    "`count_weights` is not used when `output_mode` is not "
+                    "`'count'`. Received `count_weights={count_weights}`."
+                )
+            count_weights = tf.convert_to_tensor(
+                count_weights, self.compute_dtype
+            )
+
+        depth = self.num_tokens
+        max_value = tf.reduce_max(inputs)
+        min_value = tf.reduce_min(inputs)
+
+        condition = tf.logical_and(
+            tf.greater(tf.cast(depth, max_value.dtype), max_value),
+            tf.greater_equal(min_value, tf.cast(0, min_value.dtype)),
+        )
+        assertion = tf.Assert(
+            condition,
+            [
+                "Input values must be in the range 0 <= values < num_tokens"
+                " with num_tokens={}".format(depth)
+            ],
+        )
+        with tf.control_dependencies([assertion]):
+            return encode_categorical_inputs(
+                inputs,
+                output_mode=self.output_mode,
+                depth=depth,
+                dtype=self.compute_dtype,
+                count_weights=count_weights,
+            )
         if (
             backend.backend() != "tensorflow"
             and not backend_utils.in_tf_graph()
