@@ -29,10 +29,6 @@ class Variable(KerasVariable):
 def convert_to_tensor(x, dtype=None):
     if dtype is not None:
         dtype = standardize_dtype(dtype)
-    if is_tensor(x):
-        if dtype and dtype != x.dtype:
-            return x.astype(dtype)
-        return x
     if isinstance(x, Variable):
         if dtype and dtype != x.dtype:
             return x.value.astype(dtype)
