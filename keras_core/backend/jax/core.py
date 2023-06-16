@@ -26,7 +26,7 @@ class Variable(KerasVariable):
         return self.value
 
 
-def convert_to_tensor(x, dtype=None):
+def convert_to_tensor(x, dtype=None, device=None):
     if dtype is not None:
         dtype = standardize_dtype(dtype)
     if isinstance(x, Variable):

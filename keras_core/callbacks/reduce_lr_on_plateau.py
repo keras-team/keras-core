@@ -2,10 +2,10 @@ import warnings
 
 import numpy as np
 
+from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.callbacks.callback import Callback
 from keras_core.utils import io_utils
-from keras_core import backend
 
 
 @keras_core_export("keras_core.callbacks.ReduceLROnPlateau")
@@ -127,7 +127,11 @@ class ReduceLROnPlateau(Callback):
             elif not self.in_cooldown():
                 self.wait += 1
                 if self.wait >= self.patience:
-                    old_lr = float(backend.convert_to_numpy(self.model.optimizer.learning_rate))
+                    old_lr = float(
+                        backend.convert_to_numpy(
+                            self.model.optimizer.learning_rate
+                        )
+                    )
                     if old_lr > np.float32(self.min_lr):
                         new_lr = old_lr * self.factor
                         new_lr = max(new_lr, self.min_lr)

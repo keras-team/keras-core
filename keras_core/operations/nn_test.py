@@ -5,7 +5,6 @@ from absl.testing import parameterized
 
 from keras_core import backend
 from keras_core import testing
-from keras_core import backend
 from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.operations import nn as knn
 
