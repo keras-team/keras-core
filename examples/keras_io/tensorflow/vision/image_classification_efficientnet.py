@@ -307,7 +307,7 @@ with strategy.scope():
         optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"]
     )
 
-# model.summary()
+    model.summary()
 
 epochs = 40  # @param {type: "slider", min:10, max:100}
 hist = model.fit(ds_train, epochs=epochs, validation_data=ds_test, verbose=2)
