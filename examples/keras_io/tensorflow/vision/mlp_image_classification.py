@@ -39,6 +39,7 @@ import numpy as np
 import tensorflow as tf
 import keras_core as keras
 from keras_core import layers
+from keras_core.layers import Lambda
 import tensorflow_addons as tfa
 
 """
@@ -50,7 +51,7 @@ class GELU(layers.Layer):
         self.approximate = approximate
 
     def call(self, x):
-        return tfa.layers.GELU(x)
+        return tf.nn.GELU(x)
     
 """
 ## Prepare the data
@@ -125,7 +126,7 @@ We implement a utility function to compile, train, and evaluate a given model.
 
 def run_experiment(model):
     # Create Adam optimizer with weight decay.
-    optimizer = tfa.optimizers.AdamW(
+    optimizer = keras.optimizers.AdamW(
         learning_rate=learning_rate,
         weight_decay=weight_decay,
     )
@@ -232,7 +233,7 @@ class MLPMixerLayer(layers.Layer):
         self.mlp1 = keras.Sequential(
             [
                 layers.Dense(units=num_patches),
-                GELU(),
+                Lambda(tf.nn.gelu),
                 layers.Dense(units=num_patches),
                 layers.Dropout(rate=dropout_rate),
             ]
@@ -240,7 +241,7 @@ class MLPMixerLayer(layers.Layer):
         self.mlp2 = keras.Sequential(
             [
                 layers.Dense(units=num_patches),
-                GELU(),
+                Lambda(tf.nn.gelu),
                 layers.Dense(units=embedding_dim),
                 layers.Dropout(rate=dropout_rate),
             ]
@@ -319,7 +320,7 @@ class FNetLayer(layers.Layer):
         self.ffn = keras.Sequential(
             [
                 layers.Dense(units=embedding_dim),
-                GELU(),
+                Lambda(tf.nn.gelu),
                 layers.Dropout(rate=dropout_rate),
                 layers.Dense(units=embedding_dim),
             ]
@@ -391,7 +392,7 @@ class gMLPLayer(layers.Layer):
         self.channel_projection1 = keras.Sequential(
             [
                 layers.Dense(units=embedding_dim * 2),
-                GELU(),
+                Lambda(tf.nn.gelu),
                 layers.Dropout(rate=dropout_rate),
             ]
         )
