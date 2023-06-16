@@ -21,14 +21,6 @@ Fourier Transform.
 The purpose of the example is not to compare between these models, as they might perform differently on
 different datasets with well-tuned hyperparameters. Rather, it is to show simple implementations of their
 main building blocks.
-
-This example requires TensorFlow 2.4 or higher, as well as
-[TensorFlow Addons](https://www.tensorflow.org/addons/overview),
-which can be installed using the following command:
-
-```
-pip install -U tensorflow-addons
-```
 """
 
 """
@@ -40,18 +32,6 @@ import tensorflow as tf
 import keras_core as keras
 from keras_core import layers
 from keras_core.layers import Lambda
-import tensorflow_addons as tfa
-
-"""
-## wrap tfa GELU layer
-"""
-class GELU(layers.Layer):
-    def __init__(self, approximate=False):
-        super().__init__()
-        self.approximate = approximate
-
-    def call(self, x):
-        return tf.nn.GELU(x)
     
 """
 ## Prepare the data
@@ -232,16 +212,14 @@ class MLPMixerLayer(layers.Layer):
 
         self.mlp1 = keras.Sequential(
             [
-                layers.Dense(units=num_patches),
-                Lambda(tf.nn.gelu),
+                layers.Dense(units=num_patches, activation="gelu"),
                 layers.Dense(units=num_patches),
                 layers.Dropout(rate=dropout_rate),
             ]
         )
         self.mlp2 = keras.Sequential(
             [
-                layers.Dense(units=num_patches),
-                Lambda(tf.nn.gelu),
+                layers.Dense(units=num_patches, activation="gelu"),
                 layers.Dense(units=embedding_dim),
                 layers.Dropout(rate=dropout_rate),
             ]
@@ -319,8 +297,7 @@ class FNetLayer(layers.Layer):
 
         self.ffn = keras.Sequential(
             [
-                layers.Dense(units=embedding_dim),
-                Lambda(tf.nn.gelu),
+                layers.Dense(units=embedding_dim, activation="gelu"),
                 layers.Dropout(rate=dropout_rate),
                 layers.Dense(units=embedding_dim),
             ]
@@ -391,8 +368,7 @@ class gMLPLayer(layers.Layer):
 
         self.channel_projection1 = keras.Sequential(
             [
-                layers.Dense(units=embedding_dim * 2),
-                Lambda(tf.nn.gelu),
+                layers.Dense(units=embedding_dim * 2, activation="gelu"),
                 layers.Dropout(rate=dropout_rate),
             ]
         )
