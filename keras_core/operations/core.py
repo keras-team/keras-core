@@ -270,3 +270,12 @@ def shape(x):
     if any_symbolic_tensors((x,)):
         return x.shape
     return backend.core.shape(x)
+
+
+@keras_core_export("keras_core.operations.cast")
+def cast(x, dtype):
+    """Cast a tensor to the desired dtype."""
+    dtype = backend.standardize_dtype(dtype)
+    if any_symbolic_tensors((x,)):
+        return backend.KerasTensor(shape=x.shape, dtype=dtype)
+    return backend.core.cast(x, dtype)
