@@ -559,7 +559,7 @@ class CompileLoss(losses_module.Loss):
         y_true = nest.flatten(y_true)
         y_pred = nest.flatten(y_pred)
 
-        if sample_weight:
+        if sample_weight is not None:
             sample_weight = nest.flatten(sample_weight)
         else:
             sample_weight = [None for _ in y_true]
