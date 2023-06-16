@@ -17,7 +17,7 @@ def dense_bincount(inputs, depth, binary_output, dtype, count_weights=None):
         axis=-1,
         binary_output=binary_output,
     )
-    if inputs.shape.rank == 1:
+    if len(inputs.shape) == 1:
         result.set_shape(tf.TensorShape((depth,)))
     else:
         batch_size = inputs.shape.as_list()[0]
@@ -208,7 +208,7 @@ class CategoryEncoding(Layer):
             ],
         )
         with tf.control_dependencies([assertion]):
-            return encode_categorical_inputs(
+            outputs = encode_categorical_inputs(
                 inputs,
                 output_mode=self.output_mode,
                 depth=depth,
