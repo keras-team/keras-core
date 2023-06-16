@@ -398,7 +398,7 @@ class Perceiver(keras.Model):
 
 
 def run_experiment(model):
-    # Create LAMB optimizer with weight decay.
+    # Create Adam optimizer with weight decay.
     optimizer = keras.optimizers.Adam(
         learning_rate=learning_rate,
         weight_decay=weight_decay,
