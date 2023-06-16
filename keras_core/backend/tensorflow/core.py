@@ -68,7 +68,7 @@ class Variable(
         return self.value._write_object_proto(proto, options)
 
 
-def convert_to_tensor(x, dtype=None, device=None):
+def convert_to_tensor(x, dtype=None):
     if dtype is not None:
         dtype = standardize_dtype(dtype)
         if tf.is_tensor(x):

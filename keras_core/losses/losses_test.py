@@ -890,10 +890,10 @@ class BinaryCrossentropyTest(testing.TestCase):
         self.assertAllClose(loss, 0.20046903)
 
         y_true = np.array([1, 0, 1, 0]).reshape([2, 2])
-        y_pred = np.array([0.9, 0.9, 0.9, 0]).reshape([2, 2])
+        y_pred = np.array([1, 1, 1, 0], dtype=np.float32).reshape([2, 2])
         bce_obj = losses.BinaryCrossentropy()
         loss = bce_obj(y_true, y_pred)
-        self.assertAlmostEqual(loss, 0.628)
+        self.assertAlmostEqual(loss, 3.98559)
 
         # Test with logits.
         y_true = np.array([[1, 0, 1], [0, 1, 1]])
@@ -905,9 +905,9 @@ class BinaryCrossentropyTest(testing.TestCase):
     def test_scalar_weighted(self):
         bce_obj = losses.BinaryCrossentropy()
         y_true = np.array([1, 0, 1, 0]).reshape([2, 2])
-        y_pred = np.array([0.9, 0.9, 0.9, 0], dtype="float32").reshape([2, 2])
+        y_pred = np.array([1, 1, 1, 0], dtype="float32").reshape([2, 2])
         loss = bce_obj(y_true, y_pred, sample_weight=2.3)
-        self.assertAlmostEqual(loss, 1.445)
+        self.assertAlmostEqual(loss, 9.1668)
 
         # Test with logits.
         y_true = np.array([[1, 0, 1], [0, 1, 1]])
@@ -919,10 +919,10 @@ class BinaryCrossentropyTest(testing.TestCase):
     def test_sample_weighted(self):
         bce_obj = losses.BinaryCrossentropy()
         y_true = np.array([1, 0, 1, 0]).reshape([2, 2])
-        y_pred = np.array([0.9, 0.9, 0.9, 0], dtype="float32").reshape([2, 2])
+        y_pred = np.array([1, 1, 1, 0], dtype="float32").reshape([2, 2])
         sample_weight = np.array([1.2, 3.4]).reshape((2, 1))
         loss = bce_obj(y_true, y_pred, sample_weight=sample_weight)
-        self.assertAlmostEqual(loss, 0.812)
+        self.assertAlmostEqual(loss, 4.7827)
 
         # Test with logits.
         y_true = np.array([[1, 0, 1], [0, 1, 1]])

@@ -91,9 +91,9 @@ class Variable(KerasVariable):
         return value
 
 
-def convert_to_tensor(x, dtype=None, device=None):
+def convert_to_tensor(x, dtype=None):
     dtype = to_torch_dtype(dtype or getattr(x, "dtype", None))
-    device = device or get_device()
+    device = get_device()
     if isinstance(x, int):
         dtype = torch.int32
     if isinstance(x, float):

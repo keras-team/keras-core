@@ -103,9 +103,9 @@ class BinaryCrossentropyTest(testing.TestCase):
     def test_unweighted(self):
         bce_obj = metrics.BinaryCrossentropy()
         y_true = np.array([1, 0, 1, 0]).reshape([2, 2])
-        y_pred = np.array([0.9, 0.9, 0.9, 0], dtype=np.float32).reshape([2, 2])
+        y_pred = np.array([1, 1, 1, 0], dtype=np.float32).reshape([2, 2])
         result = bce_obj(y_true, y_pred)
-        self.assertAllClose(result, 0.628326, atol=1e-3)
+        self.assertAllClose(result, 3.9855, atol=1e-3)
 
     def test_unweighted_with_logits(self):
         bce_obj = metrics.BinaryCrossentropy(from_logits=True)
@@ -118,10 +118,10 @@ class BinaryCrossentropyTest(testing.TestCase):
     def test_weighted(self):
         bce_obj = metrics.BinaryCrossentropy()
         y_true = np.array([1, 0, 1, 0]).reshape([2, 2])
-        y_pred = np.array([0.9, 0.9, 0.9, 0], dtype=np.float32).reshape([2, 2])
+        y_pred = np.array([1, 1, 1, 0], dtype=np.float32).reshape([2, 2])
         sample_weight = np.array([1.5, 2.0])
         result = bce_obj(y_true, y_pred, sample_weight=sample_weight)
-        self.assertAllClose(result, 0.546091, atol=1e-3)
+        self.assertAllClose(result, 3.4162, atol=1e-3)
 
     def test_weighted_from_logits(self):
         bce_obj = metrics.BinaryCrossentropy(from_logits=True)

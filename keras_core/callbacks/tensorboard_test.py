@@ -443,7 +443,10 @@ class TestTensorBoardV2(testing.TestCase):
             with summary.experimental.summary_scope(
                 name, "scalar_summary", values=[data, step]
             ) as (tag, _):
-                tensor = ops.convert_to_tensor(data, "float32", device="cpu")
+                tensor = backend.convert_to_tensor(data, dtype="float32")
+                if backend.backend() == "torch":
+                    # TODO: Use device scope after the API is added.
+                    tensor = tensor.cpu()
                 summary.write(
                     tag=tag,
                     tensor=tensor,
