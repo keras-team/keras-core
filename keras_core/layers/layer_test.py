@@ -357,11 +357,12 @@ class LayerTest(testing.TestCase):
         y = layer(x)
         self.assertEqual(ops.min(y), 1)
 
-    @pytest.mark.skipIf(
+    @pytest.mark.skipif(
         backend.backend() == "torch",
-        reason="Torch backend has unimplemtned ops for mixed precision on CPU.",
+        reason="Some torch ops not implemented for float16 on CPU.",
     )
     def test_mixed_precision(self):
+        print("Run with backend.backend()", backend.backend())
         x = np.ones((4, 4))
 
         layer = layers.Dense(2, dtype="float16")
