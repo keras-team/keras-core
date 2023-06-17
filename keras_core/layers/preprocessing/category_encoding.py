@@ -8,8 +8,8 @@ from keras_core.utils import backend_utils
 
 def dense_bincount(inputs, depth, binary_output, dtype, count_weights=None):
     """Apply binary or count encoding to an input."""
-    result = tf.math.bincount(
-        tf.cast(inputs, tf.int32),
+    return tf.math.bincount(
+        inputs,
         weights=count_weights,
         minlength=depth,
         maxlength=depth,
@@ -17,12 +17,6 @@ def dense_bincount(inputs, depth, binary_output, dtype, count_weights=None):
         axis=-1,
         binary_output=binary_output,
     )
-    if len(inputs.shape) == 1:
-        result.set_shape(tf.TensorShape((depth,)))
-    else:
-        batch_size = list(inputs.shape)[0]
-        result.set_shape(tf.TensorShape((batch_size, depth)))
-    return result
 
 
 def encode_categorical_inputs(
@@ -34,30 +28,43 @@ def encode_categorical_inputs(
 ):
     """Encodes categoical inputs according to output_mode."""
 
-    original_shape = inputs.shape
-    # In all cases, we should uprank scalar input to a single sample.
-    if len(inputs.shape) == 0:
-        inputs = tf.expand_dims(inputs, -1)
-    # One hot will unprank only if the final output dimension is not already 1.
-    if output_mode == "one_hot":
-        if inputs.shape[-1] != 1:
-            inputs = tf.expand_dims(inputs, -1)
+    original_shape = list(inputs.shape)
 
-    # TODO: Check if this has been fixed in TF base or not
-    # (b/190445202): remove output rank restriction.
-    if len(inputs.shape) > 2:
+    if len(original_shape) > 2:
         raise ValueError(
-            "When output_mode is not `'int'`, maximum supported output rank "
-            f"is 2. Received output_mode {output_mode} and input shape "
-            f"{original_shape}, "
-            f"which would result in output rank {inputs.shape.rank}."
+            f"Maximum supported input rank is 2. "
+            f"Received output_mode={output_mode} and input shape "
+            f"{original_shape}."
         )
 
     binary_output = output_mode in ("multi_hot", "one_hot")
+
+    if tf.rank(inputs) == 0 and len(original_shape) == 0:
+        inputs = tf.expand_dims(inputs, -1)
+        batch_size = None
+
+    elif len(original_shape) == 1:
+        if output_mode == "one_hot":
+            inputs = tf.expand_dims(inputs, -1)
+            batch_size = tf.shape(inputs)[0]
+        else:
+            batch_size = None
+
+    elif len(original_shape) == 2:
+        if output_mode == "one_hot":
+            inputs = tf.reshape(inputs, shape=[-1, 1])
+            batch_size = tf.shape(inputs)[0]
+        else:
+            batch_size = original_shape[0]
+
     bincounts = dense_bincount(
         inputs, depth, binary_output, dtype, count_weights
     )
 
+    if batch_size is None:
+        bincounts = tf.reshape(bincounts, (depth,))
+    else:
+        bincounts = tf.reshape(bincounts, (batch_size, depth))
     return bincounts
 
 
@@ -161,17 +168,24 @@ class CategoryEncoding(Layer):
             )
         self.num_tokens = num_tokens
         self.output_mode = output_mode
-
-        self.layer = tf.keras.layers.CategoryEncoding(
-            num_tokens=num_tokens,
-            output_mode=output_mode,
-            **kwargs,
-        )
         self._allow_non_tensor_positional_args = True
         self._convert_input_args = False
 
     def compute_output_shape(self, input_shape):
-        return tuple(self.layer.compute_output_shape(input_shape))
+        input_shape = list(input_shape)
+        if not input_shape:
+            return tf.TensorShape([self.num_tokens])
+        if self.output_mode == "one_hot" and input_shape[-1] != 1:
+            return tf.TensorShape(input_shape + [self.num_tokens])
+        else:
+            return tf.TensorShape(input_shape[:-1] + [self.num_tokens])
+
+    def compute_output_signature(self, input_spec):
+        output_shape = self.compute_output_shape(input_spec.shape.as_list())
+        if self.sparse:
+            return tf.SparseTensorSpec(shape=output_shape, dtype=tf.int64)
+        else:
+            return tf.TensorSpec(shape=output_shape, dtype=tf.int64)
 
     def get_config(self):
         config = {
