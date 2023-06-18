@@ -14,10 +14,8 @@ def segment_sum(data, segment_ids, num_segments=None, sorted=False):
 
 
 def top_k(x, k, sorted=True):
-    if not sorted:
-        return ValueError(
-            "Jax backend does not support `sorted=False` for `ops.top_k`"
-        )
+    # Jax does not supported the sorted argument, but in the case where
+    # `sorted=False`, order is not guaranteed, so this should be OK.
     return jax.lax.top_k(x, k)
 
 
