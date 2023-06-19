@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from keras_core import backend
 from keras_core import layers
@@ -356,20 +357,25 @@ class LayerTest(testing.TestCase):
         y = layer(x)
         self.assertEqual(ops.min(y), 1)
 
+    @pytest.mark.skipif(
+        backend.backend() == "torch",
+        reason="Some torch ops not implemented for float16 on CPU.",
+    )
     def test_mixed_precision(self):
+        print("Run with backend.backend()", backend.backend())
         x = np.ones((4, 4))
 
         layer = layers.Dense(2, dtype="float16")
         y = layer(x)
         self.assertEqual(layer.compute_dtype, "float16")
         self.assertEqual(layer.variable_dtype, "float16")
-        self.assertEqual(y.dtype.name, "float16")
+        self.assertEqual(backend.standardize_dtype(y.dtype), "float16")
 
         layer = layers.Dense(2, dtype="mixed_float16")
         y = layer(x)
         self.assertEqual(layer.compute_dtype, "float16")
         self.assertEqual(layer.variable_dtype, "float32")
-        self.assertEqual(y.dtype.name, "float16")
+        self.assertEqual(backend.standardize_dtype(y.dtype), "float16")
         self.assertEqual(layer.kernel.dtype, "float32")
 
     def test_masking(self):

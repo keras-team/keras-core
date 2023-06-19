@@ -152,6 +152,9 @@ class Functional(Function, Model):
 
         self._layers = self.layers
         self.built = True
+        # We will convert directly (to the correct dtype per input).
+        self._convert_input_args = False
+        self._allow_non_tensor_positional_args = True
         self._post_build()
 
     @property
@@ -232,6 +235,16 @@ class Functional(Function, Model):
         # Otherwise both ref inputs and inputs will already be in same order.
         return nest.flatten(inputs)
 
+    def _convert_inputs_to_tensors(self, flat_inputs):
+        flat_dtypes = [x.dtype for x in self._inputs]
+        converted = []
+        for x, dtype in zip(flat_inputs, flat_dtypes):
+            if backend.is_tensor(x):
+                converted.append(backend.cast(x, dtype=dtype))
+            else:
+                converted.append(backend.convert_to_tensor(x, dtype=dtype))
+        return converted
+
     def _adjust_input_rank(self, flat_inputs):
         flat_ref_shapes = [x.shape for x in self._inputs]
         adjusted = []
@@ -263,6 +276,7 @@ class Functional(Function, Model):
 
     def _standardize_inputs(self, inputs):
         flat_inputs = self._flatten_to_reference_inputs(inputs)
+        flat_inputs = self._convert_inputs_to_tensors(flat_inputs)
         return self._adjust_input_rank(flat_inputs)
 
     @property
@@ -353,55 +367,6 @@ class Functional(Function, Model):
         config["input_layers"] = map_tensors(self._inputs_struct)
         config["output_layers"] = map_tensors(self._outputs_struct)
         return copy.deepcopy(config)
-
-    @classmethod
-    def from_config(cls, config, custom_objects=None):
-        functional_config_keys = [
-            "name",
-            "layers",
-            "input_layers",
-            "output_layers",
-        ]
-        is_functional_config = all(
-            key in config for key in functional_config_keys
-        )
-        argspec = inspect.getfullargspec(cls.__init__)
-        functional_init_args = inspect.getfullargspec(Functional.__init__).args[
-            1:
-        ]
-        revivable_as_functional = (
-            cls in {Functional, Model}
-            or argspec.args[1:] == functional_init_args
-            or (argspec.varargs == "args" and argspec.varkw == "kwargs")
-        )
-        if is_functional_config and revivable_as_functional:
-            # Revive Functional model
-            # (but not Functional subclasses with a custom __init__)
-            return cls._from_config(config, custom_objects=custom_objects)
-
-        # Either the model has a custom __init__, or the config
-        # does not contain all the information necessary to
-        # revive a Functional model. This happens when the user creates
-        # subclassed models where `get_config()` is returning
-        # insufficient information to be considered a Functional model.
-        # In this case, we fall back to provide all config into the
-        # constructor of the class.
-        try:
-            return cls(**config)
-        except TypeError as e:
-            raise TypeError(
-                "Unable to revive model from config. When overriding "
-                "the `get_config()` method, make sure that the "
-                "returned config contains all items used as arguments "
-                f"in the  constructor to {cls}, "
-                "which is the default behavior. "
-                "You can override this default behavior by defining a "
-                "`from_config(cls, config)` class method to specify "
-                "how to create an "
-                f"instance of {cls.__name__} from its config.\n\n"
-                f"Received config={config}\n\n"
-                f"Error encountered during deserialization: {e}"
-            )
 
     @classmethod
     def _from_config(cls, config, custom_objects=None):

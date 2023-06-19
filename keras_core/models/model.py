@@ -1,3 +1,4 @@
+import inspect
 import json
 import os
 import warnings
@@ -8,6 +9,7 @@ from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
 from keras_core.saving import saving_api
 from keras_core.saving import saving_lib
+from keras_core.trainers import trainer as base_trainer
 from keras_core.utils import io_utils
 from keras_core.utils import summary_utils
 from keras_core.utils import traceback_utils
@@ -373,9 +375,66 @@ class Model(Trainer, Layer):
         model_config = serialization_lib.serialize_keras_object(self)
         return json.dumps(model_config, **kwargs)
 
-    @traceback_utils.filter_traceback
-    def export(self, filepath):
-        raise NotImplementedError
+    def export(self, filepath, format="tf_saved_model"):
+        raise NotImplementedError(
+            "The export() method is not yet supported. It will "
+            "be added in the next version. For the time being, you "
+            "can use `tf.saved_model.save(model)` to save a "
+            "TensorFlow SavedModel for your Keras Core model."
+        )
+
+    @classmethod
+    def from_config(cls, config, custom_objects=None):
+        from keras_core.models.functional import Functional
+
+        functional_config_keys = [
+            "name",
+            "layers",
+            "input_layers",
+            "output_layers",
+        ]
+        is_functional_config = all(
+            key in config for key in functional_config_keys
+        )
+        argspec = inspect.getfullargspec(cls.__init__)
+        functional_init_args = inspect.getfullargspec(Functional.__init__).args[
+            1:
+        ]
+        revivable_as_functional = (
+            cls in {Functional, Model}
+            or argspec.args[1:] == functional_init_args
+            or (argspec.varargs == "args" and argspec.varkw == "kwargs")
+        )
+        if is_functional_config and revivable_as_functional:
+            # Revive Functional model
+            # (but not Functional subclasses with a custom __init__)
+            if cls == Model:
+                cls = Functional
+            return cls._from_config(config, custom_objects=custom_objects)
+
+        # Either the model has a custom __init__, or the config
+        # does not contain all the information necessary to
+        # revive a Functional model. This happens when the user creates
+        # subclassed models where `get_config()` is returning
+        # insufficient information to be considered a Functional model.
+        # In this case, we fall back to provide all config into the
+        # constructor of the class.
+        try:
+            return cls(**config)
+        except TypeError as e:
+            raise TypeError(
+                "Unable to revive model from config. When overriding "
+                "the `get_config()` method, make sure that the "
+                "returned config contains all items used as arguments "
+                f"in the  constructor to {cls}, "
+                "which is the default behavior. "
+                "You can override this default behavior by defining a "
+                "`from_config(cls, config)` class method to specify "
+                "how to create an "
+                f"instance of {cls.__name__} from its config.\n\n"
+                f"Received config={config}\n\n"
+                f"Error encountered during deserialization: {e}"
+            )
 
 
 @keras_core_export("keras_core.models.model_from_json")
@@ -434,3 +493,11 @@ def inject_functional_model_class(cls):
     cls.__new__(cls)
 
     return cls
+
+
+Model.fit.__doc__ = base_trainer.Trainer.fit.__doc__
+Model.predict.__doc__ = base_trainer.Trainer.predict.__doc__
+Model.evaluate.__doc__ = base_trainer.Trainer.evaluate.__doc__
+Model.train_on_batch.__doc__ = base_trainer.Trainer.train_on_batch.__doc__
+Model.test_on_batch.__doc__ = base_trainer.Trainer.test_on_batch.__doc__
+Model.predict_on_batch.__doc__ = base_trainer.Trainer.predict_on_batch.__doc__

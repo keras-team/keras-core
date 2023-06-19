@@ -303,6 +303,15 @@ class Layer(BackendLayer, Operation):
 
     @utils.default
     def build(self, input_shape):
+        if utils.is_default(self.build) and might_have_unbuilt_state(self):
+            warnings.warn(
+                f"`build()` was called on layer '{self.name}', however "
+                "the layer does not have a `build()` method implemented "
+                "and it looks like it has unbuilt state. This will cause "
+                "the layer to be marked as built, despite not being "
+                "actually built, which may cause failures down the line. "
+                "Make sure to implement a proper `build()` method."
+            )
         self.built = True
 
     def get_build_config(self):
@@ -521,12 +530,15 @@ class Layer(BackendLayer, Operation):
         # 1. Convert any array arguments to tensors of correct dtype.
         def maybe_convert(x):
             if backend.is_tensor(x):
+                # Handle Torch device placement.
+                if backend.backend() == "torch":
+                    x = backend.convert_to_tensor(x)
                 if (
                     self.autocast
                     and backend.is_float_dtype(x.dtype)
                     and x.dtype != self.compute_dtype
                 ):
-                    return backend.cast(x, dtype=self.compute_dtype)
+                    x = backend.cast(x, dtype=self.compute_dtype)
                 return x
             elif isinstance(x, backend.KerasTensor):
                 if (
@@ -871,12 +883,20 @@ class Layer(BackendLayer, Operation):
                     f"Layer '{self.name}' was never built "
                     "and thus it doesn't have any variables. "
                     f"However the weights file lists {len(store.keys())} "
-                    "variables for this layer. In most cases, "
-                    "this indicates that you need to implement the "
-                    "`def build_from_config(self, config)` method "
-                    "on the layer. "
-                    "You might also want to implement the method "
-                    "that generates the config at saving time, "
+                    "variables for this layer.\n"
+                    "In most cases, this error indicates that either:\n\n"
+                    "1. The layer is owned by a parent layer that "
+                    "implements a `build()` method, but calling the "
+                    "parent's `build()` method did NOT create the state of "
+                    f"the child layer '{self.name}'. A `build()` method "
+                    "must create ALL state for the layer, including "
+                    "the state of any children layers.\n\n"
+                    "2. You need to implement "
+                    "the `def build_from_config(self, config)` method "
+                    f"on layer '{self.name}', to specify how to rebuild "
+                    "it during loading. "
+                    "In this case, you might also want to implement the "
+                    "method that generates the build config at saving time, "
                     "`def get_build_config(self)`. "
                     "The method `build_from_config()` is meant "
                     "to create the state "
@@ -933,6 +953,7 @@ class Layer(BackendLayer, Operation):
             shapes_dict = get_shapes_dict(self.build, call_spec, self.__class__)
             self._build_shapes_dict = shapes_dict
             failure = False
+
             if len(shapes_dict) == 1:
                 # Single arg: pass it positionally
                 input_shape = tuple(shapes_dict.values())[0]
@@ -991,19 +1012,9 @@ class Layer(BackendLayer, Operation):
 
     def _build_by_run_for_single_pos_arg(self, input_shape):
         # Case: all inputs are in the first arg (possibly nested).
-        if is_shape_tuple(input_shape):
-            input_shape = tuple(input_shape)
-        if isinstance(input_shape, list):
-            input_tensors = [
-                backend.KerasTensor(shape) for shape in input_shape
-            ]
-        elif isinstance(input_shape, dict):
-            input_tensors = {
-                k: backend.KerasTensor(shape)
-                for k, shape in input_shape.items()
-            }
-        else:
-            input_tensors = backend.KerasTensor(input_shape)
+        input_tensors = map_shape_structure(
+            lambda s: backend.KerasTensor(s), input_shape
+        )
         try:
             backend.compute_output_spec(self.call, input_tensors)
             return True
@@ -1016,7 +1027,7 @@ class Layer(BackendLayer, Operation):
             # Case: all input keyword arguments were plain tensors.
             input_tensors = {
                 # We strip the `_shape` suffix to recover kwarg names.
-                k.removesuffix("_shape"): backend.KerasTensor(shape)
+                utils.removesuffix(k, "_shape"): backend.KerasTensor(shape)
                 for k, shape in shapes_dict.items()
             }
             try:
@@ -1281,7 +1292,7 @@ def check_shapes_signature(target_fn, call_spec, cls):
                 f"Received `{method_name}()` argument "
                 f"`{name}`, which does not end in `_shape`."
             )
-        expected_call_arg = name.removesuffix("_shape")
+        expected_call_arg = utils.removesuffix(name, "_shape")
         if expected_call_arg not in call_spec.arguments_dict:
             raise ValueError(
                 f"{error_preamble} For layer '{cls.__name__}', "

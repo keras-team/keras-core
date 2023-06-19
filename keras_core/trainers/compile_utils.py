@@ -407,13 +407,22 @@ class CompileLoss(losses_module.Loss):
         loss_weights = self._user_loss_weights
         flat_losses = []
         flat_loss_weights = []
-        if num_outputs == 1:
-            if not is_function_like(loss):
-                raise ValueError(
-                    "When there is only a single output, the `loss` argument "
-                    "must be a callable. "
-                    f"Received instead:\nloss={loss} of type {type(loss)}"
-                )
+
+        if num_outputs == 1 and not is_function_like(loss):
+            raise ValueError(
+                "When there is only a single output, the `loss` argument "
+                "must be a callable. "
+                f"Received instead:\nloss={loss} of type {type(loss)}"
+            )
+
+        if is_function_like(loss) and nest.is_nested(y_pred):
+            # The model has multiple outputs but only one loss fn
+            # was provided. Broadcast loss to all outputs.
+            loss = nest.map_structure(lambda x: loss, y_pred)
+
+        # Iterate over all possible loss formats:
+        # plain function, list/tuple, dict
+        if is_function_like(loss):
             flat_losses.append(get_loss(loss, y_true, y_pred))
             if loss_weights:
                 if not isinstance(loss_weights, float):
@@ -500,7 +509,7 @@ class CompileLoss(losses_module.Loss):
             for name, yt, yp in zip(output_names, y_true, y_pred):
                 if name in loss:
                     if loss[name]:
-                        flat_losses.append(get_metric(loss[name], yt, yp))
+                        flat_losses.append(get_loss(loss[name], yt, yp))
                     else:
                         flat_losses.append(None)
                 else:
@@ -533,22 +542,41 @@ class CompileLoss(losses_module.Loss):
                         flat_loss_weights.append(loss_weights[name])
                     else:
                         flat_loss_weights.append(1.0)
+            else:
+                flat_loss_weights = [1.0 for _ in flat_losses]
         self.flat_losses = flat_losses
         self.flat_loss_weights = flat_loss_weights
         self.built = True
 
-    def call(self, y_true, y_pred):
+    def __call__(self, y_true, y_pred, sample_weight=None):
+        with ops.name_scope(self.name):
+            return self.call(y_true, y_pred, sample_weight)
+
+    def call(self, y_true, y_pred, sample_weight=None):
         if not self.built:
             self.build(y_true, y_pred)
 
         y_true = nest.flatten(y_true)
         y_pred = nest.flatten(y_pred)
+
+        if sample_weight is not None:
+            sample_weight = nest.flatten(sample_weight)
+        else:
+            sample_weight = [None for _ in y_true]
+
         loss_values = []
-        for loss, y_t, y_p, w in zip(
-            self.flat_losses, y_true, y_pred, self.flat_loss_weights
+
+        for loss, y_t, y_p, loss_weight, sample_weight in zip(
+            self.flat_losses,
+            y_true,
+            y_pred,
+            self.flat_loss_weights,
+            sample_weight,
         ):
             if loss:
-                value = w * ops.cast(loss(y_t, y_p), dtype=backend.floatx())
+                value = loss_weight * ops.cast(
+                    loss(y_t, y_p, sample_weight), dtype=backend.floatx()
+                )
                 loss_values.append(value)
         if loss_values:
             total_loss = sum(loss_values)
