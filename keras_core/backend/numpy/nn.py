@@ -418,10 +418,22 @@ def conv_transpose(
 
 
 def one_hot(x, num_classes, axis=-1):
-    one_hot_array = np.eye(num_classes)[x.reshape(-1)]
-    output_shape = list(x.shape)
-    output_shape.insert(axis, num_classes)
-    return one_hot_array.reshape(output_shape)
+    input_shape = x.shape
+
+    # Shrink the last dimension if the shape is (..., 1).
+    if input_shape and input_shape[-1] == 1 and len(input_shape) > 1:
+        input_shape = tuple(input_shape[:-1])
+
+    x = x.reshape(-1)
+    if not num_classes:
+        num_classes = np.max(x) + 1
+    
+    batch_size = x.shape[0]
+    categorical = np.zeros((batch_size, num_classes))
+    categorical[np.arange(batch_size), x] = 1
+    output_shape = input_shape + (num_classes,)
+    categorical = np.reshape(categorical, output_shape)
+    return categorical
 
 
 def categorical_crossentropy(target, output, from_logits=False, axis=-1):

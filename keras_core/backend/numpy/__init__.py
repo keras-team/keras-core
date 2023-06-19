@@ -9,6 +9,7 @@ from keras_core.backend.numpy.core import cast
 from keras_core.backend.numpy.core import compute_output_spec
 from keras_core.backend.numpy.core import cond
 from keras_core.backend.numpy.core import convert_to_tensor
+from keras_core.backend.numpy.core import convert_to_numpy
 from keras_core.backend.numpy.core import is_tensor
 from keras_core.backend.numpy.core import name_scope
 from keras_core.backend.numpy.core import shape

@@ -36,6 +36,10 @@ def convert_to_tensor(x, dtype=None):
     return np.array(x, dtype=dtype)
 
 
+def convert_to_numpy(x):
+    return np.array(x)
+
+
 def is_tensor(x):
     if isinstance(x, np.ndarray):
         return True

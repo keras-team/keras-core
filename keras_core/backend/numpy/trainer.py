@@ -1,5 +1,5 @@
 class NumpyTrainer:
-    def __init__(self):
+    def __init__(self, **kwargs):
         raise NotImplementedError("Numpy Backend should not have a trainer")
 
     def fit(self):
