@@ -10,20 +10,19 @@ python3 glue.py --epochs 5 \
 
 """
 
-import inspect
 import time
 
+import keras_nlp
+import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 from absl import app
 from absl import flags
 from absl import logging
+
 import keras_core as keras
 
-import keras_nlp
-import numpy as np
-
-
+flags.DEFINE_string("model_size", "small", "The size of model to benchmark.")
 flags.DEFINE_float("learning_rate", 0.005, "The initial learning rate.")
 flags.DEFINE_string(
     "mixed_precision_policy",
@@ -35,6 +34,14 @@ flags.DEFINE_integer("batch_size", 8, "Batch Size.")
 
 
 FLAGS = flags.FLAGS
+
+
+MODEL_SIZE_MAP = {
+    "tiny": "bert_tiny_en_uncased",
+    "small": "bert_small_en_uncased",
+    "base": "bert_base_en_uncased",
+    "large": "bert_large_en_uncased",
+}
 
 
 class BenchmarkMetricsCallback:
@@ -87,15 +94,25 @@ def load_data():
     return train_ds, test_ds, validation_ds
 
 
+def load_model():
+    if FLAGS.model_size not in MODEL_SIZE_MAP.keys():
+        raise KeyError(
+            f"`model_size` must be one of {MODEL_SIZE_MAP.keys()}, but "
+            f"received {FLAGS.model_size}."
+        )
+    return keras_nlp.models.BertClassifier.from_preset(
+        MODEL_SIZE_MAP[FLAGS.model_size], num_classes=2
+    )
+
+
 def main(_):
     keras.mixed_precision.set_global_policy(FLAGS.mixed_precision_policy)
 
     logging.info(
         "Benchmarking configs...\n"
         "=========================\n"
-        f"MODEL: {FLAGS.model}\n"
-        f"PRESET: {FLAGS.preset}\n"
-        f"TASK: glue/{FLAGS.task}\n"
+        f"MODEL: BERT {FLAGS.model_size}\n"
+        f"TASK: glue/mrpc \n"
         f"BATCH_SIZE: {FLAGS.batch_size}\n"
         f"EPOCHS: {FLAGS.epochs}\n"
         "=========================\n"
@@ -110,9 +127,7 @@ def main(_):
     )
 
     # Load the model.
-    model = keras_nlp.models.BertClassifier.from_preset(
-        "bert_small_en_uncased", num_classes=2
-    )
+    model = load_model()
     # Set loss and metrics.
     loss = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     metrics = [keras.metrics.SparseCategoricalAccuracy()]
