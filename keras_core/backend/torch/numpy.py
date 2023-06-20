@@ -3,6 +3,7 @@ import torch
 
 from keras_core.backend.torch.core import cast
 from keras_core.backend.torch.core import convert_to_tensor
+from keras_core.backend.torch.core import get_device
 from keras_core.backend.torch.core import to_torch_dtype
 
 TORCH_INT_TYPES = (
@@ -49,13 +50,12 @@ def mean(x, axis=None, keepdims=False):
 
 def max(x, axis=None, keepdims=False, initial=None):
     x = convert_to_tensor(x)
+    if 0 in x.shape:
+        return 0
     if axis is None:
         result = torch.max(x)
     else:
-        if isinstance(axis, list):
-            axis = axis[-1]
-        result = torch.max(x, dim=axis, keepdim=keepdims)
-
+        result = amax(x, axis=axis, keepdims=keepdims)
     if isinstance(getattr(result, "values", None), torch.Tensor):
         result = result.values
 
@@ -68,14 +68,14 @@ def ones(shape, dtype="float32"):
     dtype = to_torch_dtype(dtype)
     if isinstance(shape, int):
         shape = (shape,)
-    return torch.ones(size=shape, dtype=dtype)
+    return torch.ones(size=shape, dtype=dtype).to(get_device())
 
 
 def zeros(shape, dtype="float32"):
     dtype = to_torch_dtype(dtype)
     if isinstance(shape, int):
         shape = (shape,)
-    return torch.zeros(size=shape, dtype=dtype)
+    return torch.zeros(size=shape, dtype=dtype).to(get_device())
 
 
 def zeros_like(x, dtype=None):
@@ -182,7 +182,7 @@ def argsort(x, axis=-1):
     if axis is None:
         axis = -1
         x = x.reshape(-1)
-    return torch.argsort(x, dim=axis)
+    return torch.argsort(x, dim=axis, stable=True)
 
 
 def array(x, dtype=None):
@@ -435,7 +435,7 @@ def linspace(
     if hasattr(start, "__len__") and hasattr(stop, "__len__"):
         start, stop = convert_to_tensor(start), convert_to_tensor(stop)
         stop = cast(stop, dtype) if endpoint is False and dtype else stop
-        steps = torch.arange(num, dtype=dtype) / (num - 1)
+        steps = torch.arange(num, dtype=dtype).to(get_device()) / (num - 1)
 
         # reshape `steps` to allow for broadcasting
         for i in range(start.ndim):
@@ -509,7 +509,7 @@ def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
     if hasattr(start, "__len__") and hasattr(stop, "__len__"):
         start, stop = convert_to_tensor(start), convert_to_tensor(stop)
         stop = cast(stop, dtype) if endpoint is False and dtype else stop
-        steps = torch.arange(num, dtype=dtype) / (num - 1)
+        steps = torch.arange(num, dtype=dtype).to(get_device()) / (num - 1)
 
         # reshape `steps` to allow for broadcasting
         for i in range(start.ndim):
@@ -536,8 +536,7 @@ def maximum(x1, x2):
 
 def meshgrid(*x, indexing="xy"):
     x = [convert_to_tensor(sc_tensor) for sc_tensor in x]
-    result = torch.meshgrid(x, indexing=indexing)
-    return [arr.numpy() for arr in result]
+    return torch.meshgrid(x, indexing=indexing)
 
 
 def min(x, axis=None, keepdims=False, initial=None):
@@ -605,7 +604,7 @@ def outer(x1, x2):
 
 def pad(x, pad_width, mode="constant"):
     x = convert_to_tensor(x)
-    pad_sum = ()
+    pad_sum = []
     pad_width = list(pad_width)[::-1]  # torch uses reverse order
     for pad in pad_width:
         pad_sum += pad
@@ -722,6 +721,9 @@ def swapaxes(x, axis1, axis2):
 def take(x, indices, axis=None):
     x = convert_to_tensor(x)
     indices = convert_to_tensor(indices).long()
+    if x.ndim == 2 and (axis is None or axis == 0):
+        # This case is equivalent to embedding lookup.
+        return torch.nn.functional.embedding(indices, x)
     if axis is not None:
         return torch.index_select(x, dim=axis, index=indices).squeeze(axis)
     return torch.take(x, index=indices)
@@ -860,7 +862,7 @@ def eye(N, M=None, k=None, dtype="float32"):
     M = N if M is None else M
     k = 0 if k is None else k
     if k == 0:
-        return torch.eye(N, M, dtype=dtype)
+        return torch.eye(N, M, dtype=dtype).to(get_device())
     diag_length = np.maximum(N, M)
     diag = torch.ones(diag_length, dtype=dtype)
-    return torch.diag(diag, diagonal=k)[:N, :M]
+    return torch.diag(diag, diagonal=k)[:N, :M].to(get_device())

@@ -59,7 +59,7 @@ def to_torch_dtype(dtype):
 class Variable(KerasVariable):
     def _initialize(self, value):
         self._value = torch.nn.Parameter(
-            convert_to_tensor(value, dtype=self._dtype).to(get_device()),
+            convert_to_tensor(value, dtype=self._dtype),
             requires_grad=self.trainable,
         ).to(get_device())
 
@@ -85,30 +85,26 @@ class Variable(KerasVariable):
         return func(*args, **kwargs)
 
     def __array__(self, dtype=None):
-        return _prepare_for_numpy(self.value).__array__(dtype)
-
-    @property
-    def value(self):
-        value = super().value
-        # Create and use a symbolic tensor stub in symbolic calls.
-        if get_device() == "meta" and value.device != "meta":
-            return torch.empty(
-                size=value.shape,
-                dtype=value.dtype,
-                device="meta",
-            )
+        value = convert_to_numpy(self.value)
+        if dtype:
+            return value.astype(dtype)
         return value
 
 
 def convert_to_tensor(x, dtype=None):
     dtype = to_torch_dtype(dtype or getattr(x, "dtype", None))
+    device = get_device()
+    if isinstance(x, int):
+        dtype = torch.int32
+    if isinstance(x, float):
+        dtype = torch.float32
     if isinstance(x, Variable):
         x = x.value
         return x
     if is_tensor(x):
         if dtype and dtype != x.dtype:
             x = x.to(dtype)
-        return x.to(get_device())
+        return x.to(device)
 
     # Convert to np in case of any array-like that is not list or tuple.
     if not isinstance(x, (list, tuple)):
@@ -116,22 +112,25 @@ def convert_to_tensor(x, dtype=None):
     elif len(x) > 0 and isinstance(x[0], torch.Tensor):
         # Handle list or tuple of torch tensors
         return torch.stack(x)
-
-    return torch.as_tensor(x, dtype=dtype, device=get_device())
-
-
-def _prepare_for_numpy(x):
-    if is_tensor(x):
-        if x.requires_grad:
-            x = x.detach()
-        # Tensor has to be moved to CPU before converting to numpy.
-        if x.is_cuda:
-            x = x.cpu()
-    return x
+    if isinstance(x, np.ndarray) and x.dtype == np.uint32:
+        # Torch backend does not support uint32.
+        x = x.astype(np.int64)
+    return torch.as_tensor(x, dtype=dtype, device=device)
 
 
 def convert_to_numpy(x):
-    return np.array(_prepare_for_numpy(x))
+    def transform(x):
+        if is_tensor(x):
+            if x.requires_grad:
+                x = x.detach()
+            # Tensor has to be moved to CPU before converting to numpy.
+            if x.is_cuda:
+                x = x.cpu()
+        return np.array(x)
+
+    if isinstance(x, (list, tuple)):
+        return np.array([transform(e) for e in x])
+    return transform(x)
 
 
 def is_tensor(x):
@@ -180,22 +179,20 @@ def compute_output_spec(fn, *args, **kwargs):
                 )
             return x
 
-        with device_scope("meta"):
-            args_1, kwargs_1 = nest.map_structure(
-                lambda x: convert_keras_tensor_to_torch(x, fill_value=83),
-                (args, kwargs),
-            )
-            outputs_1 = fn(*args_1, **kwargs_1)
+        args_1, kwargs_1 = nest.map_structure(
+            lambda x: convert_keras_tensor_to_torch(x, fill_value=83),
+            (args, kwargs),
+        )
+        outputs_1 = fn(*args_1, **kwargs_1)
 
         outputs = outputs_1
 
         if none_in_shape:
-            with device_scope("meta"):
-                args_2, kwargs_2 = nest.map_structure(
-                    lambda x: convert_keras_tensor_to_torch(x, fill_value=89),
-                    (args, kwargs),
-                )
-                outputs_2 = fn(*args_2, **kwargs_2)
+            args_2, kwargs_2 = nest.map_structure(
+                lambda x: convert_keras_tensor_to_torch(x, fill_value=89),
+                (args, kwargs),
+            )
+            outputs_2 = fn(*args_2, **kwargs_2)
 
             flat_out_1 = nest.flatten(outputs_1)
             flat_out_2 = nest.flatten(outputs_2)
@@ -231,7 +228,7 @@ def vectorized_map(function, elements):
 def scatter(indices, values, shape):
     indices = convert_to_tensor(indices)
     values = convert_to_tensor(values)
-    zeros = torch.zeros(shape, dtype=values.dtype)
+    zeros = torch.zeros(shape, dtype=values.dtype).to(get_device())
 
     index_length = indices.shape[-1]
     value_shape = shape[index_length:]
