@@ -14,8 +14,8 @@ def segment_sum(data, segment_ids, num_segments=None, sorted=False):
 
 
 def top_k(x, k, sorted=True):
-    # Jax does not supported the sorted argument, but in the case where
-    # `sorted=False`, order is not guaranteed, so this should be OK.
+    # Jax does not supported `sorted`, but in the case where `sorted=False`,
+    # order is not guaranteed, so OK to return sorted output.
     return jax.lax.top_k(x, k)
 
 
