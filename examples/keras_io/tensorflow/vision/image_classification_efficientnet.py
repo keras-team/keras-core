@@ -186,7 +186,7 @@ batch_size = 64
 
 dataset_name = "stanford_dogs"
 (ds_train, ds_test), ds_info = tfds.load(
-    dataset_name, split=["train", "test"], with_info=True, as_supervised=True
+    dataset_name, split=["train", "test"], with_info=True, as_supervised=True, try_gcs=True,
 )
 NUM_CLASSES = ds_info.features["label"].num_classes
 
