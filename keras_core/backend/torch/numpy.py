@@ -187,9 +187,9 @@ def argsort(x, axis=-1):
 
 def array(x, dtype=None):
     dtype = to_torch_dtype(dtype)
-    if not isinstance(x, torch.Tensor):
+    if isinstance(x, torch.Tensor):
         return x
-    return x.numpy()
+    return torch.tensor(x, dtype=dtype)
 
 
 def average(x, axis=None, weights=None):
