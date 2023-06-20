@@ -2,6 +2,7 @@ import numpy as np
 import torch
 
 from keras_core.backend.torch.core import cast
+from keras_core.backend.torch.core import convert_to_numpy
 from keras_core.backend.torch.core import convert_to_tensor
 from keras_core.backend.torch.core import get_device
 from keras_core.backend.torch.core import to_torch_dtype
@@ -143,8 +144,8 @@ def append(
 def arange(start, stop=None, step=1, dtype=None):
     dtype = to_torch_dtype(dtype)
     if stop is None:
-        return torch.arange(end=start, dtype=dtype)
-    return torch.arange(start, stop, step=step, dtype=dtype)
+        return torch.arange(end=start, dtype=dtype).to(get_device())
+    return torch.arange(start, stop, step=step, dtype=dtype).to(get_device())
 
 
 def arccos(x):
@@ -189,7 +190,7 @@ def array(x, dtype=None):
     dtype = to_torch_dtype(dtype)
     if not isinstance(x, torch.Tensor):
         return x
-    return x.numpy()
+    return convert_to_numpy(x)
 
 
 def average(x, axis=None, weights=None):
@@ -449,7 +450,7 @@ def linspace(
             end=stop,
             steps=num,
             dtype=dtype,
-        )
+        ).to(get_device())
     if retstep is True:
         return (linspace, num)
     return linspace
@@ -525,7 +526,7 @@ def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
             steps=num,
             base=base,
             dtype=dtype,
-        )
+        ).to(get_device())
     return logspace
 
 
