@@ -199,8 +199,8 @@ class CategoryEncoding(Layer):
         if count_weights is not None:
             if self.output_mode != "count":
                 raise ValueError(
-                    "`count_weights` is not used when `output_mode` is not "
-                    "`'count'`. Received `count_weights={count_weights}`."
+                    f"`count_weights` is not used when `output_mode` is not "
+                    f"`'count'`. Received `count_weights={count_weights}`."
                 )
             count_weights = tf.convert_to_tensor(
                 count_weights, self.compute_dtype
@@ -217,8 +217,8 @@ class CategoryEncoding(Layer):
         assertion = tf.Assert(
             condition,
             [
-                "Input values must be in the range 0 <= values < num_tokens"
-                " with num_tokens={}".format(depth)
+                f"Input values must be in the range 0 <= values < num_tokens"
+                f" with num_tokens={depth}."
             ],
         )
         with tf.control_dependencies([assertion]):
