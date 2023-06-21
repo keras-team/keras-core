@@ -199,7 +199,7 @@ print("Test accuracy: {:.2f}%".format(test_acc * 100))
 """
 
 model = get_training_model()
-model.load_weights("initial_weights.h5")
+model.load_weights("initial_weights.weights.h5")
 model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 # Notice that we are NOT using the mixed up dataset here
 model.fit(train_ds_one, validation_data=val_ds, epochs=EPOCHS)
