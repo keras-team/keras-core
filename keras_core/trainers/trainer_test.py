@@ -450,3 +450,24 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         x = np.ones((16, 2))
         y = np.zeros((16, 1))
         model.fit(x, y, batch_size=4)
+
+    @pytest.mark.skipif(
+        keras_core.backend.backend() != "tensorflow",
+        reason="Only tensorflow supports raggeds",
+    )
+    def test_trainer_with_raggeds(self):
+        import tensorflow as tf
+
+        class ExampleModel(keras_core.Model):
+            def call(self, x):
+                return 2 * x
+
+            def compute_loss(self, x, y, y_pred, sample_weight=None):
+                return 0
+
+        model = ExampleModel()
+        x = tf.ragged.constant([[1], [2, 3]])
+        model.compile(optimizer="adam")
+        model.fit(x, x)
+        y = model.predict(x)
+        self.assertEqual(type(y), tf.RaggedTensor)
