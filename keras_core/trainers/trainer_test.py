@@ -20,6 +20,8 @@ elif backend.backend() == "tensorflow":
     from keras_core.backend.tensorflow.trainer import (
         TensorFlowTrainer as Trainer,
     )
+elif backend.backend() == "numpy":
+    from keras_core.backend.numpy.trainer import NumpyTrainer as Trainer
 else:
     raise ImportError(f"Invalid backend: {backend.backend()}")
 

@@ -25,8 +25,8 @@ def mean(x, axis=None, keepdims=False):
     return np.mean(x, axis=axis, keepdims=keepdims)
 
 
-def max(x, axis=None, keepdims=False):
-    return np.max(x, axis=axis, keepdims=keepdims)
+def max(x, axis=None, keepdims=False, initial=None):
+    return np.max(x, axis=axis, keepdims=keepdims, initial=initial)
 
 
 def ones(shape, dtype="float32"):

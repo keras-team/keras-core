@@ -94,8 +94,9 @@ def softmax(x, axis=None):
 
 
 def log_softmax(x, axis=None):
-    exp_x = np.exp(x - np.max(x, axis=axis, keepdims=True))
-    return x - np.log(np.sum(exp_x, axis=axis, keepdims=True))
+    max_x = np.max(x, axis=axis, keepdims=True)
+    logsumexp = np.log(np.exp(x - max_x).sum(axis=axis, keepdims=True))
+    return x - max_x - logsumexp
 
 
 def _convert_to_spatial_operand(
@@ -427,7 +428,7 @@ def one_hot(x, num_classes, axis=-1):
     x = x.reshape(-1)
     if not num_classes:
         num_classes = np.max(x) + 1
-    
+
     batch_size = x.shape[0]
     categorical = np.zeros((batch_size, num_classes))
     categorical[np.arange(batch_size), x] = 1
@@ -452,6 +453,7 @@ def categorical_crossentropy(target, output, from_logits=False, axis=-1):
             "Received: "
             f"target.shape={target.shape}, output.shape={output.shape}"
         )
+
     if from_logits:
         log_prob = log_softmax(output, axis=axis)
     else:
@@ -462,7 +464,7 @@ def categorical_crossentropy(target, output, from_logits=False, axis=-1):
 
 
 def sparse_categorical_crossentropy(target, output, from_logits=False, axis=-1):
-    target = np.array(target, dtype="int64")
+    target = np.array(target, dtype="int32")
     output = np.array(output)
     if len(target.shape) == len(output.shape) and target.shape[-1] == 1:
         target = np.squeeze(target, axis=-1)
