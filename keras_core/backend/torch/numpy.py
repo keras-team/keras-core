@@ -4,6 +4,7 @@ import torch
 from keras_core.backend.torch.core import cast
 from keras_core.backend.torch.core import convert_to_tensor
 from keras_core.backend.torch.core import get_device
+from keras_core.backend.torch.core import is_tensor
 from keras_core.backend.torch.core import to_torch_dtype
 
 TORCH_INT_TYPES = (
@@ -754,6 +755,8 @@ def round(x, decimals=0):
 
 
 def tile(x, repeats):
+    if is_tensor(repeats):
+        repeats = tuple(repeats.int().numpy())
     x = convert_to_tensor(x)
     return torch.tile(x, dims=repeats)
 
