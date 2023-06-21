@@ -31,11 +31,6 @@ and so on.
 In this example, we will implement the ConvMixer model and demonstrate its performance on
 the CIFAR-10 dataset.
 
-To use the AdamW optimizer, we need to install TensorFlow Addons:
-
-```shell
-pip install -U -q tensorflow-addons
-```
 """
 
 """
