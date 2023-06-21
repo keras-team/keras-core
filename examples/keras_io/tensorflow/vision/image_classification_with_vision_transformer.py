@@ -16,7 +16,6 @@ and demonstrates it on the CIFAR-100 dataset.
 The ViT model applies the Transformer architecture with self-attention to sequences of
 image patches, without using convolution layers.
 
-
 """
 
 """
