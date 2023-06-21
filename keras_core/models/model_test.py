@@ -26,6 +26,14 @@ def _get_model_multi_outputs_list():
     return model
 
 
+def _get_model_multi_outputs_list_no_output_names():
+    x = Input(shape=(3,), name="input_a")
+    output_a = layers.Dense(1)(x)
+    output_b = layers.Dense(1, activation="sigmoid")(x)
+    model = Model(x, [output_a, output_b])
+    return model
+
+
 def _get_model_multi_outputs_dict():
     x = Input(shape=(3,), name="input_a")
     output_a = layers.Dense(1, name="output_a")(x)
@@ -215,3 +223,111 @@ class ModelTest(testing.TestCase):
             ]
         )
         self.assertListEqual(hist_keys, ref_keys)
+
+    def test_functional_list_outputs_dict_losses_invalid_keys(self):
+        model = _get_model_multi_outputs_list()
+        self.assertTrue(isinstance(model, Functional))
+        x = np.random.rand(8, 3)
+        y1 = np.random.rand(8, 1)
+        y2 = np.random.randint(0, 2, (8, 1))
+        model.compile(
+            optimizer="sgd",
+            loss={
+                "output_a": "mean_squared_error",
+                "output_c": "binary_crossentropy",
+            },
+        )
+        # Fit the model to make sure compile_metrics are built
+        with self.assertRaisesRegex(
+            ValueError,
+            "In the dict argument `loss`, "
+            "key 'output_c' does not correspond to any model output",
+        ):
+            model.fit(x, (y1, y2), batch_size=2, epochs=1, verbose=0)
+
+    def test_functional_list_outputs_dict_losses_no_output_names(self):
+        model = _get_model_multi_outputs_list_no_output_names()
+        self.assertTrue(isinstance(model, Functional))
+        x = np.random.rand(8, 3)
+        y1 = np.random.rand(8, 1)
+        y2 = np.random.randint(0, 2, (8, 1))
+        model.compile(
+            optimizer="sgd",
+            loss={"output_a": "mean_squared_error"},
+        )
+        # Fit the model to make sure compile_metrics are built
+        with self.assertRaisesRegex(
+            ValueError,
+            "In the dict argument `loss`, "
+            "key 'output_a' does not correspond to any model output",
+        ):
+            model.fit(x, (y1, y2), batch_size=2, epochs=1, verbose=0)
+
+    def test_functional_list_outputs_dict_metrics_invalid_keys(self):
+        model = _get_model_multi_outputs_list()
+        self.assertTrue(isinstance(model, Functional))
+        x = np.random.rand(8, 3)
+        y1 = np.random.rand(8, 1)
+        y2 = np.random.randint(0, 2, (8, 1))
+        model.compile(
+            optimizer="sgd",
+            loss={
+                "output_a": "mean_squared_error",
+                "output_b": "binary_crossentropy",
+            },
+            metrics={
+                "output_c": ["mean_squared_error", "accuracy"],
+            },
+        )
+        # Fit the model to make sure compile_metrics are built
+        with self.assertRaisesRegex(
+            ValueError,
+            "In the dict argument `metrics`, "
+            "key 'output_c' does not correspond to any model output",
+        ):
+            model.fit(x, (y1, y2), batch_size=2, epochs=1, verbose=0)
+
+    def test_functional_dict_outputs_dict_losses_invalid_keys(self):
+        model = _get_model_multi_outputs_dict()
+        self.assertTrue(isinstance(model, Functional))
+        x = np.random.rand(8, 3)
+        y1 = np.random.rand(8, 1)
+        y2 = np.random.randint(0, 2, (8, 1))
+        model.compile(
+            optimizer="sgd",
+            loss={
+                "output_a": "mean_squared_error",
+                "output_c": "binary_crossentropy",
+            },
+        )
+        # Fit the model to make sure compile_metrics are built
+        with self.assertRaisesRegex(
+            ValueError,
+            "In the dict argument `loss`, "
+            "key 'output_c' does not correspond to any model output",
+        ):
+            model.fit(x, (y1, y2), batch_size=2, epochs=1, verbose=0)
+
+    def test_functional_dict_outputs_dict_metrics_invalid_keys(self):
+        model = _get_model_multi_outputs_dict()
+        self.assertTrue(isinstance(model, Functional))
+        x = np.random.rand(8, 3)
+        y1 = np.random.rand(8, 1)
+        y2 = np.random.randint(0, 2, (8, 1))
+        model.compile(
+            optimizer="sgd",
+            loss={
+                "output_a": "mean_squared_error",
+                "output_b": "binary_crossentropy",
+            },
+            metrics={
+                "output_c": ["mean_squared_error", "accuracy"],
+            },
+        )
+        # Fit the model to make sure compile_metrics are built
+        with self.assertRaisesRegex(
+            ValueError,
+            "In the dict argument `metrics`, "
+            "key 'output_c' does not correspond to any model output",
+        ):
+            model.fit(x, (y1, y2), batch_size=2, epochs=1, verbose=0)
