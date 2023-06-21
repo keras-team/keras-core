@@ -89,27 +89,22 @@ def truncated_normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
     lower_bound = mean - 2 * stddev
     upper_bound = mean + 2 * stddev
 
-    # Initialize an empty array to store the random numbers
-    random_numbers = np.empty(shape)
+    flat_shape = np.prod(shape)
+    random_numbers = np.empty(0)
 
-    # Generate random numbers using rejection sampling
-    count = 0
-    while count < shape[0]:
+    # loop until we have enough valid numbers to fill our desired shape
+    while random_numbers.shape[0] < flat_shape:
         # Generate a batch of random numbers from a normal distribution
-        batch = rng.normal(loc=mean, scale=stddev, size=shape)
+        batch = rng.normal(loc=mean, scale=stddev, size=flat_shape)
 
         # Filter the numbers to keep only those within the specified bounds
         valid = batch[(batch >= lower_bound) & (batch <= upper_bound)]
 
-        # Store the valid numbers in the result array
-        num_valid = valid.shape[0]
-        random_numbers[count : count + num_valid] = valid
+        # Append the valid numbers to the result array
+        random_numbers = np.append(random_numbers, valid)
 
-        # Update the count of random numbers generated
-        count += num_valid
-
-    # Truncate the result array to the desired size
-    return random_numbers[: shape[0]].astpye(dtype)
+    # Truncate the result array to the desired size and reshape it
+    return random_numbers[:flat_shape].astype(dtype).reshape(shape)
 
 
 def dropout(inputs, rate, noise_shape=None, seed=None):
