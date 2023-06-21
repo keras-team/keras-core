@@ -34,7 +34,10 @@ class Trainer:
         jit_compile="auto",
     ):
         self.optimizer = optimizers.get(optimizer)
-        output_names = self._get_output_names()
+        if hasattr(self, "output_names"):
+            output_names = self.output_names
+        else:
+            output_names = None
         if loss is not None:
             self._compile_loss = CompileLoss(
                 loss, loss_weights, output_names=output_names
@@ -733,17 +736,6 @@ class Trainer:
             else:
                 msg += f"calling `{method_name}()`."
             raise ValueError(msg)
-
-    def _get_output_names(self):
-        """Returns list of output names."""
-        output_layers = self.get_config().get("output_layers")
-        if isinstance(output_layers, dict):
-            output_names = list(output_layers.keys())
-        elif isinstance(output_layers, (tuple, list)):
-            output_names = [name for name, *arg in output_layers]
-        else:
-            output_names = None
-        return output_names
 
 
 def model_supports_jit(model):

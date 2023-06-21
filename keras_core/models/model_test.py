@@ -8,36 +8,39 @@ from keras_core.models.model import Model
 from keras_core.models.model import model_from_json
 
 
+def _get_model():
+    input_a = Input(shape=(3,), batch_size=2, name="input_a")
+    input_b = Input(shape=(3,), batch_size=2, name="input_b")
+    x = input_a + input_b
+    x = layers.Dense(5)(x)
+    outputs = layers.Dense(4)(x)
+    model = Model([input_a, input_b], outputs)
+    return model
+
+
+def _get_model_multi_outputs_list():
+    x = Input(shape=(3,), name="input_a")
+    output_a = layers.Dense(1, name="output_a")(x)
+    output_b = layers.Dense(1, name="output_b", activation="sigmoid")(x)
+    model = Model(x, [output_a, output_b])
+    return model
+
+
+def _get_model_multi_outputs_dict():
+    x = Input(shape=(3,), name="input_a")
+    output_a = layers.Dense(1, name="output_a")(x)
+    output_b = layers.Dense(1, name="output_b", activation="sigmoid")(x)
+    model = Model(x, {"output_a": output_a, "output_b": output_b})
+    return model
+
+
 class ModelTest(testing.TestCase):
-    def _get_model(self):
-        input_a = Input(shape=(3,), batch_size=2, name="input_a")
-        input_b = Input(shape=(3,), batch_size=2, name="input_b")
-        x = input_a + input_b
-        x = layers.Dense(5)(x)
-        outputs = layers.Dense(4)(x)
-        model = Model([input_a, input_b], outputs)
-        return model
-
-    def _get_model_multi_outputs_list(self):
-        x = Input(shape=(3,), name="input_a")
-        output_a = layers.Dense(1, name="output_a")(x)
-        output_b = layers.Dense(1, name="output_b", activation="sigmoid")(x)
-        model = Model(x, [output_a, output_b])
-        return model
-
-    def _get_model_multi_outputs_dict(self):
-        x = Input(shape=(3,), name="input_a")
-        output_a = layers.Dense(1, name="output_a")(x)
-        output_b = layers.Dense(1, name="output_b", activation="sigmoid")(x)
-        model = Model(x, {"output_a": output_a, "output_b": output_b})
-        return model
-
     def test_functional_rerouting(self):
-        model = self._get_model()
+        model = _get_model()
         self.assertTrue(isinstance(model, Functional))
 
     def test_json_serialization(self):
-        model = self._get_model()
+        model = _get_model()
         json_string = model.to_json()
         new_model = model_from_json(json_string)
         self.assertEqual(json_string, new_model.to_json())
@@ -81,7 +84,7 @@ class ModelTest(testing.TestCase):
         self.assertTrue(isinstance(new_model, Functional))
 
     def test_functional_list_outputs_list_losses(self):
-        model = self._get_model_multi_outputs_list()
+        model = _get_model_multi_outputs_list()
         self.assertTrue(isinstance(model, Functional))
         x = np.random.rand(8, 3)
         y1 = np.random.rand(8, 1)
@@ -111,7 +114,7 @@ class ModelTest(testing.TestCase):
         self.assertListEqual(hist_keys, ref_keys)
 
     def test_functional_dict_outputs_dict_losses(self):
-        model = self._get_model_multi_outputs_dict()
+        model = _get_model_multi_outputs_dict()
         self.assertTrue(isinstance(model, Functional))
         x = np.random.rand(8, 3)
         y1 = np.random.rand(8, 1)
@@ -150,7 +153,7 @@ class ModelTest(testing.TestCase):
         self.assertListEqual(hist_keys, ref_keys)
 
     def test_functional_list_outputs_dict_losses_metrics(self):
-        model = self._get_model_multi_outputs_list()
+        model = _get_model_multi_outputs_list()
         self.assertTrue(isinstance(model, Functional))
         x = np.random.rand(8, 3)
         y1 = np.random.rand(8, 1)
@@ -183,7 +186,7 @@ class ModelTest(testing.TestCase):
         self.assertListEqual(hist_keys, ref_keys)
 
     def test_functional_list_outputs_dict_losses_partial_metrics(self):
-        model = self._get_model_multi_outputs_list()
+        model = _get_model_multi_outputs_list()
         self.assertTrue(isinstance(model, Functional))
         x = np.random.rand(8, 3)
         y1 = np.random.rand(8, 1)
