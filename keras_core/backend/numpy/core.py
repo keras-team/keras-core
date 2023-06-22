@@ -81,7 +81,16 @@ def name_scope(name):
 
 
 def vectorized_map(function, elements):
-    return np.vectorize(function)(elements)
+    # Check if elements is a batch of data
+    if len(elements) > 1:
+        # Apply function to each item in the batch
+        result = np.stack(
+            [np.apply_along_axis(function, 0, batch) for batch in elements]
+        )
+    else:
+        # If it's a single data item, just apply the function
+        result = np.apply_along_axis(function, 0, elements)
+    return result
 
 
 # Shape / dtype inference util

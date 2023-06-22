@@ -1128,6 +1128,12 @@ class Layer(BackendLayer, Operation):
         if output_masks is None:
             return
 
+        # Numpy backend does not support masking.
+        if backend.backend() == "numpy":
+            warnings.warn(
+                "The NumPy backend does not support masking at this",
+                "time. Masks will be ignored.",
+            )
         flat_masks = nest.flatten(output_masks)
         for tensor, mask in zip(flat_outputs, flat_masks):
             if getattr(tensor, "_keras_mask", None) is None:
