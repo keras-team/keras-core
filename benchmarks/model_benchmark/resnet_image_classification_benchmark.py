@@ -66,14 +66,14 @@ def load_model():
             keras.Input([IMAGE_SIZE[0], IMAGE_SIZE[1], CHANNELS]),
             model,
             keras.layers.GlobalAveragePooling2D(),
-            keras.layers.Dense(2, activation="softmax"),
+            keras.layers.Dense(2),
         ]
     )
     return classifier
 
 
 def main(_):
-    # keras.mixed_precision.set_dtype_policy(FLAGS.mixed_precision_policy)
+    keras.mixed_precision.set_dtype_policy(FLAGS.mixed_precision_policy)
 
     logging.info(
         "Benchmarking configs...\n"
@@ -97,6 +97,7 @@ def main(_):
         end_learning_rate=0.0,
     )
     optimizer = keras.optimizers.Adam(lr)
+    loss = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
     benchmark_metrics_callback = BenchmarkMetricsCallback(
         start_batch=1,
@@ -105,7 +106,7 @@ def main(_):
 
     classifier.compile(
         optimizer=optimizer,
-        loss="sparse_categorical_crossentropy",
+        loss=loss,
         metrics=["sparse_categorical_accuracy"],
     )
     # Start training.
