@@ -199,6 +199,37 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
         )
         self.assertListEqual(hist_keys, ref_keys)
 
+    def test_functional_list_outputs_nested_list_losses(self):
+        model = _get_model_multi_outputs_list()
+        self.assertTrue(isinstance(model, Functional))
+        x = np.random.rand(8, 3)
+        y1 = np.random.rand(8, 1)
+        y2 = np.random.randint(0, 2, (8, 1))
+        model.compile(
+            optimizer="sgd",
+            loss=["mean_squared_error", ["binary_crossentropy"]],
+            metrics=[
+                "mean_squared_error",
+                ["mean_squared_error", "accuracy"],
+            ],
+            loss_weights=[0.1, 2],
+        )
+        # Fit the model to make sure compile_metrics are built
+        hist = model.fit(x, (y1, y2), batch_size=2, epochs=1, verbose=0)
+        hist_keys = sorted(hist.history.keys())
+        # TODO `tf.keras` also outputs individual losses for outputs
+        ref_keys = sorted(
+            [
+                "loss",
+                # "output_a_loss",
+                "output_a_mean_squared_error",
+                "output_b_accuracy",
+                # "output_b_loss",
+                "output_b_mean_squared_error",
+            ]
+        )
+        self.assertListEqual(hist_keys, ref_keys)
+
     def test_functional_dict_outputs_dict_losses(self):
         model = _get_model_multi_outputs_dict()
         self.assertTrue(isinstance(model, Functional))
@@ -462,5 +493,26 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
             ValueError,
             "In the dict argument `metrics`, "
             "key 'output_c' does not correspond to any model output",
+        ):
+            model.fit(x, (y1, y2), batch_size=2, epochs=1, verbose=0)
+
+    def test_functional_list_outputs_invalid_nested_list_losses(self):
+        model = _get_model_multi_outputs_list()
+        self.assertTrue(isinstance(model, Functional))
+        x = np.random.rand(8, 3)
+        y1 = np.random.rand(8, 1)
+        y2 = np.random.randint(0, 2, (8, 1))
+        model.compile(
+            optimizer="sgd",
+            loss=[
+                "mean_squared_error",
+                ["mean_squared_error", "binary_crossentropy"],
+            ],
+        )
+        # Fit the model to make sure compile_metrics are built
+        with self.assertRaisesRegex(
+            ValueError,
+            "when providing the `loss` argument as a list, "
+            "it should have as many entries as the model has outputs",
         ):
             model.fit(x, (y1, y2), batch_size=2, epochs=1, verbose=0)

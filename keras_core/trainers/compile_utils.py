@@ -478,6 +478,7 @@ class CompileLoss(losses_module.Loss):
             else:
                 flat_loss_weights.append(1.0)
         elif isinstance(loss, (list, tuple)):
+            loss = nest.flatten(loss)
             if len(loss) != len(y_pred):
                 raise ValueError(
                     "For a model with multiple outputs, "
