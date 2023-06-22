@@ -1,5 +1,6 @@
 import time
 
+import keras_core as keras
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
@@ -7,7 +8,7 @@ from absl import app
 from absl import flags
 from absl import logging
 
-import keras_core as keras
+
 from benchmarks.model_benchmark.benchmark_utils import BenchmarkMetricsCallback
 from keras_core.applications.efficientnet_v2 import EfficientNetV2B0
 
@@ -72,7 +73,7 @@ def load_model():
 
 
 def main(_):
-    keras.mixed_precision.set_dtype_policy(FLAGS.mixed_precision_policy)
+    # keras.mixed_precision.set_dtype_policy(FLAGS.mixed_precision_policy)
 
     logging.info(
         "Benchmarking configs...\n"
@@ -99,7 +100,7 @@ def main(_):
 
     benchmark_metrics_callback = BenchmarkMetricsCallback(
         start_batch=1,
-        stop_batch=train_ds.cardinality(),
+        stop_batch=train_ds.cardinality().numpy()-1,
     )
 
     classifier.compile(
@@ -124,7 +125,7 @@ def main(_):
 
     examples_per_second = np.mean(
         np.array(benchmark_metrics_callback.state["throughput"])
-    )
+    ) * FLAGS.batch_size
 
     logging.info("Training Finished!")
     logging.info(f"Wall Time: {wall_time:.4f} seconds.")
