@@ -3,18 +3,26 @@ import numpy as np
 
 def segment_sum(data, segment_ids, num_segments=None, sorted=False):
     if num_segments is None:
-        # Segment ids must be less than the number of segments.
         num_segments = np.amax(segment_ids) + 1
 
-    if sorted:
-        result = np.zeros(num_segments, dtype=data.dtype)
-        np.add.at(result, segment_ids, data)
-    else:
-        sort_indices = np.argsort(segment_ids)
-        sorted_segment_ids = segment_ids[sort_indices]
-        sorted_data = data[sort_indices]
+    valid_indices = segment_ids >= 0  # Ignore segment_ids that are -1
+    valid_data = data[valid_indices]
+    valid_segment_ids = segment_ids[valid_indices]
 
-        result = np.zeros(num_segments, dtype=data.dtype)
+    data_shape = list(valid_data.shape)
+    data_shape[
+        0
+    ] = num_segments  # Replace first dimension (which corresponds to segments)
+
+    if sorted:
+        result = np.zeros(data_shape, dtype=valid_data.dtype)
+        np.add.at(result, valid_segment_ids, valid_data)
+    else:
+        sort_indices = np.argsort(valid_segment_ids)
+        sorted_segment_ids = valid_segment_ids[sort_indices]
+        sorted_data = valid_data[sort_indices]
+
+        result = np.zeros(data_shape, dtype=valid_data.dtype)
         np.add.at(result, sorted_segment_ids, sorted_data)
 
     return result
@@ -45,10 +53,17 @@ def top_k(x, k, sorted=False):
 
 
 def in_top_k(targets, predictions, k):
-    top_k_indices = top_k(predictions, k, sorted=True)[1]
-    targets = targets[..., np.newaxis]
-    mask = targets == top_k_indices
+    targets = targets[:, None]
+    topk_values = top_k(predictions, k)[0]
+    targets_values = np.take_along_axis(predictions, targets, axis=-1)
+    mask = targets_values >= topk_values
     return np.any(mask, axis=-1)
+
+
+def logsumexp(x, axis=None, keepdims=False):
+    max_x = np.max(x, axis=axis, keepdims=True)
+    result = np.log(np.sum(np.exp(x - max_x), axis=axis, keepdims=True)) + max_x
+    return np.squeeze(result) if not keepdims else result
 
 
 def qr(x, mode="reduced"):

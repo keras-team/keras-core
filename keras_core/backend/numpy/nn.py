@@ -49,8 +49,8 @@ def log_sigmoid(x):
     return np.log(1.0 / (1.0 + np.exp(-x)))
 
 
-def leaky_relu(x, alpha=0.2):
-    return np.maximum(x, alpha * x)
+def leaky_relu(x, negative_slope=0.2):
+    return np.maximum(x, negative_slope * x)
 
 
 def hard_sigmoid(x):
@@ -418,7 +418,7 @@ def conv_transpose(
     )
 
 
-def one_hot(x, num_classes, axis=-1):
+def one_hot(x, num_classes, axis=-1, dtype="float32"):
     input_shape = x.shape
 
     # Shrink the last dimension if the shape is (..., 1).
@@ -430,10 +430,17 @@ def one_hot(x, num_classes, axis=-1):
         num_classes = np.max(x) + 1
 
     batch_size = x.shape[0]
-    categorical = np.zeros((batch_size, num_classes))
+    categorical = np.zeros((batch_size, num_classes), dtype=dtype)
     categorical[np.arange(batch_size), x] = 1
+
+    # First, reshape the array with the extra dimension at the end
     output_shape = input_shape + (num_classes,)
     categorical = np.reshape(categorical, output_shape)
+
+    # Then, move this new dimension to the right place (according to axis)
+    if axis != -1:
+        categorical = np.moveaxis(categorical, -1, axis)
+
     return categorical
 
 

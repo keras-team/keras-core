@@ -80,6 +80,7 @@ def name_scope(name):
     return nullcontext()
 
 
+# TODO (ariG23498): Fix this function to work with NumPy.
 def vectorized_map(function, elements):
     # Check if elements is a batch of data
     if len(elements) > 1:
@@ -151,3 +152,79 @@ def compute_output_spec(fn, *args, **kwargs):
 
         output_spec = nest.map_structure(convert_numpy_to_keras_tensor, outputs)
     return output_spec
+
+
+def scatter(indices, values, shape):
+    indices = convert_to_tensor(indices)
+    values = convert_to_tensor(values)
+    zeros = np.zeros(shape, dtype=values.dtype)
+
+    index_length = indices.shape[-1]
+    value_shape = shape[index_length:]
+    indices = np.reshape(indices, [-1, index_length])
+    values = np.reshape(values, [-1] + list(value_shape))
+
+    for i in range(indices.shape[0]):
+        index = indices[i]
+        zeros[tuple(index)] += values[i]
+    return zeros
+
+
+def scatter_update(inputs, indices, updates):
+    indices = np.array(indices)
+    indices = np.transpose(indices)
+    inputs[tuple(indices)] = updates
+    return inputs
+
+
+def slice(inputs, start_indices, lengths):
+    # Validate inputs
+    assert len(start_indices) == len(lengths)
+
+    # Generate list of indices arrays for each dimension
+    indices = [
+        np.arange(start, start + length)
+        for start, length in zip(start_indices, lengths)
+    ]
+
+    # Use np.ix_ to create a multidimensional index array
+    mesh = np.ix_(*indices)
+
+    return inputs[mesh]
+
+
+def slice_update(inputs, start_indices, updates):
+    # Generate list of indices arrays for each dimension
+    indices = [
+        np.arange(start, start + length)
+        for start, length in zip(start_indices, updates.shape)
+    ]
+
+    # Use np.ix_ to create a multidimensional index array
+    mesh = np.ix_(*indices)
+    inputs[mesh] = updates
+    return inputs
+
+
+def while_loop(
+    cond,
+    body,
+    loop_vars,
+    maximum_iterations=None,
+):
+    current_iter = 0
+    iteration_check = (
+        lambda iter: maximum_iterations is None or iter < maximum_iterations
+    )
+    loop_vars = tuple([convert_to_tensor(v) for v in loop_vars])
+    while cond(*loop_vars) and iteration_check(current_iter):
+        loop_vars = body(*loop_vars)
+        if not isinstance(loop_vars, (list, tuple)):
+            loop_vars = (loop_vars,)
+        loop_vars = tuple(loop_vars)
+        current_iter += 1
+    return loop_vars
+
+
+def stop_gradient():
+    raise NotADirectoryError("stop_gradient is not implemented for NumPy.")

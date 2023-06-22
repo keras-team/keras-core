@@ -162,7 +162,7 @@ class CoreOpsCorrectnessTest(testing.TestCase):
     def test_slice_update(self):
         # Test 1D.
         inputs = np.array([0, 0, 0, 0, 0, 0, 0, 0])
-        start_indices = [1]
+        start_indices = np.array([1])
         updates = np.array([9, 10, 11, 12])
         self.assertAllClose(
             core.slice_update(inputs, start_indices, updates),

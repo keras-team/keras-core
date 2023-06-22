@@ -22,10 +22,12 @@ def multiply(x1, x2):
 
 
 def mean(x, axis=None, keepdims=False):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.mean(x, axis=axis, keepdims=keepdims)
 
 
 def max(x, axis=None, keepdims=False, initial=None):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.max(x, axis=axis, keepdims=keepdims, initial=initial)
 
 
@@ -46,18 +48,22 @@ def abs(x):
 
 
 def all(x, axis=None, keepdims=False):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.all(x, axis=axis, keepdims=keepdims)
 
 
 def any(x, axis=None, keepdims=False):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.any(x, axis=axis, keepdims=keepdims)
 
 
 def amax(x, axis=None, keepdims=False):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.amax(x, axis=axis, keepdims=keepdims)
 
 
 def amin(x, axis=None, keepdims=False):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.amin(x, axis=axis, keepdims=keepdims)
 
 
@@ -66,6 +72,7 @@ def append(
     x2,
     axis=None,
 ):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.append(x1, x2, axis=axis)
 
 
@@ -90,14 +97,17 @@ def arctan2(x1, x2):
 
 
 def argmax(x, axis=None):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.argmax(x, axis=axis)
 
 
 def argmin(x, axis=None):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.argmin(x, axis=axis)
 
 
 def argsort(x, axis=-1):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.argsort(x, axis=axis)
 
 
@@ -106,7 +116,12 @@ def array(x, dtype=None):
 
 
 def average(x, axis=None, weights=None):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.average(x, weights=weights, axis=axis)
+
+
+def bincount(x, weights=None, minlength=0):
+    return np.bincount(x, weights, minlength)
 
 
 def broadcast_to(x, shape):
@@ -122,6 +137,7 @@ def clip(x, x_min, x_max):
 
 
 def concatenate(xs, axis=0):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.concatenate(xs, axis=axis)
 
 
@@ -142,10 +158,12 @@ def cos(x):
 
 
 def count_nonzero(x, axis=None):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.count_nonzero(x, axis=axis)
 
 
 def cross(x1, x2, axisa=-1, axisb=-1, axisc=-1, axis=None):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.cross(
         x1,
         x2,
@@ -157,10 +175,12 @@ def cross(x1, x2, axisa=-1, axisb=-1, axisc=-1, axis=None):
 
 
 def cumprod(x, axis=None):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.cumprod(x, axis=axis)
 
 
 def cumsum(x, axis=None):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.cumsum(x, axis=axis)
 
 
@@ -169,6 +189,8 @@ def diag(x, k=0):
 
 
 def diagonal(x, offset=0, axis1=0, axis2=1):
+    axis1 = tuple(axis1) if isinstance(axis1, list) else axis1
+    axis2 = tuple(axis2) if isinstance(axis2, list) else axis2
     return np.diagonal(
         x,
         offset=offset,
@@ -194,6 +216,7 @@ def exp(x):
 
 
 def expand_dims(x, axis):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.expand_dims(x, axis)
 
 
@@ -202,6 +225,7 @@ def expm1(x):
 
 
 def flip(x, axis=None):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.flip(x, axis=axis)
 
 
@@ -264,6 +288,7 @@ def less_equal(x1, x2):
 def linspace(
     start, stop, num=50, endpoint=True, retstep=False, dtype=None, axis=0
 ):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.linspace(
         start,
         stop,
@@ -327,8 +352,9 @@ def meshgrid(*x, indexing="xy"):
     return np.meshgrid(*x, indexing=indexing)
 
 
-def min(x, axis=None, keepdims=False):
-    return np.min(x, axis=axis, keepdims=keepdims)
+def min(x, axis=None, keepdims=False, initial=None):
+    axis = tuple(axis) if isinstance(axis, list) else axis
+    return np.min(x, axis=axis, keepdims=keepdims, initial=initial)
 
 
 def minimum(x1, x2):
@@ -372,6 +398,7 @@ def pad(x, pad_width, mode="constant"):
 
 
 def prod(x, axis=None, keepdims=False, dtype=None):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.prod(x, axis=axis, keepdims=keepdims, dtype=dtype)
 
 
@@ -412,18 +439,22 @@ def size(x):
 
 
 def sort(x, axis=-1):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.sort(x, axis=axis)
 
 
 def split(x, indices_or_sections, axis=0):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.split(x, indices_or_sections, axis=axis)
 
 
 def stack(x, axis=0):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.stack(x, axis=axis)
 
 
 def std(x, axis=None, keepdims=False):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.std(x, axis=axis, keepdims=keepdims)
 
 
@@ -432,10 +463,12 @@ def swapaxes(x, axis1, axis2):
 
 
 def take(x, indices, axis=None):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.take(x, indices, axis=axis)
 
 
 def take_along_axis(x, indices, axis=None):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.take_along_axis(x, indices, axis=axis)
 
 
@@ -444,6 +477,7 @@ def tan(x):
 
 
 def tensordot(x1, x2, axes=2):
+    axes = tuple(axes) if isinstance(axes, list) else axes
     return np.tensordot(x1, x2, axes=axes)
 
 
@@ -456,6 +490,8 @@ def tile(x, repeats):
 
 
 def trace(x, offset=0, axis1=0, axis2=1):
+    axis1 = tuple(axis1) if isinstance(axis1, list) else axis1
+    axis2 = tuple(axis2) if isinstance(axis2, list) else axis2
     return np.trace(x, offset=offset, axis1=axis1, axis2=axis2)
 
 
@@ -508,18 +544,22 @@ def sqrt(x):
 
 
 def squeeze(x, axis=None):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.squeeze(x, axis=axis)
 
 
 def transpose(x, axes=None):
+    axes = tuple(axes) if isinstance(axes, list) else axes
     return np.transpose(x, axes=axes)
 
 
 def var(x, axis=None, keepdims=False):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.var(x, axis=axis, keepdims=keepdims)
 
 
 def sum(x, axis=None, keepdims=False):
+    axis = tuple(axis) if isinstance(axis, list) else axis
     return np.sum(x, axis=axis, keepdims=keepdims)
 
 
