@@ -209,7 +209,7 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
             optimizer="sgd",
             loss={
                 "output_a": "mean_squared_error",
-                "output_b": "binary_crossentropy",
+                "output_b": ["binary_crossentropy"],
             },
             metrics={
                 "output_a": ["mean_squared_error"],

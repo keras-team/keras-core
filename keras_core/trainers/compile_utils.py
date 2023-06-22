@@ -447,13 +447,7 @@ class CompileLoss(losses_module.Loss):
         if num_outputs == 1:
             if isinstance(loss, dict):
                 loss = nest.flatten(loss)
-            if isinstance(loss, list):
-                if len(loss) != 1:
-                    raise ValueError(
-                        "When there is only a single output, the `loss` "
-                        "argument must be a callable or single element list. "
-                        f"Received instead:\nloss={loss} of type {type(loss)}"
-                    )
+            if isinstance(loss, list) and len(loss) == 1:
                 loss = loss[0]
             if not is_function_like(loss):
                 raise ValueError(
@@ -539,6 +533,8 @@ class CompileLoss(losses_module.Loss):
                     f"Received loss={loss}"
                 )
             for name in loss.keys():
+                if isinstance(loss[name], list) and len(loss[name]) == 1:
+                    loss[name] = loss[name][0]
                 if not is_function_like(loss[name]):
                     raise ValueError(
                         "For a model with multiple outputs, "
