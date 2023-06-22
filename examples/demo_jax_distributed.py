@@ -156,18 +156,13 @@ devices = mesh_utils.create_device_mesh((8,))
 
 # data will be split along the batch axis
 data_mesh = Mesh(devices, axis_names=("batch",))  # naming axes of the mesh
-data_sharding = NamedSharding(
-    data_mesh,
-    P(
-        "batch",
-    ),
-)  # naming axes of the sharded partition
+# naming axes of the sharded partition
+data_sharding = NamedSharding(data_mesh,P("batch",),)
 
 # all variables will be replicated on all devices
 var_mesh = Mesh(devices, axis_names=("_"))
-var_replication = NamedSharding(
-    var_mesh, P()
-)  # in NamedSharding, axes that are not mentioned are replicated (all axes here)
+# in NamedSharding, axes that are not mentioned are replicated (all axes here)
+var_replication = NamedSharding(var_mesh, P())
 
 # for the demo, we will split the largest kernel 4-ways (and replicate 2-ways since we have 8 devices)
 large_kernel_mesh = Mesh(
