@@ -28,43 +28,35 @@ def encode_categorical_inputs(
 ):
     """Encodes categoical inputs according to output_mode."""
 
-    original_shape = list(inputs.shape)
+    original_shape = inputs.shape
 
-    if len(original_shape) > 2:
+    # TODO(b/190445202): remove output rank restriction.
+    if inputs.shape.rank > 2:
         raise ValueError(
             f"Maximum supported input rank is 2. "
             f"Received output_mode={output_mode} and input shape "
             f"{original_shape}."
         )
 
-    binary_output = output_mode in ("multi_hot", "one_hot")
-
-    if tf.rank(inputs) == 0 and len(original_shape) == 0:
+    # In all cases, we should uprank scalar input to a single sample.
+    if inputs.shape.rank == 0:
         inputs = tf.expand_dims(inputs, -1)
-        batch_size = None
 
-    elif len(original_shape) == 1:
-        if output_mode == "one_hot":
-            inputs = tf.expand_dims(inputs, -1)
-            batch_size = tf.shape(inputs)[0]
-        else:
-            batch_size = None
+    # One hot will unprank only if the final output dimension is not already 1.
+    if output_mode == "one_hot":
+        inputs = tf.reshape(inputs, [-1, 1])
 
-    elif len(original_shape) == 2:
-        if output_mode == "one_hot":
-            inputs = tf.reshape(inputs, shape=[-1, 1])
-            batch_size = tf.shape(inputs)[0]
-        else:
-            batch_size = original_shape[0]
+    binary_output = output_mode in ("one_hot", "multi_hot")
 
     bincounts = dense_bincount(
         inputs, depth, binary_output, dtype, count_weights
     )
 
-    if batch_size is None:
-        bincounts = tf.reshape(bincounts, (depth,))
+    if inputs.shape.rank == 1:
+        bincounts.set_shape(tf.TensorShape((depth,)))
     else:
-        bincounts = tf.reshape(bincounts, (batch_size, depth))
+        batch_size = tf.shape(inputs)[0]
+        bincounts.set_shape(tf.TensorShape((batch_size, depth)))
     return bincounts
 
 
@@ -149,9 +141,6 @@ class CategoryEncoding(Layer):
     def __init__(self, num_tokens=None, output_mode="multi_hot", **kwargs):
         super().__init__(**kwargs)
 
-        # Support deprecated names for output_modes.
-        if output_mode == "binary":
-            output_mode = "multi_hot"
         # 'output_mode' must be one of ("count", "one_hot", "multi_hot")
         if output_mode not in ("count", "one_hot", "multi_hot"):
             raise ValueError(f"Unknown arg for output_mode: {output_mode}")
@@ -174,18 +163,11 @@ class CategoryEncoding(Layer):
     def compute_output_shape(self, input_shape):
         input_shape = list(input_shape)
         if not input_shape:
-            return tf.TensorShape([self.num_tokens])
+            return (self.num_tokens,)
         if self.output_mode == "one_hot" and input_shape[-1] != 1:
-            return tf.TensorShape(input_shape + [self.num_tokens])
+            return tuple(input_shape + [self.num_tokens])
         else:
-            return tf.TensorShape(input_shape[:-1] + [self.num_tokens])
-
-    def compute_output_signature(self, input_spec):
-        output_shape = self.compute_output_shape(input_spec.shape.as_list())
-        if self.sparse:
-            return tf.SparseTensorSpec(shape=output_shape, dtype=tf.int64)
-        else:
-            return tf.TensorSpec(shape=output_shape, dtype=tf.int64)
+            return tuple(input_shape[:-1] + [self.num_tokens])
 
     def get_config(self):
         config = {
@@ -196,6 +178,9 @@ class CategoryEncoding(Layer):
         return {**base_config, **config}
 
     def call(self, inputs, count_weights=None):
+        inputs = tf.convert_to_tensor(inputs)
+        inputs = tf.cast(inputs, self.compute_dtype)
+
         if count_weights is not None:
             if self.output_mode != "count":
                 raise ValueError(
@@ -221,6 +206,7 @@ class CategoryEncoding(Layer):
                 f" with num_tokens={depth}."
             ],
         )
+
         with tf.control_dependencies([assertion]):
             outputs = encode_categorical_inputs(
                 inputs,

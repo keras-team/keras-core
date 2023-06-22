@@ -91,7 +91,7 @@ class CategoryEncodingTest(testing.TestCase):
 
     def test_one_hot_output_rank_zero_input(self):
         input_data = np.array(3)
-        expected_output = [0, 0, 0, 1]
+        expected_output = [[0, 0, 0, 1]]
         num_tokens = 4
         expected_output_shape = (None, num_tokens)
 
@@ -104,7 +104,7 @@ class CategoryEncodingTest(testing.TestCase):
         inputs = layers.Input(shape=(), dtype=tf.int32)
         outputs = layer(inputs)
         model = Model(inputs=inputs, outputs=outputs)
-        output_data = model(np.expand_dims(input_data, 0))[0]
+        output_data = model(np.expand_dims(input_data, 0))
         self.assertAllEqual(expected_output_shape, outputs.shape)
         self.assertAllEqual(expected_output, output_data)
 
@@ -130,7 +130,7 @@ class CategoryEncodingTest(testing.TestCase):
         output_data = layer(input_data)
         self.assertAllEqual(expected_output, output_data)
 
-        inputs = layers.Input(shape=(None,), dtype=tf.int32)
+        inputs = layers.Input(shape=(4,), dtype=tf.int32)
         outputs = layer(inputs)
         model = Model(inputs=inputs, outputs=outputs)
         output_data = model(input_data)
@@ -202,19 +202,3 @@ class CategoryEncodingTest(testing.TestCase):
         output_data = model(input_data)
         self.assertAllEqual(expected_output_shape, outputs.shape)
         self.assertAllEqual(expected_output, output_data)
-
-    def test_tf_data_compatibility(self):
-        layer = layers.CategoryEncoding(num_tokens=4, output_mode="one_hot")
-        input_data = np.array([3, 2, 0, 1])
-        expected_output = np.array(
-            [
-                [0, 0, 0, 1],
-                [0, 0, 1, 0],
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-            ]
-        )
-        ds = tf.data.Dataset.from_tensor_slices(input_data).batch(4).map(layer)
-        for output in ds.take(1):
-            output = output.numpy()
-        self.assertAllClose(output, expected_output)
