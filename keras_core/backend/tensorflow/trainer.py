@@ -828,8 +828,6 @@ def _is_tpu_strategy_class(clz):
     return any(map(_is_tpu_strategy_class, clz.__bases__))
 
 
-# This function is taken from keras.engine.training.potentially_ragged_concat
-# Source: https://github.com/keras-team/keras/blob/5f9d052566f92821b323dabb111eb4679624ddfb/keras/engine/training.py#L4207-#L4249  # noqa: E501
 def potentially_ragged_concat(tensors):
     """Concats `Tensor`s along their first dimension.
 

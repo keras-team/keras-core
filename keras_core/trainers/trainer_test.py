@@ -455,10 +455,34 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         keras_core.backend.backend() != "tensorflow",
         reason="Only tensorflow supports raggeds",
     )
-    def test_trainer_with_raggeds(self):
+    @parameterized.named_parameters(
+        [
+            {
+                "testcase_name": "base_class_model",
+                "base_class": keras_core.Model,
+            },
+            {
+                "testcase_name": "base_class_layer",
+                "base_class": keras_core.Layer,
+            },
+            {
+                "testcase_name": "base_class_functional",
+                "base_class": keras_core.Functional,
+            },
+        ]
+    )
+    def test_trainer_with_raggeds(self, base_class):
         import tensorflow as tf
 
-        class ExampleModel(keras_core.Model):
+        class ExampleModel(base_class):
+            def __init__(self, input_shape=(None,)):
+                if base_class is keras_core.Functional:
+                    inputs = keras_core.Input(input_shape)
+                    outputs = inputs * 2
+                    super().__init__(inputs=inputs, outputs=outputs)
+                else:
+                    super().__init__()
+
             def call(self, x):
                 return 2 * x
 
@@ -467,7 +491,14 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
 
         model = ExampleModel()
         x = tf.ragged.constant([[1], [2, 3]])
-        model.compile(optimizer="adam")
-        model.fit(x, x)
-        y = model.predict(x)
+
+        # test forward pass
+        y = model(x)
         self.assertEqual(type(y), tf.RaggedTensor)
+
+        # test training
+        if base_class in [keras_core.Model, keras_core.Functional]:
+            model.compile(optimizer="adam")
+            model.fit(x, x)
+            y = model.predict(x)
+            self.assertEqual(type(y), tf.RaggedTensor)
