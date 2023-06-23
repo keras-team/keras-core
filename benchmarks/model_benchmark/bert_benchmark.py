@@ -44,7 +44,7 @@ MODEL_SIZE_MAP = {
 }
 
 
-class BenchmarkMetricsCallback:
+class BenchmarkMetricsCallback(keras.callbacks.Callback):
     def __init__(self, start_batch=1, stop_batch=None):
         self.start_batch = start_batch
         self.stop_batch = stop_batch
@@ -106,7 +106,7 @@ def load_model():
 
 
 def main(_):
-    keras.mixed_precision.set_global_policy(FLAGS.mixed_precision_policy)
+    keras.mixed_precision.set_dtype_policy(FLAGS.mixed_precision_policy)
 
     logging.info(
         "Benchmarking configs...\n"
@@ -141,9 +141,7 @@ def main(_):
     optimizer.exclude_from_weight_decay(
         var_names=["LayerNorm", "layer_norm", "bias"]
     )
-    import pdb
 
-    pdb.set_trace()
     model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     benchmark_metrics_callback = BenchmarkMetricsCallback(
@@ -156,8 +154,8 @@ def main(_):
 
     st = time.time()
     history = model.fit(
-        train_ds,
-        validation_data=validation_ds,
+        train_ds.take(50),
+        validation_data=validation_ds.take(1),
         epochs=FLAGS.epochs,
         callbacks=[benchmark_metrics_callback],
     )
