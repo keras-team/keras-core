@@ -23,7 +23,6 @@ from absl import logging
 import keras_core as keras
 
 flags.DEFINE_string("model_size", "small", "The size of model to benchmark.")
-flags.DEFINE_float("learning_rate", 0.005, "The initial learning rate.")
 flags.DEFINE_string(
     "mixed_precision_policy",
     "mixed_float16",
@@ -133,7 +132,7 @@ def main(_):
     metrics = [keras.metrics.SparseCategoricalAccuracy()]
     # Configure optimizer.
     lr = keras.optimizers.schedules.PolynomialDecay(
-        FLAGS.learning_rate,
+        5e-4,
         decay_steps=train_ds.cardinality() * FLAGS.epochs,
         end_learning_rate=0.0,
     )
@@ -146,7 +145,7 @@ def main(_):
 
     benchmark_metrics_callback = BenchmarkMetricsCallback(
         start_batch=1,
-        stop_batch=train_ds.cardinality() - 1,
+        stop_batch=train_ds.cardinality().numpy() - 1,
     )
 
     # Start training.
@@ -154,8 +153,8 @@ def main(_):
 
     st = time.time()
     history = model.fit(
-        train_ds.take(50),
-        validation_data=validation_ds.take(1),
+        train_ds,
+        validation_data=validation_ds,
         epochs=FLAGS.epochs,
         callbacks=[benchmark_metrics_callback],
     )
@@ -164,7 +163,7 @@ def main(_):
     validation_accuracy = history.history["val_sparse_categorical_accuracy"][-1]
     examples_per_second = np.mean(
         np.array(benchmark_metrics_callback.state["throughput"])
-    )
+    ) * FLAGS.batch_size
 
     logging.info("Training Finished!")
     logging.info(f"Wall Time: {wall_time:.4f} seconds.")
