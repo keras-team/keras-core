@@ -141,11 +141,14 @@ def main(_):
     optimizer.exclude_from_weight_decay(
         var_names=["LayerNorm", "layer_norm", "bias"]
     )
+    import pdb
+
+    pdb.set_trace()
     model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     benchmark_metrics_callback = BenchmarkMetricsCallback(
         start_batch=1,
-        stop_batch=train_ds.cardinality(),
+        stop_batch=train_ds.cardinality() - 1,
     )
 
     # Start training.
