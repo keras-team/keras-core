@@ -1,3 +1,13 @@
+"""Image classification benchmark with EfficientNetV2B0.
+
+To run the benchmark, make sure you are in model_benchmark/ directory, and run
+the command below:
+
+python3 -m model_benchmark.resnet_image_classification_benchmark \
+    --epochs=2 \
+    --batch_size=32
+"""
+
 import time
 
 import keras_core as keras
@@ -9,7 +19,7 @@ from absl import flags
 from absl import logging
 
 
-from benchmarks.model_benchmark.benchmark_utils import BenchmarkMetricsCallback
+from model_benchmark.benchmark_utils import BenchmarkMetricsCallback
 from keras_core.applications import EfficientNetV2B0
 
 flags.DEFINE_integer("epochs", 1, "The number of epochs.")
