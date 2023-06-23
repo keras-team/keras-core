@@ -106,7 +106,7 @@ def load_model():
 
 
 def main(_):
-    keras.mixed_precision.set_dtype_policy(FLAGS.mixed_precision_policy)
+    # keras.mixed_precision.set_dtype_policy(FLAGS.mixed_precision_policy)
 
     logging.info(
         "Benchmarking configs...\n"
