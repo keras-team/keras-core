@@ -486,8 +486,8 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
             def call(self, x):
                 return 2 * x
 
-            def compute_loss(self, x, y, y_pred, sample_weight=None):
-                return 0
+        def loss_fn(y, y_pred, sample_weight=None):
+            return 0
 
         model = ExampleModel()
         x = tf.ragged.constant([[1], [2, 3]])
@@ -498,7 +498,14 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
 
         # test training
         if base_class in [keras_core.Model, keras_core.Functional]:
-            model.compile(optimizer="adam")
+            model.compile(optimizer="adam", loss=loss_fn)
             model.fit(x, x)
             y = model.predict(x)
             self.assertEqual(type(y), tf.RaggedTensor)
+
+        # test if everything works with the sequential model
+        model = keras_core.Sequential([model])
+        model.compile(optimizer="adam", loss=loss_fn)
+        model.fit(x, x)
+        y = model.predict(x)
+        self.assertEqual(type(y), tf.RaggedTensor)
