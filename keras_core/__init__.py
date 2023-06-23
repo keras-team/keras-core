@@ -1,5 +1,4 @@
 from keras_core import activations
-from keras_core import applications
 from keras_core import backend
 from keras_core import constraints
 from keras_core import datasets
