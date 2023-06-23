@@ -451,10 +451,6 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         y = np.zeros((16, 1))
         model.fit(x, y, batch_size=4)
 
-    @pytest.mark.skipif(
-        keras_core.backend.backend() != "tensorflow",
-        reason="Only tensorflow supports raggeds",
-    )
     @parameterized.named_parameters(
         [
             {
@@ -470,6 +466,10 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
                 "base_class": keras_core.Functional,
             },
         ]
+    )
+    @pytest.mark.skipif(
+        keras_core.backend.backend() != "tensorflow",
+        reason="Only tensorflow supports raggeds",
     )
     def test_trainer_with_raggeds(self, base_class):
         import tensorflow as tf
