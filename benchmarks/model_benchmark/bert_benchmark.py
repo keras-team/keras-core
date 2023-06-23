@@ -1,17 +1,18 @@
 """Benchmark BERT model on GLUE/MRPC task.
 
-To run the script, use this command:
+To run the script, make sure you are in benchmarks/ directory, abd run the
+command below:
 ```
-python3 glue.py --epochs 5 \
-                --batch_size 16 \
-                --learning_rate 0.001 \
-                --mixed_precision_policy mixed_float16
+python3 -m model_benchmark.bert_benchmark \
+    --epochs 5 \
+    --batch_size 16
 ```
 
 """
 
 import time
 
+import keras_core as keras
 import keras_nlp
 import numpy as np
 import tensorflow as tf
@@ -20,7 +21,7 @@ from absl import app
 from absl import flags
 from absl import logging
 
-import keras_core as keras
+
 
 flags.DEFINE_string("model_size", "small", "The size of model to benchmark.")
 flags.DEFINE_string(
@@ -85,10 +86,20 @@ def load_data():
         split=["train", "test", "validation"],
     )
 
-    train_ds = train_ds.map(split_features, num_parallel_calls=tf.data.AUTOTUNE)
-    test_ds = test_ds.map(split_features, num_parallel_calls=tf.data.AUTOTUNE)
-    validation_ds = validation_ds.map(
-        split_features, num_parallel_calls=tf.data.AUTOTUNE
+    train_ds = (
+        train_ds.map(split_features, num_parallel_calls=tf.data.AUTOTUNE)
+        .batch(FLAGS.batch_size)
+        .prefetch(tf.data.AUTOTUNE)
+    )
+    test_ds = (
+        test_ds.map(split_features, num_parallel_calls=tf.data.AUTOTUNE)
+        .batch(FLAGS.batch_size)
+        .prefetch(tf.data.AUTOTUNE)
+    )
+    validation_ds = (
+        validation_ds.map(split_features, num_parallel_calls=tf.data.AUTOTUNE)
+        .batch(FLAGS.batch_size)
+        .prefetch(tf.data.AUTOTUNE)
     )
     return train_ds, test_ds, validation_ds
 
@@ -105,7 +116,7 @@ def load_model():
 
 
 def main(_):
-    # keras.mixed_precision.set_dtype_policy(FLAGS.mixed_precision_policy)
+    keras.mixed_precision.set_dtype_policy(FLAGS.mixed_precision_policy)
 
     logging.info(
         "Benchmarking configs...\n"
@@ -119,11 +130,6 @@ def main(_):
 
     # Load datasets.
     train_ds, test_ds, validation_ds = load_data()
-    train_ds = train_ds.batch(FLAGS.batch_size).prefetch(tf.data.AUTOTUNE)
-    test_ds = test_ds.batch(FLAGS.batch_size).prefetch(tf.data.AUTOTUNE)
-    validation_ds = validation_ds.batch(FLAGS.batch_size).prefetch(
-        tf.data.AUTOTUNE
-    )
 
     # Load the model.
     model = load_model()
@@ -161,9 +167,10 @@ def main(_):
 
     wall_time = time.time() - st
     validation_accuracy = history.history["val_sparse_categorical_accuracy"][-1]
-    examples_per_second = np.mean(
-        np.array(benchmark_metrics_callback.state["throughput"])
-    ) * FLAGS.batch_size
+    examples_per_second = (
+        np.mean(np.array(benchmark_metrics_callback.state["throughput"]))
+        * FLAGS.batch_size
+    )
 
     logging.info("Training Finished!")
     logging.info(f"Wall Time: {wall_time:.4f} seconds.")
