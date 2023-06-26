@@ -466,16 +466,12 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         return ExampleModel
 
     def get_functional(self):
+        ExampleLayer = self.get_layer()
+
         class ExampleFunctional(keras_core.Functional):
             def __init__(self, input_shape=(None,)):
                 inputs = keras_core.Input(input_shape)
-                # The functional model uses the
-                # ``tensorflow.experimental.numpy`` API which doesn't yet
-                # support RaggedTensors. So, most keras_core operations
-                # won't work when ragged tensors are passed to the Functional
-                # model. We just test that passing RaggedTensors works for
-                # now.
-                outputs = inputs
+                outputs = ExampleLayer()(inputs)
                 super().__init__(inputs=inputs, outputs=outputs)
 
         return ExampleFunctional
