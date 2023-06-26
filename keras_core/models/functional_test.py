@@ -121,8 +121,8 @@ class FunctionalTest(testing.TestCase):
 
     def test_input_dict_with_extra_field(self):
         input_a = Input(shape=(3,), batch_size=2, name="a")
-        x = layers.Dense(5)(input_a)
-        outputs = layers.Dense(4)(x)
+        x = input_a * 5
+        outputs = x + 2
 
         model = Functional({"a": input_a}, outputs)
 
@@ -134,7 +134,7 @@ class FunctionalTest(testing.TestCase):
                 "b": np.random.random((2, 1)),
             }
             out_val = model(in_val)
-            self.assertEqual(out_val.shape, (2, 4))
+            self.assertEqual(out_val.shape, (2, 3))
 
         with warnings.catch_warnings():
             warnings.simplefilter("error")
@@ -143,7 +143,7 @@ class FunctionalTest(testing.TestCase):
             input_b_2 = Input(shape=(1,), batch_size=2)
             in_val = {"a": input_a_2, "b": input_b_2}
             out_val = model(in_val)
-            self.assertEqual(out_val.shape, (2, 4))
+            self.assertEqual(out_val.shape, (2, 3))
 
     def test_layer_getters(self):
         # Test mixing ops and layers
