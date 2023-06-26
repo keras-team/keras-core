@@ -225,7 +225,7 @@ class Functional(Function, Model):
                 ]
             # Raise an warning if there are more input data comparing to input
             # tensor
-            if allow_extra_keys and len(inputs) > len(ref_input_names):
+            if not allow_extra_keys and len(inputs) > len(ref_input_names):
                 warnings.warn(
                     "Input dict contained keys {} which did not match any "
                     "model input. They will be ignored by the model.".format(
