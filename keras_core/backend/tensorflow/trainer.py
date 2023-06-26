@@ -832,11 +832,11 @@ def potentially_ragged_concat(tensors):
     """Concats `Tensor`s along their first dimension.
 
     Args:
-      tensors: List of `Tensor`s.
+        tensors: List of `Tensor`s.
 
     Returns:
-      Concatenation of the inputs along the first dimension -- of type `Tensor`
-      if all input shapes are compatible, or `RaggedTensor` if not.
+        Concatenation of the inputs along the first dimension -- of type `Tensor`
+        if all input shapes are compatible, or `RaggedTensor` if not.
     """
     if len(tensors) == 1:
         return tensors[0]
