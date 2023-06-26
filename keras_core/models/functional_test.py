@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 
 from keras_core import backend
 from keras_core import layers
@@ -98,6 +99,29 @@ class FunctionalTest(testing.TestCase):
         in_val = {"a": input_a_2, "b": input_b_2}
         out_val = model(in_val)
         self.assertEqual(out_val.shape, (2, 4))
+
+    def test_input_dict_with_extra_field(self):
+        input_a = Input(shape=(3,), batch_size=2, name="a")
+        x = layers.Dense(5)(input_a)
+        outputs = layers.Dense(4)(x)
+
+        model = Functional({"a": input_a}, outputs)
+
+        # Eager call
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            in_val = {"a": np.random.random((2, 3)), "b": np.random.random((2, 1))}
+            out_val = model(in_val)
+            self.assertEqual(out_val.shape, (2, 4))
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            # Symbolic call
+            input_a_2 = Input(shape=(3,), batch_size=2)
+            input_b_2 = Input(shape=(1,), batch_size=2)
+            in_val = {"a": input_a_2, "b": input_b_2}
+            out_val = model(in_val)
+            self.assertEqual(out_val.shape, (2, 4))
 
     def test_layer_getters(self):
         # Test mixing ops and layers
