@@ -1,5 +1,6 @@
-import numpy as np
 import warnings
+
+import numpy as np
 
 from keras_core import backend
 from keras_core import layers
@@ -128,7 +129,10 @@ class FunctionalTest(testing.TestCase):
         # Eager call
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            in_val = {"a": np.random.random((2, 3)), "b": np.random.random((2, 1))}
+            in_val = {
+                "a": np.random.random((2, 3)),
+                "b": np.random.random((2, 1)),
+            }
             out_val = model(in_val)
             self.assertEqual(out_val.shape, (2, 4))
 
