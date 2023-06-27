@@ -3,14 +3,13 @@
 To run the benchmark, make sure you are in model_benchmark/ directory, and run
 the command below:
 
-python3 -m model_benchmark.resnet_image_classification_benchmark \
+python3 -m model_benchmark.efficient_net_image_classification_benchmark \
     --epochs=2 \
     --batch_size=32
 """
 
 import time
 
-import keras_core as keras
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
@@ -19,8 +18,8 @@ from absl import flags
 from absl import logging
 from model_benchmark.benchmark_utils import BenchmarkMetricsCallback
 
-
-from keras_core.applications.efficientnet_v2 import EfficientNetV2B0
+import keras_core as keras
+from keras_core.applications import EfficientNetV2B0
 
 flags.DEFINE_integer("epochs", 1, "The number of epochs.")
 flags.DEFINE_integer("batch_size", 4, "Batch Size.")
