@@ -2,6 +2,7 @@ import jax.numpy as jnp
 
 from keras_core.backend.jax.core import cast
 from keras_core.backend.jax.core import convert_to_tensor
+from keras_core.backend import config
 
 
 def add(x1, x2):
@@ -48,10 +49,10 @@ def mean(x, axis=None, keepdims=False):
     # correctly, so we compute with float32 and cast back to the original type.
     outputs = jnp.mean(x, axis=axis, keepdims=keepdims, dtype=jnp.float32)
     dtype = getattr(x, "dtype", None)
-    if dtype in ("float16", "bfloat16"):
+    if hasattr(dtype, "name") and "float" in dtype.name:
         return cast(outputs, dtype)
-    return outputs
-
+    else:
+        return cast(outputs, config.floatx())
 
 def max(x, axis=None, keepdims=False, initial=None):
     return jnp.max(x, axis=axis, keepdims=keepdims, initial=initial)
@@ -558,9 +559,10 @@ def var(x, axis=None, keepdims=False):
     # correctly, so we compute with float32 and cast back to the original type.
     outputs = jnp.var(x, axis=axis, keepdims=keepdims, dtype=jnp.float32)
     dtype = getattr(x, "dtype", None)
-    if dtype in ("float16", "bfloat16"):
+    if hasattr(dtype, "name") and "float" in dtype.name:
         return cast(outputs, dtype)
-    return outputs
+    else:
+        return cast(outputs, config.floatx())
 
 
 def sum(x, axis=None, keepdims=False):
