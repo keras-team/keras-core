@@ -20,7 +20,6 @@ import tensorflow_datasets as tfds
 from absl import app
 from absl import flags
 from absl import logging
-
 from model_benchmark.benchmark_utils import BenchmarkMetricsCallback
 
 
@@ -43,6 +42,7 @@ MODEL_SIZE_MAP = {
     "base": "bert_base_en_uncased",
     "large": "bert_large_en_uncased",
 }
+
 
 def load_data():
     """Load data.

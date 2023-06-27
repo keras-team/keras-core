@@ -17,10 +17,10 @@ import tensorflow_datasets as tfds
 from absl import app
 from absl import flags
 from absl import logging
-
-
 from model_benchmark.benchmark_utils import BenchmarkMetricsCallback
-from keras_core.applications import EfficientNetV2B0
+
+
+from keras_core.applications.efficientnet_v2 import EfficientNetV2B0
 
 flags.DEFINE_integer("epochs", 1, "The number of epochs.")
 flags.DEFINE_integer("batch_size", 4, "Batch Size.")
@@ -106,12 +106,12 @@ def main(_):
         decay_steps=train_ds.cardinality() * FLAGS.epochs,
         end_learning_rate=0.0,
     )
-    optimizer = keras.optimizers.Adam(lr)
+    optimizer = keras.optimizers.Adam(lr, epsilon=1e-5)
     loss = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
     benchmark_metrics_callback = BenchmarkMetricsCallback(
         start_batch=1,
-        stop_batch=train_ds.cardinality().numpy()-1,
+        stop_batch=train_ds.cardinality().numpy() - 1,
     )
 
     classifier.compile(
@@ -134,9 +134,10 @@ def main(_):
     wall_time = time.time() - st
     validation_accuracy = history.history["val_sparse_categorical_accuracy"][-1]
 
-    examples_per_second = np.mean(
-        np.array(benchmark_metrics_callback.state["throughput"])
-    ) * FLAGS.batch_size
+    examples_per_second = (
+        np.mean(np.array(benchmark_metrics_callback.state["throughput"]))
+        * FLAGS.batch_size
+    )
 
     logging.info("Training Finished!")
     logging.info(f"Wall Time: {wall_time:.4f} seconds.")

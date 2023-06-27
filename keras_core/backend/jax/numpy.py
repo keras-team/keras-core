@@ -43,7 +43,7 @@ def multiply(x1, x2):
 
 
 def mean(x, axis=None, keepdims=False):
-    return jnp.mean(x, axis=axis, keepdims=keepdims)
+    return jnp.mean(x, axis=axis, keepdims=keepdims, dtype=jnp.float32)
 
 
 def max(x, axis=None, keepdims=False, initial=None):
@@ -547,12 +547,12 @@ def transpose(x, axes=None):
 
 
 def var(x, axis=None, keepdims=False):
-    return jnp.var(x, axis=axis, keepdims=keepdims)
+    return jnp.var(x, axis=axis, keepdims=keepdims, dtype=jnp.float32)
 
 
 def sum(x, axis=None, keepdims=False):
     x = convert_to_tensor(x)
-    return jnp.sum(x, axis=axis, keepdims=keepdims)
+    return jnp.sum(x, axis=axis, keepdims=keepdims, dtype=jnp.float32)
 
 
 def eye(N, M=None, k=0, dtype="float32"):
