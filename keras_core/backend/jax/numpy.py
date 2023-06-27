@@ -1,5 +1,6 @@
 import jax.numpy as jnp
 
+from keras_core.backend.jax.core import cast
 from keras_core.backend.jax.core import convert_to_tensor
 
 
@@ -43,7 +44,10 @@ def multiply(x1, x2):
 
 
 def mean(x, axis=None, keepdims=False):
-    return jnp.mean(x, axis=axis, keepdims=keepdims, dtype=jnp.float32)
+    # `jnp.mean` does not handle low precision (e.g., float16) overflow
+    # correctly, so we compute with float32 and cast back to the original type.
+    outputs = jnp.mean(x, axis=axis, keepdims=keepdims, dtype=jnp.float32)
+    return cast(outputs, x.dtype)
 
 
 def max(x, axis=None, keepdims=False, initial=None):
@@ -547,12 +551,15 @@ def transpose(x, axes=None):
 
 
 def var(x, axis=None, keepdims=False):
-    return jnp.var(x, axis=axis, keepdims=keepdims, dtype=jnp.float32)
+    # `jnp.var` does not handle low precision (e.g., float16) overflow
+    # correctly, so we compute with float32 and cast back to the original type.
+    outputs = jnp.var(x, axis=axis, keepdims=keepdims, dtype=jnp.float32)
+    return cast(outputs, x.dtype)
 
 
 def sum(x, axis=None, keepdims=False):
     x = convert_to_tensor(x)
-    return jnp.sum(x, axis=axis, keepdims=keepdims, dtype=jnp.float32)
+    return jnp.sum(x, axis=axis, keepdims=keepdims)
 
 
 def eye(N, M=None, k=0, dtype="float32"):

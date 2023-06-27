@@ -4,7 +4,7 @@ from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
 
 
-def _large_compatible_negative(dtype):
+def _large_negative_number(dtype):
     """Return a Large negative number based on dtype."""
     if backend.standardize_dtype(dtype) == "float16":
         return -3e4
@@ -52,7 +52,7 @@ class Softmax(Layer):
         if mask is not None:
             adder = (
                 1.0 - backend.cast(mask, inputs.dtype)
-            ) * _large_compatible_negative(inputs.dtype)
+            ) * _large_negative_number(inputs.dtype)
             inputs += adder
         if isinstance(self.axis, (tuple, list)):
             if len(self.axis) > 1:

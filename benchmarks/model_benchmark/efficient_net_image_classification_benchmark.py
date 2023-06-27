@@ -105,7 +105,7 @@ def main(_):
         decay_steps=train_ds.cardinality() * FLAGS.epochs,
         end_learning_rate=0.0,
     )
-    optimizer = keras.optimizers.Adam(lr, epsilon=1e-5)
+    optimizer = keras.optimizers.Adam(lr)
     loss = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
     benchmark_metrics_callback = BenchmarkMetricsCallback(
