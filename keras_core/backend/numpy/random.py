@@ -1,6 +1,7 @@
 import numpy as np
 
 from keras_core.backend.config import floatx
+from keras_core.backend.numpy.nn import softmax
 from keras_core.random.seed_generator import SeedGenerator
 from keras_core.random.seed_generator import draw_seed
 from keras_core.random.seed_generator import make_default_seed
@@ -18,6 +19,23 @@ def uniform(shape, minval=0.0, maxval=1.0, dtype=None, seed=None):
     seed = draw_seed(seed)
     rng = np.random.default_rng(seed)
     return rng.uniform(size=shape, low=minval, high=maxval).astype(dtype)
+
+
+def categorical(logits, num_samples, dtype="int64", seed=None):
+    rng = np.random.default_rng(seed)
+    output = []
+    for logits_instance in logits:
+        probabilities = softmax(logits_instance)
+        classes = np.arange(logits_instance.shape[-1])
+        samples = rng.choice(classes, size=num_samples, p=probabilities)
+        output.append(samples)
+    return np.array(output).astype(dtype)
+
+
+def randint(shape, minval, maxval, dtype="int32", seed=None):
+    rng = np.random.default_rng(seed)
+    output = rng.integers(low=minval, high=maxval, size=shape, dtype=dtype)
+    return output
 
 
 def truncated_normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
@@ -47,15 +65,20 @@ def truncated_normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
 
 
 def dropout(inputs, rate, noise_shape=None, seed=None):
-    seed = draw_seed(seed)
+    keep_prob = 1.0 - rate
+
+    # If noise_shape is not provided, use the shape of inputs
+    if noise_shape is None:
+        noise_shape = inputs.shape
+    else:
+        # If noise_shape is provided, replace None with corresponding
+        # input shape
+        noise_shape = [
+            n if n is not None else inputs.shape[i]
+            for i, n in enumerate(noise_shape)
+        ]
+
     rng = np.random.default_rng(seed)
-
-    dropout_mask = rng.uniform(size=noise_shape) > rate
-
-    dropout_inputs = inputs * dropout_mask / (1 - rate)
-
-    if noise_shape:
-        noise = rng.normal(size=noise_shape)
-        dropout_inputs = dropout_inputs + noise
-
-    return dropout_inputs.astype(inputs.dtype)
+    mask = rng.uniform(size=noise_shape) < keep_prob
+    mask = np.broadcast_to(mask, inputs.shape)
+    return np.where(mask, inputs / keep_prob, np.zeros_like(inputs))
