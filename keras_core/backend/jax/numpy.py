@@ -47,7 +47,10 @@ def mean(x, axis=None, keepdims=False):
     # `jnp.mean` does not handle low precision (e.g., float16) overflow
     # correctly, so we compute with float32 and cast back to the original type.
     outputs = jnp.mean(x, axis=axis, keepdims=keepdims, dtype=jnp.float32)
-    return cast(outputs, x.dtype)
+    dtype = getattr(x, "dtype", None)
+    if dtype in ("float16", "bfloat16"):
+        return cast(outputs, dtype)
+    return outputs
 
 
 def max(x, axis=None, keepdims=False, initial=None):
@@ -554,7 +557,10 @@ def var(x, axis=None, keepdims=False):
     # `jnp.var` does not handle low precision (e.g., float16) overflow
     # correctly, so we compute with float32 and cast back to the original type.
     outputs = jnp.var(x, axis=axis, keepdims=keepdims, dtype=jnp.float32)
-    return cast(outputs, x.dtype)
+    dtype = getattr(x, "dtype", None)
+    if dtype in ("float16", "bfloat16"):
+        return cast(outputs, dtype)
+    return outputs
 
 
 def sum(x, axis=None, keepdims=False):
