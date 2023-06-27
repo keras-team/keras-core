@@ -70,7 +70,7 @@ def selu(
     return scale * np.where(x >= 0.0, x, alpha * (np.exp(x) - 1.0))
 
 
-def gelu(x, approximate=False):
+def gelu(x, approximate=True):
     if approximate:
         return (
             0.5

@@ -1,21 +1,21 @@
 class NumpyTrainer:
-    def __init__(self, **kwargs):
-        raise NotImplementedError("Numpy Backend should not have a trainer")
+    def __new__(self):
+        raise NotImplementedError("Trainer not implemented for NumPy backend.")
 
     def fit(self):
-        raise NotImplementedError("Numpy Backend should not have a trainer")
+        raise NotImplementedError("Trainer not implemented for NumPy backend.")
 
     def predict(self):
-        raise NotImplementedError("Numpy Backend should not have a trainer")
+        raise NotImplementedError("Trainer not implemented for NumPy backend.")
 
     def evaluate(self):
-        raise NotImplementedError("Numpy Backend should not have a trainer")
+        raise NotImplementedError("Trainer not implemented for NumPy backend.")
 
     def train_on_batch(self):
-        raise NotImplementedError("Numpy Backend should not have a trainer")
+        raise NotImplementedError("Trainer not implemented for NumPy backend.")
 
     def test_on_batch(self):
-        raise NotImplementedError("Numpy Backend should not have a trainer")
+        raise NotImplementedError("Trainer not implemented for NumPy backend.")
 
     def predict_on_batch(self):
-        raise NotImplementedError("Numpy Backend should not have a trainer")
+        raise NotImplementedError("Trainer not implemented for NumPy backend.")

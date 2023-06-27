@@ -10,19 +10,6 @@ from keras_core.backend.common.stateless_scope import StatelessScope
 
 DYNAMIC_SHAPES_OK = True
 
-NUMPY_DTYPES = {
-    "float16": np.float16,
-    "float32": np.float32,
-    "float64": np.float64,
-    "uint8": np.uint8,
-    "uint16": np.uint16,
-    "uint32": np.uint32,
-    "int8": np.int8,
-    "int16": np.int16,
-    "int32": np.int32,
-    "int64": np.int64,
-}
-
 
 class Variable(KerasVariable):
     def _initialize(self, value):
@@ -114,7 +101,7 @@ def compute_output_spec(fn, *args, **kwargs):
                             shape[i] = fill_value
                 return np.empty(
                     shape=shape,
-                    dtype=NUMPY_DTYPES[x.dtype],
+                    dtype=x.dtype,
                 )
             return x
 

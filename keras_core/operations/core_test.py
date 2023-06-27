@@ -1,5 +1,7 @@
 import numpy as np
+import pytest
 
+from keras_core import backend
 from keras_core import layers
 from keras_core import losses
 from keras_core import models
@@ -204,6 +206,10 @@ class CoreOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(x, np.ones((2, 3)) * 6)
         self.assertAllClose(y, np.ones((3, 2)) * 6)
 
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Numpy backend does not support masking.",
+    )
     def test_stop_gradient(self):
         class ExampleLayer(layers.Layer):
             def __init__(self):
