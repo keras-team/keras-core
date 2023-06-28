@@ -51,6 +51,8 @@ def mean(x, axis=None, keepdims=False):
 
 def max(x, axis=None, keepdims=False, initial=None):
     x = convert_to_tensor(x)
+    if initial is not None:
+        initial = convert_to_tensor(initial)
     if 0 in x.shape:
         return 0
     if axis is None:
@@ -546,6 +548,8 @@ def meshgrid(*x, indexing="xy"):
 
 def min(x, axis=None, keepdims=False, initial=None):
     x = convert_to_tensor(x)
+    if initial is not None:
+        initial = convert_to_tensor(initial)
     if axis is None:
         result = torch.min(x)
     else:
