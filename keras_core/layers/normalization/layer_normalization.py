@@ -201,6 +201,8 @@ class LayerNormalization(Layer):
         variance = ops.var(inputs, axis=self.axis, keepdims=True)
 
         scale, offset = _broadcast(self.gamma), _broadcast(self.beta)
+        scale = ops.cast(scale, inputs.dtype)
+        offset = ops.cast(offset, inputs.dtype)
 
         # Compute the batch normalization.
         inv = 1 / ops.sqrt(variance + self.epsilon)
