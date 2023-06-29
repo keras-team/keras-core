@@ -1,12 +1,10 @@
 from tensorflow import nest
 
 from keras_core import backend
-from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
 from keras_core.utils import backend_utils
 
 
-@keras_core_export("keras_core.layers.TFDataLayer")
 class TFDataLayer(Layer):
     """Layer that can safely used in a tf.data pipeline.
 
