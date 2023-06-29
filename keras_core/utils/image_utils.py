@@ -297,6 +297,7 @@ def load_img(
     return img
 
 
+@keras_core_export(["keras_core.preprocessing.image.smart_resize"])
 def smart_resize(
     x,
     size,
