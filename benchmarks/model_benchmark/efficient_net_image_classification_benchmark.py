@@ -61,7 +61,6 @@ def load_data():
             preprocess_inputs, num_parallel_calls=tf.data.AUTOTUNE
         )
         .batch(FLAGS.batch_size)
-        .cache()
         .prefetch(tf.data.AUTOTUNE)
     )
     val_dataset = (
