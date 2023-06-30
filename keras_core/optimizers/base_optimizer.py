@@ -1,8 +1,6 @@
 import re
 import warnings
 
-import numpy as np
-
 from keras_core import backend
 from keras_core import initializers
 from keras_core import ops
@@ -326,7 +324,7 @@ class BaseOptimizer:
     def save_own_variables(self, store):
         """Get the state of this optimizer object."""
         for i, variable in enumerate(self.variables):
-            store[str(i)] = np.array(variable)
+            store[str(i)] = variable.numpy()
 
     def load_own_variables(self, store):
         """Set the state of this optimizer object."""

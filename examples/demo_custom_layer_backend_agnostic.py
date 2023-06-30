@@ -2,7 +2,6 @@ import numpy as np
 
 import keras_core
 from keras_core import Model
-from keras_core import backend
 from keras_core import initializers
 from keras_core import layers
 from keras_core import losses
