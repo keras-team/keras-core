@@ -9,7 +9,7 @@ supports the following 3 models:
 To run the benchmark, make sure you are in model_benchmark/ directory, and run
 the command below:
 
-python3 -m model_benchmark.efficient_net_image_classification_benchmark \
+python3 -m model_benchmark.image_classification_benchmark \
     --model="EfficientNetV2B0" \
     --epochs=2 \
     --batch_size=32 \
