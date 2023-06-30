@@ -14,7 +14,7 @@ from keras_core import callbacks
 from keras_core import layers
 from keras_core import losses
 from keras_core import models
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core import optimizers
 from keras_core import testing
 from keras_core.optimizers import schedules
@@ -446,7 +446,8 @@ class TestTensorBoardV2(testing.TestCase):
                 tensor = backend.convert_to_tensor(data, dtype="float32")
                 if backend.backend() == "torch":
                     # TODO: Use device scope after the API is added.
-                    tensor = tensor.cpu()
+                    if tensor.is_cuda:
+                        tensor = tensor.cpu()
                 summary.write(
                     tag=tag,
                     tensor=tensor,

@@ -1,7 +1,7 @@
 import warnings
 
 from keras_core import initializers
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core.api_export import keras_core_export
 from keras_core.losses.loss import squeeze_to_same_rank
 from keras_core.losses.losses import log_cosh
@@ -554,7 +554,7 @@ class R2Score(reduction_metrics.Metric):
 
     def reset_state(self):
         for v in self.variables:
-            v.assign(ops.zeros(v.shape))
+            v.assign(ops.zeros(v.shape, dtype=v.dtype))
 
     def get_config(self):
         config = {

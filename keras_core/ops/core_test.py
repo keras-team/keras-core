@@ -5,11 +5,11 @@ from keras_core import backend
 from keras_core import layers
 from keras_core import losses
 from keras_core import models
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core import optimizers
 from keras_core import testing
 from keras_core.backend.common.keras_tensor import KerasTensor
-from keras_core.operations import core
+from keras_core.ops import core
 
 
 class CoreOpsStaticShapeTest(testing.TestCase):
@@ -244,6 +244,10 @@ class CoreOpsCorrectnessTest(testing.TestCase):
         x = ops.convert_to_numpy(x)
         self.assertAllEqual(x, (1, 1))
         self.assertIsInstance(x, np.ndarray)
+
+        # Partially converted.
+        x = ops.convert_to_tensor((1, ops.array(2), 3))
+        self.assertAllEqual(x, (1, 2, 3))
 
         with self.assertRaises(ValueError):
             ops.convert_to_numpy(KerasTensor((2,)))
