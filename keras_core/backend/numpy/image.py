@@ -14,11 +14,10 @@ UNSUPPORTED_METHODS = (
 
 
 def resize_single_image(image, size, method):
-    # Check the dtype
-    # Covert numpy to PIL
-    # Resize the image
-    # Convert PIL to numpy
-    pass
+    image = Image.fromarray(np.uint8(image)) # Lossy conversion
+    image = image.resize(size, RESIZE_METHODS[method])
+    image = np.array(image)
+    return image
 
 
 def resize(
@@ -69,10 +68,10 @@ def resize(
     # PIL does not support batching of images. We need to loop over the batch
     # of images and resize them one by one.
     if len(image.shape) == 4:
-        resized_images = [resize_single_image(x) for x in image]
+        resized_images = [resize_single_image(x, size, method) for x in image]
         resized = np.stack(resized_images, axis=0)
     else:
-        resized = resize_single_image(image)
+        resized = resize_single_image(image, size, method)
 
     if data_format == "channels_first":
         if len(image.shape) == 4:
