@@ -6,7 +6,7 @@ from absl.testing import parameterized
 from keras_core import backend
 from keras_core import testing
 from keras_core.backend.common.keras_tensor import KerasTensor
-from keras_core.operations import nn as knn
+from keras_core.ops import nn as knn
 
 
 class NNOpsDynamicShapeTest(testing.TestCase, parameterized.TestCase):
@@ -1020,6 +1020,12 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(
             knn.one_hot(indices_2d, 4, axis=1),
             tf.one_hot(indices_2d, 4, axis=1),
+        )
+
+        # Test 1D one-hot with negative inputs
+        indices_1d = np.array([0, -1, -1, 3])
+        self.assertAllClose(
+            knn.one_hot(indices_1d, 4), tf.one_hot(indices_1d, 4)
         )
 
     def test_binary_crossentropy(self):

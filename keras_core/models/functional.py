@@ -5,11 +5,12 @@ import warnings
 from tensorflow import nest
 
 from keras_core import backend
-from keras_core import operations as ops
+from keras_core import ops
+from keras_core.layers.input_spec import InputSpec
 from keras_core.layers.layer import Layer
 from keras_core.models.model import Model
-from keras_core.operations.function import Function
-from keras_core.operations.function import make_node_key
+from keras_core.ops.function import Function
+from keras_core.ops.function import make_node_key
 from keras_core.saving import serialization_lib
 from keras_core.utils import tracking
 
@@ -175,7 +176,8 @@ class Functional(Function, Model):
         else:
             masks = self._flatten_to_reference_inputs(mask)
             for x, mask in zip(inputs, masks):
-                x._keras_mask = mask
+                if mask is not None:
+                    x._keras_mask = mask
         outputs = self._run_through_graph(
             inputs, operation_fn=lambda op: operation_fn(op, training=training)
         )
@@ -209,7 +211,7 @@ class Functional(Function, Model):
         if isinstance(inputs, dict):
             ref_inputs = self._inputs_struct
             if not nest.is_nested(ref_inputs):
-                ref_inputs = [self._nested_inputs]
+                ref_inputs = [self._inputs_struct]
             if isinstance(ref_inputs, dict):
                 # In the case that the graph is constructed with dict input
                 # tensors, We will use the original dict key to map with the
@@ -223,7 +225,7 @@ class Functional(Function, Model):
                 ]
             # Raise an warning if there are more input data comparing to input
             # tensor
-            if allow_extra_keys and len(inputs) > len(ref_input_names):
+            if not allow_extra_keys and len(inputs) > len(ref_input_names):
                 warnings.warn(
                     "Input dict contained keys {} which did not match any "
                     "model input. They will be ignored by the model.".format(
@@ -295,6 +297,46 @@ class Functional(Function, Model):
     def add_loss(self, loss):
         # Symbolic only. TODO
         raise NotImplementedError
+
+    @property
+    def input_spec(self):
+        if hasattr(self, "_manual_input_spec"):
+            return self._manual_input_spec
+
+        def shape_with_no_batch_size(x):
+            x = list(x)
+            if x:
+                x[0] = None
+            return tuple(x)
+
+        if isinstance(self._inputs_struct, dict):
+            # Case where `_nested_inputs` is a plain dict of Inputs.
+            names = sorted(self._inputs_struct.keys())
+            return [
+                InputSpec(
+                    shape=shape_with_no_batch_size(
+                        self._inputs_struct[name].shape
+                    ),
+                    allow_last_axis_squeeze=True,
+                    name=name,
+                )
+                for name in names
+            ]
+        else:
+            # Single input, or list/tuple of inputs.
+            # The data may be passed as a dict keyed by input name.
+            return [
+                InputSpec(
+                    shape=shape_with_no_batch_size(x.shape),
+                    allow_last_axis_squeeze=True,
+                    name=x._keras_history[0].name,
+                )
+                for x in self._inputs
+            ]
+
+    @input_spec.setter
+    def input_spec(self, value):
+        self._manual_input_spec = value
 
     def get_config(self):
         if not functional_like_constructor(self.__class__):

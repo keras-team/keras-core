@@ -44,12 +44,13 @@ def max(x, axis=None, keepdims=False, initial=None):
 
     # TensorFlow returns -inf by default for an empty list, but for consistency
     # with other backends and the numpy API we want to throw in this case.
-    size_x = size(x)
-    tf.assert_greater(
-        size_x,
-        tf.constant(0, dtype=size_x.dtype),
-        message="Cannot compute the max of an empty tensor.",
-    )
+    if tf.executing_eagerly():
+        size_x = size(x)
+        tf.assert_greater(
+            size_x,
+            tf.constant(0, dtype=size_x.dtype),
+            message="Cannot compute the max of an empty tensor.",
+        )
 
     return tfnp.max(x, axis=axis, keepdims=keepdims)
 
@@ -95,7 +96,9 @@ def append(
 
 
 def arange(start, stop=None, step=1, dtype=None):
-    return tfnp.arange(start, stop, step=step, dtype=dtype)
+    # tfnp.arange has trouble with dynamic Tensors in compiled function.
+    # tf.range does not.
+    return tf.range(start, stop, delta=step, dtype=dtype)
 
 
 def arccos(x):
@@ -362,12 +365,13 @@ def min(x, axis=None, keepdims=False, initial=None):
 
     # TensorFlow returns inf by default for an empty list, but for consistency
     # with other backends and the numpy API we want to throw in this case.
-    size_x = size(x)
-    tf.assert_greater(
-        size_x,
-        tf.constant(0, dtype=size_x.dtype),
-        message="Cannot compute the min of an empty tensor.",
-    )
+    if tf.executing_eagerly():
+        size_x = size(x)
+        tf.assert_greater(
+            size_x,
+            tf.constant(0, dtype=size_x.dtype),
+            message="Cannot compute the min of an empty tensor.",
+        )
 
     return tfnp.min(x, axis=axis, keepdims=keepdims)
 
@@ -442,7 +446,9 @@ def reciprocal(x):
 
 
 def repeat(x, repeats, axis=None):
-    return tfnp.repeat(x, repeats, axis=axis)
+    # tfnp.repeat has trouble with dynamic Tensors in compiled function.
+    # tf.repeat does not.
+    return tf.repeat(x, repeats, axis=axis)
 
 
 def reshape(x, new_shape):

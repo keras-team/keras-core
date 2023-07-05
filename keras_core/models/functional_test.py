@@ -1,9 +1,12 @@
+import warnings
+
 import numpy as np
 
 from keras_core import backend
 from keras_core import layers
 from keras_core import testing
 from keras_core.layers.core.input_layer import Input
+from keras_core.layers.input_spec import InputSpec
 from keras_core.models import Functional
 from keras_core.models import Model
 
@@ -97,6 +100,50 @@ class FunctionalTest(testing.TestCase):
         in_val = {"a": input_a_2, "b": input_b_2}
         out_val = model(in_val)
         self.assertEqual(out_val.shape, (2, 4))
+
+    def test_named_input_dict_io(self):
+        input_a = Input(shape=(3,), batch_size=2, name="a")
+        x = layers.Dense(5)(input_a)
+        outputs = layers.Dense(4)(x)
+
+        model = Functional(input_a, outputs)
+
+        # Eager call
+        in_val = {"a": np.random.random((2, 3))}
+        out_val = model(in_val)
+        self.assertEqual(out_val.shape, (2, 4))
+
+        # Symbolic call
+        input_a_2 = Input(shape=(3,), batch_size=2)
+        in_val = {"a": input_a_2}
+        out_val = model(in_val)
+        self.assertEqual(out_val.shape, (2, 4))
+
+    def test_input_dict_with_extra_field(self):
+        input_a = Input(shape=(3,), batch_size=2, name="a")
+        x = input_a * 5
+        outputs = x + 2
+
+        model = Functional({"a": input_a}, outputs)
+
+        # Eager call
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            in_val = {
+                "a": np.random.random((2, 3)),
+                "b": np.random.random((2, 1)),
+            }
+            out_val = model(in_val)
+            self.assertEqual(out_val.shape, (2, 3))
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            # Symbolic call
+            input_a_2 = Input(shape=(3,), batch_size=2)
+            input_b_2 = Input(shape=(1,), batch_size=2)
+            in_val = {"a": input_a_2, "b": input_b_2}
+            out_val = model(in_val)
+            self.assertEqual(out_val.shape, (2, 3))
 
     def test_layer_getters(self):
         # Test mixing ops and layers
@@ -221,6 +268,52 @@ class FunctionalTest(testing.TestCase):
         outputs = layers.Dense(4)(x)
         model = Functional({"a": input_a, "b": input_b}, outputs)
         self.run_class_serialization_test(model)
+
+    def test_bad_input_spec(self):
+        # Single input
+        inputs = Input(shape=(4,))
+        outputs = layers.Dense(2)(inputs)
+        model = Functional(inputs, outputs)
+        with self.assertRaisesRegex(
+            ValueError, r"expected shape=\(None, 4\), found shape=\(2, 3\)"
+        ):
+            model(np.zeros((2, 3)))
+        with self.assertRaisesRegex(ValueError, "expected 1 input"):
+            model([np.zeros((2, 4)), np.zeros((2, 4))])
+
+        # List input
+        input_a = Input(shape=(4,), name="a")
+        input_b = Input(shape=(4,), name="b")
+        x = input_a + input_b
+        outputs = layers.Dense(2)(x)
+        model = Functional([input_a, input_b], outputs)
+        with self.assertRaisesRegex(ValueError, "expected 2 input"):
+            model(np.zeros((2, 3)))
+        with self.assertRaisesRegex(
+            ValueError, r"expected shape=\(None, 4\), found shape=\(2, 3\)"
+        ):
+            model([np.zeros((2, 3)), np.zeros((2, 4))])
+
+        # Dict input
+        model = Functional({"a": input_a, "b": input_b}, outputs)
+        with self.assertRaisesRegex(ValueError, "expected 2 input"):
+            model(np.zeros((2, 3)))
+        with self.assertRaisesRegex(
+            ValueError, r"expected shape=\(None, 4\), found shape=\(2, 3\)"
+        ):
+            model({"a": np.zeros((2, 3)), "b": np.zeros((2, 4))})
+
+    def test_manual_input_spec(self):
+        inputs = Input(shape=(None, 3))
+        outputs = layers.Dense(2)(inputs)
+        model = Functional(inputs, outputs)
+        model.input_spec = InputSpec(shape=(None, 4, 3))
+        with self.assertRaisesRegex(
+            ValueError,
+            r"expected shape=\(None, 4, 3\), found shape=\(2, 3, 3\)",
+        ):
+            model(np.zeros((2, 3, 3)))
+        model(np.zeros((2, 4, 3)))
 
     def test_add_loss(self):
         # TODO

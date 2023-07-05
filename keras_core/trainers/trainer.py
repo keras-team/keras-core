@@ -3,7 +3,7 @@ import warnings
 
 from keras_core import backend
 from keras_core import metrics as metrics_module
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core import optimizers
 from keras_core.saving import serialization_lib
 from keras_core.trainers.compile_utils import CompileLoss
@@ -51,10 +51,10 @@ class Trainer:
         else:
             self._compile_metrics = None
         if jit_compile == "auto":
-            if not run_eagerly and model_supports_jit(self):
-                jit_compile = True
-            else:
+            if run_eagerly:
                 jit_compile = False
+            else:
+                jit_compile = resolve_auto_jit_compile(self)
         if jit_compile and run_eagerly:
             jit_compile = False
             warnings.warn(
@@ -62,12 +62,22 @@ class Trainer:
                 "cannot also be True. Disabling `jit_compile`.",
                 stacklevel=2,
             )
+        if jit_compile and backend.backend() == "torch":
+            warnings.warn(
+                "`jit_compile` is not yet enabled for the PyTorch backend. "
+                "Proceeding with `jit_compile=False`."
+            )
+            jit_compile = False
         self.jit_compile = jit_compile
         self.run_eagerly = run_eagerly
         self.stop_training = False
         self.compiled = True
         self._loss_tracker = metrics_module.Mean(name="loss")
         self.steps_per_execution = steps_per_execution
+
+        self.train_function = None
+        self.test_function = None
+        self.predict_function = None
 
         self._compile_config = serialization_lib.SerializableDict(
             optimizer=optimizer,
@@ -104,7 +114,7 @@ class Trainer:
     def metrics(self):
         metrics = [self._loss_tracker]
         metrics.extend(self._metrics[:])
-        if self._compile_metrics is not None and self._compile_metrics.built:
+        if self._compile_metrics is not None:
             metrics += [self._compile_metrics]
         return metrics
 
@@ -123,7 +133,9 @@ class Trainer:
         for m in self.metrics:
             m.reset_state()
 
-    def compute_loss(self, x=None, y=None, y_pred=None, sample_weight=None):
+    def compute_loss(
+        self, x=None, y=None, y_pred=None, sample_weight=None, allow_empty=False
+    ):
         """Compute the total loss, validate it, and return it.
 
         Subclasses can optionally override this method to provide custom loss
@@ -167,6 +179,9 @@ class Trainer:
             y: Target data.
             y_pred: Predictions returned by the model (output of `model(x)`)
             sample_weight: Sample weights for weighting the loss function.
+            allow_empty: If `False`, the method will error out if
+                no loss has been computed by the model. If `True`, then
+                if no loss is computed, the method returns 0.
 
         Returns:
             The total loss as a scalar tensor, or `None` if no loss results
@@ -180,12 +195,14 @@ class Trainer:
                 losses.append(loss)
         for loss in self.losses:
             losses.append(ops.cast(loss, dtype=backend.floatx()))
-        if len(losses) == 0:
+        if not allow_empty and len(losses) == 0:
             raise ValueError(
                 "No loss to compute. Provide a `loss` argument in `compile()`."
             )
         if len(losses) == 1:
             total_loss = losses[0]
+        elif len(losses) == 0:
+            total_loss = ops.zeros(())
         else:
             total_loss = ops.sum(losses)
         return total_loss
@@ -707,11 +724,14 @@ class Trainer:
     def _pythonify_logs(self, logs):
         result = {}
         for key, value in sorted(logs.items()):
-            try:
-                value = float(value)
-            except:
-                pass
-            result[key] = value
+            if isinstance(value, dict):
+                result.update(self._pythonify_logs(value))
+            else:
+                try:
+                    value = float(value)
+                except:
+                    pass
+                result[key] = value
         return result
 
     def _flatten_metrics_in_order(self, logs):
@@ -736,6 +756,16 @@ class Trainer:
             else:
                 msg += f"calling `{method_name}()`."
             raise ValueError(msg)
+
+
+def resolve_auto_jit_compile(model):
+    if model_supports_jit(model):
+        if backend.backend() == "torch":
+            # Torch defaults to eager mode
+            # until torch compile is reliable
+            return False
+        return True
+    return False
 
 
 def model_supports_jit(model):
