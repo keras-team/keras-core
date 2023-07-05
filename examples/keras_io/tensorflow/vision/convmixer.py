@@ -41,7 +41,7 @@ from keras_core import layers
 import keras_core as keras
 
 import matplotlib.pyplot as plt
-import tensorflow as tf
+from tensorflow import data as tf_data
 import numpy as np
 
 """
@@ -75,14 +75,14 @@ print(f"Validation data samples: {len(x_val)}")
 print(f"Test data samples: {len(x_test)}")
 
 """
-## Prepare `tf.data.Dataset` objects
+## Prepare `tf_data.Dataset` objects
 
 Our data augmentation pipeline is different from what the authors used for the CIFAR-10
 dataset, which is fine for the purpose of the example.
 """
 
 image_size = 32
-auto = tf.data.AUTOTUNE
+auto = tf_data.AUTOTUNE
 
 data_augmentation = keras.Sequential(
     [
@@ -94,7 +94,7 @@ data_augmentation = keras.Sequential(
 
 
 def make_datasets(images, labels, is_train=False):
-    dataset = tf.data.Dataset.from_tensor_slices((images, labels))
+    dataset = tf_data.Dataset.from_tensor_slices((images, labels))
     if is_train:
         dataset = dataset.shuffle(batch_size * 10)
     dataset = dataset.batch(batch_size)
