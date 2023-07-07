@@ -8,6 +8,10 @@ from keras_core import testing
 
 
 class Cropping1DTest(testing.TestCase):
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_cropping_1d(self):
         inputs = np.random.rand(3, 5, 7)
 

@@ -1,10 +1,16 @@
 import numpy as np
+import pytest
 
+from keras_core import backend
 from keras_core import layers
 from keras_core.testing import test_case
 
 
 class EmbeddingTest(test_case.TestCase):
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_embedding_basics(self):
         self.run_layer_test(
             layers.Embedding,

@@ -1,3 +1,6 @@
+import pytest
+
+from keras_core import backend
 from keras_core import layers
 from keras_core import testing
 
@@ -10,6 +13,10 @@ class ExampleWrapper(layers.Wrapper):
 
 
 class WrapperTest(testing.TestCase):
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_wrapper_basics(self):
         self.run_layer_test(
             ExampleWrapper,

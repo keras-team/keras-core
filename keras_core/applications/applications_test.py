@@ -107,6 +107,10 @@ def _get_elephant(target_size):
     os.environ.get("SKIP_APPLICATIONS_TESTS"),
     reason="Env variable set to skip.",
 )
+@pytest.mark.skipif(
+    backend.backend() == "numpy",
+    reason="Trainer not implemented from NumPy backend.",
+)
 class ApplicationsTest(testing.TestCase, parameterized.TestCase):
     @parameterized.named_parameters(MODEL_LIST)
     def test_application_notop_variable_input_channels(self, app, last_dim, _):

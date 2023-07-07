@@ -8,6 +8,10 @@ from keras_core import testing
 
 
 class FlattenTest(testing.TestCase):
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_flatten(self):
         inputs = np.random.random((10, 3, 5, 5)).astype("float32")
 
@@ -39,6 +43,10 @@ class FlattenTest(testing.TestCase):
             expected_output=expected_output,
         )
 
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_flatten_with_scalar_channels(self):
         inputs = np.random.random((10,)).astype("float32")
         expected_output = ops.convert_to_tensor(np.expand_dims(inputs, -1))

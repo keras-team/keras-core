@@ -1,5 +1,7 @@
+import pytest
 from absl.testing import parameterized
 
+from keras_core import backend
 from keras_core import layers
 from keras_core import testing
 
@@ -226,6 +228,10 @@ class EinsumDenseTest(testing.TestCase, parameterized.TestCase):
             "expected_bias_shape": (3, 4, 1),
             "expected_output_shape": (2, 3, 4, 2),
         },
+    )
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
     )
     def test_einsum_dense_basics(
         self,

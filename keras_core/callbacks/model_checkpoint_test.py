@@ -3,6 +3,7 @@ import warnings
 
 import pytest
 
+from keras_core import backend
 from keras_core import callbacks
 from keras_core import layers
 from keras_core import metrics
@@ -30,6 +31,10 @@ class ModelCheckpointTest(testing.TestCase):
     @pytest.mark.skipif(
         h5py is None,
         reason="`h5py` is a required dependency for `ModelCheckpoint` tests.",
+    )
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
     )
     def test_model_checkpoint_options(self):
         def get_model():
@@ -444,6 +449,10 @@ class ModelCheckpointTest(testing.TestCase):
     @pytest.mark.skipif(
         h5py is None,
         reason="`h5py` is a required dependency for `ModelCheckpoint` tests.",
+    )
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
     )
     def test_model_checkpoint_loading(self):
         def get_model():

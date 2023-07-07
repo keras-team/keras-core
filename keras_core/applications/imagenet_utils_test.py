@@ -1,7 +1,9 @@
 import numpy as np
+import pytest
 from absl.testing import parameterized
 
 import keras_core as keras
+from keras_core import backend
 from keras_core import testing
 from keras_core.applications import imagenet_utils as utils
 from keras_core.mixed_precision import set_dtype_policy
@@ -73,6 +75,10 @@ class TestImageNetUtils(testing.TestCase, parameterized.TestCase):
             {"testcase_name": "mode_tf", "mode": "tf"},
             {"testcase_name": "mode_caffe", "mode": "caffe"},
         ]
+    )
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
     )
     def test_preprocess_input_symbolic(self, mode):
         # Test image batch

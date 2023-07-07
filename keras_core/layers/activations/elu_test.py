@@ -1,6 +1,8 @@
 import numpy as np
+import pytest
 import tensorflow as tf
 
+from keras_core import backend
 from keras_core import testing
 from keras_core.layers.activations import elu
 
@@ -10,6 +12,10 @@ class ELUTest(testing.TestCase):
         elu_layer = elu.ELU()
         self.run_class_serialization_test(elu_layer)
 
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_elu(self):
         self.run_layer_test(
             elu.ELU,

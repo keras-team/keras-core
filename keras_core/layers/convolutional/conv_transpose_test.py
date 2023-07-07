@@ -1,7 +1,9 @@
 import numpy as np
+import pytest
 import tensorflow as tf
 from absl.testing import parameterized
 
+from keras_core import backend
 from keras_core import layers
 from keras_core import testing
 
@@ -41,6 +43,10 @@ class ConvTransposeBasicTest(testing.TestCase, parameterized.TestCase):
             "input_shape": (2, 8, 4),
             "output_shape": (2, 16, 6),
         },
+    )
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
     )
     def test_conv1d_transpose_basic(
         self,
@@ -108,6 +114,10 @@ class ConvTransposeBasicTest(testing.TestCase, parameterized.TestCase):
             "output_shape": (2, 16, 10, 6),
         },
     )
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_conv2d_transpose_basic(
         self,
         filters,
@@ -173,6 +183,10 @@ class ConvTransposeBasicTest(testing.TestCase, parameterized.TestCase):
             "input_shape": (2, 8, 8, 8, 4),
             "output_shape": (2, 16, 9, 17, 6),
         },
+    )
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
     )
     def test_conv3d_transpose_basic(
         self,

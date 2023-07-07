@@ -33,6 +33,10 @@ class Cropping2DTest(testing.TestCase, parameterized.TestCase):
             {"data_format": "channels_last"},
         ),
     )
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_cropping_2d(self, cropping, data_format, expected_ranges):
         if data_format == "channels_first":
             inputs = np.random.rand(3, 5, 7, 9)

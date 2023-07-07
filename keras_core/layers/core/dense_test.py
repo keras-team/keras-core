@@ -1,11 +1,17 @@
 import numpy as np
+import pytest
 
+from keras_core import backend
 from keras_core import layers
 from keras_core import testing
 from keras_core.backend.common import keras_tensor
 
 
 class DenseTest(testing.TestCase):
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_dense_basics(self):
         # 2D case, no bias.
         self.run_layer_test(

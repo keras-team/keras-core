@@ -8,6 +8,10 @@ from keras_core import testing
 
 
 class FlattenTest(testing.TestCase):
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_repeat_vector(self):
         inputs = np.random.random((2, 5)).astype("float32")
         expected_output = ops.convert_to_tensor(

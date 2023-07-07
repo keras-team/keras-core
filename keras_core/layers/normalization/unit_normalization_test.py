@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from keras_core import backend
 from keras_core import layers
@@ -11,6 +12,10 @@ def squared_l2_norm(x):
 
 
 class UnitNormalizationTest(testing.TestCase):
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_un_basics(self):
         self.run_layer_test(
             layers.UnitNormalization,

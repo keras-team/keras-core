@@ -1,10 +1,16 @@
 import numpy as np
+import pytest
 
+from keras_core import backend
 from keras_core import testing
 from keras_core.layers.activations import relu
 
 
 class ReLUTest(testing.TestCase):
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_relu(self):
         self.run_layer_test(
             relu.ReLU,

@@ -14,6 +14,10 @@ class UpSampling2dTest(testing.TestCase, parameterized.TestCase):
         length_row=[2],
         length_col=[2, 3],
     )
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_upsampling_2d(self, data_format, length_row, length_col):
         num_samples = 2
         stack_size = 2

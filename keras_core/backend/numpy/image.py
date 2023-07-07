@@ -14,7 +14,7 @@ UNSUPPORTED_METHODS = (
 
 
 def resize_single_image(image, size, method):
-    image = Image.fromarray(np.uint8(image)) # Lossy conversion
+    image = Image.fromarray(np.uint8(image))  # Lossy conversion
     image = image.resize(size, RESIZE_METHODS[method])
     image = np.array(image)
     return image

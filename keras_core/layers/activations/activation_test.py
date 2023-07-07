@@ -1,9 +1,16 @@
+import pytest
+
 from keras_core import activations
+from keras_core import backend
 from keras_core import layers
 from keras_core import testing
 
 
 class ActivationTest(testing.TestCase):
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_activation_basics(self):
         self.run_layer_test(
             layers.Activation,

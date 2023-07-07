@@ -6,6 +6,10 @@ from keras_core import testing
 
 
 class ReshapeTest(testing.TestCase):
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_reshape(self):
         self.run_layer_test(
             layers.Reshape,

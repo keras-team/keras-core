@@ -1,11 +1,17 @@
 import numpy as np
+import pytest
 import tensorflow as tf
 from absl.testing import parameterized
 
+from keras_core import backend
 from keras_core import layers
 from keras_core import testing
 
 
+@pytest.mark.skipif(
+    backend.backend() == "numpy",
+    reason="Trainer not implemented from NumPy backend.",
+)
 class GlobalMaxPoolingBasicTest(testing.TestCase, parameterized.TestCase):
     @parameterized.parameters(
         ("channels_last", False, (3, 5, 4), (3, 4)),

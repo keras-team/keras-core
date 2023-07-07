@@ -30,6 +30,10 @@ class Cropping3DTest(testing.TestCase, parameterized.TestCase):
             {"data_format": "channels_last"},
         ),
     )
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_cropping_3d(
         self,
         dim1_cropping,
@@ -87,6 +91,10 @@ class Cropping3DTest(testing.TestCase, parameterized.TestCase):
             {"data_format": "channels_first"},
             {"data_format": "channels_last"},
         ),
+    )
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
     )
     def test_cropping_3d_with_same_cropping(
         self, cropping, data_format, expected
