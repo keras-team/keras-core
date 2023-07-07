@@ -1,9 +1,11 @@
 import os
 
 import numpy as np
+import pytest
 import tensorflow as tf
 
 import keras_core
+from keras_core import backend
 from keras_core import testing
 
 # TODO: more thorough testing. Correctness depends
@@ -52,6 +54,10 @@ def get_subclassed_model(keras):
     return model
 
 
+@pytest.mark.skipif(
+    backend.backend() == "numpy",
+    reason="Trainer not implemented from NumPy backend.",
+)
 class LegacyH5LoadingTest(testing.TestCase):
     def _check_reloading(self, ref_input, model, tf_keras_model):
         ref_output = tf_keras_model(ref_input)
