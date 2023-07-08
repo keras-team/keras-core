@@ -431,7 +431,8 @@ def one_hot(x, num_classes, axis=-1, dtype="float32"):
 
     batch_size = x.shape[0]
     categorical = np.zeros((batch_size, num_classes), dtype=dtype)
-    categorical[np.arange(batch_size), x] = 1
+    valid_indices = x >= 0
+    categorical[np.arange(batch_size)[valid_indices], x[valid_indices]] = 1
 
     # First, reshape the array with the extra dimension at the end
     output_shape = input_shape + (num_classes,)
