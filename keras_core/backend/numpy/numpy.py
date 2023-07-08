@@ -560,7 +560,12 @@ def var(x, axis=None, keepdims=False):
 
 def sum(x, axis=None, keepdims=False):
     axis = tuple(axis) if isinstance(axis, list) else axis
-    return np.sum(x, axis=axis, keepdims=keepdims)
+    # `np.sum()` function, when applied to an array, returns a scalar
+    # value that represents the sum of all the elements in the array.
+    # This operation reduces the dimensionality of the input and hence
+    # return objects of type `np.<DTYPE>`. To fix this behaviour, we
+    # wrap the result in a list and explicitly reutrns an `np.ndarray`.
+    return np.array([np.sum(x, axis=axis, keepdims=keepdims)])
 
 
 def eye(N, M=None, k=0, dtype="float32"):
