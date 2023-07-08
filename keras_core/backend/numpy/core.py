@@ -67,18 +67,15 @@ def name_scope(name):
     return nullcontext()
 
 
-# TODO (ariG23498): Fix this function to work with NumPy.
 def vectorized_map(function, elements):
-    # Check if elements is a batch of data
-    if len(elements) > 1:
-        # Apply function to each item in the batch
-        result = np.stack(
-            [np.apply_along_axis(function, 0, batch) for batch in elements]
-        )
+    if len(elements) == 1:
+        return function(elements)
     else:
-        # If it's a single data item, just apply the function
-        result = np.apply_along_axis(function, 0, elements)
-    return result
+        batch_size = elements[0].shape[0]
+        output_store = list()
+        for index in range(batch_size):
+            output_store.append(function([x[index] for x in elements]))
+        return np.stack(output_store)
 
 
 # Shape / dtype inference util

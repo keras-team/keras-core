@@ -1,10 +1,12 @@
 import json
 
 import numpy as np
+import pytest
 from absl import logging
 from absl.testing import parameterized
 from tensorflow.python.ops.numpy_ops import np_config
 
+from keras_core import backend
 from keras_core import layers
 from keras_core import metrics
 from keras_core import models
@@ -756,7 +758,7 @@ class SensitivityAtSpecificityTest(testing.TestCase, parameterized.TestCase):
         label_values = [0, 0, 0, 0, 0, 2, 2, 2, 2, 2]
 
         y_pred = ops.transpose(np.array([pred_values] * 3))
-        y_true = ops.one_hot(label_values, num_classes=3)
+        y_true = ops.one_hot(np.array(label_values), num_classes=3)
 
         self.assertAlmostEqual(0.6, s_obj(y_true, y_pred))
 
@@ -845,7 +847,7 @@ class SpecificityAtSensitivityTest(testing.TestCase, parameterized.TestCase):
         label_values = [0, 0, 0, 0, 0, 2, 2, 2, 2, 2]
 
         y_pred = ops.transpose(np.array([pred_values] * 3))
-        y_true = ops.one_hot(label_values, num_classes=3)
+        y_true = ops.one_hot(np.array(label_values), num_classes=3)
 
         self.assertAlmostEqual(0.6, s_obj(y_true, y_pred))
 
@@ -931,7 +933,7 @@ class PrecisionAtRecallTest(testing.TestCase, parameterized.TestCase):
         label_values = [0, 0, 0, 0, 0, 2, 2, 2, 2, 2]
 
         y_pred = ops.transpose(np.array([pred_values] * 3))
-        y_true = ops.one_hot(label_values, num_classes=3)
+        y_true = ops.one_hot(np.array(label_values), num_classes=3)
 
         # For 0.2 < decision threshold < 0.5.
         self.assertAlmostEqual(0.75, s_obj(y_true, y_pred))
@@ -1067,7 +1069,7 @@ class RecallAtPrecisionTest(testing.TestCase, parameterized.TestCase):
         # recalls:    [1,   1,    5/6, 5/6, 5/6, 5/6, 2/3, 1/2, 1/2, 1/3, 1/6,
         # 1/6].
         y_pred = ops.transpose(np.array([pred_values] * 3))
-        y_true = ops.one_hot(label_values, num_classes=3)
+        y_true = ops.one_hot(np.array(label_values), num_classes=3)
 
         # The precision 5/7 can be reached at thresholds 00.3<=t<0.35.
         self.assertAlmostEqual(5.0 / 6, s_obj(y_true, y_pred))
@@ -1645,6 +1647,10 @@ class MultiAUCTest(testing.TestCase):
         # PR AUCs are 0.939 and 1.0 respectively
         self.assertAllClose(good_result, (0.939 + 1.0) / 2.0, 1e-1)
 
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_keras_model_compiles(self):
         inputs = layers.Input(shape=(10,), batch_size=1)
         output = layers.Dense(3, activation="sigmoid")(inputs)
