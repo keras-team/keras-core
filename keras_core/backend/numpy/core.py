@@ -41,7 +41,7 @@ def convert_to_numpy(x):
 
 
 def is_tensor(x):
-    if isinstance(x, np.ndarray):
+    if isinstance(x, (np.generic, np.ndarray)):
         return True
     return False
 
