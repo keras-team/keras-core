@@ -170,13 +170,13 @@ def print_summary(
                     break
 
     if sequential_like:
-        line_length = line_length or 84
+        default_line_length = 84
         positions = positions or [0.45, 0.84, 1.0]
         # header names for the different log elements
         header = ["Layer (type)", "Output Shape", "Param #"]
         alignment = ["left", "left", "right"]
     else:
-        line_length = line_length or 108
+        default_line_length = 108
         positions = positions or [0.3, 0.56, 0.70, 1.0]
         # header names for the different log elements
         header = ["Layer (type)", "Output Shape", "Param #", "Connected to"]
@@ -186,13 +186,16 @@ def print_summary(
             relevant_nodes += v
 
     if show_trainable:
-        line_length += 8
+        default_line_length += 8
         positions = [p * 0.88 for p in positions] + [1.0]
         header.append("Trainable")
         alignment.append("center")
 
     # Compute columns widths
-    line_length = min(line_length, shutil.get_terminal_size().columns - 4)
+    default_line_length = min(
+        default_line_length, shutil.get_terminal_size().columns - 4
+    )
+    line_length = line_length or default_line_length
     column_widths = []
     current = 0
     for pos in positions:
@@ -215,29 +218,6 @@ def print_summary(
 
     table = rich.table.Table(*columns, width=line_length, show_lines=True)
 
-    def get_layer_fields(layer, prefix=""):
-        output_shape = format_layer_shape(layer)
-        name = prefix + layer.name
-        cls_name = layer.__class__.__name__
-        name = rich.markup.escape(name)
-        name += f" ({highlight_symbol(rich.markup.escape(cls_name))})"
-
-        if not hasattr(layer, "built"):
-            params = highlight_number(0)
-        elif not layer.built:
-            params = highlight_number(0) + " (unbuilt)"
-        else:
-            params = highlight_number(f"{layer.count_params():,}")
-
-        fields = [name, output_shape, params]
-        if show_trainable:
-            fields.append(
-                bold_text("Y", color=34)
-                if layer.trainable
-                else bold_text("N", color=9)
-            )
-        return fields
-
     def get_connections(layer):
         connections = ""
         for node in layer._inbound_nodes:
@@ -258,6 +238,31 @@ def print_summary(
             connections = "-"
         return connections
 
+    def get_layer_fields(layer, prefix=""):
+        output_shape = format_layer_shape(layer)
+        name = prefix + layer.name
+        cls_name = layer.__class__.__name__
+        name = rich.markup.escape(name)
+        name += f" ({highlight_symbol(rich.markup.escape(cls_name))})"
+
+        if not hasattr(layer, "built"):
+            params = highlight_number(0)
+        elif not layer.built:
+            params = highlight_number(0) + " (unbuilt)"
+        else:
+            params = highlight_number(f"{layer.count_params():,}")
+
+        fields = [name, output_shape, params]
+        if not sequential_like:
+            fields.append(get_connections(layer))
+        if show_trainable:
+            fields.append(
+                bold_text("Y", color=34)
+                if layer.trainable
+                else bold_text("N", color=9)
+            )
+        return fields
+
     def print_layer(layer, nested_level=0):
         if nested_level:
             prefix = "   " * nested_level + "└" + " "
@@ -265,10 +270,6 @@ def print_summary(
             prefix = ""
 
         fields = get_layer_fields(layer, prefix=prefix)
-        if not sequential_like:
-            fields.append(get_connections(layer))
-        if show_trainable:
-            fields.append("Y" if layer.trainable else "N")
 
         rows = [fields]
         if expand_nested and hasattr(layer, "layers") and layer.layers:
