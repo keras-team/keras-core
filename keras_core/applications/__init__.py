@@ -35,13 +35,6 @@ from keras_core.applications.nasnet import NASNetMobile
 from keras_core.applications.resnet import ResNet50
 from keras_core.applications.resnet import ResNet101
 from keras_core.applications.resnet import ResNet152
-from keras_core.applications.resnet_rs import ResNetRS50
-from keras_core.applications.resnet_rs import ResNetRS101
-from keras_core.applications.resnet_rs import ResNetRS152
-from keras_core.applications.resnet_rs import ResNetRS200
-from keras_core.applications.resnet_rs import ResNetRS270
-from keras_core.applications.resnet_rs import ResNetRS350
-from keras_core.applications.resnet_rs import ResNetRS420
 from keras_core.applications.resnet_v2 import ResNet50V2
 from keras_core.applications.resnet_v2 import ResNet101V2
 from keras_core.applications.resnet_v2 import ResNet152V2
