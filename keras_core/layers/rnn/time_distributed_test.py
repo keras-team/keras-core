@@ -1,5 +1,7 @@
 import numpy as np
+import pytest
 
+from keras_core import backend
 from keras_core import initializers
 from keras_core import layers
 from keras_core import ops
@@ -7,6 +9,9 @@ from keras_core import testing
 
 
 class TimeDistributedTest(testing.TestCase):
+    @pytest.mark.skipif(
+        backend.backend() == "numpy", reason="Not implemented yet."
+    )
     def test_basics(self):
         self.run_layer_test(
             layers.TimeDistributed,

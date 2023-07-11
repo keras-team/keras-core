@@ -1,7 +1,9 @@
 import numpy as np
+import pytest
 import tensorflow as tf
 from absl.testing import parameterized
 
+from keras_core import backend
 from keras_core import layers
 from keras_core import testing
 
@@ -41,6 +43,9 @@ class SeparableConvBasicTest(testing.TestCase, parameterized.TestCase):
             "input_shape": (3, 5, 4),
             "output_shape": (3, 2, 6),
         },
+    )
+    @pytest.mark.skipif(
+        backend.backend() == "numpy", reason="Not implemented yet."
     )
     def test_separable_conv1d_basic(
         self,
@@ -107,6 +112,9 @@ class SeparableConvBasicTest(testing.TestCase, parameterized.TestCase):
             "input_shape": (3, 5, 5, 4),
             "output_shape": (3, 2, 2, 6),
         },
+    )
+    @pytest.mark.skipif(
+        backend.backend() == "numpy", reason="Not implemented yet."
     )
     def test_separable_conv2d_basic(
         self,

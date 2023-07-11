@@ -8,9 +8,7 @@ from keras_core.backend.common.backend_utils import (
     compute_conv_transpose_padding,
 )
 from keras_core.backend.config import epsilon
-from keras_core.backend.jax.core import (
-    convert_to_tensor,  # Note the import from jax
-)
+from keras_core.backend.numpy.core import is_tensor
 
 
 def relu(x):
@@ -281,8 +279,8 @@ def conv(
     feature_group_count = channels // kernel_in_channels
     return np.array(
         jax.lax.conv_general_dilated(
-            convert_to_tensor(inputs),
-            convert_to_tensor(kernel),
+            inputs,
+            kernel if is_tensor(kernel) else kernel.numpy(),
             strides,
             padding,
             rhs_dilation=dilation_rate,
@@ -323,7 +321,7 @@ def depthwise_conv(
         inputs.shape[-1] if data_format == "channels_last" else inputs.shape[1]
     )
     kernel = jnp.reshape(
-        kernel,
+        kernel if is_tensor(kernel) else kernel.numpy(),
         kernel.shape[:-2] + (1, feature_group_count * kernel.shape[-1]),
     )
     return np.array(
@@ -408,7 +406,7 @@ def conv_transpose(
     return np.array(
         jax.lax.conv_transpose(
             inputs,
-            kernel,
+            kernel if is_tensor(kernel) else kernel.numpy(),
             strides,
             padding=padding_values,
             rhs_dilation=dilation_rate,
