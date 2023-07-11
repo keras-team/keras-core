@@ -22,6 +22,7 @@ def uniform(shape, minval=0.0, maxval=1.0, dtype=None, seed=None):
 
 
 def categorical(logits, num_samples, dtype="int64", seed=None):
+    seed = draw_seed(seed)
     rng = np.random.default_rng(seed)
     output = []
     for logits_instance in logits:
@@ -33,6 +34,7 @@ def categorical(logits, num_samples, dtype="int64", seed=None):
 
 
 def randint(shape, minval, maxval, dtype="int32", seed=None):
+    seed = draw_seed(seed)
     rng = np.random.default_rng(seed)
     output = rng.integers(low=minval, high=maxval, size=shape, dtype=dtype)
     return output
@@ -65,6 +67,8 @@ def truncated_normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
 
 
 def dropout(inputs, rate, noise_shape=None, seed=None):
+    seed = draw_seed(seed)
+
     keep_prob = 1.0 - rate
 
     # If noise_shape is not provided, use the shape of inputs
