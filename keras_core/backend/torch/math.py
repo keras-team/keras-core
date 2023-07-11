@@ -81,3 +81,33 @@ def qr(x, mode="reduced"):
         )
     x = convert_to_tensor(x)
     return torch.linalg.qr(x, mode=mode)
+
+
+def fft(a, n=None, axis=-1, norm=None):
+    a = convert_to_tensor(a)
+    return torch.fft.fft(a, n=n, dim=axis, norm=norm)
+
+
+def fft2(a, s=None, axes=(-2, -1), norm=None):
+    a = convert_to_tensor(a)
+    return torch.fft.fft2(a, s=s, axes=axes, norm=norm)
+
+
+def fftn(a, s=None, axes=None, norm=None):
+    a = convert_to_tensor(a)
+    return torch.fftn(a, s=s, axes=axes, norm=norm)
+
+
+def ifft(a, n=None, axis=-1, norm=None):
+    a = convert_to_tensor(a)
+    return torch.fft.ifft(a, n=n, dim=axis, norm=norm)
+
+
+def ifft2(a, s=None, axes=(-2, -1), norm=None):
+    a = convert_to_tensor(a)
+    return torch.fft.ifft2(a, s=s, axes=axes, norm=norm)
+
+
+def ifftn(a, s=None, axes=None, norm=None):
+    a = convert_to_tensor(a)
+    return torch.ifftn(a, s=s, axes=axes, norm=norm)

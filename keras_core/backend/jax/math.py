@@ -43,3 +43,27 @@ def qr(x, mode="reduced"):
             f"Received: mode={mode}"
         )
     return jax.numpy.linalg.qr(x, mode=mode)
+
+
+def fft(a, n=None, axis=-1, norm=None):
+    return jax.numpy.fft.fft(a, n=n, axis=axis, norm=norm)
+
+
+def fft2(a, s=None, axes=(-2, -1), norm=None):
+    return jax.numpy.fft.fft2(a, s=s, axes=axes, norm=norm)
+
+
+def fftn(a, s=None, axes=None, norm=None):
+    return jax.numpy.fft.fftn(a, s=s, axes=axes, norm=norm)
+
+
+def ifft(a, n=None, axis=-1, norm=None):
+    return jax.numpy.fft.ifft(a, n=n, axis=axis, norm=norm)
+
+
+def ifft2(a, s=None, axes=(-2, -1), norm=None):
+    return jax.numpy.fft.ifft2(a, s=s, axes=axes, norm=norm)
+
+
+def ifftn(a, s=None, axes=None, norm=None):
+    return jax.numpy.fft.ifftn(a, s=s, axes=axes, norm=norm)

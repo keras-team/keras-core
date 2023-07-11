@@ -226,3 +226,39 @@ class MathOpsCorrectnessTest(testing.TestCase):
         qref, rref = np.linalg.qr(x, mode="complete")
         self.assertAllClose(qref, q)
         self.assertAllClose(rref, r)
+
+    def test_fft(self):
+        x = np.random.random((4, 5)).astype(complex)
+        output = kmath.fft(x)
+        expected_output = np.fft.fft(x)
+        self.assertAllClose(output, expected_output)
+
+    def test_fft2d(self):
+        x = np.random.random((4, 5, 6)).astype(complex)
+        output = kmath.fft2d(x)
+        expected_output = np.fft.fft2(x)
+        self.assertAllClose(output, expected_output)
+
+    def test_fft3d(self):
+        x = np.random.random((4, 5, 6, 3, 2)).astype(complex)
+        output = kmath.fft3d(x)
+        expected_output = np.fft.fftn(x, axes=(-3, -2, -1))
+        self.assertAllClose(output, expected_output)
+
+    def test_ifft(self):
+        x = np.random.random((4, 5)).astype(complex)
+        output = kmath.ifft(x)
+        expected_output = np.fft.ifft(x)
+        self.assertAllClose(output, expected_output)
+
+    def test_ifft2d(self):
+        x = np.random.random((4, 5, 6)).astype(complex)
+        output = kmath.ifft2d(x)
+        expected_output = np.fft.ifft2(x)
+        self.assertAllClose(output, expected_output)
+
+    def test_ifft3d(self):
+        x = np.random.random((4, 5, 6, 3, 2)).astype(complex)
+        output = kmath.ifft3d(x)
+        expected_output = np.fft.ifftn(x, axes=(-3, -2, -1))
+        self.assertAllClose(output, expected_output)

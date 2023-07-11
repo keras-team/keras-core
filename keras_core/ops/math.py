@@ -155,3 +155,156 @@ def qr(x, mode="reduced"):
     if any_symbolic_tensors((x,)):
         return Qr(mode=mode).symbolic_call(x)
     return backend.math.qr(x, mode=mode)
+
+
+class FFT(Operation):
+    def __init__(self, n=None, axis=-1, norm=None):
+        super().__init__()
+        if norm not in {None, "backward", "ortho", "forward"}:
+            raise ValueError(
+                "`norm` argument value not supported. "
+                'Expected one of `{None, "backward", "ortho", "forward"}`. '
+                f"Received: norm={norm}"
+            )
+
+        self.n = n
+        self.axis = axis
+        self.norm = norm
+
+    def compute_output_spec(self, x):
+        if len(x.shape) < 1:
+            raise ValueError(
+                f"Input should have rank >= 1. "
+                f"Received: input.shape = {x.shape}"
+            )
+
+        m = x.shape[self.axis]
+        if m is not None:
+            raise ValueError(
+                f"Input should have its {self.axis}th axis fully-defined. "
+                f"Received: input.shape = {x.shape}"
+            )
+
+        output_shape = x.shape
+        output_shape[self.axis] = self.n if self.n is not None else m
+
+        return KerasTensor(shape=output_shape, dtype=x.dtype)
+
+    def call(self, x):
+        return backend.math.fft(x)
+
+
+class FFT2(Operation):
+    def __init__(self, s=None, axes=(-2, -1), norm=None):
+        super().__init__()
+        if norm not in {None, "backward", "ortho", "forward"}:
+            raise ValueError(
+                "`norm` argument value not supported. "
+                'Expected one of `{None, "backward", "ortho", "forward"}`. '
+                f"Received: norm={norm}"
+            )
+        self.s = s
+        self.axes = axes
+        self.norm = norm
+
+    def compute_output_spec(self, x):
+        if len(x.shape) < 2:
+            raise ValueError(
+                f"Input should have rank >= 2. "
+                f"Received: input.shape = {x.shape}"
+            )
+
+        m = x.shape[self.axes[0]]
+        n = x.shape[self.axes[1]]
+        if m is not None:
+            raise ValueError(
+                f"Input should have its {self.axes} axes fully-defined. "
+                f"Received: input.shape = {x.shape}"
+            )
+
+        output_shape = x.shape
+        output_shape[self.axes[0]] = self.s[0] if self.s is not None else m
+        output_shape[self.axes[1]] = self.s[1] if self.s is not None else n
+
+        return KerasTensor(shape=output_shape, dtype=x.dtype)
+
+    def call(self, x):
+        return backend.math.fft(x)
+
+
+
+
+
+
+
+
+@keras_core_export("keras_core.ops.fft")
+def fft(x):
+    if any_symbolic_tensors((x,)):
+        return FFT(n=1).symbolic_call(x)
+    return backend.math.fft(x)
+
+
+@keras_core_export("keras_core.ops.fft2d")
+def fft2d(x):
+    if any_symbolic_tensors((x,)):
+        return FFT(n=2).symbolic_call(x)
+    return backend.math.fft2d(x)
+
+
+@keras_core_export("keras_core.ops.fft3d")
+def fft3d(x):
+    if any_symbolic_tensors((x,)):
+        return FFT(n=3).symbolic_call(x)
+    return backend.math.fft3d(x)
+
+
+class IFFT(Operation):
+    def __init__(self, n):
+        super().__init__()
+        self.n = n
+
+    def compute_output_spec(self, x):
+        if len(x.shape) < self.n:
+            raise ValueError(
+                f"Input should have rank >= {self.n}. Received: "
+                f"input.shape = {x.shape}"
+            )
+
+        if any(i is None for i in x.shape[-self.n :]):
+            raise ValueError(
+                f"Input should have its last {self.n} dimensions "
+                "fully-defined. Received: "
+                f"input.shape = {x.shape}"
+            )
+
+        return KerasTensor(shape=x.shape, dtype=x.dtype)
+
+    def call(self, x):
+        if self.n == 1:
+            return backend.math.ifft(x)
+        elif self.n == 2:
+            return backend.math.ifft2d(x)
+        elif self.n == 3:
+            return backend.math.ifft3d(x)
+
+
+@keras_core_export("keras_core.ops.ifft")
+def ifft(x):
+    if any_symbolic_tensors((x,)):
+        return IFFT(n=1).symbolic_call(x)
+    return backend.math.ifft(x)
+
+
+@keras_core_export("keras_core.ops.ifft2d")
+def ifft2d(x):
+    if any_symbolic_tensors((x,)):
+        return IFFT(n=2).symbolic_call(x)
+    return backend.math.ifft2d(x)
+
+
+@keras_core_export("keras_core.ops.ifft3d")
+def ifft3d(x):
+    if any_symbolic_tensors((x,)):
+        return IFFT(n=3).symbolic_call(x)
+    return backend.math.ifft3d(x)
