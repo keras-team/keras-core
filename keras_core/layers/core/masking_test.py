@@ -8,6 +8,10 @@ from keras_core import testing
 
 
 class MaskingTest(testing.TestCase):
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented from NumPy backend.",
+    )
     def test_masking_basics(self):
         self.run_layer_test(
             layers.Masking,
