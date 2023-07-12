@@ -1,6 +1,6 @@
 from keras_core.backend.config import backend
 
-if backend() == "torch":
+if backend() in ["torch", "pytorch"]:
     # When using the torch backend,
     # torch needs to be imported first, otherwise it will segfault
     # upon import.
