@@ -71,7 +71,9 @@ class Variable(KerasVariable):
     # Overload native accessor.
     @classmethod
     def __torch_function__(cls, func, types, args=(), kwargs=None):
-        args = [arg.value if isinstance(arg, KerasVariable) else arg for arg in args]
+        args = [
+            arg.value if isinstance(arg, KerasVariable) else arg for arg in args
+        ]
         if kwargs is None:
             kwargs = {}
         kwargs = {
@@ -107,7 +109,9 @@ class Variable(KerasVariable):
 
 def convert_to_tensor(x, dtype=None):
     if is_tensor(x):
-        return x
+        if dtype is None:
+            return x
+        return x.to(to_torch_dtype(dtype))
     if isinstance(x, Variable):
         # TorchDynamo has bugs supporting nn.Parameter type check.
         # Return it directly instead of pass it to the rest of the logic in the
