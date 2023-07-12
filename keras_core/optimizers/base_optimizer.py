@@ -1,11 +1,9 @@
 import re
 import warnings
 
-import numpy as np
-
 from keras_core import backend
 from keras_core import initializers
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core.optimizers.schedules import learning_rate_schedule
 from keras_core.saving import serialization_lib
 from keras_core.utils import tracking
@@ -113,8 +111,18 @@ class BaseOptimizer:
 
     @tracking.no_automatic_dependency_tracking
     def build(self, variables):
+        if self.use_ema:
+            self._model_variables_moving_average = []
+            self._ema_vars_initialized = False
         for i, variable in enumerate(variables):
             self._trainable_variables_indices[self._var_key(variable)] = i
+            if self.use_ema:
+                self._model_variables_moving_average.append(
+                    self.add_variable_from_reference(
+                        variable,
+                        "average",
+                    )
+                )
         self._trainable_variables = variables[:]
         self.built = True
 
@@ -178,7 +186,7 @@ class BaseOptimizer:
         grads, trainable_variables = zip(*grads_and_vars)
         return self.apply(grads, trainable_variables)
 
-    def apply(self, grads, variables=None):
+    def apply(self, grads, trainable_variables=None):
         """
         `grads` should be a list of gradient tensors
         with 1:1 mapping to the list of variables the optimizer was built with.
@@ -191,7 +199,7 @@ class BaseOptimizer:
             # `apply_gradients` is a no-op.
             return
 
-        if variables is None:
+        if trainable_variables is None:
             if not self.built:
                 raise ValueError(
                     "When passing `grads` without `variables`, the optimizer "
@@ -208,7 +216,7 @@ class BaseOptimizer:
                 )
             trainable_variables = self._trainable_variables
         else:
-            trainable_variables = list(variables)
+            trainable_variables = list(trainable_variables)
             # Optionally build optimizer.
             if not self.built:
                 with ops.name_scope(self.name):
@@ -246,12 +254,12 @@ class BaseOptimizer:
             self.update_step(grad, var, learning_rate)
         self.iterations.assign(self.iterations + 1)
 
-    def stateless_apply(self, grads, trainable_variables, optimizer_variables):
+    def stateless_apply(self, optimizer_variables, grads, trainable_variables):
         self._check_super_called()
 
         if not self.built:
             raise ValueError(
-                "To call stateless_apply_gradients, {self.__class__.__name__} "
+                f"To call `stateless_apply`, {self.__class__.__name__} "
                 "must be built (i.e. its variables must have been created). "
                 "You can build it via `optimizer.build(trainable_variables)`."
             )
@@ -326,7 +334,7 @@ class BaseOptimizer:
     def save_own_variables(self, store):
         """Get the state of this optimizer object."""
         for i, variable in enumerate(self.variables):
-            store[str(i)] = np.array(variable)
+            store[str(i)] = variable.numpy()
 
     def load_own_variables(self, store):
         """Set the state of this optimizer object."""
@@ -463,9 +471,14 @@ class BaseOptimizer:
             for var, average in zip(
                 var_list, self._model_variables_moving_average
             ):
-                average.assign(
-                    self.ema_momentum * average + (1 - self.ema_momentum) * var
-                )
+                if self._ema_vars_initialized:
+                    average.assign(
+                        self.ema_momentum * average
+                        + (1 - self.ema_momentum) * var
+                    )
+                else:
+                    average.assign(var)
+            self._ema_vars_initialized = True
 
     def _overwrite_model_variables_with_average_value(self, var_list):
         """Overwrite model variables with its moving average."""

@@ -32,6 +32,12 @@ def uniform(shape, minval=0.0, maxval=1.0, dtype=None, seed=None):
     )
 
 
+def categorical(logits, num_samples, dtype="int64", seed=None):
+    seed = tf_draw_seed(seed)
+    output = tf.random.stateless_categorical(logits, num_samples, seed=seed)
+    return tf.cast(output, dtype)
+
+
 def randint(shape, minval, maxval, dtype="int32", seed=None):
     intemediate_dtype = dtype
     if standardize_dtype(dtype) not in ["int32", "int64"]:
@@ -55,8 +61,22 @@ def truncated_normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
     )
 
 
+def _get_concrete_noise_shape(inputs, noise_shape):
+    if noise_shape is None:
+        return tf.shape(inputs)
+
+    concrete_inputs_shape = tf.shape(inputs)
+    concrete_noise_shape = []
+    for i, value in enumerate(noise_shape):
+        concrete_noise_shape.append(
+            concrete_inputs_shape[i] if value is None else value
+        )
+    return concrete_noise_shape
+
+
 def dropout(inputs, rate, noise_shape=None, seed=None):
     seed = tf_draw_seed(seed)
+    noise_shape = _get_concrete_noise_shape(inputs, noise_shape)
     return tf.nn.experimental.stateless_dropout(
         inputs,
         rate=rate,

@@ -3,14 +3,15 @@ from tensorflow import nest
 from keras_core import backend
 from keras_core import losses as losses_module
 from keras_core import metrics as metrics_module
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core.utils.naming import get_object_name
 
 
 class MetricsList(metrics_module.Metric):
-    def __init__(self, metrics, name="metrics_list"):
+    def __init__(self, metrics, name="metrics_list", output_name=None):
         super().__init__(name=name)
         self.metrics = metrics
+        self.output_name = output_name
 
     def update_state(self, y_true, y_pred, sample_weight=None):
         for m in self.metrics:
@@ -117,7 +118,13 @@ def get_loss(identifier, y_true, y_pred):
 
 
 class CompileMetrics(metrics_module.Metric):
-    def __init__(self, metrics, weighted_metrics, name="compile_metric"):
+    def __init__(
+        self,
+        metrics,
+        weighted_metrics,
+        name="compile_metric",
+        output_names=None,
+    ):
         super().__init__(name=name)
         if metrics and not isinstance(metrics, (list, tuple, dict)):
             raise ValueError(
@@ -136,6 +143,7 @@ class CompileMetrics(metrics_module.Metric):
         self._user_weighted_metrics = weighted_metrics
         self.built = False
         self.name = "compile_metrics"
+        self.output_names = output_names
 
     @property
     def variables(self):
@@ -150,9 +158,10 @@ class CompileMetrics(metrics_module.Metric):
         return vars
 
     def build(self, y_true, y_pred):
-        if isinstance(y_pred, dict):
+        if self.output_names:
+            output_names = self.output_names
+        elif isinstance(y_pred, dict):
             output_names = sorted(list(y_pred.keys()))
-            num_outputs = len(output_names)
         elif isinstance(y_pred, (list, tuple)):
             num_outputs = len(y_pred)
             if all(hasattr(x, "_keras_history") for x in y_pred):
@@ -162,15 +171,14 @@ class CompileMetrics(metrics_module.Metric):
         else:
             output_names = None
             num_outputs = 1
+        if output_names:
+            num_outputs = len(output_names)
 
-        y_pred = nest.flatten(y_pred)
-        y_true = nest.flatten(y_true)
+        y_pred = self._flatten_y(y_pred)
+        y_true = self._flatten_y(y_true)
 
         metrics = self._user_metrics
         weighted_metrics = self._user_weighted_metrics
-        if output_names and not num_outputs:
-            num_outputs = len(output_names)
-
         self._flat_metrics = self._build_metrics_set(
             metrics,
             num_outputs,
@@ -193,17 +201,22 @@ class CompileMetrics(metrics_module.Metric):
         self, metrics, num_outputs, output_names, y_true, y_pred, argument_name
     ):
         flat_metrics = []
+        if isinstance(metrics, dict):
+            for name in metrics.keys():
+                if name not in output_names:
+                    raise ValueError(
+                        f"In the dict argument `{argument_name}`, key "
+                        f"'{name}' does not correspond to any model "
+                        f"output. Received:\n{argument_name}={metrics}"
+                    )
         if num_outputs == 1:
             if not metrics:
                 flat_metrics.append(None)
             else:
+                if isinstance(metrics, dict):
+                    metrics = nest.flatten(metrics)
                 if not isinstance(metrics, list):
-                    raise ValueError(
-                        "When there is only a single output, the "
-                        f"`{argument_name}` argument must be a list of metric "
-                        f"objects. Received instead:\n"
-                        f"{argument_name}={metrics} of type {type(metrics)}"
-                    )
+                    metrics = [metrics]
                 if not all(is_function_like(m) for m in metrics):
                     raise ValueError(
                         f"Expected all entries in the `{argument_name}` list "
@@ -230,15 +243,12 @@ class CompileMetrics(metrics_module.Metric):
                         f"length {len(metrics)} whereas the model has "
                         f"{len(y_pred)} outputs."
                     )
-                if not all(isinstance(mls, list) for mls in metrics):
-                    raise ValueError(
-                        "For a model with multiple outputs, "
-                        f"when providing the `{argument_name}` argument as a "
-                        "list, each list entry should itself be a list "
-                        "(the list of metrics corresponding to that output). "
-                        f"Received:\n{argument_name}={metrics}"
-                    )
-                for mls, yt, yp in zip(metrics, y_true, y_pred):
+                for idx, (mls, yt, yp) in enumerate(
+                    zip(metrics, y_true, y_pred)
+                ):
+                    if not isinstance(mls, list):
+                        mls = [mls]
+                    name = output_names[idx] if output_names else None
                     if not all(is_function_like(e) for e in mls):
                         raise ValueError(
                             f"All entries in the sublists of the "
@@ -252,7 +262,8 @@ class CompileMetrics(metrics_module.Metric):
                                 get_metric(m, yt, yp)
                                 for m in mls
                                 if m is not None
-                            ]
+                            ],
+                            output_name=name,
                         )
                     )
             elif isinstance(metrics, dict):
@@ -263,21 +274,8 @@ class CompileMetrics(metrics_module.Metric):
                         f"Received {argument_name}={metrics}"
                     )
                 for name in metrics.keys():
-                    if name not in output_names:
-                        raise ValueError(
-                            f"In the dict argument `{argument_name}`, key "
-                            f"'{name}' does not correspond to any model "
-                            f"output. Received:\n{argument_name}={metrics}"
-                        )
                     if not isinstance(metrics[name], list):
-                        raise ValueError(
-                            "For a model with multiple outputs, "
-                            f"when providing the `{argument_name}` argument as "
-                            "a dict, each dict entry should be a list (the "
-                            "list of metrics corresponding to that output). "
-                            f"At key '{name}', received invalid type:\n"
-                            f"{metrics[name]}"
-                        )
+                        metrics[name] = [metrics[name]]
                     if not all(is_function_like(e) for e in metrics[name]):
                         raise ValueError(
                             f"All entries in the sublists of the "
@@ -293,23 +291,36 @@ class CompileMetrics(metrics_module.Metric):
                                     get_metric(m, yt, yp)
                                     for m in metrics[name]
                                     if m is not None
-                                ]
+                                ],
+                                output_name=name,
                             )
                         )
                     else:
                         flat_metrics.append(None)
         return flat_metrics
 
+    def _flatten_y(self, y):
+        if isinstance(y, dict) and self.output_names:
+            result = []
+            for name in self.output_names:
+                if name in y:
+                    result.append(y[name])
+            return result
+        return nest.flatten(y)
+
     def update_state(self, y_true, y_pred, sample_weight=None):
         if not self.built:
             self.build(y_true, y_pred)
-        y_true = nest.flatten(y_true)
-        y_pred = nest.flatten(y_pred)
+        y_true = self._flatten_y(y_true)
+        y_pred = self._flatten_y(y_pred)
         for m, y_t, y_p in zip(self._flat_metrics, y_true, y_pred):
             if m:
                 m.update_state(y_t, y_p)
         if sample_weight is not None:
-            sample_weight = nest.flatten(sample_weight)
+            sample_weight = self._flatten_y(sample_weight)
+            # For multi-outputs, repeat sample weights for n outputs.
+            if len(sample_weight) < len(y_true):
+                sample_weight = [sample_weight[0] for _ in range(len(y_true))]
         else:
             sample_weight = [None for _ in range(len(y_true))]
         for m, y_t, y_p, s_w in zip(
@@ -339,23 +350,32 @@ class CompileMetrics(metrics_module.Metric):
             if not mls:
                 continue
             for m in mls.metrics:
-                if m.name not in unique_name_counters:
-                    results[m.name] = m.result()
-                    unique_name_counters[m.name] = 1
+                name = m.name
+                if mls.output_name:
+                    name = f"{mls.output_name}_{name}"
+                if name not in unique_name_counters:
+                    results[name] = m.result()
+                    unique_name_counters[name] = 1
                 else:
-                    name = f"{m.name}_{unique_name_counters[m.name]}"
-                    unique_name_counters[m.name] += 1
+                    index = unique_name_counters[name]
+                    unique_name_counters[name] += 1
+                    name = f"{name}_{index}"
                     results[name] = m.result()
 
         for mls in self._flat_weighted_metrics:
             if not mls:
                 continue
             for m in mls.metrics:
-                if m.name not in unique_name_counters:
-                    results[m.name] = m.result()
-                    unique_name_counters[m.name] = 1
+                name = m.name
+                if mls.output_name:
+                    name = f"{mls.output_name}_{name}"
+                if name not in unique_name_counters:
+                    results[name] = m.result()
+                    unique_name_counters[name] = 1
                 else:
                     name = f"weighted_{m.name}"
+                    if mls.output_name:
+                        name = f"{mls.output_name}_{name}"
                     if name not in unique_name_counters:
                         unique_name_counters[name] = 1
                     else:
@@ -375,7 +395,11 @@ class CompileMetrics(metrics_module.Metric):
 
 class CompileLoss(losses_module.Loss):
     def __init__(
-        self, loss, loss_weights=None, reduction="sum_over_batch_size"
+        self,
+        loss,
+        loss_weights=None,
+        reduction="sum_over_batch_size",
+        output_names=None,
     ):
         if loss_weights and not isinstance(loss_weights, (list, tuple, dict)):
             raise ValueError(
@@ -386,12 +410,14 @@ class CompileLoss(losses_module.Loss):
         self._user_loss = loss
         self._user_loss_weights = loss_weights
         self.built = False
+        self.output_names = output_names
         super().__init__(name="compile_loss", reduction=reduction)
 
     def build(self, y_true, y_pred):
-        if isinstance(y_pred, dict):
+        if self.output_names:
+            output_names = self.output_names
+        elif isinstance(y_pred, dict):
             output_names = sorted(list(y_pred.keys()))
-            num_outputs = len(output_names)
         elif isinstance(y_pred, (list, tuple)):
             num_outputs = len(y_pred)
             if all(hasattr(x, "_keras_history") for x in y_pred):
@@ -401,19 +427,34 @@ class CompileLoss(losses_module.Loss):
         else:
             output_names = None
             num_outputs = 1
+        if output_names:
+            num_outputs = len(output_names)
 
-        y_pred = nest.flatten(y_pred)
+        y_pred = self._flatten_y(y_pred)
         loss = self._user_loss
         loss_weights = self._user_loss_weights
         flat_losses = []
         flat_loss_weights = []
 
-        if num_outputs == 1 and not is_function_like(loss):
-            raise ValueError(
-                "When there is only a single output, the `loss` argument "
-                "must be a callable. "
-                f"Received instead:\nloss={loss} of type {type(loss)}"
-            )
+        if isinstance(loss, dict):
+            for name in loss.keys():
+                if name not in output_names:
+                    raise ValueError(
+                        "In the dict argument `loss`, key "
+                        f"'{name}' does not correspond to any model output. "
+                        f"Received:\nloss={loss}"
+                    )
+        if num_outputs == 1:
+            if isinstance(loss, dict):
+                loss = nest.flatten(loss)
+            if isinstance(loss, list) and len(loss) == 1:
+                loss = loss[0]
+            if not is_function_like(loss):
+                raise ValueError(
+                    "When there is only a single output, the `loss` argument "
+                    "must be a callable. "
+                    f"Received instead:\nloss={loss} of type {type(loss)}"
+                )
 
         if is_function_like(loss) and nest.is_nested(y_pred):
             # The model has multiple outputs but only one loss fn
@@ -437,6 +478,7 @@ class CompileLoss(losses_module.Loss):
             else:
                 flat_loss_weights.append(1.0)
         elif isinstance(loss, (list, tuple)):
+            loss = nest.flatten(loss)
             if len(loss) != len(y_pred):
                 raise ValueError(
                     "For a model with multiple outputs, "
@@ -473,11 +515,11 @@ class CompileLoss(losses_module.Loss):
                         f"length {len(loss_weights)} whereas the model has "
                         f"{len(y_pred)} outputs."
                     )
-                if not all(isinstance(e, float) for e in loss_weights):
+                if not all(isinstance(e, (int, float)) for e in loss_weights):
                     raise ValueError(
-                        "For a model with multiple outputs, "
-                        "when providing the `loss_weights` argument as a "
-                        "list, each list entry should be a Python float (the "
+                        "For a model with multiple outputs, when providing "
+                        "the `loss_weights` argument as a list, "
+                        "each list entry should be a Python int or float (the "
                         "weighting coefficient corresponding to the loss for "
                         f"that output). Received: loss_weights={loss_weights}"
                     )
@@ -492,12 +534,8 @@ class CompileLoss(losses_module.Loss):
                     f"Received loss={loss}"
                 )
             for name in loss.keys():
-                if name not in output_names:
-                    raise ValueError(
-                        "In the dict argument `loss`, key "
-                        f"'{name}' does not correspond to any model output. "
-                        f"Received:\nloss={loss}"
-                    )
+                if isinstance(loss[name], list) and len(loss[name]) == 1:
+                    loss[name] = loss[name][0]
                 if not is_function_like(loss[name]):
                     raise ValueError(
                         "For a model with multiple outputs, "
@@ -552,20 +590,31 @@ class CompileLoss(losses_module.Loss):
         with ops.name_scope(self.name):
             return self.call(y_true, y_pred, sample_weight)
 
+    def _flatten_y(self, y):
+        if isinstance(y, dict) and self.output_names:
+            result = []
+            for name in self.output_names:
+                if name in y:
+                    result.append(y[name])
+            return result
+        return nest.flatten(y)
+
     def call(self, y_true, y_pred, sample_weight=None):
         if not self.built:
             self.build(y_true, y_pred)
 
-        y_true = nest.flatten(y_true)
-        y_pred = nest.flatten(y_pred)
+        y_true = self._flatten_y(y_true)
+        y_pred = self._flatten_y(y_pred)
 
         if sample_weight is not None:
-            sample_weight = nest.flatten(sample_weight)
+            sample_weight = self._flatten_y(sample_weight)
+            # For multi-outputs, repeat sample weights for n outputs.
+            if len(sample_weight) < len(y_true):
+                sample_weight = [sample_weight[0] for _ in range(len(y_true))]
         else:
             sample_weight = [None for _ in y_true]
 
         loss_values = []
-
         for loss, y_t, y_p, loss_weight, sample_weight in zip(
             self.flat_losses,
             y_true,

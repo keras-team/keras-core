@@ -3,7 +3,7 @@ import numpy as np
 from keras_core import backend
 from keras_core import initializers
 from keras_core import metrics as metrics_module
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core import testing
 from keras_core.metrics.metric import Metric
 
@@ -48,7 +48,6 @@ class MetricTest(testing.TestCase):
         y_pred = np.random.random((num_samples, 3))
         batch_size = 8
         for b in range(0, num_samples // batch_size + 1):
-            print(b * batch_size, (b + 1) * batch_size)
             y_true_batch = y_true[b * batch_size : (b + 1) * batch_size]
             y_pred_batch = y_pred[b * batch_size : (b + 1) * batch_size]
             metric.update_state(y_true_batch, y_pred_batch)
@@ -60,6 +59,53 @@ class MetricTest(testing.TestCase):
         )
         metric.reset_state()
         self.assertEqual(metric.result(), 0.0)
+
+    def test_stateless_update_state(self):
+        metric = ExampleMetric(name="mse")
+        self.assertEqual(len(metric.variables), 2)
+        original_variable_values = (
+            metric.variables[0].numpy(),
+            metric.variables[1].numpy(),
+        )
+
+        num_samples = 20
+        y_true = np.random.random((num_samples, 3))
+        y_pred = np.random.random((num_samples, 3))
+        batch_size = 8
+        metric_variables = metric.variables
+        for b in range(0, num_samples // batch_size + 1):
+            y_true_batch = y_true[b * batch_size : (b + 1) * batch_size]
+            y_pred_batch = y_pred[b * batch_size : (b + 1) * batch_size]
+            metric_variables = metric.stateless_update_state(
+                metric_variables, y_true_batch, y_pred_batch
+            )
+
+        self.assertAllClose(metric.variables[0], original_variable_values[0])
+        self.assertAllClose(metric.variables[1], original_variable_values[1])
+        metric.variables[0].assign(metric_variables[0])
+        metric.variables[1].assign(metric_variables[1])
+        self.assertAllClose(metric.total, 20)
+        result = metric.result()
+        self.assertAllClose(
+            result, np.sum((y_true - y_pred) ** 2) / num_samples
+        )
+
+        if backend.backend() == "jax":
+            # Check no side effects.
+            import jax
+
+            @jax.jit
+            def update(metric_variables, y_true_batch, y_pred_batch):
+                metric_variables = metric.stateless_update_state(
+                    metric_variables, y_true_batch, y_pred_batch
+                )
+
+            update(metric_variables, y_true_batch, y_pred_batch)
+
+    def test_stateless_result(self):
+        metric = ExampleMetric(name="mse")
+        res = metric.stateless_result([ops.ones(()) * 12, ops.ones(()) * 3])
+        self.assertAllClose(res, 4.0)
 
     def test_variable_tracking(self):
         # In list

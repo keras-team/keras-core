@@ -158,7 +158,6 @@ devices = mesh_utils.create_device_mesh((8,))
 data_mesh = Mesh(devices, axis_names=("batch",))  # naming axes of the mesh
 # naming axes of the sharded partition
 data_sharding = NamedSharding(data_mesh,P("batch",),)
-
 # all variables will be replicated on all devices
 var_mesh = Mesh(devices, axis_names=("_"))
 # in NamedSharding, axes that are not mentioned are replicated (all axes here)

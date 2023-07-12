@@ -1,5 +1,5 @@
 from keras_core import backend
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
 
@@ -61,7 +61,7 @@ class Masking(Layer):
         try:
             outputs._keras_mask = ops.squeeze(boolean_mask, axis=-1)
         except AttributeError:
-            # outputs in a C type.
+            # tensor is a C type.
             pass
         return outputs
 

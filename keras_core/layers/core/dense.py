@@ -1,7 +1,7 @@
 from keras_core import activations
 from keras_core import constraints
 from keras_core import initializers
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core import regularizers
 from keras_core.api_export import keras_core_export
 from keras_core.layers.input_spec import InputSpec
@@ -82,6 +82,7 @@ class Dense(Layer):
         self.bias_constraint = constraints.get(bias_constraint)
 
         self.input_spec = InputSpec(min_ndim=2)
+        self.supports_masking = True
 
     def build(self, input_shape):
         input_dim = input_shape[-1]

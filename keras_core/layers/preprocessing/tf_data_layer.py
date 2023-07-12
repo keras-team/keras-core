@@ -1,6 +1,10 @@
-from keras_core import backend
+from tensorflow import nest
+
+import keras_core.backend
 from keras_core.layers.layer import Layer
+from keras_core.random.seed_generator import SeedGenerator
 from keras_core.utils import backend_utils
+from keras_core.utils import tracking
 
 
 class TFDataLayer(Layer):
@@ -18,12 +22,15 @@ class TFDataLayer(Layer):
 
     def __call__(self, inputs, **kwargs):
         if backend_utils.in_tf_graph() and not isinstance(
-            inputs, backend.KerasTensor
+            inputs, keras_core.backend.KerasTensor
         ):
             # We're in a TF graph, e.g. a tf.data pipeline.
             self.backend.set_backend("tensorflow")
-            inputs = self.backend.convert_to_tensor(
-                inputs, dtype=self.compute_dtype
+            inputs = nest.map_structure(
+                lambda x: self.backend.convert_to_tensor(
+                    x, dtype=self.compute_dtype
+                ),
+                inputs,
             )
             switch_convert_input_args = False
             if self._convert_input_args:
@@ -37,3 +44,15 @@ class TFDataLayer(Layer):
                     self._convert_input_args = True
             return outputs
         return super().__call__(inputs, **kwargs)
+
+    @tracking.no_automatic_dependency_tracking
+    def _get_seed_generator(self, backend=None):
+        if backend is None or backend == keras_core.backend.backend():
+            return self.generator
+        if not hasattr(self, "_backend_generators"):
+            self._backend_generators = {}
+        if backend in self._backend_generators:
+            return self._backend_generators[backend]
+        seed_generator = SeedGenerator(self.seed, backend=self.backend)
+        self._backend_generators[backend] = seed_generator
+        return seed_generator

@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 from keras_core import backend
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
 
@@ -296,12 +296,17 @@ class Normalization(Layer):
     def call(self, inputs):
         inputs = backend.convert_to_tensor(inputs, dtype=self.compute_dtype)
         if self.invert:
-            return self.mean + (
-                inputs * ops.maximum(ops.sqrt(self.variance), backend.epsilon())
+            return ops.add(
+                self.mean,
+                ops.multiply(
+                    inputs,
+                    ops.maximum(ops.sqrt(self.variance), backend.epsilon()),
+                ),
             )
         else:
-            return (inputs - self.mean) / ops.maximum(
-                ops.sqrt(self.variance), backend.epsilon()
+            return ops.divide(
+                ops.subtract(inputs, self.mean),
+                ops.maximum(ops.sqrt(self.variance), backend.epsilon()),
             )
 
     def compute_output_shape(self, input_shape):

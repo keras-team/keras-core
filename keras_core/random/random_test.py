@@ -5,7 +5,7 @@ from absl.testing import parameterized
 import keras_core
 from keras_core import backend
 from keras_core import testing
-from keras_core.operations import numpy as knp
+from keras_core.ops import numpy as knp
 from keras_core.random import random
 
 
@@ -41,6 +41,30 @@ class RandomTest(testing.TestCase, parameterized.TestCase):
         self.assertGreaterEqual(knp.max(res), minval)
 
     @parameterized.parameters(
+        {"seed": 10, "num_samples": 1, "batch_size": 1},
+        {"seed": 10, "num_samples": 5, "batch_size": 2},
+        {"seed": 10, "num_samples": 10, "batch_size": 4},
+        {"seed": 10, "num_samples": 15, "batch_size": 8},
+    )
+    def test_categorical(self, seed, num_samples, batch_size):
+        np.random.seed(seed)
+        # Create logits that definitely favors the batch index after a softmax
+        # is applied. Without a softmax, this would be close to random.
+        logits = np.eye(batch_size) * 1e5 + 1e6
+        res = random.categorical(logits, num_samples, seed=seed)
+        # Outputs should have shape `(batch_size, num_samples)`, where each
+        # output index matches the batch index.
+        self.assertEqual(res.shape, (batch_size, num_samples))
+        expected = np.tile(np.arange(batch_size)[:, None], (1, num_samples))
+        self.assertAllClose(res, expected)
+
+    def test_categorical_errors(self):
+        with self.assertRaises(ValueError):
+            random.categorical(np.ones((5,)), 5)
+        with self.assertRaises(ValueError):
+            random.categorical(np.ones((5, 5, 5)), 5)
+
+    @parameterized.parameters(
         {"seed": 10, "shape": (5,), "min": 0, "max": 10, "dtype": "uint16"},
         {"seed": 10, "shape": (2, 3), "min": 0, "max": 10, "dtype": "uint32"},
         {"seed": 10, "shape": (2, 3, 4), "min": 0, "max": 2, "dtype": "int8"},
@@ -67,6 +91,8 @@ class RandomTest(testing.TestCase, parameterized.TestCase):
         {"seed": 10, "shape": (2, 3, 4), "mean": 0, "stddev": 1},
         {"seed": 10, "shape": (2, 3), "mean": 10, "stddev": 1},
         {"seed": 10, "shape": (2, 3), "mean": 10, "stddev": 3},
+        # Test list shapes.
+        {"seed": 10, "shape": [2, 3], "mean": 10, "stddev": 3},
     )
     def test_truncated_normal(self, seed, shape, mean, stddev):
         np.random.seed(seed)
@@ -74,7 +100,7 @@ class RandomTest(testing.TestCase, parameterized.TestCase):
         res = random.truncated_normal(
             shape, mean=mean, stddev=stddev, seed=seed
         )
-        self.assertEqual(res.shape, shape)
+        self.assertEqual(res.shape, tuple(shape))
         self.assertEqual(res.shape, np_res.shape)
         self.assertLessEqual(knp.max(res), mean + 2 * stddev)
         self.assertGreaterEqual(knp.max(res), mean - 2 * stddev)

@@ -6,7 +6,7 @@ from tensorflow import nest
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.backend.common.keras_tensor import any_symbolic_tensors
-from keras_core.operations.node import Node
+from keras_core.ops.node import Node
 from keras_core.utils import python_utils
 from keras_core.utils import traceback_utils
 from keras_core.utils.naming import auto_name
@@ -71,7 +71,8 @@ class Operation:
                 f"'{self.name}' (of type {self.__class__.__name__}). "
                 f"Either the `{self.__class__.__name__}.call()` method "
                 f"is incorrect, or you need to implement the "
-                f"`{self.__class__.__name__}.compute_output_spec()` method. "
+                f"`{self.__class__.__name__}.compute_output_spec() / "
+                "compute_output_shape()` method. "
                 f"Error encountered:\n\n{e}"
             )
             raise new_e.with_traceback(e.__traceback__) from None
@@ -123,10 +124,7 @@ class Operation:
         """Returns the config of the object.
 
         An object config is a Python dictionary (serializable)
-        containing the information needed to re-insstantiate it.
-
-        Returns:
-            Python dictionary.
+        containing the information needed to re-instantiate it.
         """
         config = {
             "name": self.name,

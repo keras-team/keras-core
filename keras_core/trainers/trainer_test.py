@@ -8,6 +8,7 @@ from keras_core import initializers
 from keras_core import layers
 from keras_core import losses
 from keras_core import metrics
+from keras_core import ops
 from keras_core import optimizers
 from keras_core import testing
 from keras_core.callbacks.callback import Callback
@@ -347,3 +348,218 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         x1, x2 = np.random.rand(2, 3, 4)
         out = model.predict({"a": x1, "b": x2})
         self.assertEqual(out.shape, (3, 4))
+
+    def test_callback_methods_keys(self):
+        class CustomCallback(Callback):
+            def on_train_begin(self, logs=None):
+                keys = sorted(list(logs.keys()))
+                assert keys == []
+
+            def on_train_end(self, logs=None):
+                keys = sorted(list(logs.keys()))
+                assert keys == [
+                    "loss",
+                    "mean_absolute_error",
+                    "val_loss",
+                    "val_mean_absolute_error",
+                ]
+
+            def on_epoch_begin(self, epoch, logs=None):
+                keys = sorted(list(logs.keys()))
+                assert keys == []
+
+            def on_epoch_end(self, epoch, logs=None):
+                keys = sorted(list(logs.keys()))
+                assert keys == [
+                    "loss",
+                    "mean_absolute_error",
+                    "val_loss",
+                    "val_mean_absolute_error",
+                ]
+
+            def on_test_begin(self, logs=None):
+                keys = sorted(list(logs.keys()))
+                assert keys == []
+
+            def on_test_end(self, logs=None):
+                keys = sorted(list(logs.keys()))
+                assert keys == ["loss", "mean_absolute_error"]
+
+            def on_predict_begin(self, logs=None):
+                keys = sorted(list(logs.keys()))
+                assert keys == []
+
+            def on_predict_end(self, logs=None):
+                keys = sorted(list(logs.keys()))
+                assert keys == []
+
+            def on_train_batch_begin(self, batch, logs=None):
+                keys = sorted(list(logs.keys()))
+                assert keys == []
+
+            def on_train_batch_end(self, batch, logs=None):
+                keys = sorted(list(logs.keys()))
+                assert keys == ["loss", "mean_absolute_error"]
+
+            def on_test_batch_begin(self, batch, logs=None):
+                keys = sorted(list(logs.keys()))
+                assert keys == []
+
+            def on_test_batch_end(self, batch, logs=None):
+                keys = sorted(list(logs.keys()))
+                assert keys == ["loss", "mean_absolute_error"]
+
+            def on_predict_batch_begin(self, batch, logs=None):
+                keys = sorted(list(logs.keys()))
+                assert keys == []
+
+            def on_predict_batch_end(self, batch, logs=None):
+                keys = sorted(list(logs.keys()))
+                assert keys == ["outputs"]
+
+        model = ExampleModel(units=3)
+        model.compile(optimizer="adam", loss="mse", metrics=["mae"])
+        x = np.ones((16, 4))
+        y = np.zeros((16, 3))
+        x_test = np.ones((16, 4))
+        y_test = np.zeros((16, 3))
+        model.fit(
+            x,
+            y,
+            callbacks=[CustomCallback()],
+            batch_size=4,
+            validation_data=(x_test, y_test),
+        )
+        model.evaluate(x_test, y_test, batch_size=4)
+        model.predict(x_test, batch_size=4)
+
+    def test_internal_only_loss(self):
+        class LossLayer(layers.Layer):
+            def call(self, x):
+                self.add_loss(ops.sum(x))
+                return x
+
+        model = keras_core.Sequential(
+            [
+                layers.Dense(2),
+                LossLayer(),
+                layers.Dense(1),
+            ]
+        )
+        model.compile(optimizer="adam")
+        x = np.ones((16, 2))
+        y = np.zeros((16, 1))
+        model.fit(x, y, batch_size=4)
+
+    def get_layer(self):
+        class ExampleLayer(keras_core.Layer):
+            def call(self, x):
+                return x * 2
+
+        return ExampleLayer
+
+    def get_model(self):
+        class ExampleModel(keras_core.Model):
+            def call(self, x):
+                return x * 2
+
+        return ExampleModel
+
+    def get_functional(self):
+        ExampleLayer = self.get_layer()
+
+        class ExampleFunctional(keras_core.Functional):
+            def __init__(self, input_shape=(None,)):
+                inputs = keras_core.Input(input_shape)
+                outputs = ExampleLayer()(inputs)
+                super().__init__(inputs=inputs, outputs=outputs)
+
+        return ExampleFunctional
+
+    @parameterized.named_parameters(
+        [
+            {
+                "testcase_name": "model",
+                "model_class": "get_model",
+            },
+            {
+                "testcase_name": "layer",
+                "model_class": "get_layer",
+            },
+            {
+                "testcase_name": "functional",
+                "model_class": "get_functional",
+            },
+        ]
+    )
+    @pytest.mark.skipif(
+        keras_core.backend.backend() != "tensorflow",
+        reason="Only tensorflow supports raggeds",
+    )
+    def test_trainer_with_raggeds(self, model_class):
+        import tensorflow as tf
+
+        def loss_fn(y, y_pred, sample_weight=None):
+            return 0
+
+        model = getattr(self, model_class)()()
+        x = tf.ragged.constant([[1], [2, 3]])
+
+        # test forward pass
+        y = model(x)
+        self.assertEqual(type(y), tf.RaggedTensor)
+
+        # test training
+        if model_class in ["get_model", "get_functional"]:
+            model.compile(optimizer="adam", loss=loss_fn)
+            model.fit(x, x)
+            y = model.predict(x)
+            self.assertEqual(type(y), tf.RaggedTensor)
+
+        # test if everything works with the sequential model
+        model = keras_core.Sequential([model])
+        model.compile(optimizer="adam", loss=loss_fn)
+        model.fit(x, x)
+        y = model.predict(x)
+        self.assertEqual(type(y), tf.RaggedTensor)
+
+    def test_predict_dropout(self):
+        # Test that `predict` with a dropout op
+        # has nondeterministic behavior across batches.
+
+        inputs = layers.Input((20,))
+        outputs = layers.Dropout(0.5, seed=1337)(inputs, training=True)
+        model = keras_core.Model(inputs, outputs)
+        out1 = model.predict(np.ones((4, 20)), batch_size=2)
+        self.assertGreater(5, np.sum(np.abs(out1[:2, :] - out1[2:4, :])))
+
+        out2 = model.predict_on_batch(np.ones((2, 20)))
+        out3 = model.predict_on_batch(np.ones((2, 20)))
+        self.assertGreater(5, np.sum(np.abs(out2 - out3)))
+
+    def test_recompile(self):
+        inputs = layers.Input((2,))
+        outputs = layers.Dense(3)(inputs)
+        model = keras_core.Model(inputs, outputs)
+        model.compile(optimizer="sgd", loss="mse", metrics=["mse"])
+        history_1 = model.fit(np.ones((3, 2)), np.ones((3, 3))).history
+        eval_out_1 = model.evaluate(
+            np.ones((3, 2)), np.ones((3, 3)), return_dict=True
+        )
+        model.compile(optimizer="sgd", loss="mse", metrics=["mae"])
+        history_2 = model.fit(np.ones((3, 2)), np.ones((3, 3))).history
+        eval_out_2 = model.evaluate(
+            np.ones((3, 2)), np.ones((3, 3)), return_dict=True
+        )
+        self.assertEqual(
+            sorted(list(history_1.keys())), ["loss", "mean_squared_error"]
+        )
+        self.assertEqual(
+            sorted(list(eval_out_1.keys())), ["loss", "mean_squared_error"]
+        )
+        self.assertEqual(
+            sorted(list(history_2.keys())), ["loss", "mean_absolute_error"]
+        )
+        self.assertEqual(
+            sorted(list(eval_out_2.keys())), ["loss", "mean_absolute_error"]
+        )
