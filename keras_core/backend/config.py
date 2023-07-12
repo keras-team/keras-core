@@ -247,8 +247,7 @@ def backend():
             `"tensorflow"`, `"torch"`, or `"jax"`.
 
     Example:
-
-    >>> keras.config.backend()
-    'tensorflow'
+        >>> keras_core.config.backend()
+        'tensorflow'
     """
     return _BACKEND
