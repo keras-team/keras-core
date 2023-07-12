@@ -1,6 +1,3 @@
-"""Keras Core Applications are premade architectures with pre-trained weights."""
-
-
 from keras_core.applications.convnext import ConvNeXtBase
 from keras_core.applications.convnext import ConvNeXtLarge
 from keras_core.applications.convnext import ConvNeXtSmall
