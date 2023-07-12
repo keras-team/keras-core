@@ -344,6 +344,13 @@ def while_loop(
     return loop_vars
 
 
+def fori_loop(start, end, body_fun, init_val):
+    val = init_val
+    for i in range(start, end):
+        val = body_fun(i, val)
+    return val
+
+
 def stop_gradient(variable):
     # We can't use `.requires_grad_(False)` here since it only
     # works when the tensor is a leaf node in the graph.

@@ -241,6 +241,9 @@ def while_loop(
         outputs = outputs[:-1]
     return outputs
 
+def fori_loop(lower, upper, body_fun, loop_vars):
+    return jax.lax.fori_loop(lower, upper, body_fun, loop_vars)
+
 
 def stop_gradient(variable):
     return jax.lax.stop_gradient(variable)
