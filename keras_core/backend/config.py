@@ -235,7 +235,12 @@ if "KERAS_BACKEND" in os.environ:
     ]
 )
 def backend():
-    """Publicly accessible method for determining the current backend.
+    """Publicly accessible method for determining the current backend. Note that the
+    backend needs to be set before the import of `keras_core` otherwise the default
+    backend ("tensorflow") will be used if `KERAS_BACKEND` env variable is not set. If
+    you already imported `keras_core` but want to use another backend, make sure to set
+    the `KERAS_BACKEND` env variable or updating the `~/.keras/keras.json` config file
+    before importing `keras_core`.
 
     Returns:
         String, the name of the backend Keras is currently using. One of
