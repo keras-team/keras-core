@@ -15,6 +15,9 @@ _IMAGE_DATA_FORMAT = "channels_last"
 # Default backend: TensorFlow.
 _BACKEND = "tensorflow"
 
+# Supported backends (add noqa to ignore unused variable)
+_SUPPORTED_BACKENDS = ["tensorflow", "torch", "jax"]  # noqa: F841
+
 
 @keras_core_export(["keras_core.config.floatx", "keras_core.backend.floatx"])
 def floatx():
