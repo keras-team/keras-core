@@ -43,3 +43,45 @@ def qr(x, mode="reduced"):
             f"Received: mode={mode}"
         )
     return jax.numpy.linalg.qr(x, mode=mode)
+
+
+def _get_complex_tensor_from_tuple(a):
+    if not isinstance(a, tuple):
+        raise ValueError(
+            "Input `a` should be a tuple of two tensors - real and imaginary."
+            f"Received: a={a}"
+        )
+    # `convert_to_tensor` does not support passing complex tensors. We separate
+    # the input out into real and imaginary and convert them separately.
+    real, imag = a
+    # Check shapes.
+    if real.shape != imag.shape:
+        raise ValueError(
+            "Input `a` should be a tuple of two tensors - real and imaginary."
+            "Both real and imaginary should have the same shape. "
+            f"Received: real.shape = {real.shape}, imag.shape = {imag.shape}"
+        )
+    # Ensure dtype is float.
+    if not jnp.issubdtype(real.dtype, jnp.floating) or not jnp.issubdtype(
+        imag.dtype, jnp.floating
+    ):
+        raise ValueError(
+            "At least one tensor in input `a` is not of type float."
+            f"Received: a={a}."
+        )
+    complex_input = jax.lax.complex(real, imag)
+    return complex_input
+
+
+def fft(a):
+    complex_input = _get_complex_tensor_from_tuple(a)
+    complex_output = jax.numpy.fft.fft(complex_input)
+    return jax.numpy.real(complex_output), jax.numpy.imag(complex_output)
+
+
+def fft2(a):
+    complex_input = _get_complex_tensor_from_tuple(a)
+    complex_output = jax.numpy.fft.fft2(
+        complex_input
+    )
+    return jax.numpy.real(complex_output), jax.numpy.imag(complex_output)
