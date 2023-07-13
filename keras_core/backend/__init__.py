@@ -1,10 +1,4 @@
-from keras_core.backend.config import backend, _SUPPORTED_BACKENDS
-
-if backend() not in _SUPPORTED_BACKENDS:
-    raise ValueError(
-        f"Backend ({backend()}) is not supported, supported backends are:"
-        f" {', '.join(_SUPPORTED_BACKENDS)}."
-    )
+from keras_core.backend.config import backend
 
 if backend() == "torch":
     # When using the torch backend,
@@ -43,3 +37,7 @@ elif backend() == "jax":
 elif backend() == "torch":
     print_msg("Using PyTorch backend.")
     from keras_core.backend.torch import *  # noqa: F403
+raise ValueError(
+    f"Backend ({backend()}) is not supported, supported backends are:"
+    " 'tensorflow', 'torch', and 'jax'."
+)

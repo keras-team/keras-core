@@ -15,9 +15,6 @@ _IMAGE_DATA_FORMAT = "channels_last"
 # Default backend: TensorFlow.
 _BACKEND = "tensorflow"
 
-# Supported backends (add noqa to ignore unused variable)
-_SUPPORTED_BACKENDS = ["tensorflow", "torch", "jax"]  # noqa: F841
-
 
 @keras_core_export(["keras_core.config.floatx", "keras_core.backend.floatx"])
 def floatx():
@@ -238,19 +235,20 @@ if "KERAS_BACKEND" in os.environ:
     ]
 )
 def backend():
-    """Publicly accessible method for determining the current backend. Note that the
-    backend needs to be set before the import of `keras_core` otherwise the default
-    backend ("tensorflow") will be used if `KERAS_BACKEND` env variable is not set. If
-    you already imported `keras_core` but want to use another backend, make sure to set
-    the `KERAS_BACKEND` env variable or updating the `~/.keras/keras.json` config file
-    before importing `keras_core`.
+    """Publicly accessible method for determining the current backend.
+    
+    Note that the backend needs to be set before the import of `keras_core` otherwise
+    the default backend ("tensorflow") will be used if `KERAS_BACKEND` env variable is
+    not set. If you already imported `keras_core` but want to use another backend, make
+    sure to set the `KERAS_BACKEND` env variable or updating the `~/.keras/keras.json`
+    config file before importing `keras_core`.
 
     Returns:
         String, the name of the backend Keras is currently using. One of
             `"tensorflow"`, `"torch"`, or `"jax"`.
 
     Example:
-        >>> keras_core.config.backend()
-        'tensorflow'
+    >>> keras_core.config.backend()
+    'tensorflow'
     """
     return _BACKEND
