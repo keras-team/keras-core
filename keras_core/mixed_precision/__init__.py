@@ -1,4 +1,5 @@
 from keras_core.mixed_precision.dtype_policy import DTypePolicy
+from keras_core.mixed_precision.dtype_policy import DTypePolicy as Policy
 from keras_core.mixed_precision.dtype_policy import dtype_policy
 from keras_core.mixed_precision.dtype_policy import set_dtype_policy
 from keras_core.saving import serialization_lib
