@@ -128,13 +128,12 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         ]
     )
     def test_affine(self, method, fill_mode, data_format):
-        rng = np.random.default_rng(0)
         # Unbatched case
         if data_format == "channels_first":
-            x = rng.random((3, 50, 50)) * 255
+            x = np.random.random((3, 50, 50)) * 255
         else:
-            x = rng.random((50, 50, 3)) * 255
-        transform = rng.random(size=(6))
+            x = np.random.random((50, 50, 3)) * 255
+        transform = np.random.random(size=(6))
         transform = np.pad(transform, (0, 2))  # makes c1, c2 always 0
         out = kimage.affine(
             x,
@@ -166,10 +165,10 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
 
         # Batched case
         if data_format == "channels_first":
-            x = rng.random((2, 3, 50, 50)) * 255
+            x = np.random.random((2, 3, 50, 50)) * 255
         else:
-            x = rng.random((2, 50, 50, 3)) * 255
-        transform = rng.random(size=(2, 6))
+            x = np.random.random((2, 50, 50, 3)) * 255
+        transform = np.random.random(size=(2, 6))
         transform = np.pad(transform, [(0, 0), (0, 2)])  # makes c1, c2 always 0
         out = kimage.affine(
             x,
