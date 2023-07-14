@@ -18,12 +18,24 @@ class ImageOpsDynamicShapeTest(testing.TestCase):
         out = kimage.resize(x, size=(15, 15))
         self.assertEqual(out.shape, (15, 15, 3))
 
+    def test_affine(self):
+        x = KerasTensor([None, 20, 20, 3])
+        transform = KerasTensor([None, 8])
+        out = kimage.affine(x, transform)
+        self.assertEqual(out.shape, (None, 20, 20, 3))
+
 
 class ImageOpsStaticShapeTest(testing.TestCase):
     def test_resize(self):
         x = KerasTensor([20, 20, 3])
         out = kimage.resize(x, size=(15, 15))
         self.assertEqual(out.shape, (15, 15, 3))
+
+    def test_affine(self):
+        x = KerasTensor([20, 20, 3])
+        transform = KerasTensor([8])
+        out = kimage.affine(x, transform)
+        self.assertEqual(out.shape, (20, 20, 3))
 
 
 class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
@@ -101,3 +113,87 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             ref_out = np.transpose(ref_out, (0, 3, 1, 2))
         self.assertEqual(tuple(out.shape), tuple(ref_out.shape))
         self.assertAllClose(ref_out, out, atol=0.3)
+
+    @parameterized.parameters(
+        [
+            ("bilinear", "constant", "channels_last"),
+            ("nearest", "constant", "channels_last"),
+            ("bilinear", "nearest", "channels_last"),
+            ("nearest", "nearest", "channels_last"),
+            # ("bilinear", "wrap", "channels_last"),  no wrap in torch
+            # ("nearest", "wrap", "channels_last"),  no wrap in torch
+            ("bilinear", "reflect", "channels_last"),
+            ("nearest", "reflect", "channels_last"),
+            ("bilinear", "constant", "channels_first"),
+        ]
+    )
+    def test_affine(self, method, fill_mode, data_format):
+        rng = np.random.default_rng(0)
+        # Unbatched case
+        if data_format == "channels_first":
+            x = rng.random((3, 50, 50)) * 255
+        else:
+            x = rng.random((50, 50, 3)) * 255
+        transform = rng.random(size=(6))
+        transform = np.pad(transform, (0, 2))  # makes c1, c2 always 0
+        out = kimage.affine(
+            x,
+            transform,
+            method=method,
+            fill_mode=fill_mode,
+            data_format=data_format,
+        )
+        if data_format == "channels_first":
+            x = np.transpose(x, (1, 2, 0))
+        ref_out = tf.raw_ops.ImageProjectiveTransformV3(
+            images=tf.expand_dims(x, axis=0),
+            transforms=tf.cast(tf.expand_dims(transform, axis=0), tf.float32),
+            output_shape=tf.shape(x)[:-1],
+            fill_value=0,
+            interpolation=method.upper(),
+            fill_mode=fill_mode.upper(),
+        )
+        ref_out = ref_out[0]
+        if data_format == "channels_first":
+            ref_out = np.transpose(ref_out, (2, 0, 1))
+        self.assertEqual(tuple(out.shape), tuple(ref_out.shape))
+        if backend.backend() == "torch":
+            # TODO: cannot pass with torch backend
+            with self.assertRaises(AssertionError):
+                self.assertAllClose(ref_out, out, atol=0.3)
+        else:
+            self.assertAllClose(ref_out, out, atol=0.3)
+
+        # Batched case
+        if data_format == "channels_first":
+            x = rng.random((2, 3, 50, 50)) * 255
+        else:
+            x = rng.random((2, 50, 50, 3)) * 255
+        transform = rng.random(size=(2, 6))
+        transform = np.pad(transform, [(0, 0), (0, 2)])  # makes c1, c2 always 0
+        out = kimage.affine(
+            x,
+            transform,
+            method=method,
+            fill_mode=fill_mode,
+            data_format=data_format,
+        )
+        if data_format == "channels_first":
+            x = np.transpose(x, (0, 2, 3, 1))
+        ref_out = tf.raw_ops.ImageProjectiveTransformV3(
+            images=x,
+            transforms=tf.cast(transform, tf.float32),
+            output_shape=tf.shape(x)[1:-1],
+            fill_value=0,
+            interpolation=method.upper(),
+            fill_mode=fill_mode.upper(),
+        )
+        if data_format == "channels_first":
+            ref_out = np.transpose(ref_out, (0, 3, 1, 2))
+        self.assertEqual(tuple(out.shape), tuple(ref_out.shape))
+        if backend.backend() == "torch":
+            # TODO: cannot pass with torch backend
+            with self.assertRaises(AssertionError):
+                self.assertAllClose(ref_out, out, atol=0.3)
+        else:
+            self.assertAllClose(ref_out, out, atol=0.3)

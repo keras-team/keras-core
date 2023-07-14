@@ -63,3 +63,70 @@ def resize(
     return backend.image.resize(
         image, size, method=method, antialias=antialias, data_format=data_format
     )
+
+
+class Affine(Operation):
+    def __init__(
+        self,
+        method="bilinear",
+        fill_mode="constant",
+        fill_value=0,
+        data_format="channels_last",
+    ):
+        super().__init__()
+        self.method = method
+        self.fill_mode = fill_mode
+        self.fill_value = fill_value
+        self.data_format = data_format
+
+    def call(self, image, transform):
+        return backend.image.affine(
+            image,
+            transform,
+            method=self.method,
+            fill_mode=self.fill_mode,
+            fill_value=self.fill_value,
+            data_format=self.data_format,
+        )
+
+    def compute_output_spec(self, image, transform):
+        if len(image.shape) not in (3, 4):
+            raise ValueError(
+                "Invalid image rank: expected rank 3 (single image) "
+                "or rank 4 (batch of images). Received input with shape: "
+                f"image.shape={image.shape}"
+            )
+        if len(transform.shape) not in (1, 2):
+            raise ValueError(
+                "Invalid transform rank: expected rank 1 (single transform) "
+                "or rank 2 (batch of transforms). Received input with shape: "
+                f"transform.shape={transform.shape}"
+            )
+        return KerasTensor(image.shape, dtype=image.dtype)
+
+
+@keras_core_export("keras_core.ops.image.affine")
+def affine(
+    image,
+    transform,
+    method="bilinear",
+    fill_mode="constant",
+    fill_value=0,
+    data_format="channels_last",
+):
+    # TODO: add docstring
+    if any_symbolic_tensors((image, transform)):
+        return Affine(
+            method=method,
+            fill_mode=fill_mode,
+            fill_value=fill_value,
+            data_format=data_format,
+        ).symbolic_call(image, transform)
+    return backend.image.affine(
+        image,
+        transform,
+        method=method,
+        fill_mode=fill_mode,
+        fill_value=fill_value,
+        data_format=data_format,
+    )
