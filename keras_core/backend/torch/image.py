@@ -1,5 +1,5 @@
 import torch
-from torch.nn import functional as F
+import torch.nn.functional as tnn
 
 from keras_core.backend.torch.core import convert_to_tensor
 
@@ -113,7 +113,7 @@ def _apply_grid_transform(
         )
         float_img = torch.cat((float_img, mask), dim=1)
 
-    float_img = F.grid_sample(
+    float_img = tnn.grid_sample(
         float_img,
         grid,
         mode=method,
@@ -210,7 +210,7 @@ def affine(
         transform[:, 5] * 2 / h + theta[:, 1, 0] + theta[:, 1, 1] - 1
     )
 
-    grid = F.affine_grid(theta, image.shape)
+    grid = tnn.affine_grid(theta, image.shape)
     affined = _apply_grid_transform(image, grid, method, fill_mode, fill_value)
 
     if data_format == "channels_last":
