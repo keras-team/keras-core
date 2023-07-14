@@ -180,8 +180,13 @@ class FFT(Operation):
         self.norm = norm
 
     def compute_output_spec(self, a):
-        real, imag = a
+        if not isinstance(a, (tuple, list)) or len(a) != 2:
+            raise ValueError(
+                "Input `a` should be a tuple of two tensors - real and "
+                f"imaginary. Received: a={a}"
+            )
 
+        real, imag = a
         # Both real and imaginary parts should have the same shape.
         if real.shape != imag.shape:
             raise ValueError(
@@ -223,10 +228,10 @@ class FFT2(Operation):
                 "`s` argument value not supported. "
                 f"Expected `None`. Received: s={s}"
             )
-        if axes != (-2, -1):
+        if axes != (-2, -1) and axes != [-2, -1]:
             raise ValueError(
                 "`axes` argument value not supported. "
-                f"Expected `(-2, -1)`. Received: axes={axes}"
+                f"Expected `(-2, -1)`/`[-2, -1]`. Received: axes={axes}"
             )
         if norm is not None:
             raise ValueError(
@@ -238,8 +243,13 @@ class FFT2(Operation):
         self.norm = norm
 
     def compute_output_spec(self, a):
-        real, imag = a
+        if not isinstance(a, (tuple, list)) or len(a) != 2:
+            raise ValueError(
+                "Input `a` should be a tuple of two tensors - real and "
+                f"imaginary. Received: a={a}"
+            )
 
+        real, imag = a
         # Both real and imaginary parts should have the same shape.
         if real.shape != imag.shape:
             raise ValueError(
