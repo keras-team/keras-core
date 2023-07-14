@@ -92,6 +92,8 @@ def _get_complex_tensor_from_tuple(a):
     # `convert_to_tensor` does not support passing complex tensors. We separate
     # the input out into real and imaginary and convert them separately.
     real, imag = a
+    real = convert_to_tensor(real)
+    imag = convert_to_tensor(imag)
     # Check shape.
     if real.shape != imag.shape:
         raise ValueError(
@@ -105,8 +107,6 @@ def _get_complex_tensor_from_tuple(a):
             "At least one tensor in input `a` is not of type float."
             f"Received: a={a}."
         )
-    real = convert_to_tensor(real)
-    imag = convert_to_tensor(imag)
 
     complex_input = torch.complex(real, imag)
     return complex_input
