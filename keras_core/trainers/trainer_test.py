@@ -117,14 +117,13 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
             weighted_metrics=[metrics.MeanSquaredError()],
         )
         model_weighted.fit(
-            x, 
+            x,
             y,
             batch_size=2,
-            epochs=1, 
+            epochs=1,
             sample_weight=np.ones(2),
         )
         self.assertEqual(len(model_weighted.metrics), 3)
-
 
     @parameterized.named_parameters(
         [
