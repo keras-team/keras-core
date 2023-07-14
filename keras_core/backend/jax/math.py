@@ -73,15 +73,43 @@ def _get_complex_tensor_from_tuple(a):
     return complex_input
 
 
-def fft(a):
+def fft(a, n=None, axis=-1, norm=None):
+    if n is not None:
+        raise ValueError(
+            "`n` argument value not supported. "
+            f"Expected `None`. Received: n={n}"
+        )
+    if axis != -1:
+        raise ValueError(
+            "`axis` argument value not supported. "
+            f"Expected `-1`. Received: axis={axis}"
+        )
+    if norm is not None:
+        raise ValueError(
+            "`norm` argument value not supported. "
+            f"Expected `None`. Received: norm={norm}"
+        )
     complex_input = _get_complex_tensor_from_tuple(a)
     complex_output = jax.numpy.fft.fft(complex_input)
     return jax.numpy.real(complex_output), jax.numpy.imag(complex_output)
 
 
-def fft2(a):
+def fft2(a, s=None, axes=(-2, -1), norm=None):
+    if s is not None:
+        raise ValueError(
+            "`s` argument value not supported. "
+            f"Expected `None`. Received: s={s}"
+        )
+    if axes != (-2, -1):
+        raise ValueError(
+            "`axes` argument value not supported. "
+            f"Expected `(-2, -1)`. Received: axes={axes}"
+        )
+    if norm is not None:
+        raise ValueError(
+            "`norm` argument value not supported. "
+            f"Expected `None`. Received: norm={norm}"
+        )
     complex_input = _get_complex_tensor_from_tuple(a)
-    complex_output = jax.numpy.fft.fft2(
-        complex_input
-    )
+    complex_output = jax.numpy.fft.fft2(complex_input)
     return jax.numpy.real(complex_output), jax.numpy.imag(complex_output)

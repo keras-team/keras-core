@@ -160,11 +160,20 @@ def qr(x, mode="reduced"):
 class FFT(Operation):
     def __init__(self, n=None, axis=-1, norm=None):
         super().__init__()
-        if norm is not None and norm not in ["backward", "ortho", "forward"]:
+        if n is not None:
+            raise ValueError(
+                "`n` argument value not supported. "
+                f"Expected `None`. Received: n={n}"
+            )
+        if axis != -1:
+            raise ValueError(
+                "`axis` argument value not supported. "
+                f"Expected `-1`. Received: axis={axis}"
+            )
+        if norm is not None:
             raise ValueError(
                 "`norm` argument value not supported. "
-                'Expected one of `{None, "backward", "ortho", "forward"}`. '
-                f"Received: norm={norm}"
+                f"Expected `None`. Received: norm={norm}"
             )
         self.n = n
         self.axis = axis
@@ -176,9 +185,10 @@ class FFT(Operation):
         # Both real and imaginary parts should have the same shape.
         if real.shape != imag.shape:
             raise ValueError(
-                "Input `a` should be a tuple of two tensors - real and imaginary."
-                "Both real and imaginary should have the same shape. "
-                f"Received: real.shape = {real.shape}, imag.shape = {imag.shape}"
+                "Input `a` should be a tuple of two tensors - real and "
+                "imaginary. Both real and imaginary should have the same "
+                f"shape. Received: real.shape = {real.shape}, "
+                f"imag.shape = {imag.shape}"
             )
 
         # We are calculating 1D FFT. Hence, rank >= 1.
@@ -186,13 +196,6 @@ class FFT(Operation):
             raise ValueError(
                 f"Input should have rank >= 1. "
                 f"Received: input.shape = {real.shape}"
-            )
-
-        # axis should be within bounds.
-        if self.axis is not None and (self.axis < -len(real.shape) or self.axis >= len(real.shape)):
-            raise ValueError(
-                f"Out-of-bounds axis {self.axis}. "
-                f"Received: input.shape = {real.shape} with axis = {self.axis}"
             )
 
         # The axis along which we are calculating FFT should be fully-defined.
@@ -203,12 +206,9 @@ class FFT(Operation):
                 f"Received: input.shape = {real.shape}"
             )
 
-        output_shape = real.shape
-        output_shape[self.axis] = self.n if self.n is not None else m
-
         return (
-            KerasTensor(shape=output_shape, dtype=real.dtype),
-            KerasTensor(shape=output_shape, dtype=real.dtype),
+            KerasTensor(shape=real.shape, dtype=real.dtype),
+            KerasTensor(shape=imag.shape, dtype=imag.dtype),
         )
 
     def call(self, x):
@@ -219,21 +219,19 @@ class FFT2(Operation):
     def __init__(self, s=None, axes=(-2, -1), norm=None):
         super().__init__()
         if s is not None:
-            if not isinstance(s, tuple) or len(s) != 2:
-                raise ValueError(
-                    f"`s` should be either be `None` or a tuple of two integers. "
-                    f"Received: s={s}"
-                )
-        if not isinstance(axes, tuple) or len(axes) != 2:
             raise ValueError(
-                f"`axes` should be a tuple of two integers. "
-                f"Received: axes={axes}"
+                "`s` argument value not supported. "
+                f"Expected `None`. Received: s={s}"
             )
-        if norm is not None and norm not in ["backward", "ortho", "forward"]:
+        if axes != (-2, -1):
+            raise ValueError(
+                "`axes` argument value not supported. "
+                f"Expected `(-2, -1)`. Received: axes={axes}"
+            )
+        if norm is not None:
             raise ValueError(
                 "`norm` argument value not supported. "
-                'Expected one of `{None, "backward", "ortho", "forward"}`. '
-                f"Received: norm={norm}"
+                f"Expected `None`. Received: norm={norm}"
             )
         self.s = s
         self.axes = axes
@@ -241,13 +239,14 @@ class FFT2(Operation):
 
     def compute_output_spec(self, a):
         real, imag = a
-        
+
         # Both real and imaginary parts should have the same shape.
         if real.shape != imag.shape:
             raise ValueError(
-                "Input `a` should be a tuple of two tensors - real and imaginary."
-                "Both real and imaginary should have the same shape. "
-                f"Received: real.shape = {real.shape}, imag.shape = {imag.shape}"
+                "Input `a` should be a tuple of two tensors - real and "
+                "imaginary. Both real and imaginary should have the same "
+                f"shape. Received: real.shape = {real.shape}, "
+                f"imag.shape = {imag.shape}"
             )
         # We are calculating 2D FFT. Hence, rank >= 2.
         if len(real.shape) < 2:
@@ -255,14 +254,6 @@ class FFT2(Operation):
                 f"Input should have rank >= 2. "
                 f"Received: input.shape = {real.shape}"
             )
-
-        # The axes should be within bounds.
-        for axis in self.axes:
-            if axis is not None and (axis < -len(real.shape) or axis >= len(real.shape)):
-                raise ValueError(
-                    f"Out-of-bounds axes index {self.axes}. "
-                    f"Received: input.shape = {real.shape} with axes = {self.axes}"
-                )
 
         # The axes along which we are calculating FFT should be fully-defined.
         m = real.shape[self.axes[0]]
@@ -273,105 +264,24 @@ class FFT2(Operation):
                 f"Received: input.shape = {real.shape}"
             )
 
-        output_shape = real.shape
-        output_shape[self.axes[0]] = self.s[0] if self.s is not None else m
-        output_shape[self.axes[1]] = self.s[1] if self.s is not None else n
-
         return (
-            KerasTensor(shape=output_shape, dtype=real.dtype),
-            KerasTensor(shape=output_shape, dtype=real.dtype),
+            KerasTensor(shape=real.shape, dtype=real.dtype),
+            KerasTensor(shape=imag.shape, dtype=imag.dtype),
         )
 
     def call(self, x):
-        return backend.math.fft2(x)
-
-class FFTN(Operation):
-    def __init__(self, s=None, axes=(-2, -1), norm=None):
-        super().__init__()
-        if s is not None:
-            if not isinstance(s, tuple) or len(s) != 2:
-                raise ValueError(
-                    f"`s` should be either be `None` or a tuple of two integers. "
-                    f"Received: s={s}"
-                )
-        if not isinstance(axes, tuple) or len(axes) != 2:
-            raise ValueError(
-                f"`axes` should be a tuple of two integers. "
-                f"Received: axes={axes}"
-            )
-        if norm is not None and norm not in ["backward", "ortho", "forward"]:
-            raise ValueError(
-                "`norm` argument value not supported. "
-                'Expected one of `{None, "backward", "ortho", "forward"}`. '
-                f"Received: norm={norm}"
-            )
-        self.s = s
-        self.axes = axes
-        self.norm = norm
-
-    def compute_output_spec(self, a):
-        real, imag = a
-        
-        # Both real and imaginary parts should have the same shape.
-        if real.shape != imag.shape:
-            raise ValueError(
-                "Input `a` should be a tuple of two tensors - real and imaginary."
-                "Both real and imaginary should have the same shape. "
-                f"Received: real.shape = {real.shape}, imag.shape = {imag.shape}"
-            )
-        # We are calculating 2D FFT. Hence, rank >= 2.
-        if len(real.shape) < 2:
-            raise ValueError(
-                f"Input should have rank >= 2. "
-                f"Received: input.shape = {real.shape}"
-            )
-
-        # The axes should be within bounds.
-        for axis in self.axes:
-            if axis is not None and (axis < -len(real.shape) or axis >= len(real.shape)):
-                raise ValueError(
-                    f"Out-of-bounds axes index {self.axes}. "
-                    f"Received: input.shape = {real.shape} with axes = {self.axes}"
-                )
-
-        # The axes along which we are calculating FFT should be fully-defined.
-        m = real.shape[self.axes[0]]
-        n = real.shape[self.axes[1]]
-        if m is None or n is None:
-            raise ValueError(
-                f"Input should have its {self.axes} axes fully-defined. "
-                f"Received: input.shape = {real.shape}"
-            )
-
-        output_shape = real.shape
-        output_shape[self.axes[0]] = self.s[0] if self.s is not None else m
-        output_shape[self.axes[1]] = self.s[1] if self.s is not None else n
-
-        return (
-            KerasTensor(shape=output_shape, dtype=real.dtype),
-            KerasTensor(shape=output_shape, dtype=real.dtype),
-        )
-
-    def call(self, x):
-        return backend.math.fft2(x)
+        return backend.math.fft2(x, s=self.s, axes=self.axes, norm=self.norm)
 
 
 @keras_core_export("keras_core.ops.fft")
-def fft(x):
-    if any_symbolic_tensors((x,)):
-        return FFT(n=1).symbolic_call(x)
-    return backend.math.fft(x)
+def fft(a, n=None, axis=-1, norm=None):
+    if any_symbolic_tensors(a):
+        return FFT(n=n, axis=axis, norm=norm).symbolic_call(a)
+    return backend.math.fft(a, n=n, axis=axis, norm=norm)
 
 
 @keras_core_export("keras_core.ops.fft2")
-def fft2(x):
-    if any_symbolic_tensors((x,)):
-        return FFT(n=2).symbolic_call(x)
-    return backend.math.fft2d(x)
-
-
-@keras_core_export("keras_core.ops.fftn")
-def fftn(x):
-    if any_symbolic_tensors((x,)):
-        return FFT(n=3).symbolic_call(x)
-    return backend.math.fft3d(x)
+def fft2(a, s=None, axes=(-2, -1), norm=None):
+    if any_symbolic_tensors(a):
+        return FFT2(s=s, axes=axes, norm=norm).symbolic_call(a)
+    return backend.math.fft2(a, s=s, axes=axes, norm=norm)
