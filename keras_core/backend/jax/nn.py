@@ -391,6 +391,14 @@ def one_hot(x, num_classes, axis=-1, dtype="float32"):
     return jnn.one_hot(x, num_classes, axis=axis, dtype=dtype)
 
 
+def multi_hot(x, num_classes, axis=-1, dtype='float32'):
+    return jax.numpy.max(one_hot(x, num_classes, axis=axis, dtype=dtype), axis=1)
+
+
+def count(x, num_classes, axis=-1, dtype='float32'):
+    return jax.numpy.sum(one_hot(x, num_classes, axis=axis, dtype=dtype), axis=1)
+
+
 def categorical_crossentropy(target, output, from_logits=False, axis=-1):
     target = jnp.array(target)
     output = jnp.array(output)

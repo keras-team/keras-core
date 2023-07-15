@@ -2,7 +2,7 @@ from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
 from keras_core.utils import backend_utils
-from keras_core.utils.module_utils import tensorflow as tf
+
 
 
 @keras_core_export("keras_core.layers.CategoryEncoding")
@@ -84,20 +84,22 @@ class CategoryEncoding(Layer):
     """
 
     def __init__(self, num_tokens=None, output_mode="multi_hot", **kwargs):
-        if not tf.available:
-            raise ImportError(
-                "Layer CategoryEncoding requires TensorFlow. "
-                "Install it via `pip install tensorflow`."
-            )
-
         super().__init__(**kwargs)
 
         # Support deprecated names for output_modes.
         if output_mode == "binary":
             output_mode = "multi_hot"
+
         # 'output_mode' must be one of ("count", "one_hot", "multi_hot")
         if output_mode not in ("count", "one_hot", "multi_hot"):
             raise ValueError(f"Unknown arg for output_mode: {output_mode}")
+
+        if output_mode == 'multi_hot':
+            self.output_function = backend.nn.multi_hot
+        elif output_mode == 'count':
+            self.output_function = backend.nn.count
+        elif output_mode == 'one_hot':
+            self.output_function = backend.nn.one_hot
 
         if num_tokens is None:
             raise ValueError(
@@ -111,17 +113,11 @@ class CategoryEncoding(Layer):
             )
         self.num_tokens = num_tokens
         self.output_mode = output_mode
-
-        self.layer = tf.keras.layers.CategoryEncoding(
-            num_tokens=num_tokens,
-            output_mode=output_mode,
-            **kwargs,
-        )
         self._allow_non_tensor_positional_args = True
         self._convert_input_args = False
 
     def compute_output_shape(self, input_shape):
-        return tuple(self.layer.compute_output_shape(input_shape))
+        return tuple(input_shape + (self.num_classes,))
 
     def get_config(self):
         config = {
@@ -132,7 +128,7 @@ class CategoryEncoding(Layer):
         return {**base_config, **config}
 
     def call(self, inputs):
-        outputs = self.layer.call(inputs)
+        outputs = self.output_function(inputs, self.num_tokens, dtype=self.dtype)
         if (
             backend.backend() != "tensorflow"
             and not backend_utils.in_tf_graph()
