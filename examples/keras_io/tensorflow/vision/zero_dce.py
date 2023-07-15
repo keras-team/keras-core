@@ -314,12 +314,12 @@ class ZeroDCE(keras.Model):
         super().compile(**kwargs)
         self.optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
         self.spatial_constancy_loss = SpatialConsistencyLoss(reduction="none")
-        self.total_loss_tracker = keras.metrics.Mean(name="total_loss_tracker")
+        self.total_loss_tracker = keras.metrics.Mean(name="total_loss")
         self.illumination_smoothness_loss_tracker = keras.metrics.Mean(name="illumination_smoothness_loss")
         self.spatial_constancy_loss_tracker = keras.metrics.Mean(name="spatial_constancy_loss")
         self.color_constancy_loss_tracker = keras.metrics.Mean(name="color_constancy_loss")
         self.exposure_loss_tracker = keras.metrics.Mean(name="exposure_loss")
-    
+
     @property
     def metrics(self):
         return [
@@ -380,7 +380,7 @@ class ZeroDCE(keras.Model):
         with tf.GradientTape() as tape:
             output = self.dce_model(data)
             losses = self.compute_losses(data, output)
-        
+
         gradients = tape.gradient(
             losses["total_loss"], self.dce_model.trainable_weights
         )
@@ -397,13 +397,13 @@ class ZeroDCE(keras.Model):
     def test_step(self, data):
         output = self.dce_model(data)
         losses = self.compute_losses(data, output)
-        
+
         self.total_loss_tracker.update_state(losses["total_loss"])
         self.illumination_smoothness_loss_tracker.update_state(losses["illumination_smoothness_loss"])
         self.spatial_constancy_loss_tracker.update_state(losses["spatial_constancy_loss"])
         self.color_constancy_loss_tracker.update_state(losses["color_constancy_loss"])
         self.exposure_loss_tracker.update_state(losses["exposure_loss"])
-        
+
         return {metric.name: metric.result() for metric in self.metrics}
 
     def save_weights(self, filepath, overwrite=True, save_format=None, options=None):
@@ -429,6 +429,24 @@ class ZeroDCE(keras.Model):
 zero_dce_model = ZeroDCE()
 zero_dce_model.compile(learning_rate=1e-4)
 history = zero_dce_model.fit(train_dataset, validation_data=val_dataset, epochs=100)
+
+
+def plot_result(item):
+    plt.plot(history.history[item], label=item)
+    plt.plot(history.history["val_" + item], label="val_" + item)
+    plt.xlabel("Epochs")
+    plt.ylabel(item)
+    plt.title("Train and Validation {} Over Epochs".format(item), fontsize=14)
+    plt.legend()
+    plt.grid()
+    plt.show()
+
+
+plot_result("total_loss")
+plot_result("illumination_smoothness_loss")
+plot_result("spatial_constancy_loss")
+plot_result("color_constancy_loss")
+plot_result("exposure_loss")
 
 """
 ## Inference
