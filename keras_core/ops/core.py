@@ -287,10 +287,10 @@ def shape(x):
     Examples:
         TensorFlow Backend with a list:
         >>> keras_core.ops.shape([812])
-        >>> <tf.Tensor: shape=(1,), dtype=int32, numpy=array([1], dtype=int32)>
+        <tf.Tensor: shape=(1,), dtype=int32, numpy=array([1], dtype=int32)>
 
         >>> keras_core.ops.shape([[1, 2, 3], [4, 5, 6]])
-        >>> <tf.Tensor: shape=(2,), dtype=int32, numpy=array([2, 3], dtype=int32)>
+        <tf.Tensor: shape=(2,), dtype=int32, numpy=array([2, 3], dtype=int32)>
 
         PyTorch Tensor:
         >>> keras_core.ops.shape(torch.Tensor([[1, 2, 3], [4, 5, 6]]))
@@ -298,8 +298,8 @@ def shape(x):
 
         TensorFlow Tensor:
         >>> keras_core.ops.shape(tf.constant([[1, 2, 3], [4, 5, 6]]))
-        >>> <tf.Tensor: shape=(2,), dtype=int32,
-        ...     numpy=array([2, 3], dtype=int32)>
+        <tf.Tensor: shape=(2,), dtype=int32,
+            numpy=array([2, 3], dtype=int32)>
 
     """
 
@@ -323,16 +323,16 @@ def cast(x, dtype):
     Examples:
         TensorFlow Backend:
             >>> keras_core.ops.cast([1, 2, 3], "float32")
-            >>> <tf.Tensor: shape=(3,), dtype=float32,
-            ...     numpy=array([1., 2., 3.], dtype=float32)>
+            <tf.Tensor: shape=(3,), dtype=float32,
+                numpy=array([1., 2., 3.], dtype=float32)>
 
         PyTorch Backend:
             >>> keras_core.ops.cast([1, 2, 3], "float32")
-            >>> tensor([1., 2., 3.])
+            tensor([1., 2., 3.])
 
         JAX Backend:
             >>> keras_core.ops.cast([1, 2, 3], "float32")
-            >>> Array([1., 2., 3.], dtype=float32)
+            Array([1., 2., 3.], dtype=float32)
 
     """
     dtype = backend.standardize_dtype(dtype)
@@ -357,16 +357,17 @@ def convert_to_tensor(x, dtype=None):
     Examples:
         TensorFlow Backend:
             >>> keras_core.ops.convert_to_tensor(np.array([1, 2, 3]), "float32")
-            >>> <tf.Tensor: shape=(3,), dtype=float32,
-            ...     numpy=array([1., 2., 3.], dtype=float32)>
+            <tf.Tensor: shape=(3,), dtype=float32,
+                numpy=array([1., 2., 3.], dtype=float32)>
             
         PyTorch Backend:
             >>> keras_core.ops.convert_to_tensor(np.array([1, 2, 3]), "float32")
-            >>> tensor([1., 2., 3.])
+            tensor([1., 2., 3.])
             
         JAX Backend:
             >>> keras_core.ops.convert_to_tensor(np.array([1, 2, 3]), "float32")
-            >>> Array([1., 2., 3.], dtype=float32)
+            Array([1., 2., 3.], dtype=float32)
+
     """
 
     return backend.convert_to_tensor(x, dtype=dtype)
@@ -384,13 +385,13 @@ def convert_to_numpy(x):
         A NumPy array.
 
     Examples:
-        TensorFlow Backend:
+        TensorFlow Tensor:
             >>> keras_core.ops.convert_to_numpy(tf.constant([1, 2, 3]))
-            >>> array([1, 2, 3], dtype=int32)
+            array([1, 2, 3], dtype=int32)
 
-        PyTorch Backend:
+        PyTorch Tensor:
             >>> keras_core.ops.convert_to_numpy(torch.Tensor([1, 2, 3]))
-            >>> array([1, 2, 3])
+            array([1, 2, 3])
 
     """
 
