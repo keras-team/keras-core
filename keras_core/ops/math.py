@@ -55,9 +55,8 @@ def segment_sum(data, segment_ids, num_segments=None, sorted=False):
     ```
     >>> data = keras_core.ops.convert_to_tensor([1, 2, 3, 4, 5, 6])
     >>> segment_ids = keras_core.ops.convert_to_tensor([0, 1, 0, 1, 0, 1])
-    >>> result = segment_sum(data, segment_ids)
-    >>> print(result)
-    tf.Tensor([9 12], shape=(2,), dtype=int32)
+    >>> segment_sum(data, segment_ids)
+    ([9 12], shape=(2,), dtype=int32)
     ```
     """
     if any_symbolic_tensors((data,)):
@@ -106,9 +105,9 @@ def top_k(x, k, sorted=True):
     >>> x = keras_core.ops.convert_to_tensor([5, 2, 7, 1, 9, 3])
     >>> values, indices = top_k(x, k=3)
     >>> print(values)
-    tf.Tensor([9 7 5], shape=(3,), dtype=int32)
+    ([9 7 5], shape=(3,), dtype=int32)
     >>> print(indices)
-    tf.Tensor([4 2 0], shape=(3,), dtype=int32)
+    ([4 2 0], shape=(3,), dtype=int32)
     ```
     """
     if any_symbolic_tensors((x,)):
@@ -147,9 +146,8 @@ def in_top_k(targets, predictions, k):
     >>> predictions = keras_core.ops.convert_to_tensor([[0.1, 0.4, 0.6, 0.9, 0.5],
                                                         [0.1, 0.7, 0.9, 0.8, 0.3],
                                                         [0.1, 0.6, 0.9, 0.9, 0.5]])
-    >>> result = in_top_k(targets, predictions, k=3)
-    >>> print(result)
-    tf.Tensor([ True False  True], shape=(3,), dtype=bool)
+    >>> in_top_k(targets, predictions, k=3)
+    ([ True False  True], shape=(3,), dtype=bool)
     ```
     """
     if any_symbolic_tensors((targets, predictions)):
@@ -178,8 +176,8 @@ def logsumexp(x, axis=None, keepdims=False):
     Args:
         x: Input tensor.
         axis: An integer or a tuple of integers specifying the axis/axes along 
-            which to compute the sum. If None, the sum is computed over all elements. 
-            Default is None.
+            which to compute the sum. If `None`, the sum is computed over all elements. 
+            Default is `None`.
         keepdims: A boolean indicating whether to keep the dimensions of the input 
             tensor when computing the sum. Default is False.
 
@@ -189,9 +187,8 @@ def logsumexp(x, axis=None, keepdims=False):
     Example:
     ```
     >>> x = keras_core.ops.convert_to_tensor([1., 2., 3.])
-    >>> result = logsumexp(x)
-    >>> print(result)
-    tf.Tensor(3.407606, shape=(), dtype=float32)
+    >>> logsumexp(x)
+    (3.407606, shape=(), dtype=float32)
     ```
     """
     if any_symbolic_tensors((x,)):
@@ -253,7 +250,7 @@ def qr(x, mode="reduced"):
 
     Returns:
         A tuple containing two tensors. The first tensor represents the 
-        orthogonal matrix Q,and the second tensor represents the upper 
+        orthogonal matrix Q, and the second tensor represents the upper 
         triangular matrix R.
 
     Example:
@@ -261,8 +258,7 @@ def qr(x, mode="reduced"):
     >>> x = keras_core.ops.convert_to_tensor([[1., 2.], [3., 4.], [5., 6.]])
     >>> q, r = qr(x)
     >>> print(q)
-    tf.Tensor(
-    [[-0.16903079  0.897085  ]
+    ([[-0.16903079  0.897085  ]
      [-0.5070925   0.2760267 ]
      [-0.8451542  -0.34503305]], shape=(3, 2), dtype=float32)
     ```
