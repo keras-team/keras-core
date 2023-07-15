@@ -35,8 +35,7 @@ class SegmentSum(Operation):
 
 @keras_core_export("keras_core.ops.segment_sum")
 def segment_sum(data, segment_ids, num_segments=None, sorted=False):
-    """
-    Computes the sum of segments in a tensor.
+    """Computes the sum of segments in a tensor.
 
     Args:
         data: Input tensor.
@@ -84,8 +83,7 @@ class TopK(Operation):
 
 @keras_core_export("keras_core.ops.top_k")
 def top_k(x, k, sorted=True):
-    """
-    Finds the top-k values and their indices in a tensor.
+    """Finds the top-k values and their indices in a tensor.
 
     Args:
         x: Input tensor.
@@ -96,9 +94,6 @@ def top_k(x, k, sorted=True):
     Returns:
         A tuple containing two tensors. The first tensor contains the top-k values, and
         the second tensor contains the indices of the top-k values in the input tensor.
-
-    Raises:
-        ValueError: If `k` is greater than the last dimension of `x`.
 
     Example:
         >>> x = tf.constant([5, 2, 7, 1, 9, 3])
@@ -127,8 +122,7 @@ class InTopK(Operation):
 
 @keras_core_export("keras_core.ops.in_top_k")
 def in_top_k(targets, predictions, k):
-    """
-    Checks if the targets are in the top-k predictions.
+    """Checks if the targets are in the top-k predictions.
 
     Args:
         targets: A tensor of true labels.
@@ -138,9 +132,6 @@ def in_top_k(targets, predictions, k):
     Returns:
         A boolean tensor of the same shape as `targets`, where each element indicates whether
         the corresponding target is in the top-k predictions.
-
-    Raises:
-        ValueError: If `k` is greater than the last dimension of `predictions`.
         
     Example:
         >>> targets = tf.constant([2, 5, 3])
@@ -172,8 +163,7 @@ class Logsumexp(Operation):
 
 @keras_core_export("keras_core.ops.logsumexp")
 def logsumexp(x, axis=None, keepdims=False):
-    """
-    Computes the logarithm of the sum of exponentials of elements in a tensor.
+    """Computes the logarithm of the sum of exponentials of elements in a tensor.
 
     Args:
         x: Input tensor.
@@ -240,8 +230,7 @@ class Qr(Operation):
 
 @keras_core_export("keras_core.ops.qr")
 def qr(x, mode="reduced"):
-    """
-    Computes the QR decomposition of a tensor.
+    """Computes the QR decomposition of a tensor.
 
     Args:
         x: Input tensor.
