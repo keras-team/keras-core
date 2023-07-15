@@ -283,10 +283,10 @@ def shape(x):
         A tuple of integers or None values, indicating the shape of the input
             tensor.
 
-    Examples:
-        >>> x = keras_core.zeros((8, 12))
-        >>> keras_core.ops.shape(x)
-        (8, 12)
+    Example:
+    >>> x = keras_core.zeros((8, 12))
+    >>> keras_core.ops.shape(x)
+    (8, 12)
 
     """
 
@@ -306,9 +306,9 @@ def cast(x, dtype):
     Returns:
         A tensor of the specified `dtype`.
 
-    Examples:
-        >>> x = keras_core.ops.arange(4)
-        >>> keras_core.ops.cast(x, "float32")
+    Example:
+    >>> x = keras_core.ops.arange(4)
+    >>> keras_core.ops.cast(x, "float32")
 
     """
     dtype = backend.standardize_dtype(dtype)
@@ -329,9 +329,9 @@ def convert_to_tensor(x, dtype=None):
     Returns:
         A tensor of the specified `dtype`.
 
-    Examples:
-        >>> x = np.array([1, 2, 3])
-        >>> keras_core.ops.convert_to_tensor(x)
+    Example:
+    >>> x = np.array([1, 2, 3])
+    >>> keras_core.ops.convert_to_tensor(x)
 
     """
 
