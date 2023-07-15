@@ -298,7 +298,8 @@ def shape(x):
 
         TensorFlow Tensor:
         >>> keras_core.ops.shape(tf.constant([[1, 2, 3], [4, 5, 6]]))
-        >>> <tf.Tensor: shape=(2, 3), dtype=int32, numpy=
+        >>> <tf.Tensor: shape=(2,), dtype=int32,
+        ...     numpy=array([2, 3], dtype=int32)>
 
     """
 
