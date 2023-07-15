@@ -42,18 +42,20 @@ def segment_sum(data, segment_ids, num_segments=None, sorted=False):
         segment_ids: A 1-D tensor containing segment indices for each element in `data`.
         num_segments: An integer representing the total number of segments. If not specified,
             it is inferred from the maximum value in `segment_ids`.
-        sorted: A boolean indicating whether `segment_ids` is sorted. Default is False.
+        sorted: A boolean indicating whether `segment_ids` is sorted. Default is `False`.
 
     Returns:
         A tensor containing the sum of segments, where each element represents the sum of
         the corresponding segment in `data`.
 
     Example:
-        >>> data = tf.constant([1, 2, 3, 4, 5, 6])
-        >>> segment_ids = tf.constant([0, 1, 0, 1, 0, 1])
-        >>> result = segment_sum(data, segment_ids)
-        >>> print(result)
-        tf.Tensor([9 12], shape=(2,), dtype=int32)
+    ```
+    >>> data = keras_core.ops.convert_to_tensor([1, 2, 3, 4, 5, 6])
+    >>> segment_ids = keras_core.ops.convert_to_tensor([0, 1, 0, 1, 0, 1])
+    >>> result = segment_sum(data, segment_ids)
+    >>> print(result)
+    tf.Tensor([9 12], shape=(2,), dtype=int32)
+    ```
     """
     if any_symbolic_tensors((data,)):
         return SegmentSum(num_segments, sorted).symbolic_call(data, segment_ids)
@@ -63,7 +65,7 @@ def segment_sum(data, segment_ids, num_segments=None, sorted=False):
 
 
 class TopK(Operation):
-    def __init__(self, k, sorted=False):
+    def __init__(self, k, sorted=):
         super().__init__()
         self.k = k
         self.sorted = sorted
@@ -89,19 +91,21 @@ def top_k(x, k, sorted=True):
         x: Input tensor.
         k: An integer representing the number of top elements to retrieve.
         sorted: A boolean indicating whether to sort the output in descending order.
-            Default is True.
+            Default is `True`.
 
     Returns:
         A tuple containing two tensors. The first tensor contains the top-k values, and
         the second tensor contains the indices of the top-k values in the input tensor.
 
     Example:
-        >>> x = tf.constant([5, 2, 7, 1, 9, 3])
-        >>> values, indices = top_k(x, k=3)
-        >>> print(values)
-        tf.Tensor([9 7 5], shape=(3,), dtype=int32)
-        >>> print(indices)
-        tf.Tensor([4 2 0], shape=(3,), dtype=int32)
+    ```
+    >>> x = keras_core.ops.convert_to_tensor([5, 2, 7, 1, 9, 3])
+    >>> values, indices = top_k(x, k=3)
+    >>> print(values)
+    tf.Tensor([9 7 5], shape=(3,), dtype=int32)
+    >>> print(indices)
+    tf.Tensor([4 2 0], shape=(3,), dtype=int32)
+    ```
     """
     if any_symbolic_tensors((x,)):
         return TopK(k, sorted).symbolic_call(x)
@@ -134,13 +138,15 @@ def in_top_k(targets, predictions, k):
         the corresponding target is in the top-k predictions.
         
     Example:
-        >>> targets = tf.constant([2, 5, 3])
-        >>> predictions = tf.constant([[0.1, 0.4, 0.6, 0.9, 0.5],
-                                      [0.1, 0.7, 0.9, 0.8, 0.3],
-                                      [0.1, 0.6, 0.9, 0.9, 0.5]])
-        >>> result = in_top_k(targets, predictions, k=3)
-        >>> print(result)
-        tf.Tensor([ True False  True], shape=(3,), dtype=bool)
+    ```
+    >>> targets = keras_core.ops.convert_to_tensor([2, 5, 3])
+    >>> predictions = keras_core.ops.convert_to_tensor([[0.1, 0.4, 0.6, 0.9, 0.5],
+                                                        [0.1, 0.7, 0.9, 0.8, 0.3],
+                                                        [0.1, 0.6, 0.9, 0.9, 0.5]])
+    >>> result = in_top_k(targets, predictions, k=3)
+    >>> print(result)
+    tf.Tensor([ True False  True], shape=(3,), dtype=bool)
+    ```
     """
     if any_symbolic_tensors((targets, predictions)):
         return InTopK(k).symbolic_call(targets, predictions)
@@ -176,10 +182,12 @@ def logsumexp(x, axis=None, keepdims=False):
         A tensor containing the logarithm of the sum of exponentials of elements in `x`.
 
     Example:
-        >>> x = tf.constant([1., 2., 3.])
-        >>> result = logsumexp(x)
-        >>> print(result)
-        tf.Tensor(3.407606, shape=(), dtype=float32)
+    ```
+    >>> x = keras_core.ops.convert_to_tensor([1., 2., 3.])
+    >>> result = logsumexp(x)
+    >>> print(result)
+    tf.Tensor(3.407606, shape=(), dtype=float32)
+    ```
     """
     if any_symbolic_tensors((x,)):
         return Logsumexp(axis, keepdims).symbolic_call(x)
@@ -243,13 +251,15 @@ def qr(x, mode="reduced"):
         and the second tensor represents the upper triangular matrix R.
 
     Example:
-        >>> x = tf.constant([[1., 2.], [3., 4.], [5., 6.]])
-        >>> q, r = qr(x)
-        >>> print(q)
-        tf.Tensor(
-        [[-0.16903079  0.897085  ]
-         [-0.5070925   0.2760267 ]
-         [-0.8451542  -0.34503305]], shape=(3, 2), dtype=float32)
+    ```
+    >>> x = keras_core.ops.convert_to_tensor([[1., 2.], [3., 4.], [5., 6.]])
+    >>> q, r = qr(x)
+    >>> print(q)
+    tf.Tensor(
+    [[-0.16903079  0.897085  ]
+     [-0.5070925   0.2760267 ]
+     [-0.8451542  -0.34503305]], shape=(3, 2), dtype=float32)
+    ```
     """
 
     if any_symbolic_tensors((x,)):
