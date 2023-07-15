@@ -39,14 +39,17 @@ def segment_sum(data, segment_ids, num_segments=None, sorted=False):
 
     Args:
         data: Input tensor.
-        segment_ids: A 1-D tensor containing segment indices for each element in `data`.
-        num_segments: An integer representing the total number of segments. If not specified,
-            it is inferred from the maximum value in `segment_ids`.
-        sorted: A boolean indicating whether `segment_ids` is sorted. Default is `False`.
+        segment_ids: A 1-D tensor containing segment indices for each 
+                element in `data`.
+        num_segments: An integer representing the total number of 
+            segments. If not specified, it is inferred from the maximum
+            value in `segment_ids`.
+        sorted: A boolean indicating whether `segment_ids` is sorted. 
+                Default is `False`.
 
     Returns:
-        A tensor containing the sum of segments, where each element represents the sum of
-        the corresponding segment in `data`.
+        A tensor containing the sum of segments, where each element 
+        represents the sum of the corresponding segment in `data`.
 
     Example:
     ```
@@ -65,7 +68,7 @@ def segment_sum(data, segment_ids, num_segments=None, sorted=False):
 
 
 class TopK(Operation):
-    def __init__(self, k, sorted=):
+    def __init__(self, k, sorted=False):
         super().__init__()
         self.k = k
         self.sorted = sorted
@@ -90,12 +93,13 @@ def top_k(x, k, sorted=True):
     Args:
         x: Input tensor.
         k: An integer representing the number of top elements to retrieve.
-        sorted: A boolean indicating whether to sort the output in descending order.
-            Default is `True`.
+        sorted: A boolean indicating whether to sort the output in 
+            descending order.Default is `True`.
 
     Returns:
-        A tuple containing two tensors. The first tensor contains the top-k values, and
-        the second tensor contains the indices of the top-k values in the input tensor.
+        A tuple containing two tensors. The first tensor contains the 
+        top-k values, and the second tensor contains the indices of the 
+        top-k values in the input tensor.
 
     Example:
     ```
@@ -134,8 +138,8 @@ def in_top_k(targets, predictions, k):
         k: An integer representing the number of predictions to consider.
 
     Returns:
-        A boolean tensor of the same shape as `targets`, where each element indicates whether
-        the corresponding target is in the top-k predictions.
+        A boolean tensor of the same shape as `targets`, where each element 
+        indicates whether the corresponding target is in the top-k predictions.
         
     Example:
     ```
@@ -173,10 +177,11 @@ def logsumexp(x, axis=None, keepdims=False):
 
     Args:
         x: Input tensor.
-        axis: An integer or a tuple of integers specifying the axis/axes along which to compute
-            the sum. If None, the sum is computed over all elements. Default is None.
-        keepdims: A boolean indicating whether to keep the dimensions of the input tensor
-            when computing the sum. Default is False.
+        axis: An integer or a tuple of integers specifying the axis/axes along 
+            which to compute the sum. If None, the sum is computed over all elements. 
+            Default is None.
+        keepdims: A boolean indicating whether to keep the dimensions of the input 
+            tensor when computing the sum. Default is False.
 
     Returns:
         A tensor containing the logarithm of the sum of exponentials of elements in `x`.
@@ -247,8 +252,9 @@ def qr(x, mode="reduced"):
             - 'complete': Returns the complete QR decomposition.
 
     Returns:
-        A tuple containing two tensors. The first tensor represents the orthogonal matrix Q,
-        and the second tensor represents the upper triangular matrix R.
+        A tuple containing two tensors. The first tensor represents the 
+        orthogonal matrix Q,and the second tensor represents the upper 
+        triangular matrix R.
 
     Example:
     ```
