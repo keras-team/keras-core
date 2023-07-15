@@ -204,6 +204,15 @@ class CoreOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(x, np.ones((2, 3)) * 6)
         self.assertAllClose(y, np.ones((3, 2)) * 6)
 
+    def test_fori_loop(self):
+        def body_fun(i, x):
+            return x + i
+
+        initial_value = np.array(0)
+        result = core.fori_loop(0, 10, body_fun, initial_value)
+        self.assertAllClose(result, 45)
+
+
     def test_stop_gradient(self):
         class ExampleLayer(layers.Layer):
             def __init__(self):

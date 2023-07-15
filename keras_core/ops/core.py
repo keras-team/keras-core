@@ -270,6 +270,30 @@ def stop_gradient(variable):
     """
     return backend.core.stop_gradient(variable)
 
+class ForiLoop(Operation):
+    def __init__(self, lower, upper, body_fun):
+        super().__init__()
+        self.lower = lower
+        self.upper = upper
+        self.body_fun = body_fun
+
+    def call(self, init_val):
+        return backend.core.fori_loop(
+            self.lower,
+            self.upper,
+            self.body_fun,
+            init_val,
+        )
+
+    def compute_output_spec(self, init_val):
+        return KerasTensor(init_val.shape, dtype=init_val.dtype)
+
+
+@keras_core_export("keras_core.ops.fori_loop")
+def fori_loop(lower, upper, body_fun, init_val):
+    if any_symbolic_tensors((lower, upper, init_val)):
+        return ForiLoop(lower, upper, body_fun).symbolic_call(init_val)
+    return backend.core.fori_loop(lower, upper, body_fun, init_val)
 
 @keras_core_export("keras_core.ops.shape")
 def shape(x):
