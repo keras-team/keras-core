@@ -43,7 +43,7 @@ from keras_core.ops.operation import Operation
 
 class Relu(Operation):
     def call(self, x):
-        return backend.nn.relu(x)
+        return backend.nn.relu(x)            
 
     def compute_output_spec(self, x):
         return KerasTensor(x.shape, dtype=x.dtype)
@@ -51,7 +51,7 @@ class Relu(Operation):
 
 @keras_core_export(["keras_core.ops.relu", "keras_core.ops.nn.relu"])
 def relu(x):
-    if any_symbolic_tensors((x,)):
+    if any_symbolic_tensors((x,)):            
         return Relu().symbolic_call(x)
     return backend.nn.relu(x)
 
@@ -899,7 +899,7 @@ def conv_transpose(
             the output tensor. Can be a single integer to specify the same
             value for all spatial dimensions. The amount of output padding
             along a given dimension must be lower than the stride along that
-            same dimension. If set to None (default), the output shape is
+            same dimension. If set to `None` (default), the output shape is
             inferred.
         data_format: A string, either "channels_last" or `channels_first`.
             `data_format` determines the ordering of the dimensions in the
@@ -971,10 +971,10 @@ def one_hot(x, num_classes, axis=-1, dtype=None):
             arbitrary, but the dtype should be integer.
         num_classes: Number of classes for the one-hot encoding.
         axis: Axis along which the encoding is performed. Default is
-              -1, which represents the last axis.
+            -1, which represents the last axis.
         dtype: (Optional) Data type of the output tensor. If not 
-               provided, it defaults to the default data type of 
-               the backend.
+            provided, it defaults to the default data type of 
+            the backend.
 
     Returns:
         Integer tensor: One-hot encoded tensor with the same shape as `x` 
@@ -985,10 +985,8 @@ def one_hot(x, num_classes, axis=-1, dtype=None):
     Example:
     ```
     >>> x = keras_core.ops.convert_to_tensor([1, 3, 2, 0])
-    >>> one_hot_encoding = one_hot(x, num_classes=4)
-    >>> print(one_hot_encoding)
-    tf.Tensor(
-    [[0. 1. 0. 0.]
+    >>> one_hot(x, num_classes=4)
+    ([[0. 1. 0. 0.]
      [0. 0. 0. 1.]
      [0. 0. 1. 0.]
      [1. 0. 0. 0.]], shape=(4, 4), dtype=float32)
@@ -1036,15 +1034,15 @@ def binary_crossentropy(target, output, from_logits=False):
 
     Args:
         target: The target tensor representing the true binary labels.
-                Its shape should match the shape of the `output` tensor.
+            Its shape should match the shape of the `output` tensor.
         output: The output tensor representing the predicted probabilities
-                or logits. Its shape should match the shape of the 
-                `target` tensor.
+            or logits. Its shape should match the shape of the 
+            `target` tensor.
         from_logits: (optional) Whether `output` is a tensor of logits or
-                     probabilities.
-                     Set it to `True` if `output` represents logits; otherwise,
-                     set it to `False` if `output` represents probabilities. 
-                     Default is `False`.
+            probabilities.
+            Set it to `True` if `output` represents logits; otherwise,
+            set it to `False` if `output` represents probabilities. 
+            Default is `False`.
 
     Returns:
         Integer tensor: The computed binary cross-entropy loss between 
@@ -1056,9 +1054,8 @@ def binary_crossentropy(target, output, from_logits=False):
                                                   dtype=tf.float32)
     >>> output = keras_core.ops.convert_to_tensor([0.1, 0.9, 0.8, 0.2], 
                                                   dtype=tf.float32)
-    >>> loss = binary_crossentropy(target, output)
-    >>> print(loss)
-    tf.Tensor([0.10536054 0.10536054 0.22314355 0.22314355], shape=(4,), dtype=float32)
+    >>> binary_crossentropy(target, output)
+    ([0.10536054 0.10536054 0.22314355 0.22314355], shape=(4,), dtype=float32)
     ```
     """
     if any_symbolic_tensors((target, output)):
@@ -1113,20 +1110,20 @@ def categorical_crossentropy(target, output, from_logits=False, axis=-1):
 
     Args:
         target: The target tensor representing the true categorical labels.
-                Its shape should match the shape of the `output` tensor 
-                except for the last dimension.
+            Its shape should match the shape of the `output` tensor 
+            except for the last dimension.
         output: The output tensor representing the predicted probabilities 
-                or logits. Its shape should match the shape of the `target` 
-                tensor except for the last dimension.
+            or logits. Its shape should match the shape of the `target` 
+            tensor except for the last dimension.
         from_logits: (optional) Whether `output` is a tensor of logits or 
-                probabilities.
-                Set it to `True` if `output` represents logits; otherwise,
-                set it to `False` if `output` represents probabilities. 
-                Default is `False`.
+            probabilities.
+            Set it to `True` if `output` represents logits; otherwise,
+            set it to `False` if `output` represents probabilities. 
+            Default is `False`.
         axis: (optional) The axis along which the categorical cross-entropy
-                is computed.
-                Default is -1, which corresponds to the last dimension of 
-                the tensors.
+            is computed.
+            Default is -1, which corresponds to the last dimension of 
+            the tensors.
 
     Returns:
         Integer tensor: The computed categorical cross-entropy loss between 
@@ -1139,9 +1136,8 @@ def categorical_crossentropy(target, output, from_logits=False, axis=-1):
     >>> output = keras_core.ops.convert_to_tensor([[0.9, 0.05, 0.05],
                                                    [0.1, 0.8, 0.1],
                                                    [0.2, 0.3, 0.5]], dtype=tf.float32)
-    >>> loss = categorical_crossentropy(target, output)
-    >>> print(loss)
-    tf.Tensor([0.10536054 0.22314355 0.6931472 ], shape=(3,), dtype=float32)
+    >>> categorical_crossentropy(target, output)
+    ([0.10536054 0.22314355 0.6931472 ], shape=(3,), dtype=float32)
     ```
     """
     if any_symbolic_tensors((target, output)):
@@ -1199,21 +1195,21 @@ def sparse_categorical_crossentropy(target, output, from_logits=False, axis=-1):
 
     Args:
         target: The target tensor representing the true class labels as integers.
-                Its shape should match the shape of the `output` tensor except 
-                for the last dimension.
+            Its shape should match the shape of the `output` tensor except 
+            for the last dimension.
         output: The output tensor representing the predicted probabilities 
-                or logits.
-                Its shape should match the shape of the `target` tensor except 
-                for the last dimension.
+            or logits.
+            Its shape should match the shape of the `target` tensor except 
+            for the last dimension.
         from_logits: (optional) Whether `output` is a tensor of logits 
-                or probabilities.
-                Set it to `True` if `output` represents logits; otherwise, 
-                set it to `False` if `output` represents probabilities. 
-                Default is `False`.
+            or probabilities.
+            Set it to `True` if `output` represents logits; otherwise, 
+            set it to `False` if `output` represents probabilities. 
+            Default is `False`.
         axis: (optional) The axis along which the sparse categorical
-                cross-entropy is computed.
-                Default is -1, which corresponds to the last dimension
-                of the tensors.
+            cross-entropy is computed.
+            Default is -1, which corresponds to the last dimension
+            of the tensors.
 
     Returns:
         Integer tensor: The computed sparse categorical cross-entropy loss between 
@@ -1225,9 +1221,8 @@ def sparse_categorical_crossentropy(target, output, from_logits=False, axis=-1):
     >>> output = keras_core.ops.convert_to_tensor([[0.9, 0.05, 0.05], 
                                                    [0.1, 0.8, 0.1], 
                                                    [0.2, 0.3, 0.5]], dtype=tf.float32)
-    >>> loss = sparse_categorical_crossentropy(target, output)
-    >>> print(loss)
-    tf.Tensor([0.10536056 0.22314355 0.6931472 ], shape=(3,), dtype=float32)
+    >>> sparse_categorical_crossentropy(target, output)
+    ([0.10536056 0.22314355 0.6931472 ], shape=(3,), dtype=float32)
     ```
     """
     if any_symbolic_tensors((target, output)):
