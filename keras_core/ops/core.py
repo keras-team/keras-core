@@ -280,7 +280,8 @@ def shape(x):
             the input tensor.
 
     Returns:
-        A tuple of integers, the shape of the tensor.
+        A tuple of integers or None values, indicating the shape of the input
+            tensor.
 
     Examples:
         >>> x = keras_core.zeros((8, 12))
