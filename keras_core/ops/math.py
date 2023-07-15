@@ -49,9 +49,12 @@ def segment_sum(data, segment_ids, num_segments=None, sorted=False):
         A tensor containing the sum of segments, where each element represents the sum of
         the corresponding segment in `data`.
 
-    Raises:
-        ValueError: If `num_segments` is provided and is less than the maximum value in `segment_ids`,
-            or if `segment_ids` and `data` have different shapes.
+    Example:
+        >>> data = tf.constant([1, 2, 3, 4, 5, 6])
+        >>> segment_ids = tf.constant([0, 1, 0, 1, 0, 1])
+        >>> result = segment_sum(data, segment_ids)
+        >>> print(result)
+        tf.Tensor([9 12], shape=(2,), dtype=int32)
     """
     if any_symbolic_tensors((data,)):
         return SegmentSum(num_segments, sorted).symbolic_call(data, segment_ids)
@@ -96,6 +99,14 @@ def top_k(x, k, sorted=True):
 
     Raises:
         ValueError: If `k` is greater than the last dimension of `x`.
+
+    Example:
+        >>> x = tf.constant([5, 2, 7, 1, 9, 3])
+        >>> values, indices = top_k(x, k=3)
+        >>> print(values)
+        tf.Tensor([9 7 5], shape=(3,), dtype=int32)
+        >>> print(indices)
+        tf.Tensor([4 2 0], shape=(3,), dtype=int32)
     """
     if any_symbolic_tensors((x,)):
         return TopK(k, sorted).symbolic_call(x)
@@ -130,6 +141,15 @@ def in_top_k(targets, predictions, k):
 
     Raises:
         ValueError: If `k` is greater than the last dimension of `predictions`.
+        
+    Example:
+        >>> targets = tf.constant([2, 5, 3])
+        >>> predictions = tf.constant([[0.1, 0.4, 0.6, 0.9, 0.5],
+                                      [0.1, 0.7, 0.9, 0.8, 0.3],
+                                      [0.1, 0.6, 0.9, 0.9, 0.5]])
+        >>> result = in_top_k(targets, predictions, k=3)
+        >>> print(result)
+        tf.Tensor([ True False  True], shape=(3,), dtype=bool)
     """
     if any_symbolic_tensors((targets, predictions)):
         return InTopK(k).symbolic_call(targets, predictions)
@@ -165,8 +185,11 @@ def logsumexp(x, axis=None, keepdims=False):
     Returns:
         A tensor containing the logarithm of the sum of exponentials of elements in `x`.
 
-    Raises:
-        ValueError: If `axis` is not None and is not a valid axis for `x`.
+    Example:
+        >>> x = tf.constant([1., 2., 3.])
+        >>> result = logsumexp(x)
+        >>> print(result)
+        tf.Tensor(3.407606, shape=(), dtype=float32)
     """
     if any_symbolic_tensors((x,)):
         return Logsumexp(axis, keepdims).symbolic_call(x)
@@ -230,9 +253,14 @@ def qr(x, mode="reduced"):
         A tuple containing two tensors. The first tensor represents the orthogonal matrix Q,
         and the second tensor represents the upper triangular matrix R.
 
-    Raises:
-        ValueError: If the rank of `x` is less than 2 or if the last 2 dimensions of `x`
-            are not fully-defined, or if `mode` is not one of {'reduced', 'complete'}.
+    Example:
+        >>> x = tf.constant([[1., 2.], [3., 4.], [5., 6.]])
+        >>> q, r = qr(x)
+        >>> print(q)
+        tf.Tensor(
+        [[-0.16903079  0.897085  ]
+         [-0.5070925   0.2760267 ]
+         [-0.8451542  -0.34503305]], shape=(3, 2), dtype=float32)
     """
 
     if any_symbolic_tensors((x,)):
