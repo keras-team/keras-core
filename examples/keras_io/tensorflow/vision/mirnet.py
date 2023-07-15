@@ -1,6 +1,7 @@
 """
 Title: Low-light image enhancement using MIRNet
 Author: [Soumik Rakshit](http://github.com/soumik12345)
+Converted to Keras Core by: [Soumik Rakshit](http://github.com/soumik12345)
 Date created: 2021/09/11
 Last modified: 2021/09/15
 Description: Implementing the MIRNet architecture for low-light image enhancement.
