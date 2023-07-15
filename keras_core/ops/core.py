@@ -273,33 +273,19 @@ def stop_gradient(variable):
 
 @keras_core_export("keras_core.ops.shape")
 def shape(x):
-    """
-    Gets the shape of the tensor input.
+    """Gets the shape of the tensor input.
 
     Args:
         x: A tensor. This function will try to access the `shape` attribute of
-            the input tensor. When using TensorFlow backend the input can also
-            be a list.
+            the input tensor.
 
     Returns:
         A tuple of integers, the shape of the tensor.
 
     Examples:
-        TensorFlow Backend with a list:
-        >>> keras_core.ops.shape([812])
-        <tf.Tensor: shape=(1,), dtype=int32, numpy=array([1], dtype=int32)>
-
-        >>> keras_core.ops.shape([[1, 2, 3], [4, 5, 6]])
-        <tf.Tensor: shape=(2,), dtype=int32, numpy=array([2, 3], dtype=int32)>
-
-        PyTorch Tensor:
-        >>> keras_core.ops.shape(torch.Tensor([[1, 2, 3], [4, 5, 6]]))
-        >>> torch.Size([2, 3])
-
-        TensorFlow Tensor:
-        >>> keras_core.ops.shape(tf.constant([[1, 2, 3], [4, 5, 6]]))
-        <tf.Tensor: shape=(2,), dtype=int32,
-            numpy=array([2, 3], dtype=int32)>
+        >>> x = keras_core.zeros((8, 12))
+        >>> keras_core.ops.shape(x)
+        (8, 12)
 
     """
 
@@ -310,8 +296,7 @@ def shape(x):
 
 @keras_core_export("keras_core.ops.cast")
 def cast(x, dtype):
-    """
-    Cast a tensor to the desired dtype.
+    """Cast a tensor to the desired dtype.
 
     Args:
         x: A tensor or variable.
@@ -321,18 +306,8 @@ def cast(x, dtype):
         A tensor of the specified `dtype`.
 
     Examples:
-        TensorFlow Backend:
-            >>> keras_core.ops.cast([1, 2, 3], "float32")
-            <tf.Tensor: shape=(3,), dtype=float32,
-                numpy=array([1., 2., 3.], dtype=float32)>
-
-        PyTorch Backend:
-            >>> keras_core.ops.cast([1, 2, 3], "float32")
-            tensor([1., 2., 3.])
-
-        JAX Backend:
-            >>> keras_core.ops.cast([1, 2, 3], "float32")
-            Array([1., 2., 3.], dtype=float32)
+        >>> x = keras_core.ops.arange(4)
+        >>> keras_core.ops.cast(x, "float32")
 
     """
     dtype = backend.standardize_dtype(dtype)
@@ -344,29 +319,18 @@ def cast(x, dtype):
 
 @keras_core_export("keras_core.ops.convert_to_tensor")
 def convert_to_tensor(x, dtype=None):
-    """
-    Convert a NumPy array to a tensor.
+    """Convert a NumPy array to a tensor.
 
     Args:
-        x: A NumPy array or a tensor.
+        x: A NumPy array.
         dtype: The target type.
 
     Returns:
         A tensor of the specified `dtype`.
 
     Examples:
-        TensorFlow Backend:
-            >>> keras_core.ops.convert_to_tensor(np.array([1, 2, 3]), "float32")
-            <tf.Tensor: shape=(3,), dtype=float32,
-                numpy=array([1., 2., 3.], dtype=float32)>
-
-        PyTorch Backend:
-            >>> keras_core.ops.convert_to_tensor(np.array([1, 2, 3]), "float32")
-            tensor([1., 2., 3.])
-
-        JAX Backend:
-            >>> keras_core.ops.convert_to_tensor(np.array([1, 2, 3]), "float32")
-            Array([1., 2., 3.], dtype=float32)
+        >>> x = np.array([1, 2, 3])
+        >>> keras_core.ops.convert_to_tensor(x)
 
     """
 
@@ -375,23 +339,13 @@ def convert_to_tensor(x, dtype=None):
 
 @keras_core_export("keras_core.ops.convert_to_numpy")
 def convert_to_numpy(x):
-    """
-    Convert a tensor to a NumPy array.
+    """Convert a tensor to a NumPy array.
 
     Args:
         x: A tensor.
 
     Returns:
         A NumPy array.
-
-    Examples:
-        TensorFlow Tensor:
-            >>> keras_core.ops.convert_to_numpy(tf.constant([1, 2, 3]))
-            array([1, 2, 3], dtype=int32)
-
-        PyTorch Tensor:
-            >>> keras_core.ops.convert_to_numpy(torch.Tensor([1, 2, 3]))
-            array([1, 2, 3])
 
     """
 
