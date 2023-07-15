@@ -1,6 +1,5 @@
-import tensorflow as tf
-
 from keras_core.api_export import keras_core_export
+from keras_core.utils.module_utils import tensorflow as tf
 
 
 @keras_core_export("keras_core.utils.split_dataset")

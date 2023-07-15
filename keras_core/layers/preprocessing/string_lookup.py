@@ -1,10 +1,10 @@
 import numpy as np
-import tensorflow as tf
 
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
 from keras_core.utils import backend_utils
+from keras_core.utils.module_utils import tensorflow as tf
 
 
 @keras_core_export("keras_core.layers.StringLookup")
@@ -308,6 +308,12 @@ class StringLookup(Layer):
         dtype=None,
         **kwargs,
     ):
+        if not tf.available:
+            raise ImportError(
+                "Layer StringLookup requires TensorFlow. "
+                "Install it via `pip install tensorflow`."
+            )
+
         if output_mode == "int" and dtype is None:
             dtype = "int64"
         super().__init__(name=name)

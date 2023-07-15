@@ -36,12 +36,12 @@ setup(
     author_email="keras-users@googlegroups.com",
     license="Apache License 2.0",
     install_requires=[
-        "tensorflow",
         "absl-py",
         "numpy",
         "rich",
         "namex",
         "h5py",
+        "dm-tree",
     ],
     # Supported Python versions
     python_requires=">=3.8",

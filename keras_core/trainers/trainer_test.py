@@ -115,6 +115,22 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         # And those weights are tracked at the model level
         self.assertEqual(len(model.metrics_variables), 6)
 
+        # Models with only weighted_metrics should have the same 3 metrics
+        model_weighted = ModelWithMetric(units=3)
+        model_weighted.compile(
+            optimizer=optimizers.SGD(),
+            loss=losses.MeanSquaredError(),
+            weighted_metrics=[metrics.MeanSquaredError()],
+        )
+        model_weighted.fit(
+            x,
+            y,
+            batch_size=2,
+            epochs=1,
+            sample_weight=np.ones(2),
+        )
+        self.assertEqual(len(model_weighted.metrics), 3)
+
     @parameterized.named_parameters(
         [
             ("eager", True, False, False),
@@ -503,7 +519,7 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         reason="Only tensorflow supports raggeds",
     )
     def test_trainer_with_raggeds(self, model_class):
-        import tensorflow as tf
+        from keras_core.utils.module_utils import tensorflow as tf
 
         def loss_fn(y, y_pred, sample_weight=None):
             return 0
