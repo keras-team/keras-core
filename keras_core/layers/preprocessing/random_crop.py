@@ -1,14 +1,12 @@
 import numpy as np
 
+from keras_core import ops
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
-from keras_core.utils import backend_utils, image_utils
+from keras_core.utils import backend_utils
+from keras_core.utils import image_utils
 from keras_core.utils.module_utils import tensorflow as tf
-
-
-H_AXIS = -3
-W_AXIS = -2
 
 
 @keras_core_export("keras_core.layers.RandomCrop")
@@ -56,7 +54,9 @@ class RandomCrop(Layer):
             `name` and `dtype`.
     """
 
-    def __init__(self, height, width, seed=None, name=None, **kwargs):
+    def __init__(
+        self, height, width, seed=None, data_format=None, name=None, **kwargs
+    ):
         if not tf.available:
             raise ImportError(
                 "Layer RandomCrop requires TensorFlow. "
@@ -67,6 +67,17 @@ class RandomCrop(Layer):
         self.height = height
         self.width = width
         self.seed = seed or backend.random.make_default_seed()
+        self.data_format = (
+            "channels_last" if data_format is None else "channels_first"
+        )
+
+        if self.data_format == "channels_first":
+            self.heigh_axis = -2
+            self.width_axis = -1
+        elif self.data_format == "channels_last":
+            self.height_axis = -3
+            self.width_axis = -2
+
         self.supports_masking = False
         self.supports_jit = False
         self._convert_input_args = False
@@ -76,9 +87,9 @@ class RandomCrop(Layer):
         if not isinstance(inputs, (tf.Tensor, np.ndarray, list, tuple)):
             inputs = tf.convert_to_tensor(backend.convert_to_numpy(inputs))
 
-        input_shape = tf.shape(inputs)
-        h_diff = input_shape[H_AXIS] - self.height
-        w_diff = input_shape[W_AXIS] - self.width
+        input_shape = ops.shape(inputs)
+        h_diff = input_shape[self.height_axis] - self.height
+        w_diff = input_shape[self.width_axis] - self.width
 
         def random_crop():
             dtype = input_shape.dtype
@@ -94,9 +105,9 @@ class RandomCrop(Layer):
                 inputs, [self.height, self.width]
             )
             # smart_resize will always output float32, so we need to re-cast.
-            return tf.cast(outputs, self.compute_dtype)
+            return ops.cast(outputs, self.compute_dtype)
 
-        outputs = tf.cond(
+        outputs = ops.cond(
             tf.reduce_all((training, h_diff >= 0, w_diff >= 0)),
             random_crop,
             resize,
@@ -109,10 +120,10 @@ class RandomCrop(Layer):
             outputs = backend.convert_to_tensor(outputs)
         return outputs
 
-    def compute_output_shape(self, input_shape):
+    def compute_output_shape(self, input_shape, *args, **kwargs):
         input_shape = tf.TensorShape(input_shape).as_list()
-        input_shape[H_AXIS] = self.height
-        input_shape[W_AXIS] = self.width
+        input_shape[self.height_axis] = self.height
+        input_shape[self.width_axis] = self.width
         return tf.TensorShape(input_shape)
 
     def get_config(self):
