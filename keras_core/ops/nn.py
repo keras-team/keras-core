@@ -1095,7 +1095,7 @@ class CategoryEncoding(Operation):
     def __init__(self, num_classes, name=None):
         super().__init__(name)
         self.num_classes = num_classes
-    
+
     def call(self, inputs):
         return backend.nn.one_hot(inputs, self.num_classes)
 
