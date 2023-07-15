@@ -35,6 +35,24 @@ class SegmentSum(Operation):
 
 @keras_core_export("keras_core.ops.segment_sum")
 def segment_sum(data, segment_ids, num_segments=None, sorted=False):
+    """
+    Computes the sum of segments in a tensor.
+
+    Args:
+        data: Input tensor.
+        segment_ids: A 1-D tensor containing segment indices for each element in `data`.
+        num_segments: An integer representing the total number of segments. If not specified,
+            it is inferred from the maximum value in `segment_ids`.
+        sorted: A boolean indicating whether `segment_ids` is sorted. Default is False.
+
+    Returns:
+        A tensor containing the sum of segments, where each element represents the sum of
+        the corresponding segment in `data`.
+
+    Raises:
+        ValueError: If `num_segments` is provided and is less than the maximum value in `segment_ids`,
+            or if `segment_ids` and `data` have different shapes.
+    """
     if any_symbolic_tensors((data,)):
         return SegmentSum(num_segments, sorted).symbolic_call(data, segment_ids)
     return backend.math.segment_sum(
@@ -63,6 +81,22 @@ class TopK(Operation):
 
 @keras_core_export("keras_core.ops.top_k")
 def top_k(x, k, sorted=True):
+    """
+    Finds the top-k values and their indices in a tensor.
+
+    Args:
+        x: Input tensor.
+        k: An integer representing the number of top elements to retrieve.
+        sorted: A boolean indicating whether to sort the output in descending order.
+            Default is True.
+
+    Returns:
+        A tuple containing two tensors. The first tensor contains the top-k values, and
+        the second tensor contains the indices of the top-k values in the input tensor.
+
+    Raises:
+        ValueError: If `k` is greater than the last dimension of `x`.
+    """
     if any_symbolic_tensors((x,)):
         return TopK(k, sorted).symbolic_call(x)
     return backend.math.top_k(x, k, sorted)
@@ -82,6 +116,21 @@ class InTopK(Operation):
 
 @keras_core_export("keras_core.ops.in_top_k")
 def in_top_k(targets, predictions, k):
+    """
+    Checks if the targets are in the top-k predictions.
+
+    Args:
+        targets: A tensor of true labels.
+        predictions: A tensor of predicted labels.
+        k: An integer representing the number of predictions to consider.
+
+    Returns:
+        A boolean tensor of the same shape as `targets`, where each element indicates whether
+        the corresponding target is in the top-k predictions.
+
+    Raises:
+        ValueError: If `k` is greater than the last dimension of `predictions`.
+    """
     if any_symbolic_tensors((targets, predictions)):
         return InTopK(k).symbolic_call(targets, predictions)
     return backend.math.in_top_k(targets, predictions, k)
@@ -103,6 +152,22 @@ class Logsumexp(Operation):
 
 @keras_core_export("keras_core.ops.logsumexp")
 def logsumexp(x, axis=None, keepdims=False):
+    """
+    Computes the logarithm of the sum of exponentials of elements in a tensor.
+
+    Args:
+        x: Input tensor.
+        axis: An integer or a tuple of integers specifying the axis/axes along which to compute
+            the sum. If None, the sum is computed over all elements. Default is None.
+        keepdims: A boolean indicating whether to keep the dimensions of the input tensor
+            when computing the sum. Default is False.
+
+    Returns:
+        A tensor containing the logarithm of the sum of exponentials of elements in `x`.
+
+    Raises:
+        ValueError: If `axis` is not None and is not a valid axis for `x`.
+    """
     if any_symbolic_tensors((x,)):
         return Logsumexp(axis, keepdims).symbolic_call(x)
     return backend.math.logsumexp(x, axis=axis, keepdims=keepdims)
@@ -152,6 +217,24 @@ class Qr(Operation):
 
 @keras_core_export("keras_core.ops.qr")
 def qr(x, mode="reduced"):
+    """
+    Computes the QR decomposition of a tensor.
+
+    Args:
+        x: Input tensor.
+        mode: A string specifying the mode of the QR decomposition.
+            - 'reduced': Returns the reduced QR decomposition. (default)
+            - 'complete': Returns the complete QR decomposition.
+
+    Returns:
+        A tuple containing two tensors. The first tensor represents the orthogonal matrix Q,
+        and the second tensor represents the upper triangular matrix R.
+
+    Raises:
+        ValueError: If the rank of `x` is less than 2 or if the last 2 dimensions of `x`
+            are not fully-defined, or if `mode` is not one of {'reduced', 'complete'}.
+    """
+
     if any_symbolic_tensors((x,)):
         return Qr(mode=mode).symbolic_call(x)
     return backend.math.qr(x, mode=mode)
