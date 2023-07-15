@@ -1089,3 +1089,27 @@ def sparse_categorical_crossentropy(target, output, from_logits=False, axis=-1):
     return backend.nn.sparse_categorical_crossentropy(
         target, output, from_logits=from_logits, axis=axis
     )
+
+
+class CategoryEncoding(Operation):
+    def __init__(self, num_classes, name=None):
+        super().__init__(name)
+        self.num_classes = num_classes
+    
+    def call(self, inputs):
+        return backend.nn.one_hot(inputs, self.num_classes)
+
+    def compute_output_spec(self, inputs):
+        return KerasTensor(
+            inputs.shape + (self.num_classes,), dtype=inputs.dtype
+        )
+
+
+@keras_core_export(
+    ["keras_core.ops.category_encoding", "keras_core.ops.nn.category_encoding"]
+)
+def category_encoding(inputs, num_classes=None):
+    # TODO: add docstring
+    if any_symbolic_tensors((inputs,)):
+        return CategoryEncoding(num_classes=num_classes).symbolic_call(inputs)
+    return backend.nn.one_hot(inputs, num_classes)
