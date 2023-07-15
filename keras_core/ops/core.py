@@ -346,24 +346,24 @@ def cast(x, dtype):
 def convert_to_tensor(x, dtype=None):
     """
     Convert a NumPy array to a tensor.
-    
+
     Args:
         x: A NumPy array or a tensor.
         dtype: The target type.
-        
+
     Returns:
         A tensor of the specified `dtype`.
-        
+
     Examples:
         TensorFlow Backend:
             >>> keras_core.ops.convert_to_tensor(np.array([1, 2, 3]), "float32")
             <tf.Tensor: shape=(3,), dtype=float32,
                 numpy=array([1., 2., 3.], dtype=float32)>
-            
+
         PyTorch Backend:
             >>> keras_core.ops.convert_to_tensor(np.array([1, 2, 3]), "float32")
             tensor([1., 2., 3.])
-            
+
         JAX Backend:
             >>> keras_core.ops.convert_to_tensor(np.array([1, 2, 3]), "float32")
             Array([1., 2., 3.], dtype=float32)
