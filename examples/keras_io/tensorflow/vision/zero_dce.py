@@ -314,6 +314,21 @@ class ZeroDCE(keras.Model):
         super().compile(**kwargs)
         self.optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
         self.spatial_constancy_loss = SpatialConsistencyLoss(reduction="none")
+        self.total_loss_tracker = keras.metrics.Mean(name="total_loss_tracker")
+        self.illumination_smoothness_loss_tracker = keras.metrics.Mean(name="illumination_smoothness_loss")
+        self.spatial_constancy_loss_tracker = keras.metrics.Mean(name="spatial_constancy_loss")
+        self.color_constancy_loss_tracker = keras.metrics.Mean(name="color_constancy_loss")
+        self.exposure_loss_tracker = keras.metrics.Mean(name="exposure_loss")
+    
+    @property
+    def metrics(self):
+        return [
+            self.total_loss_tracker,
+            self.illumination_smoothness_loss_tracker,
+            self.spatial_constancy_loss_tracker,
+            self.color_constancy_loss_tracker,
+            self.exposure_loss_tracker,
+        ]
 
     def get_enhanced_image(self, data, output):
         r1 = output[:, :, :, :3]
@@ -352,6 +367,7 @@ class ZeroDCE(keras.Model):
             + loss_color_constancy
             + loss_exposure
         )
+
         return {
             "total_loss": total_loss,
             "illumination_smoothness_loss": loss_illumination,
@@ -364,15 +380,31 @@ class ZeroDCE(keras.Model):
         with tf.GradientTape() as tape:
             output = self.dce_model(data)
             losses = self.compute_losses(data, output)
+        
         gradients = tape.gradient(
             losses["total_loss"], self.dce_model.trainable_weights
         )
         self.optimizer.apply_gradients(zip(gradients, self.dce_model.trainable_weights))
-        return losses
+
+        self.total_loss_tracker.update_state(losses["total_loss"])
+        self.illumination_smoothness_loss_tracker.update_state(losses["illumination_smoothness_loss"])
+        self.spatial_constancy_loss_tracker.update_state(losses["spatial_constancy_loss"])
+        self.color_constancy_loss_tracker.update_state(losses["color_constancy_loss"])
+        self.exposure_loss_tracker.update_state(losses["exposure_loss"])
+
+        return {metric.name: metric.result() for metric in self.metrics}
 
     def test_step(self, data):
         output = self.dce_model(data)
-        return self.compute_losses(data, output)
+        losses = self.compute_losses(data, output)
+        
+        self.total_loss_tracker.update_state(losses["total_loss"])
+        self.illumination_smoothness_loss_tracker.update_state(losses["illumination_smoothness_loss"])
+        self.spatial_constancy_loss_tracker.update_state(losses["spatial_constancy_loss"])
+        self.color_constancy_loss_tracker.update_state(losses["color_constancy_loss"])
+        self.exposure_loss_tracker.update_state(losses["exposure_loss"])
+        
+        return {metric.name: metric.result() for metric in self.metrics}
 
     def save_weights(self, filepath, overwrite=True, save_format=None, options=None):
         """While saving the weights, we simply save the weights of the DCE-Net"""
