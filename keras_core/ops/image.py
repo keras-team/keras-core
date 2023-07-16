@@ -59,11 +59,19 @@ def resize(
 
     Args:
         image: Input image or batch of images. Must be 3D or 4D.
-        size: Size of output image in (height, width) format.
-        method: Interpolation method. Defaults to 'bilinear'.
+        size: Size of output image in `(height, width)` format.
+        method: Interpolation method. Available methods are `"nearest"`,
+            `"bilinear"`, and `"bicubic"`. Defaults to `"bilinear"`.
         antialias: Whether to use an antialiasing filter when downsampling an
             image.
-        data_format: Format of the image tensor. Defaults to 'channels_last'.
+        data_format: string, either `"channels_last"` or `"channels_first"`.
+            The ordering of the dimensions in the inputs. `"channels_last"`
+            corresponds to inputs with shape `(batch, height, width, channels)`
+            while `"channels_first"` corresponds to inputs with shape
+            `(batch, channels, height, weight)`. It defaults to the
+            `image_data_format` value found in your Keras config file at
+            `~/.keras/keras.json`. If you never set it, then it will be
+            `"channels_last"`.
 
     Returns:
         Resized image or batch of images.
@@ -73,15 +81,18 @@ def resize(
     >>> x = np.random.random((2, 4, 4, 3)) # batch of 2 RGB images
     >>> y = keras_core.ops.image.resize(x, (2, 2))
     >>> y.shape
+    (2, 2, 2, 3)
 
     >>> x = np.random.random((4, 4, 3)) # single RGB image
     >>> y = keras_core.ops.image.resize(x, (2, 2))
     >>> y.shape
+    (2, 2, 3)
 
     >>> x = np.random.random((2, 3, 4, 4)) # batch of 2 RGB images
     >>> y = keras_core.ops.image.resize(x, (2, 2),
-    ...     data_format='channels_first')
+    ...     data_format="channels_first")
     >>> y.shape
+    (2, 3, 2, 2)
     """
 
     if any_symbolic_tensors((image,)):
