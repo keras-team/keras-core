@@ -1112,7 +1112,7 @@ class MultiHot(Operation):
 
 @keras_core_export(
     [
-        "keras_core.ops.mulit_hot",
+        "keras_core.ops.multi_hot",
         "keras_core.ops.nn.multi_hot",
     ]
 )
