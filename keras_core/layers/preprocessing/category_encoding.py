@@ -1,12 +1,12 @@
 from keras_core import backend
 from keras_core.api_export import keras_core_export
-from keras_core.layers.layer import Layer
+from keras_core.layers.preprocessing.tf_data_layer import TFDataLayer
 from keras_core.utils import backend_utils
 
 
 
 @keras_core_export("keras_core.layers.CategoryEncoding")
-class CategoryEncoding(Layer):
+class CategoryEncoding(TFDataLayer):
     """A preprocessing layer which encodes integer features.
 
     This layer provides options for condensing data into a categorical encoding
@@ -95,11 +95,11 @@ class CategoryEncoding(Layer):
             raise ValueError(f"Unknown arg for output_mode: {output_mode}")
 
         if output_mode == 'multi_hot':
-            self.output_function = backend.nn.multi_hot
+            self.output_function = self.backend.nn.multi_hot
         elif output_mode == 'count':
-            self.output_function = backend.nn.count
+            self.output_function = self.backend.nn.count
         elif output_mode == 'one_hot':
-            self.output_function = backend.nn.one_hot
+            self.output_function = self.backend.nn.one_hot
 
         if num_tokens is None:
             raise ValueError(
