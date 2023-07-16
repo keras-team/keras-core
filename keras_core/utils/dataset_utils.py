@@ -2,6 +2,7 @@ import tensorflow as tf
 import torch 
 from torch.utils.data import Dataset as torchDataset
 import numpy as np
+import warnings
 import random
 import time
 
@@ -220,6 +221,77 @@ def _get_data_iterator_from_dataset(dataset, dataset_type_spec):
         return iter(dataset)
     elif dataset_type_spec == np.ndarray:
         return iter(dataset)
+    
+def _get_next_sample(
+    dataset_iterator,
+    ensure_shape_similarity,
+    data_size_warning_flag,
+    start_time,
+):
+    """ "Yield data samples from the `dataset_iterator`.
+
+    Args:
+        dataset_iterator : An `iterator` object.
+        ensure_shape_similarity (bool, optional): If set to True, the shape of
+          the first sample will be used to validate the shape of rest of the
+          samples. Defaults to `True`.
+        data_size_warning_flag (bool, optional): If set to True, a warning will
+          be issued if the dataset takes longer than 10 seconds to iterate.
+          Defaults to `True`.
+        start_time (float): the start time of the dataset iteration. this is
+          used only if `data_size_warning_flag` is set to true.
+
+    Raises:
+        ValueError: - If the dataset is empty.
+                    - If `ensure_shape_similarity` is set to True and the
+                      shape of the first sample is not equal to the shape of
+                      atleast one of the rest of the samples.
+
+    Yields:
+        data_sample: A tuple/list of numpy arrays.
+    """
+    try:
+        dataset_iterator = iter(dataset_iterator)
+        first_sample = next(dataset_iterator)
+        if isinstance(first_sample, (tf.Tensor, np.ndarray)):
+            first_sample_shape = np.array(first_sample).shape
+        else:
+            first_sample_shape = None
+            ensure_shape_similarity = False
+        yield first_sample
+    except StopIteration:
+        raise ValueError(
+            "Received an empty Dataset. `dataset` must "
+            "be a non-empty list/tuple of `numpy.ndarray` objects "
+            "or `tf.data.Dataset` objects."
+        )
+
+    for i, sample in enumerate(dataset_iterator):
+        if ensure_shape_similarity:
+            if first_sample_shape != np.array(sample).shape:
+                raise ValueError(
+                    "All `dataset` samples must have same shape, "
+                    f"Expected shape: {np.array(first_sample).shape} "
+                    f"Received shape: {np.array(sample).shape} at index "
+                    f"{i}."
+                )
+        if data_size_warning_flag:
+            if i % 10 == 0:
+                cur_time = time.time()
+                # warns user if the dataset is too large to iterate within 10s
+                if int(cur_time - start_time) > 10 and data_size_warning_flag:
+                    warnings.warn(
+                        "The dataset is taking longer than 10 seconds to "
+                        "iterate over. This may be due to the size of the "
+                        "dataset. Keep in mind that the `split_dataset` "
+                        "utility is only for small in-memory dataset "
+                        "(e.g. < 10,000 samples).",
+                        category=ResourceWarning,
+                        source="split_dataset",
+                    )
+                    data_size_warning_flag = False
+        yield sample
+
 
 def _rescale_dataset_split_sizes(left_size, right_size, total_length):
     """Rescale the dataset split sizes.
@@ -373,6 +445,13 @@ def _restore_dataset_from_list(
 def is_batched(dataset):
     """ "Check if the `tf.data.Dataset` is batched."""
     return hasattr(dataset, "_batch_size")
+
+def get_batch_size(dataset):
+    """Get the batch size of the dataset."""
+    if is_batched(dataset):
+        return dataset._batch_size
+    else:
+        return None
 
 def _get_type_spec(dataset):
     """Get the type spec of the dataset."""
