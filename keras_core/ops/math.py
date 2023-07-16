@@ -93,7 +93,7 @@ def top_k(x, k, sorted=True):
         x: Input tensor.
         k: An integer representing the number of top elements to retrieve.
         sorted: A boolean indicating whether to sort the output in
-        descending order.Default is `True`.
+        descending order. Default is `True`.
 
     Returns:
         A tuple containing two tensors. The first tensor contains the
@@ -180,7 +180,7 @@ def logsumexp(x, axis=None, keepdims=False):
             along which to compute the sum. If `None`, the sum is computed
             over all elements. Default is `None`.
         keepdims: A boolean indicating whether to keep the dimensions of
-            the input tensor when computing the sum. Default is False.
+            the input tensor when computing the sum. Default is `False`.
 
     Returns:
         A tensor containing the logarithm of the sum of exponentials of
