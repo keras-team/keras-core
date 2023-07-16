@@ -980,7 +980,7 @@ def one_hot(x, num_classes, axis=-1, dtype=None):
         except for the specified `axis` dimension, which will have
         a length of `num_classes`. The dtype of the output tensor
         is determined by `dtype` or the default data type of the backend.
-    
+
     Example:
     ```python
     >>> x = keras_core.ops.convert_to_tensor([1, 3, 2, 0])
@@ -1027,9 +1027,10 @@ class BinaryCrossentropy(Operation):
 def binary_crossentropy(target, output, from_logits=False):
     """Computes binary cross-entropy loss between target and output tensor.
 
-    The binary cross-entropy loss is commonly used in binary classification tasks
-    where each input sample belongs to one of the two classes. It measures the
-    dissimilarity between the target and output probabilities or logits.
+    The binary cross-entropy loss is commonly used in binary
+    classification tasks where each input sample belongs to one
+    of the two classes. It measures the dissimilarity between the
+    target and output probabilities or logits.
 
     Args:
         target: The target tensor representing the true binary labels.
@@ -1050,11 +1051,12 @@ def binary_crossentropy(target, output, from_logits=False):
     Example:
     ```python
     >>> target = keras_core.ops.convert_to_tensor([0, 1, 1, 0],
-                                                  dtype=tf.float32)
+                                                  dtype=float32)
     >>> output = keras_core.ops.convert_to_tensor([0.1, 0.9, 0.8, 0.2],
-                                                  dtype=tf.float32)
+                                                  dtype=float32)
     >>> binary_crossentropy(target, output)
-    array([0.10536054 0.10536054 0.22314355 0.22314355], shape=(4,), dtype=float32)
+    array([0.10536054 0.10536054 0.22314355 0.22314355], 
+        shape=(4,), dtype=float32)
     ```
     """
     if any_symbolic_tensors((target, output)):
@@ -1133,11 +1135,11 @@ def categorical_crossentropy(target, output, from_logits=False, axis=-1):
     >>> target = keras_core.ops.convert_to_tensor([[1, 0, 0],
                                                    [0, 1, 0],
                                                    [0, 0, 1]],
-                                                    dtype=tf.float32)
+                                                    dtype=float32)
     >>> output = keras_core.ops.convert_to_tensor([[0.9, 0.05, 0.05],
                                                    [0.1, 0.8, 0.1],
                                                    [0.2, 0.3, 0.5]],
-                                                   dtype=tf.float32)
+                                                   dtype=float32)
     >>> categorical_crossentropy(target, output)
     array([0.10536054 0.22314355 0.6931472 ], shape=(3,), dtype=float32)
     ```
@@ -1188,7 +1190,7 @@ class SparseCategoricalCrossentropy(Operation):
     ]
 )
 def sparse_categorical_crossentropy(target, output, from_logits=False, axis=-1):
-    """Computes sparse categorical cross-entropy loss between target and output tensor.
+    """Computes sparse categorical cross-entropy loss.
 
     The sparse categorical cross-entropy loss is similar to categorical
     cross-entropy, but it is used when the target tensor contains integer
@@ -1199,13 +1201,13 @@ def sparse_categorical_crossentropy(target, output, from_logits=False, axis=-1):
         target: The target tensor representing the true class labels as integers.
             Its shape should match the shape of the `output` tensor except
             for the last dimension.
-        output: The output tensor representing the predicted probabilities 
+        output: The output tensor representing the predicted probabilities
             or logits.
             Its shape should match the shape of the `target` tensor except 
             for the last dimension.
         from_logits: (optional) Whether `output` is a tensor of logits
             or probabilities.
-            Set it to `True` if `output` represents logits; otherwise, 
+            Set it to `True` if `output` represents logits; otherwise,
             set it to `False` if `output` represents probabilities.
             Default is `False`.
         axis: (optional) The axis along which the sparse categorical
@@ -1219,10 +1221,11 @@ def sparse_categorical_crossentropy(target, output, from_logits=False, axis=-1):
         
     Example:
     ```python
-    >>> target = keras_core.ops.convert_to_tensor([0, 1, 2], dtype=tf.int32)
+    >>> target = keras_core.ops.convert_to_tensor([0, 1, 2], dtype=int32)
     >>> output = keras_core.ops.convert_to_tensor([[0.9, 0.05, 0.05], 
                                                    [0.1, 0.8, 0.1], 
-                                                   [0.2, 0.3, 0.5]], dtype=tf.float32)
+                                                   [0.2, 0.3, 0.5]],
+                                                   dtype=float32)
     >>> sparse_categorical_crossentropy(target, output)
     array([0.10536056 0.22314355 0.6931472 ], shape=(3,), dtype=float32)
     ```
