@@ -1,7 +1,7 @@
 """
 Title: Text Classification with Transformers
 Author: [Yash Srivastava](https://twitter.com/Yaaaaaashhh)
-Date created: 2023/07/16
+Date created: 2020/05/10
 Last modified: 2023/07/16
 Description: Implement a Transformer block as a Keras core layer and use it for text classification(Works on all backends).
 Accelerator: GPU
@@ -11,9 +11,9 @@ Accelerator: GPU
 """
 
 import os
-os.environ['KERAS_BACKEND'] = 'jax'   # Could be anything out of 'jax', 'torch' or 'tf'
+os.environ['KERAS_BACKEND'] = 'jax'   # Could be anything out of 'jax', 'torch' or 'tensorflow'
 
-import tensorflow as tf
+# import tensorflow as tf    # No need for importing tf, as keras_core handles it  
 import keras_core as keras
 
 """
@@ -60,7 +60,7 @@ class TokenAndPositionEmbedding(keras.layers.Layer):
         
     def call(self, x):
         maxlen = keras.ops.shape(x)[-1]    # keras.ops has built in numpy and other nn related functions.
-        positions = tf.range(start=0, limit=maxlen, delta=1)   # TODO: Check if range is there or not.
+        positions = keras.ops.arange(start=0, limit=maxlen, delta=1)   # TODO: Check if range is there or not.
         positions = self.pos_emb(positions)
         x = self.token_emb(x)
         return x + positions
