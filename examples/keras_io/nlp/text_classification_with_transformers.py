@@ -1,7 +1,7 @@
 """
 Title: Text Classification with Transformers
-Author: [Yash Srivastava](https://twitter.com/Yaaaaaashhh)
-Date created: 2020/05/10              # Added the original date
+Author: [Apporva Nandan](https://twitter.com/NandanApoorv)
+Date created: 2020/05/10              
 Last modified: 2023/07/16
 Description: Implement a Transformer block as a Keras core layer and use it for text classification(Works on all backends).
 Accelerator: GPU
@@ -11,9 +11,7 @@ Accelerator: GPU
 """
 
 import os
-os.environ['KERAS_BACKEND'] = 'jax'   # Could be anything out of 'jax', 'torch' or 'tensorflow'   # Changed from 'tf' to tensorflow
-
-# import tensorflow as tf    # No need for importing tf, as keras_core handles it  
+os.environ['KERAS_BACKEND'] = 'jax'   # Could be anything out of 'jax', 'torch' or 'tensorflow' 
 import keras_core as keras
 
 """
@@ -32,8 +30,8 @@ class TransformerBlock(keras.layers.Layer):
         self.dropout1 = keras.layers.Dropout(rate)
         self.dropout2 = keras.layers.Dropout(rate)
 
-    def compute_output_shape(self, input_shape):    # TODO: Check this. Could be a problem.
-      return (input_shape[-1], self.embed_dim, self.embed_dim
+    def compute_output_shape(self, input_shape):    # TODO: Check this.
+      return (input_shape[-1], self.embed_dim, self.embed_dim)
 
     def call(self, inputs, training):
         attn_output = self.att(inputs, inputs)
@@ -55,12 +53,12 @@ class TokenAndPositionEmbedding(keras.layers.Layer):
         self.token_emb = keras.layers.Embedding(input_dim=vocab_size, output_dim=embed_dim)
         self.pos_emb = keras.layers.Embedding(input_dim=maxlen, output_dim=embed_dim)
 
-    def compute_output_shape(self, input_shape):   # TODO: Check this. Could be a problem
+    def compute_output_shape(self, input_shape):   # TODO: Check this.
       return (input_shape[-1], self.embed_dim)
         
     def call(self, x):
-        maxlen = keras.ops.shape(x)[-1]    # keras.ops has built in numpy and other nn related functions.
-        positions = keras.ops.arange(start=0, stop=maxlen, step=1)   # Changed from `tf.range` to `keras.ops.arange`, which removes the dependency of tf completely.
+        maxlen = keras.ops.shape(x)[-1]
+        positions = keras.ops.arange(start=0, stop=maxlen, step=1)
         positions = self.pos_emb(positions)
         x = self.token_emb(x)
         return x + positions
