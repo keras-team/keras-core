@@ -69,19 +69,20 @@ def resize(
         Resized image or batch of images.
 
     Examples:
-        >>> x = np.random.random((2, 4, 4, 3)) # batch of 2 RGB images
-        >>> y = keras_core.ops.image.resize(x, (2, 2))
-        >>> y.shape
-        TensorShape([2, 2, 2, 3])
 
-        >>> x = np.random.random((4, 4, 3)) # single RGB image
-        >>> y = keras_core.ops.image.resize(x, (2, 2))
-        >>> y.shape
+    >>> x = np.random.random((2, 4, 4, 3)) # batch of 2 RGB images
+    >>> y = keras_core.ops.image.resize(x, (2, 2))
+    >>> y.shape
+    TensorShape([2, 2, 2, 3])
 
-        >>> x = np.random.random((2, 3, 4, 4)) # batch of 2 RGB images
-        >>> y = keras_core.ops.image.resize(x, (2, 2),
-        ...     data_format='channels_first')
-        >>> y.shape
+    >>> x = np.random.random((4, 4, 3)) # single RGB image
+    >>> y = keras_core.ops.image.resize(x, (2, 2))
+    >>> y.shape
+
+    >>> x = np.random.random((2, 3, 4, 4)) # batch of 2 RGB images
+    >>> y = keras_core.ops.image.resize(x, (2, 2),
+    ...     data_format='channels_first')
+    >>> y.shape
     """
 
     if any_symbolic_tensors((image,)):
