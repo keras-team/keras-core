@@ -4,7 +4,6 @@ import datetime
 import io
 import json
 import os
-import re
 import tempfile
 import warnings
 import zipfile
@@ -21,8 +20,7 @@ from keras_core.saving.serialization_lib import deserialize_keras_object
 from keras_core.saving.serialization_lib import serialize_keras_object
 from keras_core.utils import file_utils
 from keras_core.utils import naming
-
-keras_version = "0.0.0"  # TODO
+from keras_core.version import __version__ as keras_version
 
 try:
     import h5py
@@ -86,8 +84,7 @@ def save_model(model, filepath, weights_format="h5"):
             "date_saved": datetime.datetime.now().strftime("%Y-%m-%d@%H:%M:%S"),
         }
     )
-    # TODO(rameshsampath): Need a better logic for local vs remote path
-    if is_remote_path(filepath):
+    if file_utils.is_remote_path(filepath):
         # Remote path. Zip to local drive and copy to remote
         zip_filepath = os.path.join(get_temp_dir(), "tmp_model.keras")
     else:
@@ -124,7 +121,7 @@ def save_model(model, filepath, weights_format="h5"):
         weights_store.close()
         asset_store.close()
 
-    if is_remote_path(filepath):
+    if file_utils.is_remote_path(filepath):
         # Using gfile context manager doesn't close zip file when
         # writing to GCS. Hence writing to local and copying to filepath.
         file_utils.copy(zip_filepath, filepath, overwrite=True)
@@ -243,12 +240,6 @@ def load_weights_only(model, filepath, skip_mismatch=False):
         file_utils.rmtree(temp_dir)
     if archive:
         archive.close()
-
-
-def is_remote_path(filepath):
-    if re.match(r"^(/cns|/cfs|/gcs|.*://).*$", str(filepath)):
-        return True
-    return False
 
 
 def _write_to_zip_recursively(zipfile_to_save, system_path, zip_path):
