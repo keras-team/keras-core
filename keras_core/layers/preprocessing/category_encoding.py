@@ -148,7 +148,6 @@ class CategoryEncoding(TFDataLayer):
         return {**base_config, **config}
 
     def call(self, inputs):
-        # Add extra dimension if `inputs`` are not batched
         outputs = self._encode(inputs)
 
         if (
