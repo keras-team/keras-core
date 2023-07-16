@@ -89,17 +89,30 @@ class RandomCrop(Layer):
             inputs = backend.convert_to_tensor(backend.convert_to_numpy(inputs))
 
         input_shape = ops.shape(inputs)
+        is_batched = len(input_shape) > 3
+        inputs = ops.expand_dims(inputs, axis=0) if not is_batched else inputs
+
         h_diff = input_shape[self.height_axis] - self.height
         w_diff = input_shape[self.width_axis] - self.width
 
         def random_crop():
             dtype = input_shape.dtype
-            rands = random.uniform([2], 0, dtype.max, dtype)
+            rands = random.uniform([2], 0, dtype.max, dtype, seed=self.seed)
             h_start = rands[0] % (h_diff + 1)
             w_start = rands[1] % (w_diff + 1)
-            return tf.image.crop_to_bounding_box(
-                inputs, h_start, w_start, self.height, self.width
-            )
+            if self.data_format == "channels_last":
+                return inputs[
+                    :,
+                    h_start : h_start + self.height,
+                    w_start : w_start + self.width,
+                ]
+            else:
+                return inputs[
+                    :,
+                    :,
+                    h_start : h_start + self.height,
+                    w_start : w_start + self.width,
+                ]
 
         def resize():
             outputs = image_utils.smart_resize(
