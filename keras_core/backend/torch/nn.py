@@ -539,7 +539,7 @@ def one_hot(x, num_classes, axis=-1, dtype="float32"):
 
 
 def multi_hot(x, num_classes, axis=-1, dtype='float32'):
-    return torch.amax(one_hot(x, num_classes, axis=axis, dtype=dtype), dim=1)
+    return torch.amax(one_hot(x, num_classes, axis=axis, dtype=dtype), dim=0)
 
 
 def count(x, num_classes, axis=-1, dtype='float32'):

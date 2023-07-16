@@ -131,7 +131,7 @@ class CategoryEncoding(TFDataLayer):
             inputs, self.num_tokens, dtype=self.dtype
         )
         if (
-            backend.backend() != "tensorflow"
+            self.backend._backend != "tensorflow"
             and not backend_utils.in_tf_graph()
         ):
             outputs = backend.convert_to_tensor(outputs)
