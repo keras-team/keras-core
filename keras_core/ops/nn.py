@@ -364,9 +364,9 @@ def max_pool(
 
     Args:
         inputs: Tensor of rank N+2. `inputs` has shape
-            [batch_size] + inputs_spatial_shape + [num_channels] if
+            `(batch_size,) + inputs_spatial_shape + (num_channels,)` if
             `data_format="channels_last"`, or
-            [batch_size, num_channels] + inputs_spatial_shape if
+            `(batch_size, num_channels) + inputs_spatial_shape` if
             `data_format="channels_first"`. Pooling happens over the spatial
             dimensions only.
         pool_size: int or tuple/list of integers of size
@@ -379,15 +379,15 @@ def max_pool(
             each spatial dimension of the input tensor. If `strides` is int,
             then every spatial dimension shares the same `strides`.
         padding: string, either `"valid"` or `"same"`. `"valid"` means no
-            padding is applied, and "same" results in padding evenly to the
+            padding is applied, and `"same"` results in padding evenly to the
             left/right or up/down of the input such that output has the
             same height/width dimension as the input when `strides=1`.
-        data_format: A string, either "channels_last" or `channels_first`.
+        data_format: A string, either `"channels_last"` or `"channels_first"`.
             `data_format` determines the ordering of the dimensions in the
-            inputs. If `data_format="channels_last"`, inputs is of shape
-            (batch_size, spatial_shape, channels) while if
-            `data_format="channels_first"`, inputs is of shape
-            (batch_size, channels, spatial_shape).
+            inputs. If `data_format="channels_last"`, `inputs` is of shape
+            `(batch_size, ..., channels)` while if
+            `data_format="channels_first"`, `inputs` is of shape
+            `(batch_size, channels, ...)`.
 
     Returns:
         A tensor of rank N+2, the result of the max pooling operation.
@@ -454,9 +454,9 @@ def average_pool(
 
     Args:
         inputs: Tensor of rank N+2. `inputs` has shape
-            [batch_size] + inputs_spatial_shape + [num_channels] if
+            `(batch_size,)` + inputs_spatial_shape + (num_channels,)` if
             `data_format="channels_last"`, or
-            [batch_size, num_channels] + inputs_spatial_shape if
+            `(batch_size, num_channels) + inputs_spatial_shape` if
             `data_format="channels_first"`. Pooling happens over the spatial
             dimensions only.
         pool_size: int or tuple/list of integers of size
@@ -469,15 +469,15 @@ def average_pool(
             each spatial dimension of the input tensor. If `strides` is int,
             then every spatial dimension shares the same `strides`.
         padding: string, either `"valid"` or `"same"`. `"valid"` means no
-            padding is applied, and "same" results in padding evenly to the
+            padding is applied, and `"same"` results in padding evenly to the
             left/right or up/down of the input such that output has the
             same height/width dimension as the input when `strides=1`.
-        data_format: A string, either "channels_last" or `channels_first`.
+        data_format: A string, either `"channels_last"` or `"channels_first"`.
             `data_format` determines the ordering of the dimensions in the
-            inputs. If `data_format="channels_last"`, inputs is of shape
-            (batch_size, spatial_shape, channels) while if
-            `data_format="channels_first"`, inputs is of shape
-            (batch_size, channels, spatial_shape).
+            inputs. If `data_format="channels_last"`, `inputs` is of shape
+            `(batch_size, ..., channels)` while if
+            `data_format="channels_first"`, `inputs` is of shape
+            `(batch_size, channels, ...)`.
 
     Returns:
         A tensor of rank N+2, the result of the average pooling operation.
@@ -547,13 +547,12 @@ def conv(
 
     Args:
         inputs: Tensor of rank N+2. `inputs` has shape
-            [batch_size] + inputs_spatial_shape + [num_channels] if
+            `(batch_size,) + inputs_spatial_shape + (num_channels,)` if
             `data_format="channels_last"`, or
-            [batch_size, num_channels] + inputs_spatial_shape if
-            `data_format="channels_first"`. Pooling happens over the spatial
-            dimensions only.
+            `(batch_size, num_channels) + inputs_spatial_shape` if
+            `data_format="channels_first"`.
         kernel: Tensor of rank N+2. `kernel` has shape
-            [kernel_spatial_shape, num_input_channels, num_output_channels],
+            `(kernel_spatial_shape, num_input_channels, num_output_channels)`.
             `num_input_channels` should match the number of channels in
             `inputs`.
         strides: int or int tuple/list of `len(inputs_spatial_shape)`,
@@ -561,15 +560,15 @@ def conv(
             dimension. If `strides` is int, then every spatial dimension shares
             the same `strides`.
         padding: string, either `"valid"` or `"same"`. `"valid"` means no
-            padding is applied, and "same" results in padding evenly to the
+            padding is applied, and `"same"` results in padding evenly to the
             left/right or up/down of the input such that output has the
             same height/width dimension as the input when `strides=1`.
-        data_format: A string, either "channels_last" or `channels_first`.
+        data_format: A string, either `"channels_last"` or `"channels_first"`.
             `data_format` determines the ordering of the dimensions in the
-            inputs. If `data_format="channels_last"`, inputs is of shape
-            (batch_size, spatial_shape, channels) while if
-            `data_format="channels_first"`, inputs is of shape
-            (batch_size, channels, spatial_shape).
+            inputs. If `data_format="channels_last"`, `inputs` is of shape
+            `(batch_size, ..., channels)` while if
+            `data_format="channels_first"`, `inputs` is of shape
+            `(batch_size, channels, ...)`.
         dilation_rate: int or int tuple/list of `len(inputs_spatial_shape)`,
             specifying the dilation rate to use for dilated convolution. If
             `dilation_rate` is int, then every spatial dimension shares
@@ -645,11 +644,10 @@ def depthwise_conv(
 
     Args:
         inputs: Tensor of rank N+2. `inputs` has shape
-            [batch_size] + inputs_spatial_shape + [num_channels] if
+            `(batch_size,)` + inputs_spatial_shape + (num_channels,)` if
             `data_format="channels_last"`, or
-            [batch_size, num_channels] + inputs_spatial_shape if
-            `data_format="channels_first"`. Pooling happens over the spatial
-            dimensions only.
+            `(batch_size, num_channels) + inputs_spatial_shape` if
+            `data_format="channels_first"`.
         kernel: Tensor of rank N+2. `kernel` has shape
             [kernel_spatial_shape, num_input_channels, num_channels_multiplier],
             `num_input_channels` should match the number of channels in
@@ -659,15 +657,15 @@ def depthwise_conv(
             dimension. If `strides` is int, then every spatial dimension shares
             the same `strides`.
         padding: string, either `"valid"` or `"same"`. `"valid"` means no
-            padding is applied, and "same" results in padding evenly to the
+            padding is applied, and `"same"` results in padding evenly to the
             left/right or up/down of the input such that output has the
             same height/width dimension as the input when `strides=1`.
-        data_format: A string, either "channels_last" or `channels_first`.
+        data_format: A string, either `"channels_last"` or `"channels_first"`.
             `data_format` determines the ordering of the dimensions in the
-            inputs. If `data_format="channels_last"`, inputs is of shape
-            (batch_size, spatial_shape, channels) while if
-            `data_format="channels_first"`, inputs is of shape
-            (batch_size, channels, spatial_shape).
+            inputs. If `data_format="channels_last"`, `inputs` is of shape
+            `(batch_size, ..., channels)` while if
+            `data_format="channels_first"`, `inputs` is of shape
+            `(batch_size, channels, ...)`.
         dilation_rate: int or int tuple/list of `len(inputs_spatial_shape)`,
             specifying the dilation rate to use for dilated convolution. If
             `dilation_rate` is int, then every spatial dimension shares
@@ -756,32 +754,31 @@ def separable_conv(
 
     Args:
         inputs: Tensor of rank N+2. `inputs` has shape
-            [batch_size] + inputs_spatial_shape + [num_channels] if
+            `(batch_size,)` + inputs_spatial_shape + (num_channels,)` if
             `data_format="channels_last"`, or
-            [batch_size, num_channels] + inputs_spatial_shape if
-            `data_format="channels_first"`. Pooling happens over the spatial
-            dimensions only.
+            `(batch_size, num_channels) + inputs_spatial_shape` if
+            `data_format="channels_first"`.
         depthwise_kernel: Tensor of rank N+2. `depthwise_kernel` has shape
             [kernel_spatial_shape, num_input_channels, num_channels_multiplier],
             `num_input_channels` should match the number of channels in
             `inputs`.
         pointwise_kernel: Tensor of rank N+2. `pointwise_kernel` has shape
-            [ones_like(kernel_spatial_shape),
-            num_input_channels * num_channels_multiplier, num_output_channels].
+            `(*ones_like(kernel_spatial_shape),
+            num_input_channels * num_channels_multiplier, num_output_channels)`.
         strides: int or int tuple/list of `len(inputs_spatial_shape)`,
             specifying the strides of the convolution along each spatial
             dimension. If `strides` is int, then every spatial dimension shares
             the same `strides`.
         padding: string, either `"valid"` or `"same"`. `"valid"` means no
-            padding is applied, and "same" results in padding evenly to the
+            padding is applied, and `"same"` results in padding evenly to the
             left/right or up/down of the input such that output has the
             same height/width dimension as the input when `strides=1`.
-        data_format: A string, either "channels_last" or `channels_first`.
+        data_format: A string, either `"channels_last"` or `"channels_first"`.
             `data_format` determines the ordering of the dimensions in the
-            inputs. If `data_format="channels_last"`, inputs is of shape
-            (batch_size, spatial_shape, channels) while if
-            `data_format="channels_first"`, inputs is of shape
-            (batch_size, channels, spatial_shape).
+            inputs. If `data_format="channels_last"`, `inputs` is of shape
+            `(batch_size, ..., channels)` while if
+            `data_format="channels_first"`, `inputs` is of shape
+            `(batch_size, channels, ...)`.
         dilation_rate: int or int tuple/list of `len(inputs_spatial_shape)`,
             specifying the dilation rate to use for dilated convolution. If
             `dilation_rate` is int, then every spatial dimension shares
@@ -877,11 +874,10 @@ def conv_transpose(
 
     Args:
         inputs: Tensor of rank N+2. `inputs` has shape
-            [batch_size] + inputs_spatial_shape + [num_channels] if
+            `(batch_size,)` + inputs_spatial_shape + (num_channels,)` if
             `data_format="channels_last"`, or
-            [batch_size, num_channels] + inputs_spatial_shape if
-            `data_format="channels_first"`. Pooling happens over the spatial
-            dimensions only.
+            `(batch_size, num_channels) + inputs_spatial_shape` if
+            `data_format="channels_first"`.
         kernel: Tensor of rank N+2. `kernel` has shape
             [kernel_spatial_shape, num_output_channels, num_input_channels],
             `num_input_channels` should match the number of channels in
@@ -891,7 +887,7 @@ def conv_transpose(
             dimension. If `strides` is int, then every spatial dimension shares
             the same `strides`.
         padding: string, either `"valid"` or `"same"`. `"valid"` means no
-            padding is applied, and "same" results in padding evenly to the
+            padding is applied, and `"same"` results in padding evenly to the
             left/right or up/down of the input such that output has the
             same height/width dimension as the input when `strides=1`.
         output_padding: int or int tuple/list of `len(inputs_spatial_shape)`,
@@ -901,12 +897,12 @@ def conv_transpose(
             along a given dimension must be lower than the stride along that
             same dimension. If set to None (default), the output shape is
             inferred.
-        data_format: A string, either "channels_last" or `channels_first`.
+        data_format: A string, either `"channels_last"` or `"channels_first"`.
             `data_format` determines the ordering of the dimensions in the
-            inputs. If `data_format="channels_last"`, inputs is of shape
-            (batch_size, spatial_shape, channels) while if
-            `data_format="channels_first"`, inputs is of shape
-            (batch_size, channels, spatial_shape).
+            inputs. If `data_format="channels_last"`, `inputs` is of shape
+            `(batch_size, ..., channels)` while if
+            `data_format="channels_first"`, `inputs` is of shape
+            `(batch_size, channels, ...)`.
         dilation_rate: int or int tuple/list of `len(inputs_spatial_shape)`,
             specifying the dilation rate to use for dilated convolution. If
             `dilation_rate` is int, then every spatial dimension shares
