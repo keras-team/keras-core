@@ -420,12 +420,20 @@ def one_hot(x, num_classes, axis=-1, dtype="float32"):
     return tf.one_hot(x, num_classes, axis=axis, dtype=dtype)
 
 
+def is_batched_input(x):
+    return len(x.shape) > 1
+
+
 def multi_hot(x, num_classes, axis=-1, dtype='float32'):
-    return tf.reduce_max(one_hot(x, num_classes, axis=axis, dtype=dtype), axis=0)
+    reduction_axis = 1 if is_batched_input(x) else 0
+    outputs = tf.reduce_max(one_hot(x, num_classes, axis=axis, dtype=dtype), axis=reduction_axis)
+    return outputs
 
 
 def count(x, num_classes, axis=-1, dtype='float32'):
-    return tf.reduce_sum(one_hot(x, num_classes, axis=axis, dtype=dtype), axis=1)
+    reduction_axis = 1 if is_batched_input(x) else 0
+    outputs = tf.reduce_sum(one_hot(x, num_classes, axis=axis, dtype=dtype), axis=reduction_axis)
+    return outputs
 
 
 def _get_logits(output, from_logits, op_type, fn_name):
