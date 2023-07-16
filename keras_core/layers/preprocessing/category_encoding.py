@@ -4,7 +4,6 @@ from keras_core.layers.preprocessing.tf_data_layer import TFDataLayer
 from keras_core.utils import backend_utils
 
 
-
 @keras_core_export("keras_core.layers.CategoryEncoding")
 class CategoryEncoding(TFDataLayer):
     """A preprocessing layer which encodes integer features.
@@ -94,11 +93,11 @@ class CategoryEncoding(TFDataLayer):
         if output_mode not in ("count", "one_hot", "multi_hot"):
             raise ValueError(f"Unknown arg for output_mode: {output_mode}")
 
-        if output_mode == 'multi_hot':
+        if output_mode == "multi_hot":
             self.output_function = self.backend.nn.multi_hot
-        elif output_mode == 'count':
+        elif output_mode == "count":
             self.output_function = self.backend.nn.count
-        elif output_mode == 'one_hot':
+        elif output_mode == "one_hot":
             self.output_function = self.backend.nn.one_hot
 
         if num_tokens is None:
@@ -128,7 +127,9 @@ class CategoryEncoding(TFDataLayer):
         return {**base_config, **config}
 
     def call(self, inputs):
-        outputs = self.output_function(inputs, self.num_tokens, dtype=self.dtype)
+        outputs = self.output_function(
+            inputs, self.num_tokens, dtype=self.dtype
+        )
         if (
             backend.backend() != "tensorflow"
             and not backend_utils.in_tf_graph()

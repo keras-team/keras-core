@@ -1097,10 +1097,15 @@ class MultiHot(Operation):
         self.num_tokens = num_tokens
         self.axis = axis
         self.dtype = dtype or backend.floatx()
-    
+
     def call(self, inputs):
-        return backend.nn.multi_hot(inputs, num_classes=self.num_tokens, axis=self.axis, dtype=self.dtype)
-    
+        return backend.nn.multi_hot(
+            inputs,
+            num_classes=self.num_tokens,
+            axis=self.axis,
+            dtype=self.dtype,
+        )
+
     def compute_output_spec(self, inputs):
         return KerasTensor(inputs.shape + (self.num_tokens,), dtype=self.dtype)
 
