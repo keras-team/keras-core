@@ -111,17 +111,8 @@ class CategoryEncodingTest(testing.TestCase):
         self.assertEqual(expected_output_shape, output_data.shape)
 
     def test_tf_data_compatibility(self):
-        # This test case will fail if
-        # it ran while the backend is not TF
-
-        # Example: If it ran with JAX backend
-        # this error will happen:
-        # TypeError: dtype tf.float32 not understood.
-        if backend.backend() != 'tf':
-            return
-
-        layer = layers.CategoryEncoding(num_tokens=4, output_mode="one_hot")
-        input_data = np.array([3, 2, 0, 1])
+        layer = layers.CategoryEncoding(num_tokens=4, output_mode="one_hot", dtype='int32')
+        input_data = np.array([3, 2, 0, 1]).astype('int64')
         expected_output = np.array(
             [
                 [0, 0, 0, 1],

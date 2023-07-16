@@ -2,6 +2,7 @@ from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.preprocessing.tf_data_layer import TFDataLayer
 from keras_core.utils import backend_utils
+from keras_core import ops
 
 
 @keras_core_export("keras_core.layers.CategoryEncoding")
@@ -93,13 +94,6 @@ class CategoryEncoding(TFDataLayer):
         if output_mode not in ("count", "one_hot", "multi_hot"):
             raise ValueError(f"Unknown arg for output_mode: {output_mode}")
 
-        if output_mode == "multi_hot":
-            self.output_function = self.backend.nn.multi_hot
-        elif output_mode == "count":
-            self.output_function = self.backend.nn.count
-        elif output_mode == "one_hot":
-            self.output_function = self.backend.nn.one_hot
-
         if num_tokens is None:
             raise ValueError(
                 "num_tokens must be set to use this layer. If the "
@@ -115,6 +109,33 @@ class CategoryEncoding(TFDataLayer):
         self._allow_non_tensor_positional_args = True
         self._convert_input_args = False
 
+    def _is_batched_input(self, x):
+        return len(self.backend.core.shape(x)) > 1
+
+    def _count(self, inputs, axis=-1):
+        reduction_axis = 1 if self._is_batched_input(inputs) else 0
+        outputs = self.backend.numpy.sum(
+            self.backend.nn.one_hot(
+                inputs, self.num_tokens, axis=axis, dtype=self.dtype
+            ),
+            axis=reduction_axis,
+        )
+        return outputs
+
+    def _encode(self, inputs):
+        if self.output_mode == "multi_hot":
+            outputs = self.backend.nn.multi_hot(
+                inputs, self.num_tokens, dtype=self.dtype
+            )
+        elif self.output_mode == "one_hot":
+            outputs = self.backend.nn.one_hot(
+                inputs, self.num_tokens, dtype=self.dtype
+            )
+        elif self.output_mode == "count":
+            outputs = self._count(inputs)
+
+        return outputs
+
     def compute_output_shape(self, input_shape):
         return tuple(input_shape + (self.num_classes,))
 
@@ -127,9 +148,9 @@ class CategoryEncoding(TFDataLayer):
         return {**base_config, **config}
 
     def call(self, inputs):
-        outputs = self.output_function(
-            inputs, self.num_tokens, dtype=self.dtype
-        )
+        # Add extra dimension if `inputs`` are not batched
+        outputs = self._encode(inputs)
+
         if (
             self.backend._backend != "tensorflow"
             and not backend_utils.in_tf_graph()
