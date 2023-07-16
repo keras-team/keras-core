@@ -747,8 +747,10 @@ def take(x, indices, axis=None):
     x = convert_to_tensor(x)
     indices = convert_to_tensor(indices).long()
     if x.ndim == 2 and (axis is None or axis == 0):
+
         # This case is equivalent to embedding lookup.
         return torch.nn.functional.embedding(indices, x)
+    
     if axis is not None:
         # make sure axis is non-negative
         axis = len(x.shape) + axis if axis < 0 else axis
@@ -758,6 +760,7 @@ def take(x, indices, axis=None):
         indices = indices.ravel()
         out = torch.index_select(x, dim=axis, index=indices).squeeze(axis)
         return out.reshape(shape)
+
     return torch.take(x, index=indices)
 
 

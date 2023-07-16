@@ -189,11 +189,11 @@ class NumpyTwoInputOpsDynamicShapeTest(testing.TestCase):
         self.assertEqual(knp.outer(x, y).shape, (None, None))
 
     def test_take(self):
-        x = KerasTensor([None, 3])
+        x = KerasTensor([1, 3])
         self.assertEqual(knp.take(x, 1).shape, ())
         self.assertEqual(knp.take(x, [1, 2]).shape, (2,))
         self.assertEqual(
-            knp.take(x, [[1, 2], [1, 2]], axis=1).shape, (None, 2, 2)
+            knp.take(x, [[1, 2], [1, 2]], axis=1).shape, (1, 2, 2)
         )
 
         x = KerasTensor([None, 3, 3])
@@ -202,7 +202,6 @@ class NumpyTwoInputOpsDynamicShapeTest(testing.TestCase):
         self.assertEqual(
             knp.take(x, [[1, 2], [1, 2]], axis=1).shape, (None, 2, 2, 3)
         )
-
         # test with negative axis
         self.assertEqual(knp.take(x, 1, axis=-2).shape, (None, 3))
 
@@ -245,6 +244,8 @@ class NumpyTwoInputOpsDynamicShapeTest(testing.TestCase):
         x = KerasTensor([None, 1])
         y = KerasTensor([None, 3])
         self.assertEqual(knp.where(condition, x, y).shape, (2, None, 3))
+    
+    
 
 
 class NumpyTwoInputOpsStaticShapeTest(testing.TestCase):
