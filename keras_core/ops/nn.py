@@ -1107,7 +1107,7 @@ class MultiHot(Operation):
         )
 
     def compute_output_spec(self, inputs):
-        return KerasTensor(inputs.shape + (self.num_tokens,), dtype=self.dtype)
+        return KerasTensor(inputs.shape + (self.num_tokens,), dtype=inputs.dtype)
 
 
 @keras_core_export(
