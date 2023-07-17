@@ -123,7 +123,22 @@ class CategoryEncoding(TFDataLayer):
         def encode(x):
             if self.output_mode in ONE_HOT:
                 x = self.backend.numpy.expand_dims(x, axis=-1)
-            out = self.backend.numpy.bincount(x, minlength=self.num_tokens)
+            if x.ndim == 2:
+                out = self.backend.numpy.stack(
+                    [
+                        self.backend.numpy.bincount(
+                            xi, minlength=self.num_tokens
+                        )
+                        for xi in x
+                    ],
+                    axis=0,
+                )
+            elif x.ndim == 1:
+                out = self.backend.numpy.bincount(x, minlength=self.num_tokens)
+            else:
+                raise ValueError(
+                    "Input for CategoryEncoding layer should have ndim <= 2"
+                )
             if self.output_mode in (ONE_HOT, MULTI_HOT):
                 out = out > 0
             out = self.backend.cast(out, self.compute_dtype)
