@@ -55,7 +55,27 @@ class Resize(Operation):
 def resize(
     image, size, method="bilinear", antialias=False, data_format="channels_last"
 ):
-    # TODO: add docstring
+    
+    """
+    Resizes the image to the specified size.
+
+    Args:
+        image (Tensor): An input tensor representing an image or a batch of images.
+        size (Tuple[int, int]): A tuple of two integers, (height, width), representing the new size of the image.
+        method (str, optional): An interpolation method. One of "bilinear", "nearest", "bicubic", "area", or "lanczos3". Default is "bilinear".
+        antialias (bool, optional): Whether to use an anti-aliasing filter when downsampling an image. Default is False.
+        data_format (str, optional): A string, one of "channels_last" (default) or "channels_first".
+
+    Returns:
+        Tensor: The resized image(s).
+
+    Example:
+        >>> img = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+        >>> resize(img, (2, 2))
+        array([[1., 3.],
+               [7., 9.]])
+    """
+    
     if any_symbolic_tensors((image,)):
         return Resize(
             size, method=method, antialias=antialias, data_format=data_format
