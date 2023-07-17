@@ -84,11 +84,7 @@ class RandomCrop(TFDataLayer):
         self._allow_non_tensor_positional_args = True
 
     def call(self, inputs, training=True):
-        if not isinstance(inputs, (tf.Tensor, np.ndarray, list, tuple)):
-            inputs = self.backend.convert_to_tensor(
-                backend.convert_to_numpy(inputs)
-            )
-
+        inputs = self.backend.cast(inputs, self.compute_dtype)
         input_shape = self.backend.shape(inputs)
         is_batched = len(input_shape) > 3
         inputs = (
