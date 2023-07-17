@@ -900,3 +900,8 @@ def eye(N, M=None, k=None, dtype="float32"):
     diag_length = np.maximum(N, M)
     diag = torch.ones(diag_length, dtype=dtype, device=get_device())
     return torch.diag(diag, diagonal=k)[:N, :M]
+
+
+def floordiv(x1, x2):
+    x1, x2 = convert_to_tensor(x1), convert_to_tensor(x2)
+    return torch.floor_divide(x1, x2)

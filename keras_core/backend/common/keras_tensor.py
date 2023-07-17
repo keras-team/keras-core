@@ -201,14 +201,22 @@ class KerasTensor:
 
         return ops.Power().symbolic_call(other, self)
 
+    def __floordiv__(self, other):
+        from keras_core import ops
+
+        return ops.FloorDiv().symbolic_call(self, other)
+
+    def __rfloordiv__(self, other):
+        from keras_core import ops
+
+        return ops.FloorDiv().symbolic_call(other, self)
+
     def __getitem__(self, key):
         from keras_core import ops
 
         return ops.GetItem().symbolic_call(self, key)
 
     # TODO
-    #   "__floordiv__",
-    #   "__rfloordiv__",
     #   "__mod__",
     #   "__rmod__",
     #   "__lt__",
