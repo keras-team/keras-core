@@ -1,4 +1,3 @@
-
 """
 Title: A Vision Transformer without Attention
 Author: [Aritra Roy Gosthipaty](https://twitter.com/ariG23498), [Ritwik Raha](https://twitter.com/ritwik_raha)
@@ -27,8 +26,6 @@ operation with a shifting operation.
 
 In this example, we minimally implement the paper with close alignement to the author's
 [official implementation](https://github.com/microsoft/SPACH/blob/main/models/shiftvit.py).
-
-
 """
 
 """
