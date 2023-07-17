@@ -1,12 +1,12 @@
-from keras_core import backend
 from keras_core.api_export import keras_core_export
-from keras_core.layers.layer import Layer
-from keras_core.utils import backend_utils
-from keras_core.utils.module_utils import tensorflow as tf
+from keras_core.layers.preprocessing.tf_data_layer import TFDataLayer
+
+ONE_HOT = "one_hot"
+MULTI_HOT = "multi_hot"
 
 
 @keras_core_export("keras_core.layers.CategoryEncoding")
-class CategoryEncoding(Layer):
+class CategoryEncoding(TFDataLayer):
     """A preprocessing layer which encodes integer features.
 
     This layer provides options for condensing data into a categorical encoding
@@ -84,12 +84,6 @@ class CategoryEncoding(Layer):
     """
 
     def __init__(self, num_tokens=None, output_mode="multi_hot", **kwargs):
-        if not tf.available:
-            raise ImportError(
-                "Layer CategoryEncoding requires TensorFlow. "
-                "Install it via `pip install tensorflow`."
-            )
-
         super().__init__(**kwargs)
 
         # Support deprecated names for output_modes.
@@ -111,12 +105,6 @@ class CategoryEncoding(Layer):
             )
         self.num_tokens = num_tokens
         self.output_mode = output_mode
-
-        self.layer = tf.keras.layers.CategoryEncoding(
-            num_tokens=num_tokens,
-            output_mode=output_mode,
-            **kwargs,
-        )
         self._allow_non_tensor_positional_args = True
         self._convert_input_args = False
 
@@ -132,10 +120,15 @@ class CategoryEncoding(Layer):
         return {**base_config, **config}
 
     def call(self, inputs):
-        outputs = self.layer.call(inputs)
-        if (
-            backend.backend() != "tensorflow"
-            and not backend_utils.in_tf_graph()
-        ):
-            outputs = backend.convert_to_tensor(outputs)
+        def encode(x):
+            if self.output_mode in ONE_HOT:
+                x = self.backend.numpy.expand_dims(x, axis=-1)
+            out = self.backend.numpy.bincount(x, minlength=self.num_tokens)
+            if self.output_mode in (ONE_HOT, MULTI_HOT):
+                out = out > 0
+            out = self.backend.cast(out, self.compute_dtype)
+            return out
+
+        inputs = self.backend.convert_to_tensor(inputs)
+        outputs = encode(inputs)
         return outputs
