@@ -1,11 +1,10 @@
 import numpy as np
 
-from keras_core import ops
-from keras_core import random
-from keras_core.random.seed_generator import SeedGenerator
 from keras_core import backend
+from keras_core import random
 from keras_core.api_export import keras_core_export
 from keras_core.layers.preprocessing.tf_data_layer import TFDataLayer
+from keras_core.random.seed_generator import SeedGenerator
 from keras_core.utils import backend_utils
 from keras_core.utils import image_utils
 from keras_core.utils.module_utils import tensorflow as tf
@@ -86,11 +85,17 @@ class RandomCrop(TFDataLayer):
 
     def call(self, inputs, training=True):
         if not isinstance(inputs, (tf.Tensor, np.ndarray, list, tuple)):
-            inputs = self.backend.convert_to_tensor(backend.convert_to_numpy(inputs))
+            inputs = self.backend.convert_to_tensor(
+                backend.convert_to_numpy(inputs)
+            )
 
         input_shape = self.backend.shape(inputs)
         is_batched = len(input_shape) > 3
-        inputs = self.backend.expand_dims(inputs, axis=0) if not is_batched else inputs
+        inputs = (
+            self.backend.expand_dims(inputs, axis=0)
+            if not is_batched
+            else inputs
+        )
 
         h_diff = input_shape[self.height_axis] - self.height
         w_diff = input_shape[self.width_axis] - self.width
