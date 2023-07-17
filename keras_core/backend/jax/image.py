@@ -3,6 +3,8 @@ import functools
 import jax
 import jax.numpy as jnp
 
+from keras_core.backend.jax.core import convert_to_tensor
+
 RESIZE_METHODS = (
     "bilinear",
     "nearest",
@@ -58,37 +60,6 @@ AFFINE_FILL_MODES = (
 )
 
 
-def _affine_single_image(
-    image,
-    transform,
-    order,
-    mode,
-    cval,
-):
-    meshgrid = jnp.meshgrid(
-        *[jnp.arange(size) for size in image.shape], indexing="ij"
-    )
-    indices = jnp.concatenate(
-        [jnp.expand_dims(x, axis=-1) for x in meshgrid], axis=-1
-    )
-    new_transform = jnp.array(
-        [
-            [transform[4], transform[1], 0],
-            [transform[3], transform[0], 0],
-            [0, 0, 1],
-        ],
-        dtype=jnp.float32,
-    )
-    offset = jnp.array([transform[5], transform[2], 0], dtype=jnp.float32)
-    coordinates = indices @ new_transform
-    coordinates = jnp.moveaxis(coordinates, source=-1, destination=0)
-    coordinates += jnp.reshape(a=offset, newshape=(*offset.shape, 1, 1, 1))
-    affined = jax.scipy.ndimage.map_coordinates(
-        image, coordinates, order=order, mode=mode, cval=cval
-    )
-    return affined
-
-
 def affine(
     image,
     transform,
@@ -97,6 +68,8 @@ def affine(
     fill_value=0,
     data_format="channels_last",
 ):
+    transform = convert_to_tensor(transform)
+
     if method not in AFFINE_METHODS.keys():
         raise ValueError(
             "Invalid value for argument `method`. Expected of one "
@@ -120,8 +93,6 @@ def affine(
             f"transform.shape={transform.shape}"
         )
 
-    method = AFFINE_METHODS[method]
-
     # unbatched case
     need_squeeze = False
     if len(image.shape) == 3:
@@ -133,10 +104,49 @@ def affine(
     if data_format == "channels_first":
         image = jnp.transpose(image, (0, 2, 3, 1))
 
-    _affine_single_image_impl = functools.partial(
-        _affine_single_image, order=method, mode=fill_mode, cval=fill_value
+    batch_size = image.shape[0]
+
+    # get indices
+    meshgrid = jnp.meshgrid(
+        *[jnp.arange(size) for size in image.shape[1:]], indexing="ij"
     )
-    affined = jax.vmap(_affine_single_image_impl)(image, transform)
+    indices = jnp.concatenate(
+        [jnp.expand_dims(x, axis=-1) for x in meshgrid], axis=-1
+    )
+    indices = jnp.tile(indices, (batch_size, 1, 1, 1, 1))
+
+    # swap the values
+    a0 = transform[:, 0]
+    a2 = transform[:, 2]
+    b1 = transform[:, 4]
+    b2 = transform[:, 5]
+    transform = transform.at[:, 0].set(b1)
+    transform = transform.at[:, 2].set(b2)
+    transform = transform.at[:, 4].set(a0)
+    transform = transform.at[:, 5].set(a2)
+
+    # deal with transform
+    transform = jnp.pad(
+        transform, pad_width=[[0, 0], [0, 1]], constant_values=1
+    )
+    transform = jnp.reshape(transform, (batch_size, 3, 3))
+    offset = transform[:, 0:2, 2]
+    offset = jnp.pad(offset, pad_width=[[0, 0], [0, 1]])
+    transform = transform.at[:, 0:2, 2].set(0)
+
+    # transform the indices
+    coordinates = jnp.einsum("Bhwij, Bjk -> Bhwik", indices, transform)
+    coordinates = jnp.moveaxis(coordinates, source=-1, destination=1)
+    coordinates += jnp.reshape(a=offset, newshape=(*offset.shape, 1, 1, 1))
+
+    # apply affine transformation
+    _map_coordinates = functools.partial(
+        jax.scipy.ndimage.map_coordinates,
+        order=AFFINE_METHODS[method],
+        mode=fill_mode,
+        cval=fill_value,
+    )
+    affined = jax.vmap(_map_coordinates)(image, coordinates)
 
     if data_format == "channels_first":
         affined = jnp.transpose(affined, (0, 3, 1, 2))
