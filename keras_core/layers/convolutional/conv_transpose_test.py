@@ -316,7 +316,7 @@ class ConvTransposeCorrectnessTest(testing.TestCase, parameterized.TestCase):
         {
             "filters": 6,
             "kernel_size": 7,
-            "strides": 14,
+            "strides": 16,
             "padding": "same",
             "output_padding": 2,
             "data_format": "channels_last",
