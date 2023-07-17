@@ -23,7 +23,10 @@ def get_version(rel_path):
 
 HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
-VERSION = get_version("keras_core/__init__.py")
+if os.path.exists("keras_core/version.py"):
+    VERSION = get_version("keras_core/version.py")
+else:
+    VERSION = get_version("keras_core/__init__.py")
 
 setup(
     name="keras-core",
@@ -36,12 +39,12 @@ setup(
     author_email="keras-users@googlegroups.com",
     license="Apache License 2.0",
     install_requires=[
-        "tensorflow",
         "absl-py",
         "numpy",
         "rich",
         "namex",
         "h5py",
+        "dm-tree",
     ],
     # Supported Python versions
     python_requires=">=3.8",

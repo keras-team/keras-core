@@ -41,13 +41,12 @@ or until there is no data
 import types
 import warnings
 
-import tensorflow as tf
-
 from keras_core.trainers.data_adapters import array_data_adapter
 from keras_core.trainers.data_adapters import generator_data_adapter
 from keras_core.trainers.data_adapters import py_dataset_adapter
 from keras_core.trainers.data_adapters import tf_dataset_adapter
 from keras_core.trainers.data_adapters import torch_data_adapter
+from keras_core.utils.module_utils import tensorflow as tf
 
 
 class EpochIterator:
@@ -77,7 +76,7 @@ class EpochIterator:
                 batch_size=batch_size,
                 steps=steps_per_epoch,
             )
-        elif isinstance(x, tf.data.Dataset):
+        elif tf.available and isinstance(x, tf.data.Dataset):
             self.data_adapter = tf_dataset_adapter.TFDatasetAdapter(
                 x, class_weight=class_weight
             )
@@ -170,13 +169,19 @@ class EpochIterator:
             for step in range(self.steps_per_epoch):
                 if self._insufficient_data:
                     break
+
+                if tf.available:
+                    errors = (StopIteration, tf.errors.OutOfRangeError)
+                else:
+                    errors = (StopIteration,)
+
                 try:
                     data = next(self._current_iterator)
                     buffer.append(data)
                     if len(buffer) == self.steps_per_execution:
                         yield step - len(buffer) + 1, buffer
                         buffer = []
-                except (StopIteration, tf.errors.OutOfRangeError):
+                except errors:
                     warnings.warn(
                         "Your input ran out of data; interrupting epoch. "
                         "Make sure that your dataset or generator can generate "
