@@ -5,7 +5,21 @@ from keras_core.backend import KerasTensor
 
 class SymbolicArguments:
     def __init__(self, *args, **kwargs):
-        # TODO: validation
+        # Check that args and kwargs are iterable
+        if not hasattr(args, '__iter__'):
+            raise ValueError("`args` should be an iterable")
+        if not hasattr(kwargs, '__iter__'):
+            raise ValueError("`kwargs` should be an iterable")
+
+        # Validate all KerasTensor instances
+        def validate_keras_tensor(x):
+            if isinstance(x, KerasTensor):
+                if x.shape is None or x.dtype is None:
+                    raise ValueError("Invalid KerasTensor instance: shape and dtype should not be None")
+            return x
+
+        self.args = tree.map_structure(validate_keras_tensor, args)
+        self.kwargs = tree.map_structure(validate_keras_tensor, kwargs)
         self.args = tree.map_structure(lambda x: x, args)
         self.kwargs = tree.map_structure(lambda x: x, kwargs)
         self._flat_arguments = tree.flatten((self.args, self.kwargs))
