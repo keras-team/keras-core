@@ -40,7 +40,7 @@ class RandomFlip(TFDataLayer):
     """
 
     def __init__(
-            self, mode=HORIZONTAL_AND_VERTICAL, seed=None, name=None, **kwargs
+        self, mode=HORIZONTAL_AND_VERTICAL, seed=None, name=None, **kwargs
     ):
         super().__init__(name=name)
         self.seed = seed
@@ -59,16 +59,25 @@ class RandomFlip(TFDataLayer):
         return self.mode == VERTICAL or self.mode == HORIZONTAL_AND_VERTICAL
 
     def call(self, inputs, training=True):
-
         def random_flipped_inputs(inputs):
             flipped_outputs = inputs
             seed_generator = self._get_seed_generator()
             if self.horizontal:
-                if self.backend.random.uniform(shape=(), seed=seed_generator) <= 0.5:
-                    flipped_outputs = self.backend.numpy.flip(flipped_outputs, axis=-2)
+                if (
+                    self.backend.random.uniform(shape=(), seed=seed_generator)
+                    <= 0.5
+                ):
+                    flipped_outputs = self.backend.numpy.flip(
+                        flipped_outputs, axis=-2
+                    )
             if self.vertical:
-                if self.backend.random.uniform(shape=(), seed=seed_generator) <= 0.5:
-                    flipped_outputs = self.backend.numpy.flip(flipped_outputs, axis=-3)
+                if (
+                    self.backend.random.uniform(shape=(), seed=seed_generator)
+                    <= 0.5
+                ):
+                    flipped_outputs = self.backend.numpy.flip(
+                        flipped_outputs, axis=-3
+                    )
             return flipped_outputs
 
         inputs = self.backend.cast(inputs, self.compute_dtype)
