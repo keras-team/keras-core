@@ -7,7 +7,7 @@ if backend.backend() == "tensorflow":
 
     BackendOptimizer = TFOptimizer
 elif backend.backend() == "torch":
-    from keras_core.backend.torch.optimizer import TorchOptimizer
+    from keras_core.backend.torch.optimizers import TorchOptimizer
 
     BackendOptimizer = TorchOptimizer
 else:

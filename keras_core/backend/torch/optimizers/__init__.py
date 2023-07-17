@@ -1,1 +1,1 @@
-from keras_core.backend.torch.optimizers.sgd import SGD
+from keras_core.backend.torch.optimizers.torch_optimizer import TorchOptimizer
