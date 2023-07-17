@@ -385,6 +385,10 @@ def not_equal(x1, x2):
     return np.not_equal(x1, x2)
 
 
+def zeros_like(x, dtype=None):
+    return np.zeros_like(x, dtype=dtype)
+
+
 def ones_like(x, dtype=None):
     return np.ones_like(x, dtype=dtype)
 

@@ -69,6 +69,10 @@ class TwoStatesRNNCell(layers.Layer):
 
 
 class RNNTest(testing.TestCase):
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented for NumPy backend.",
+    )
     def test_basics(self):
         self.run_layer_test(
             layers.RNN,

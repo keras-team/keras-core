@@ -1,11 +1,17 @@
 import numpy as np
+import pytest
 
+from keras_core import backend
 from keras_core import initializers
 from keras_core import layers
 from keras_core import testing
 
 
 class SimpleRNNTest(testing.TestCase):
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented for NumPy backend.",
+    )
     def test_basics(self):
         self.run_layer_test(
             layers.Bidirectional,

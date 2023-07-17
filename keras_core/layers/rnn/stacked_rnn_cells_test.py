@@ -1,5 +1,7 @@
 import numpy as np
+import pytest
 
+from keras_core import backend
 from keras_core import layers
 from keras_core import testing
 from keras_core.layers.rnn.rnn_test import OneStateRNNCell
@@ -7,6 +9,10 @@ from keras_core.layers.rnn.rnn_test import TwoStatesRNNCell
 
 
 class StackedRNNTest(testing.TestCase):
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Trainer not implemented for NumPy backend.",
+    )
     def test_basics(self):
         self.run_layer_test(
             layers.RNN,
