@@ -11,7 +11,23 @@ def compute_pooling_output_shape(
     padding="valid",
     data_format="channels_last",
 ):
-    """Compute the output shape of pooling ops."""
+    """
+    Computes the output shape of pooling operations.
+
+    Args:
+        input_shape (Tuple[int]): The shape of the input.
+        pool_size (Tuple[int]): The size of the pooling operation.
+        strides (Tuple[int], optional): The stride of the pooling operation. Defaults to pool_size.
+        padding (str, optional): The padding method, either 'valid' or 'same'. Defaults to 'valid'.
+        data_format (str, optional): The data format, either 'channels_last' or 'channels_first'. Defaults to 'channels_last'.
+
+    Returns:
+        Tuple[int]: The output shape of the pooling operation.
+
+    Example:
+        >>> compute_pooling_output_shape((1, 4, 4, 1), (2, 2))
+        (1, 2, 2, 1)
+    """
     strides = pool_size if strides is None else strides
     input_shape_origin = list(input_shape)
     input_shape = np.array(input_shape)
