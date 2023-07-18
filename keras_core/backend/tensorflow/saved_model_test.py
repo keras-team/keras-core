@@ -30,10 +30,10 @@ class CustomModelX(models.Model):
         return 1
 
 
-# @pytest.mark.skipif(
-#     backend.backend() != "tensorflow",
-#     reason="The SavedModel test can only run with TF backend.",
-# )
+@pytest.mark.skipif(
+    backend.backend() != "tensorflow",
+    reason="The SavedModel test can only run with TF backend.",
+)
 class SavedModelTest(testing.TestCase):
     def test_sequential(self):
         model = models.Sequential([
@@ -46,7 +46,14 @@ class SavedModelTest(testing.TestCase):
         path = os.path.join(self.get_temp_dir(), "my_keras_core_model")
         tf.saved_model.save(model, path)
         restored_model = tf.saved_model.load(path)
-        self.assertAllClose(model(X_train), restored_model(X_train), rtol=1e-4, atol=1e-4)
+        self.assertAllClose(
+            model(X_train),
+            restored_model.signatures['serving_default'](
+                tf.convert_to_tensor(X_train, dtype=tf.float32)
+            )['output_0'],
+            rtol=1e-4,
+            atol=1e-4,
+        )
 
     def test_functional(self):
         inputs = layers.Input(shape=(3,))
@@ -62,7 +69,14 @@ class SavedModelTest(testing.TestCase):
         path = os.path.join(self.get_temp_dir(), "my_keras_core_model")
         tf.saved_model.save(model, path)
         restored_model = tf.saved_model.load(path)
-        self.assertAllClose(model(X_train), restored_model(X_train), rtol=1e-4, atol=1e-4)
+        self.assertAllClose(
+            model(X_train),
+            restored_model.signatures['serving_default'](
+                tf.convert_to_tensor(X_train, dtype=tf.float32)
+            )['output_0'],
+            rtol=1e-4,
+            atol=1e-4,
+        )
 
     def test_subclassed(self):
         model = CustomModelX()
@@ -77,4 +91,11 @@ class SavedModelTest(testing.TestCase):
         path = os.path.join(self.get_temp_dir(), "my_keras_core_model")
         tf.saved_model.save(model, path)
         restored_model = tf.saved_model.load(path)
-        self.assertAllClose(model(X_train), restored_model(X_train), rtol=1e-4, atol=1e-4)
+        self.assertAllClose(
+            model(X_train),
+            restored_model.signatures['serving_default'](
+                tf.convert_to_tensor(X_train, dtype=tf.float32)
+            )['output_0'],
+            rtol=1e-4,
+            atol=1e-4,
+        )
