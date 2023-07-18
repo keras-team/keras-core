@@ -1121,7 +1121,7 @@ class MultiHot(Operation):
         if len(x_shape) == 2:
             x_shape = [x_shape[-1]]
         else:
-            x_shape = x_shape[:-2] + [x_shape[-1]]
+            x_shape = [x_shape[0]] + x_shape[2:]
 
         return KerasTensor(x_shape, dtype=inputs.dtype)
 
