@@ -85,7 +85,7 @@ class ReduceLROnPlateauTest(testing.TestCase):
                 self.y_train,
                 validation_data=(self.x_test, self.y_test),
                 callbacks=[reduce_lr],
-                epochs=2,
+                epochs=3,
             )
             expected_log = "ReduceLROnPlateau reducing learning rate to 0.01"
             self.assertTrue(any(expected_log in log for log in logs.output))
