@@ -112,7 +112,7 @@ class CategoryEncodingTest(testing.TestCase):
         layer = layers.CategoryEncoding(
             num_tokens=4, output_mode="one_hot", dtype="int32"
         )
-        input_data = np.array([3, 2, 0, 1]).astype("int64")
+        input_data = np.array([3, 2, 0, 1])
         expected_output = np.array(
             [
                 [0, 0, 0, 1],
