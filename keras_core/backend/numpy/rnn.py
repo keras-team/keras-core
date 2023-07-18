@@ -144,9 +144,7 @@ def rnn(
             outputs = np.stack(successive_outputs)
 
     else:  # Unroll == False
-        print("Unroll == False")
         if mask is not None:
-            print("mask is not None")
 
             def _step(states, current_input):
                 current_input, current_mask = current_input
