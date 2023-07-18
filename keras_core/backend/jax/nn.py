@@ -10,6 +10,7 @@ from keras_core.backend.common.backend_utils import (
 )
 from keras_core.backend.config import epsilon
 from keras_core.backend.jax.core import convert_to_tensor
+from keras_core.backend.jax.core import cast
 
 
 def relu(x):
@@ -394,7 +395,7 @@ def one_hot(x, num_classes, axis=-1, dtype="float32"):
 def multi_hot(x, num_classes, axis=-1, dtype="float32"):
     reduction_axis = 1 if len(x.shape) > 1 else 0
     outputs = jnp.max(
-        one_hot(x, num_classes, axis=axis, dtype=dtype), axis=reduction_axis
+        one_hot(cast(x, 'int32'), num_classes, axis=axis, dtype=dtype), axis=reduction_axis
     )
     return outputs
 

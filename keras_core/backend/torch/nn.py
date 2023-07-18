@@ -13,6 +13,7 @@ from keras_core.backend.torch.numpy import expand_dims
 from keras_core.backend.torch.numpy import maximum
 from keras_core.backend.torch.numpy import where
 from keras_core.utils.argument_validation import standardize_tuple
+from keras_core.backend.torch.core import cast
 
 
 def relu(x):
@@ -541,7 +542,7 @@ def one_hot(x, num_classes, axis=-1, dtype="float32"):
 def multi_hot(x, num_classes, axis=-1, dtype="float32"):
     reduction_axis = 1 if len(x.shape) > 1 else 0
     outputs = torch.amax(
-        one_hot(x, num_classes, axis=axis, dtype=dtype), dim=reduction_axis
+        one_hot(cast(x, 'int32'), num_classes, axis=axis, dtype=dtype), dim=reduction_axis
     )
     return outputs
 
