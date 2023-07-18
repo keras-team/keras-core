@@ -70,7 +70,7 @@ develop intuition about the architecture is to experiment with it.
 
 # DATA
 BATCH_SIZE = 256
-AUTO = tf.data.AUTOTUNE
+AUTO = tf_data.AUTOTUNE
 INPUT_SHAPE = (32, 32, 3)
 NUM_CLASSES = 10
 
