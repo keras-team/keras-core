@@ -2,7 +2,6 @@ from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.preprocessing.tf_data_layer import TFDataLayer
 from keras_core.utils import backend_utils
-from keras_core import ops
 
 
 @keras_core_export("keras_core.layers.CategoryEncoding")

@@ -108,6 +108,12 @@ class NNOpsDynamicShapeTest(testing.TestCase, parameterized.TestCase):
             (None, 4, None, 3),
         )
 
+    def test_multi_hot(self):
+        x = KerasTensor([None, 3, 1])
+        self.assertEqual(knn.multi_hot(x, 5).shape, (None, 3, 5))
+        self.assertEqual(knn.multi_hot(x, 5, 1).shape, (None, 5, 1))
+        self.assertEqual(knn.multi_hot(x, 5, 2).shape, (None, 3, 1))
+
     def test_conv(self):
         # Test 1D conv.
         inputs_1d = KerasTensor([None, 20, 3])
