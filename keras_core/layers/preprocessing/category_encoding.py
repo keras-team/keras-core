@@ -136,7 +136,7 @@ class CategoryEncoding(TFDataLayer):
         return outputs
 
     def compute_output_shape(self, input_shape):
-        return tuple(input_shape + (self.num_classes,))
+        return tuple(input_shape + (self.num_tokens,))
 
     def get_config(self):
         config = {
