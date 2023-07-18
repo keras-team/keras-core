@@ -115,7 +115,7 @@ print(f"Testing samples: {len(x_test)}")
 
 # Convert to tf.data.Dataset objects.
 train_ds = tf_data.Dataset.from_tensor_slices((x_train, y_train))
-train_ds = tf_data.shuffle(BATCH_SIZE * 100).batch(BATCH_SIZE).prefetch(AUTO)
+train_ds = train_ds.shuffle(BATCH_SIZE * 100).batch(BATCH_SIZE).prefetch(AUTO)
 
 val_ds = tf_data.Dataset.from_tensor_slices((x_val, y_val))
 val_ds = val_ds.batch(BATCH_SIZE).prefetch(AUTO)
