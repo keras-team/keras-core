@@ -45,7 +45,7 @@ class SavedModelTest(testing.TestCase):
         model.fit(X_train, y_train)
         path = os.path.join(self.get_temp_dir(), "my_keras_core_model")
         tf.saved_model.save(model, path)
-        restored_model = load(path)
+        restored_model = tf.saved_model.load(path)
         self.assertAllClose(model(X_train), restored_model(X_train), rtol=1e-4, atol=1e-4)
 
     def test_functional(self):
@@ -61,7 +61,7 @@ class SavedModelTest(testing.TestCase):
         model.fit(X_train, y_train)
         path = os.path.join(self.get_temp_dir(), "my_keras_core_model")
         tf.saved_model.save(model, path)
-        restored_model = load(path)
+        restored_model = tf.saved_model.load(path)
         self.assertAllClose(model(X_train), restored_model(X_train), rtol=1e-4, atol=1e-4)
 
     def test_subclassed(self):
@@ -76,5 +76,5 @@ class SavedModelTest(testing.TestCase):
         model.fit(X_train, y_train)
         path = os.path.join(self.get_temp_dir(), "my_keras_core_model")
         tf.saved_model.save(model, path)
-        restored_model = load(path)
+        restored_model = tf.saved_model.load(path)
         self.assertAllClose(model(X_train), restored_model(X_train), rtol=1e-4, atol=1e-4)
