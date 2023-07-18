@@ -121,9 +121,13 @@ class NNOpsDynamicShapeTest(testing.TestCase, parameterized.TestCase):
         out = knn.multi_hot(x, 5, axis=0, dtype=dtype)
         self.assertEqual(backend.standardize_dtype(out.dtype), dtype)
 
-    def test_multi_hot(self):
+    def test_batched_and_unbatched_inputs_multi_hot(self):
         x = KerasTensor([2, 3, 1])
-        unbatched_input = KerasTensor([5,])
+        unbatched_input = KerasTensor(
+            [
+                5,
+            ]
+        )
         self.assertEqual(knn.multi_hot(unbatched_input, 5, -1).shape, (5,))
         self.assertEqual(knn.multi_hot(x, 5).shape, (2, 1, 5))
         self.assertEqual(knn.multi_hot(x, 5, 1).shape, (2, 3, 1))
