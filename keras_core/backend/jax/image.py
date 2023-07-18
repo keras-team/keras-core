@@ -68,8 +68,6 @@ def affine(
     fill_value=0,
     data_format="channels_last",
 ):
-    transform = convert_to_tensor(transform)
-
     if method not in AFFINE_METHODS.keys():
         raise ValueError(
             "Invalid value for argument `method`. Expected of one "
@@ -80,6 +78,9 @@ def affine(
             "Invalid value for argument `fill_mode`. Expected of one "
             f"{AFFINE_FILL_MODES}. Received: method={fill_mode}"
         )
+
+    transform = convert_to_tensor(transform)
+
     if len(image.shape) not in (3, 4):
         raise ValueError(
             "Invalid image rank: expected rank 3 (single image) "

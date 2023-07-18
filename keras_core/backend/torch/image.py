@@ -197,7 +197,7 @@ def affine(
         image = image.permute((0, 3, 1, 2))
 
     # deal with transform
-    h, w = image.shape[1], image.shape[2]
+    h, w = image.shape[2], image.shape[3]
     theta = torch.zeros((image.shape[0], 2, 3)).to(transform)
     theta[:, 0, 0] = transform[:, 0]
     theta[:, 0, 1] = transform[:, 1] * h / w
