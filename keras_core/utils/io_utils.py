@@ -73,7 +73,7 @@ def set_logging_verbosity(level):
         - "WARNING"
         - "INFO"
         - "DEBUG" (most verbose)
-        
+
     Args:
         level: A string corresponding to the level of verbosity for logging.
     """
