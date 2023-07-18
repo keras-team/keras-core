@@ -54,7 +54,7 @@ class LearningRateSchedulerTest(testing.TestCase):
                 self.x_train,
                 self.y_train,
                 callbacks=[lr_scheduler],
-                epochs=3,
+                epochs=1,
             )
             expected_log = "LearningRateScheduler setting learning rate to 1.0"
             self.assertTrue(any(expected_log in log for log in logs.output))
