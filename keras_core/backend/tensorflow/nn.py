@@ -420,10 +420,13 @@ def one_hot(x, num_classes, axis=-1, dtype="float32"):
     return tf.one_hot(x, num_classes, axis=axis, dtype=dtype)
 
 
-def multi_hot(x, num_classes, axis=-1, dtype='float32'):
+def multi_hot(x, num_classes, axis=-1, dtype="float32"):
     reduction_axis = -2 if len(x.shape) > 1 else 0
-    outputs = tf.reduce_max(one_hot(x, num_classes, axis=axis, dtype=dtype), axis=reduction_axis)
+    outputs = tf.reduce_max(
+        one_hot(x, num_classes, axis=axis, dtype=dtype), axis=reduction_axis
+    )
     return outputs
+
 
 def _get_logits(output, from_logits, op_type, fn_name):
     """Retrieves logits tensor from maybe-softmax or maybe-sigmoid tensor."""

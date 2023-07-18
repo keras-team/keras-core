@@ -1117,12 +1117,12 @@ class MultiHot(Operation):
                 f"axis must be -1 or between [0, {len(inputs.shape)}), but "
                 f"received {self.axis}."
             )
-        
+
         if len(x_shape) == 2:
             x_shape = [x_shape[-1]]
         else:
             x_shape = x_shape[:-2] + [x_shape[-1]]
-        
+
         return KerasTensor(x_shape, dtype=inputs.dtype)
 
 

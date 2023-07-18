@@ -3,7 +3,6 @@ import tensorflow as tf
 
 from keras_core import layers
 from keras_core import testing
-from keras_core import backend
 
 
 class CategoryEncodingTest(testing.TestCase):
@@ -85,18 +84,19 @@ class CategoryEncodingTest(testing.TestCase):
     def test_batched_one_hot(self):
         input_data = np.array([[3, 2, 0, 1], [3, 2, 0, 1]])
         expected_output = np.array(
-            [[
-                [0, 0, 0, 1],
-                [0, 0, 1, 0],
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-            ],
             [
-                [0, 0, 0, 1],
-                [0, 0, 1, 0],
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-            ],
+                [
+                    [0, 0, 0, 1],
+                    [0, 0, 1, 0],
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                ],
+                [
+                    [0, 0, 0, 1],
+                    [0, 0, 1, 0],
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                ],
             ]
         )
         num_tokens = 4
@@ -111,8 +111,10 @@ class CategoryEncodingTest(testing.TestCase):
         self.assertEqual(expected_output_shape, output_data.shape)
 
     def test_tf_data_compatibility(self):
-        layer = layers.CategoryEncoding(num_tokens=4, output_mode="one_hot", dtype='int32')
-        input_data = np.array([3, 2, 0, 1]).astype('int64')
+        layer = layers.CategoryEncoding(
+            num_tokens=4, output_mode="one_hot", dtype="int32"
+        )
+        input_data = np.array([3, 2, 0, 1]).astype("int64")
         expected_output = np.array(
             [
                 [0, 0, 0, 1],

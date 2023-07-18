@@ -538,9 +538,11 @@ def one_hot(x, num_classes, axis=-1, dtype="float32"):
     return output
 
 
-def multi_hot(x, num_classes, axis=-1, dtype='float32'):
+def multi_hot(x, num_classes, axis=-1, dtype="float32"):
     reduction_axis = -2 if len(x.shape) > 1 else 0
-    outputs = torch.amax(one_hot(x, num_classes, axis=axis, dtype=dtype), dim=reduction_axis)
+    outputs = torch.amax(
+        one_hot(x, num_classes, axis=axis, dtype=dtype), dim=reduction_axis
+    )
     return outputs
 
 
