@@ -221,22 +221,62 @@ class KerasTensor:
 
         return ops.Mod().symbolic_call(other, self)
 
+    def __lt__(self, other):
+        from keras_core import ops
+
+        return ops.Less().symbolic_call(self, other)
+
+    def __le__(self, other):
+        from keras_core import ops
+
+        return ops.LessEqual().symbolic_call(self, other)
+
+    def __gt__(self, other):
+        from keras_core import ops
+
+        return ops.Greater().symbolic_call(self, other)
+
+    def __ge__(self, other):
+        from keras_core import ops
+
+        return ops.GreaterEqual().symbolic_call(self, other)
+
+    def __ne__(self, other):
+        from keras_core import ops
+
+        return ops.NotEqual().symbolic_call(self, other)
+
+    def __eq__(self, other):
+        from keras_core import ops
+
+        return ops.Equal().symbolic_call(self, other)
+
+    def __and__(self, other):
+        from keras_core import ops
+
+        return ops.LogicalAnd().symbolic_call(self, other)
+
+    def __rand__(self, other):
+        from keras_core import ops
+
+        return ops.LogicalAnd().symbolic_call(other, self)
+
+    def __or__(self, other):
+        from keras_core import ops
+
+        return ops.LogicalOr().symbolic_call(self, other)
+
+    def __ror__(self, other):
+        from keras_core import ops
+
+        return ops.LogicalOr().symbolic_call(other, self)
+
     def __getitem__(self, key):
         from keras_core import ops
 
         return ops.GetItem().symbolic_call(self, key)
 
     # TODO
-    #   "__lt__",
-    #   "__le__",
-    #   "__gt__",
-    #   "__ge__",
-    #   "__ne__",
-    #   "__eq__",
-    #   "__and__",
-    #   "__rand__",
-    #   "__or__",
-    #   "__ror__",
     #   "__xor__",
     #   "__rxor__",
     #   "__invert__",
