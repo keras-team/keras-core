@@ -29,53 +29,39 @@ class InputLayerTest(testing.TestCase):
     def test_input_error1(self):
         input_shape = (2, 3)
 
-        try:
+        with self.assertRaisesRegex(
+            ValueError, "cannot pass both `shape` and `batch_shape`"
+        ):
             InputLayer(shape=input_shape, batch_shape=input_shape)
-        except ValueError as x:
-            self.assertEqual(
-                x.args[0],
-                "You cannot pass both `shape` and `batch_shape` at the "
-                "same time.",
-            )
 
     # Testing batch_size is not None and batch_shape is not None
     def test_input_error2(self):
         input_shape = (2, 3)
         batch_size = 4
 
-        try:
+        with self.assertRaisesRegex(
+            ValueError, "cannot pass both `batch_size` and `batch_shape`"
+        ):
             InputLayer(batch_size=batch_size, batch_shape=input_shape)
-        except ValueError as x:
-            self.assertEqual(
-                x.args[0],
-                "You cannot pass both `batch_size` and `batch_shape` at the "
-                "same time.",
-            )
 
     # Testing shape is None and batch_shape is None
     def test_input_error3(self):
-        try:
+        with self.assertRaisesRegex(ValueError, "pass a `shape` argument."):
             InputLayer(shape=None, batch_shape=None)
-        except ValueError as x:
-            self.assertEqual(x.args[0], "You must pass a `shape` argument.")
 
     # Testing Input tensor is not Keras tensor
     def test_input_tensor_error(self):
         input_shape = (2, 3)
         batch_size = 4
         input_tensor = np.zeros(input_shape)
-        try:
+
+        with self.assertRaisesRegex(
+            ValueError, "Argument `input_tensor` must be a KerasTensor"
+        ):
             InputLayer(
                 shape=input_shape,
                 batch_size=batch_size,
                 input_tensor=input_tensor,
-            )
-        except ValueError as x:
-            self.assertEqual(
-                x.args[0],
-                "Argument `input_tensor` must be a KerasTensor. "
-                f"Received invalid type: input_tensor={input_tensor} "
-                f"(of type {type(input_tensor)})",
             )
 
     # Testing happy path for layer with input tensor
