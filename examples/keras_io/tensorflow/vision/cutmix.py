@@ -49,7 +49,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from tensorflow import keras
+from keras_core import layers
+import keras_core as keras
 
 np.random.seed(42)
 tf.random.set_seed(42)
@@ -61,9 +62,9 @@ In this example, we will use the
 [CIFAR-10 image classification dataset](https://www.cs.toronto.edu/~kriz/cifar.html).
 """
 
-(x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()
-y_train = tf.keras.utils.to_categorical(y_train, num_classes=10)
-y_test = tf.keras.utils.to_categorical(y_test, num_classes=10)
+(x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
+y_train = keras.utils.to_categorical(y_train, num_classes=10)
+y_test = keras.utils.to_categorical(y_test, num_classes=10)
 
 print(x_train.shape)
 print(y_train.shape)
@@ -99,6 +100,7 @@ IMG_SIZE = 32
 def preprocess_image(image, label):
     image = tf.image.resize(image, (IMG_SIZE, IMG_SIZE))
     image = tf.image.convert_image_dtype(image, tf.float32) / 255.0
+    label = tf.cast(label, tf.float32)
     return image, label
 
 
@@ -263,26 +265,26 @@ def resnet_layer(
     batch_normalization=True,
     conv_first=True,
 ):
-    conv = keras.layers.Conv2D(
+    conv = layers.Conv2D(
         num_filters,
         kernel_size=kernel_size,
         strides=strides,
         padding="same",
         kernel_initializer="he_normal",
-        kernel_regularizer=keras.regularizers.l2(1e-4),
+        kernel_regularizer=keras.regularizers.L2(1e-4),
     )
     x = inputs
     if conv_first:
         x = conv(x)
         if batch_normalization:
-            x = keras.layers.BatchNormalization()(x)
+            x = layers.BatchNormalization()(x)
         if activation is not None:
-            x = keras.layers.Activation(activation)(x)
+            x = layers.Activation(activation)(x)
     else:
         if batch_normalization:
-            x = keras.layers.BatchNormalization()(x)
+            x = layers.BatchNormalization()(x)
         if activation is not None:
-            x = keras.layers.Activation(activation)(x)
+            x = layers.Activation(activation)(x)
         x = conv(x)
     return x
 
@@ -294,7 +296,7 @@ def resnet_v20(input_shape, depth, num_classes=10):
     num_filters = 16
     num_res_blocks = int((depth - 2) / 6)
 
-    inputs = keras.layers.Input(shape=input_shape)
+    inputs = layers.Input(shape=input_shape)
     x = resnet_layer(inputs=inputs)
     # Instantiate the stack of residual units
     for stack in range(3):
@@ -315,20 +317,20 @@ def resnet_v20(input_shape, depth, num_classes=10):
                     activation=None,
                     batch_normalization=False,
                 )
-            x = keras.layers.add([x, y])
-            x = keras.layers.Activation("relu")(x)
+            x = layers.add([x, y])
+            x = layers.Activation("relu")(x)
         num_filters *= 2
 
     # Add classifier on top.
     # v1 does not use BN after last shortcut connection-ReLU
-    x = keras.layers.AveragePooling2D(pool_size=8)(x)
-    y = keras.layers.Flatten()(x)
-    outputs = keras.layers.Dense(
+    x = layers.AveragePooling2D(pool_size=8)(x)
+    y = layers.Flatten()(x)
+    outputs = layers.Dense(
         num_classes, activation="softmax", kernel_initializer="he_normal"
     )(y)
 
     # Instantiate model.
-    model = keras.models.Model(inputs=inputs, outputs=outputs)
+    model = keras.Model(inputs=inputs, outputs=outputs)
     return model
 
 
@@ -337,14 +339,14 @@ def training_model():
 
 
 initial_model = training_model()
-initial_model.save_weights("initial_weights.h5")
+initial_model.save_weights("initial_weights.weights.h5")
 
 """
 ## Train the model with the dataset augmented by CutMix
 """
 
 model = training_model()
-model.load_weights("initial_weights.h5")
+model.load_weights("initial_weights.weights.h5")
 
 model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 model.fit(train_ds_cmu, validation_data=test_ds, epochs=15)
@@ -357,7 +359,7 @@ print("Test accuracy: {:.2f}%".format(test_accuracy * 100))
 """
 
 model = training_model()
-model.load_weights("initial_weights.h5")
+model.load_weights("initial_weights.weights.h5")
 model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 model.fit(train_ds_simple, validation_data=test_ds, epochs=15)
 
@@ -375,7 +377,5 @@ You may notice it takes less time to train the model with the CutMix augmentatio
 You can experiment further with the CutMix technique by following the
 [original paper](https://arxiv.org/abs/1905.04899).
 Example available on HuggingFace.
-| Trained Model | Demo |
-| :--: | :--: |
-| [![Generic badge](https://img.shields.io/badge/🤗%20Model-CutMix%20Data%20augmentation-black.svg)](https://huggingface.co/keras-io/CutMix_data_augmentation_for_image_classification) | [![Generic badge](https://img.shields.io/badge/🤗%20Spaces-CutMix%20Data%20augmentation-black.svg)](https://huggingface.co/spaces/keras-io/CutMix_Data_Augmentation_for_Image_Classification) |
+[![Generic badge](https://img.shields.io/badge/🤗%20Model-CutMix%20Data%20augmentation-black.svg)](https://huggingface.co/keras-io/CutMix_data_augmentation_for_image_classification)
 """
