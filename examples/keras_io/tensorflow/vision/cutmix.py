@@ -1,8 +1,9 @@
 """
 Title: CutMix data augmentation for image classification
 Author: [Sayan Nath](https://twitter.com/sayannath2350)
+Converted to Keras Core By: [Piyush Thakur](https://github.com/cosmo3769)
 Date created: 2021/06/08
-Last modified: 2021/06/08
+Last modified: 2023/07/18
 Description: Data augmentation with CutMix for image classification on CIFAR-10.
 Accelerator: GPU
 """
