@@ -30,10 +30,7 @@ class TransformerBlock(keras.layers.Layer):
         self.dropout1 = keras.layers.Dropout(rate)
         self.dropout2 = keras.layers.Dropout(rate)
 
-    def compute_output_shape(self, input_shape):    # TODO: Check this.
-      return (input_shape[-1], self.embed_dim, self.embed_dim)
-
-    def call(self, inputs, training):
+    def call(self, inputs, training=True):
         attn_output = self.att(inputs, inputs)
         attn_output = self.dropout1(attn_output, training=training)
         out1 = self.layernorm1(inputs + attn_output)
@@ -52,9 +49,6 @@ class TokenAndPositionEmbedding(keras.layers.Layer):
         super().__init__()
         self.token_emb = keras.layers.Embedding(input_dim=vocab_size, output_dim=embed_dim)
         self.pos_emb = keras.layers.Embedding(input_dim=maxlen, output_dim=embed_dim)
-
-    def compute_output_shape(self, input_shape):   # TODO: Check this.
-      return (input_shape[-1], self.embed_dim)
         
     def call(self, x):
         maxlen = keras.ops.shape(x)[-1]
