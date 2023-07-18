@@ -1,7 +1,9 @@
 import numpy as np
+import pytest
 import tensorflow as tf
 from absl.testing import parameterized
 
+from keras_core import backend
 from keras_core import layers
 from keras_core import testing
 
@@ -102,10 +104,21 @@ class ConvTransposeBasicTest(testing.TestCase, parameterized.TestCase):
             "strides": (2, 1),
             "padding": "valid",
             "output_padding": None,
+            "data_format": "channels_first",
+            "dilation_rate": (1, 1),
+            "input_shape": (2, 4, 8, 8),
+            "output_shape": (2, 6, 16, 10),
+        },
+        {
+            "filters": 2,
+            "kernel_size": (7, 7),
+            "strides": (16, 16),
+            "padding": "valid",
+            "output_padding": None,
             "data_format": "channels_last",
             "dilation_rate": (1, 1),
-            "input_shape": (2, 8, 8, 4),
-            "output_shape": (2, 16, 10, 6),
+            "input_shape": (1, 14, 14, 2),
+            "output_shape": (1, 224, 224, 2),
         },
     )
     def test_conv2d_transpose_basic(
@@ -120,6 +133,12 @@ class ConvTransposeBasicTest(testing.TestCase, parameterized.TestCase):
         input_shape,
         output_shape,
     ):
+        if (
+            data_format == "channels_first"
+            and backend.backend() == "tensorflow"
+        ):
+            pytest.skip("channels_first unsupported on CPU with TF")
+
         self.run_layer_test(
             layers.Conv2DTranspose,
             init_kwargs={
@@ -315,8 +334,8 @@ class ConvTransposeCorrectnessTest(testing.TestCase, parameterized.TestCase):
         },
         {
             "filters": 6,
-            "kernel_size": 2,
-            "strides": 3,
+            "kernel_size": 7,
+            "strides": 16,
             "padding": "same",
             "output_padding": 2,
             "data_format": "channels_last",
@@ -326,6 +345,15 @@ class ConvTransposeCorrectnessTest(testing.TestCase, parameterized.TestCase):
             "filters": 6,
             "kernel_size": (2, 3),
             "strides": (2, 1),
+            "padding": "valid",
+            "output_padding": None,
+            "data_format": "channels_last",
+            "dilation_rate": (1, 1),
+        },
+        {
+            "filters": 2,
+            "kernel_size": (7, 7),
+            "strides": (16, 16),
             "padding": "valid",
             "output_padding": None,
             "data_format": "channels_last",
@@ -361,7 +389,7 @@ class ConvTransposeCorrectnessTest(testing.TestCase, parameterized.TestCase):
             dilation_rate=dilation_rate,
         )
 
-        inputs = np.random.normal(size=[2, 8, 8, 4])
+        inputs = np.random.normal(size=[2, 14, 14, 4])
         layer.build(input_shape=inputs.shape)
         tf_keras_layer.build(input_shape=inputs.shape)
 
