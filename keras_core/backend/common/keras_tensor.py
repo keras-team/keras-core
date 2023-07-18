@@ -246,10 +246,10 @@ class KerasTensor:
 
         return ops.NotEqual().symbolic_call(self, other)
 
-    def __eq__(self, other):
-        from keras_core import ops
-
-        return ops.Equal().symbolic_call(self, other)
+    # def __eq__(self, other):
+    #     from keras_core import ops
+    #
+    #     return ops.Equal().symbolic_call(self, other)
 
     def __and__(self, other):
         from keras_core import ops
@@ -271,6 +271,11 @@ class KerasTensor:
 
         return ops.LogicalOr().symbolic_call(other, self)
 
+    def __invert__(self, other):
+        from keras_core import ops
+
+        return ops.LogicalNot().symbolic_call(other, self)
+
     def __getitem__(self, key):
         from keras_core import ops
 
@@ -279,7 +284,6 @@ class KerasTensor:
     # TODO
     #   "__xor__",
     #   "__rxor__",
-    #   "__invert__",
     #   "broadcast_to"
     #   "astype"
     #   a few more NumPy ones...
