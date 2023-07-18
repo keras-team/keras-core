@@ -48,10 +48,17 @@ class Concatenate(Merge):
             return
 
         reduced_inputs_shapes = [list(shape) for shape in input_shape]
+        max_shape_rank = len(max(reduced_inputs_shapes, key=lambda x: len(x)))
         shape_set = set()
 
         for i in range(len(reduced_inputs_shapes)):
-            del reduced_inputs_shapes[i][self.axis]
+            # Delete only the last axis in
+            # the shapes with largest rank,
+            # then store the rest of the shape in the set,
+            # this approach ensures that we will just delete the last axis
+            # and leave the rest of the shape which should be the same.
+            if len(reduced_inputs_shapes[i]) == max_shape_rank:
+                del reduced_inputs_shapes[i][self.axis]
             shape_set.add(tuple(reduced_inputs_shapes[i]))
 
         if len(shape_set) != 1:
