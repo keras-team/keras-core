@@ -112,7 +112,7 @@ class CategoryEncoding(TFDataLayer):
         return len(self.backend.core.shape(x)) > 1
 
     def _count(self, inputs, axis=-1):
-        reduction_axis = -2 if self._is_batched_input(inputs) else 0
+        reduction_axis = 1 if self._is_batched_input(inputs) else 0
         outputs = self.backend.numpy.sum(
             self.backend.nn.one_hot(
                 inputs, self.num_tokens, axis=axis, dtype=self.dtype
