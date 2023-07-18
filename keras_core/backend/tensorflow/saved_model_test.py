@@ -1,4 +1,4 @@
-"""Tests for tf.distribute related functionality under tf implementation."""
+"""Tests for SavedModel functionality under tf implementation."""
 
 import os
 
