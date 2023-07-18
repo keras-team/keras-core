@@ -1,7 +1,7 @@
 """
 Title: Learning to tokenize in Vision Transformers
 Authors: [Aritra Roy Gosthipaty](https://twitter.com/ariG23498), [Sayak Paul](https://twitter.com/RisingSayak) (equal contribution)
-Converted to Keras Core: [Muhammad Anas Raza](https://anasrz.com)
+Converted to Keras Core by: [Muhammad Anas Raza](https://anasrz.com)
 Date created: 2021/12/10
 Last modified: 2023/07/18
 Description: Adaptively generating a smaller number of tokens for Vision Transformers.
@@ -52,7 +52,7 @@ references:
 import keras_core as keras
 from keras_core import layers
 from keras_core import ops
-import tensorflow as tf
+from tensorflow import data as tf_data
 
 
 from datetime import datetime
@@ -114,13 +114,13 @@ print(f"Validation samples: {len(x_val)}")
 print(f"Testing samples: {len(x_test)}")
 
 # Convert to tf.data.Dataset objects.
-train_ds = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-train_ds = train_ds.shuffle(BATCH_SIZE * 100).batch(BATCH_SIZE).prefetch(AUTO)
+train_ds = tf_data.Dataset.from_tensor_slices((x_train, y_train))
+train_ds = tf_data.shuffle(BATCH_SIZE * 100).batch(BATCH_SIZE).prefetch(AUTO)
 
-val_ds = tf.data.Dataset.from_tensor_slices((x_val, y_val))
+val_ds = tf_data.Dataset.from_tensor_slices((x_val, y_val))
 val_ds = val_ds.batch(BATCH_SIZE).prefetch(AUTO)
 
-test_ds = tf.data.Dataset.from_tensor_slices((x_test, y_test))
+test_ds = tf_data.Dataset.from_tensor_slices((x_test, y_test))
 test_ds = test_ds.batch(BATCH_SIZE).prefetch(AUTO)
 
 """
