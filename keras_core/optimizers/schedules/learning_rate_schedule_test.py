@@ -14,10 +14,7 @@ from keras_core.optimizers import schedules
 
 
 class TestFitLRSchedulesFlow(testing.TestCase):
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_fit_lr_correctness(self):
         model = Sequential(
             [

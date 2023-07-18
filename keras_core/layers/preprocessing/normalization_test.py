@@ -9,10 +9,7 @@ from keras_core import testing
 
 
 class NormalizationTest(testing.TestCase, parameterized.TestCase):
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_normalization_basics(self):
         self.run_layer_test(
             layers.Normalization,

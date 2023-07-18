@@ -52,10 +52,7 @@ class DropoutRNNCellTest(testing.TestCase):
         layer = layers.RNN(cell)
         self.assertEqual(len(layer.non_trainable_variables), 1)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented for NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_basics(self):
         self.run_layer_test(
             layers.RNN,

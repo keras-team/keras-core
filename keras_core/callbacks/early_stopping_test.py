@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 
-from keras_core import backend
 from keras_core import callbacks
 from keras_core import layers
 from keras_core import models
@@ -9,10 +8,7 @@ from keras_core import testing
 
 
 class EarlyStoppingTest(testing.TestCase):
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_early_stopping(self):
         x_train = np.random.random((10, 5))
         y_train = np.random.random((10, 1))
@@ -54,10 +50,7 @@ class EarlyStoppingTest(testing.TestCase):
                 verbose=0,
             )
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_early_stopping_patience(self):
         cases = [0, 1, 2, 3]
         losses = [10.0, 9.0, 8.0, 9.0, 8.9, 8.8, 8.7, 8.6, 8.5]
@@ -75,10 +68,7 @@ class EarlyStoppingTest(testing.TestCase):
 
             self.assertEqual(stopper.stopped_epoch, max(patience, 1) + 2)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_early_stopping_reuse(self):
         patience = 3
         data = np.random.random((100, 1))
@@ -105,10 +95,7 @@ class EarlyStoppingTest(testing.TestCase):
         )
         assert len(hist.epoch) >= patience
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_early_stopping_with_baseline(self):
         baseline = 0.6
         x_train = np.random.random((10, 5))
@@ -187,10 +174,7 @@ class EarlyStoppingTest(testing.TestCase):
         self.assertEqual(epochs_trained, 5)
         self.assertEqual(early_stop.model.get_weights(), 2)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_early_stopping_with_start_from_epoch(self):
         x_train = np.random.random((10, 5))
         y_train = np.random.random((10, 1))

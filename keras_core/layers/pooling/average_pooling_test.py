@@ -8,10 +8,7 @@ from keras_core import layers
 from keras_core import testing
 
 
-@pytest.mark.skipif(
-    backend.backend() == "numpy",
-    reason="Trainer not implemented from NumPy backend.",
-)
+@pytest.mark.requires_trainable_backend
 class AveragePoolingBasicTest(testing.TestCase, parameterized.TestCase):
     @parameterized.parameters(
         (2, 1, "valid", "channels_last", (3, 5, 4), (3, 4, 4)),

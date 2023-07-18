@@ -8,10 +8,7 @@ from keras_core.backend.common.keras_tensor import KerasTensor
 
 
 class UpSamplingTest(testing.TestCase):
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_upsampling_1d(self):
         self.run_layer_test(
             layers.UpSampling1D,

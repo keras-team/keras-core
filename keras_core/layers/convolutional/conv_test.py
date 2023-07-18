@@ -3,7 +3,6 @@ import pytest
 import tensorflow as tf
 from absl.testing import parameterized
 
-from keras_core import backend
 from keras_core import layers
 from keras_core import testing
 
@@ -55,10 +54,7 @@ class ConvBasicTest(testing.TestCase, parameterized.TestCase):
             "output_shape": (3, 2, 6),
         },
     )
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_conv1d_basic(
         self,
         filters,
@@ -125,10 +121,7 @@ class ConvBasicTest(testing.TestCase, parameterized.TestCase):
             "output_shape": (3, 2, 4, 6),
         },
     )
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_conv2d_basic(
         self,
         filters,
@@ -195,10 +188,7 @@ class ConvBasicTest(testing.TestCase, parameterized.TestCase):
             "output_shape": (3, 2, 4, 2, 6),
         },
     )
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_conv3d_basic(
         self,
         filters,

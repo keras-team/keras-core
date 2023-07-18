@@ -2,16 +2,12 @@ import numpy as np
 import pytest
 import tensorflow as tf
 
-from keras_core import backend
 from keras_core import testing
 from keras_core.layers.activations import prelu
 
 
 class PReLUTest(testing.TestCase):
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_prelu(self):
         self.run_layer_test(
             prelu.PReLU,

@@ -7,10 +7,7 @@ from keras_core import testing
 
 
 class GaussianNoiseTest(testing.TestCase):
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_gaussian_noise_basics(self):
         self.run_layer_test(
             layers.GaussianNoise,

@@ -44,10 +44,7 @@ class ConvTransposeBasicTest(testing.TestCase, parameterized.TestCase):
             "output_shape": (2, 16, 6),
         },
     )
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_conv1d_transpose_basic(
         self,
         filters,
@@ -125,10 +122,7 @@ class ConvTransposeBasicTest(testing.TestCase, parameterized.TestCase):
             "output_shape": (1, 224, 224, 2),
         },
     )
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_conv2d_transpose_basic(
         self,
         filters,
@@ -201,10 +195,7 @@ class ConvTransposeBasicTest(testing.TestCase, parameterized.TestCase):
             "output_shape": (2, 16, 9, 17, 6),
         },
     )
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_conv3d_transpose_basic(
         self,
         filters,

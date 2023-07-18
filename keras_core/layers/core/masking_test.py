@@ -1,17 +1,13 @@
 import numpy as np
 import pytest
 
-from keras_core import backend
 from keras_core import layers
 from keras_core import models
 from keras_core import testing
 
 
 class MaskingTest(testing.TestCase):
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_masking_basics(self):
         self.run_layer_test(
             layers.Masking,
@@ -25,10 +21,7 @@ class MaskingTest(testing.TestCase):
             supports_masking=True,
         )
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_masking_correctness(self):
         x = np.array(
             [

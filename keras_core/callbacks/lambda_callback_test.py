@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 from absl import logging
 
-from keras_core import backend
 from keras_core import callbacks
 from keras_core import layers
 from keras_core import losses
@@ -12,10 +11,7 @@ from keras_core.models.sequential import Sequential
 
 
 class LambdaCallbackTest(testing.TestCase):
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_LambdaCallback(self):
         BATCH_SIZE = 4
         model = Sequential(

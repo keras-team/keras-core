@@ -143,10 +143,7 @@ class TestTensorBoardV2(testing.TestCase):
             model.compile("sgd", "mse")
         return model
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_TensorBoard_basic(self):
         model = self._get_model()
         x, y = np.ones((10, 10, 10, 1)), np.ones((10, 1))
@@ -175,10 +172,7 @@ class TestTensorBoardV2(testing.TestCase):
             },
         )
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_TensorBoard_across_invocations(self):
         """Regression test for summary writer resource use-after-free."""
         model = self._get_model()
@@ -209,10 +203,7 @@ class TestTensorBoardV2(testing.TestCase):
             },
         )
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_TensorBoard_no_spurious_event_files(self):
         model = self._get_model()
         x, y = np.ones((10, 10, 10, 1)), np.ones((10, 1))
@@ -226,10 +217,7 @@ class TestTensorBoardV2(testing.TestCase):
                 events_file_run_basenames.add(os.path.basename(dirpath))
         self.assertEqual(events_file_run_basenames, {"train"})
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_TensorBoard_batch_metrics(self):
         model = self._get_model()
         x, y = np.ones((10, 10, 10, 1)), np.ones((10, 1))
@@ -259,10 +247,7 @@ class TestTensorBoardV2(testing.TestCase):
             },
         )
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_TensorBoard_learning_rate_schedules(self):
         model = self._get_model(compile_model=False)
         opt = optimizers.SGD(schedules.CosineDecay(0.01, 1))
@@ -287,10 +272,7 @@ class TestTensorBoardV2(testing.TestCase):
             },
         )
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_TensorBoard_global_step(self):
         model = self._get_model(compile_model=False)
         opt = optimizers.SGD(schedules.CosineDecay(0.01, 1))
@@ -330,10 +312,7 @@ class TestTensorBoardV2(testing.TestCase):
             },
         )
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_TensorBoard_weight_histograms(self):
         model = self._get_model()
         x, y = np.ones((10, 10, 10, 1)), np.ones((10, 1))
@@ -366,10 +345,7 @@ class TestTensorBoardV2(testing.TestCase):
             {_ObservedSummary(logdir=train_dir, tag="histogram")},
         )
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_TensorBoard_weight_images(self):
         model = self._get_model()
         x, y = np.ones((10, 10, 10, 1)), np.ones((10, 1))
@@ -424,10 +400,7 @@ class TestTensorBoardV2(testing.TestCase):
             expected_image_summaries,
         )
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_TensorBoard_projector_callback(self):
         model = models.Sequential(
             [
@@ -469,10 +442,7 @@ class TestTensorBoardV2(testing.TestCase):
                 ],
             )
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_custom_summary(self):
         def scalar_v2_mock(name, data, step=None):
             """A reimplementation of the scalar plugin to avoid circular
@@ -632,10 +602,7 @@ class TestTensorBoardV2(testing.TestCase):
         backend.backend() == "torch",
         reason="Torch backend requires blocking numpy conversion.",
     )
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_TensorBoard_non_blocking(self):
         logdir, _, _ = self._get_log_dirs()
         model = models.Sequential([layers.Dense(1)])

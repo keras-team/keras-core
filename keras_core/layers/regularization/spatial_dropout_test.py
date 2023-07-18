@@ -1,16 +1,12 @@
 import numpy as np
 import pytest
 
-from keras_core import backend
 from keras_core import layers
 from keras_core.testing import test_case
 
 
 class SpatialDropoutTest(test_case.TestCase):
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_spatial_dropout_1d(self):
         self.run_layer_test(
             layers.SpatialDropout1D,
@@ -26,10 +22,7 @@ class SpatialDropoutTest(test_case.TestCase):
             input_shape=(2, 3, 4),
         )
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_spatial_dropout_2d(self):
         self.run_layer_test(
             layers.SpatialDropout2D,
@@ -45,10 +38,7 @@ class SpatialDropoutTest(test_case.TestCase):
             input_shape=(2, 3, 4, 5),
         )
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_spatial_dropout_3d(self):
         self.run_layer_test(
             layers.SpatialDropout3D,

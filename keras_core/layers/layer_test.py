@@ -264,10 +264,7 @@ class LayerTest(testing.TestCase):
         layer(layers.Input(batch_shape=(2, 2)))
         self.assertLen(layer.losses, 0)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented for NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_add_loss(self):
         class LossLayer(layers.Layer):
             def call(self, x):

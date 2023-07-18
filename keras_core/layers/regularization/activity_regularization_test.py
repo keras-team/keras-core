@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 
-from keras_core import backend
 from keras_core import layers
 from keras_core.testing import test_case
 
@@ -13,9 +12,7 @@ class ActivityRegularizationTest(test_case.TestCase):
         self.assertLen(layer.losses, 1)
         self.assertAllClose(layer.losses[0], 4 * 0.3 + 2 * 0.2)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy", reason="Not implemented yet."
-    )
+    @pytest.mark.requires_trainable_backend
     def test_activity_regularization_basics(self):
         self.run_layer_test(
             layers.ActivityRegularization,

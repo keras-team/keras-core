@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 from absl.testing import parameterized
 
-from keras_core import backend
 from keras_core import layers
 from keras_core import testing
 from keras_core.layers.core.input_layer import Input
@@ -66,29 +65,18 @@ def _get_model_multi_outputs_dict():
     return model
 
 
+@pytest.mark.requires_trainable_backend
 class ModelTest(testing.TestCase, parameterized.TestCase):
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
     def test_functional_rerouting(self):
         model = _get_model()
         self.assertTrue(isinstance(model, Functional))
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
     def test_json_serialization(self):
         model = _get_model()
         json_string = model.to_json()
         new_model = model_from_json(json_string)
         self.assertEqual(json_string, new_model.to_json())
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
     def test_tuple_input_model_subclass(self):
         # https://github.com/keras-team/keras-core/issues/324
 
@@ -108,10 +96,6 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
         out = model((x1, x2))
         self.assertEqual(out.shape, (3, 6))
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
     def test_reviving_functional_from_config_custom_layer(self):
         class CustomDense(layers.Layer):
             def __init__(self, units, **kwargs):
@@ -144,10 +128,6 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
         ("single_dict_output_2", _get_model_single_output_dict, "list"),
         ("single_dict_output_3", _get_model_single_output_dict, "dict"),
         ("single_dict_output_4", _get_model_single_output_dict, "dict_list"),
-    )
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
     )
     def test_functional_single_output(self, model_fn, loss_type):
         model = model_fn()
@@ -190,10 +170,6 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
         )
         self.assertListEqual(hist_keys, ref_keys)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
     def test_functional_list_outputs_list_losses(self):
         model = _get_model_multi_outputs_list()
         self.assertTrue(isinstance(model, Functional))
@@ -225,10 +201,6 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
         )
         self.assertListEqual(hist_keys, ref_keys)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
     def test_functional_list_outputs_list_losses_abbr(self):
         model = _get_model_multi_outputs_list()
         self.assertTrue(isinstance(model, Functional))
@@ -263,10 +235,6 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
         )
         self.assertListEqual(hist_keys, ref_keys)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
     def test_functional_list_outputs_nested_list_losses(self):
         model = _get_model_multi_outputs_list()
         self.assertTrue(isinstance(model, Functional))
@@ -298,10 +266,6 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
         )
         self.assertListEqual(hist_keys, ref_keys)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
     def test_functional_dict_outputs_dict_losses(self):
         model = _get_model_multi_outputs_dict()
         self.assertTrue(isinstance(model, Functional))
@@ -348,10 +312,6 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
         )
         self.assertListEqual(hist_keys, ref_keys)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
     def test_functional_list_outputs_dict_losses_metrics(self):
         model = _get_model_multi_outputs_list()
         self.assertTrue(isinstance(model, Functional))
@@ -392,10 +352,6 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
         )
         self.assertListEqual(hist_keys, ref_keys)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
     def test_functional_list_outputs_dict_losses_metrics_uniq_weighted(self):
         model = _get_model_multi_outputs_list()
         self.assertTrue(isinstance(model, Functional))
@@ -437,10 +393,6 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
         )
         self.assertListEqual(hist_keys, ref_keys)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
     def test_functional_list_outputs_dict_losses_partial_metrics(self):
         model = _get_model_multi_outputs_list()
         self.assertTrue(isinstance(model, Functional))
@@ -472,10 +424,6 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
         )
         self.assertListEqual(hist_keys, ref_keys)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
     def test_functional_list_outputs_dict_losses_invalid_keys(self):
         model = _get_model_multi_outputs_list()
         self.assertTrue(isinstance(model, Functional))
@@ -497,10 +445,6 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
         ):
             model.fit(x, (y1, y2), batch_size=2, epochs=1, verbose=0)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
     def test_functional_list_outputs_dict_losses_no_output_names(self):
         model = _get_model_multi_outputs_list_no_output_names()
         self.assertTrue(isinstance(model, Functional))
@@ -519,10 +463,6 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
         ):
             model.fit(x, (y1, y2), batch_size=2, epochs=1, verbose=0)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
     def test_functional_list_outputs_dict_metrics_invalid_keys(self):
         model = _get_model_multi_outputs_list()
         self.assertTrue(isinstance(model, Functional))
@@ -547,10 +487,6 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
         ):
             model.fit(x, (y1, y2), batch_size=2, epochs=1, verbose=0)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
     def test_functional_dict_outputs_dict_losses_invalid_keys(self):
         model = _get_model_multi_outputs_dict()
         self.assertTrue(isinstance(model, Functional))
@@ -572,10 +508,6 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
         ):
             model.fit(x, (y1, y2), batch_size=2, epochs=1, verbose=0)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
     def test_functional_dict_outputs_dict_metrics_invalid_keys(self):
         model = _get_model_multi_outputs_dict()
         self.assertTrue(isinstance(model, Functional))
@@ -600,10 +532,6 @@ class ModelTest(testing.TestCase, parameterized.TestCase):
         ):
             model.fit(x, (y1, y2), batch_size=2, epochs=1, verbose=0)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
     def test_functional_list_outputs_invalid_nested_list_losses(self):
         model = _get_model_multi_outputs_list()
         self.assertTrue(isinstance(model, Functional))

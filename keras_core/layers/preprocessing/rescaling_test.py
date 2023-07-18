@@ -2,16 +2,12 @@ import numpy as np
 import pytest
 import tensorflow as tf
 
-from keras_core import backend
 from keras_core import layers
 from keras_core import testing
 
 
 class RescalingTest(testing.TestCase):
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented for NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_rescaling_basics(self):
         self.run_layer_test(
             layers.Rescaling,
@@ -25,10 +21,7 @@ class RescalingTest(testing.TestCase):
             supports_masking=True,
         )
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented for NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_rescaling_dtypes(self):
         # int scale
         self.run_layer_test(

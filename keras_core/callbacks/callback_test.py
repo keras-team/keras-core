@@ -1,17 +1,13 @@
 import numpy as np
 import pytest
 
-from keras_core import backend
 from keras_core import models
 from keras_core import testing
 from keras_core.callbacks.callback import Callback
 
 
 class CallbackTest(testing.TestCase):
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_model_state_is_current_on_epoch_end(self):
         class TestModel(models.Model):
             def __init__(self):

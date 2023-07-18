@@ -72,10 +72,7 @@ class TrainingTestingLayer(layers.Layer, Trainer):
         return x * 0
 
 
-@pytest.mark.skipif(
-    backend.backend() == "numpy",
-    reason="Trainer not implemented from NumPy backend.",
-)
+@pytest.mark.requires_trainable_backend
 class TestTrainer(testing.TestCase, parameterized.TestCase):
     def test_metric_tracking(self):
         class ModelWithMetric(layers.Dense, Trainer):

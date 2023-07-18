@@ -8,10 +8,7 @@ from keras_core import testing
 
 
 class BatchNormalizationTest(testing.TestCase, parameterized.TestCase):
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_bn_basics(self):
         # vector case
         self.run_layer_test(

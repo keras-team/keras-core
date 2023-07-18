@@ -9,10 +9,7 @@ from keras_core.models.functional import Functional
 from keras_core.models.sequential import Sequential
 
 
-@pytest.mark.skipif(
-    backend.backend() == "numpy",
-    reason="Trainer not implemented from NumPy backend.",
-)
+@pytest.mark.requires_trainable_backend
 class SequentialTest(testing.TestCase):
     def test_basic_flow_with_input(self):
         model = Sequential(name="seq")

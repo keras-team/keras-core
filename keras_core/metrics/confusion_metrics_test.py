@@ -6,7 +6,6 @@ from absl import logging
 from absl.testing import parameterized
 from tensorflow.python.ops.numpy_ops import np_config
 
-from keras_core import backend
 from keras_core import layers
 from keras_core import metrics
 from keras_core import models
@@ -1647,10 +1646,7 @@ class MultiAUCTest(testing.TestCase):
         # PR AUCs are 0.939 and 1.0 respectively
         self.assertAllClose(good_result, (0.939 + 1.0) / 2.0, 1e-1)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_keras_model_compiles(self):
         inputs = layers.Input(shape=(10,), batch_size=1)
         output = layers.Dense(3, activation="sigmoid")(inputs)

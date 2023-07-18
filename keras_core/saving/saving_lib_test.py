@@ -10,7 +10,6 @@ import numpy as np
 import pytest
 
 import keras_core
-from keras_core import backend
 from keras_core import ops
 from keras_core import testing
 from keras_core.saving import saving_lib
@@ -132,10 +131,7 @@ def my_mean_squared_error(y_true, y_pred):
     return ops.mean(ops.square(y_pred - y_true), axis=-1)
 
 
-@pytest.mark.skipif(
-    backend.backend() == "numpy",
-    reason="Trainer not implemented from NumPy backend.",
-)
+@pytest.mark.requires_trainable_backend
 class SavingTest(testing.TestCase):
     def _get_subclassed_model(self, compile=True):
         subclassed_model = CustomModelX()

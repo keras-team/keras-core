@@ -3,7 +3,6 @@ import pytest
 import tensorflow as tf
 from absl.testing import parameterized
 
-from keras_core import backend
 from keras_core import layers
 from keras_core import testing
 
@@ -44,9 +43,7 @@ class SeparableConvBasicTest(testing.TestCase, parameterized.TestCase):
             "output_shape": (3, 2, 6),
         },
     )
-    @pytest.mark.skipif(
-        backend.backend() == "numpy", reason="Not implemented yet."
-    )
+    @pytest.mark.requires_trainable_backend
     def test_separable_conv1d_basic(
         self,
         depth_multiplier,
@@ -113,9 +110,7 @@ class SeparableConvBasicTest(testing.TestCase, parameterized.TestCase):
             "output_shape": (3, 2, 2, 6),
         },
     )
-    @pytest.mark.skipif(
-        backend.backend() == "numpy", reason="Not implemented yet."
-    )
+    @pytest.mark.requires_trainable_backend
     def test_separable_conv2d_basic(
         self,
         depth_multiplier,

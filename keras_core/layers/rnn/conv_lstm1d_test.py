@@ -1,17 +1,13 @@
 import numpy as np
 import pytest
 
-from keras_core import backend
 from keras_core import initializers
 from keras_core import layers
 from keras_core import testing
 
 
 class ConvLSTM1DTest(testing.TestCase):
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented for NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_basics(self):
         self.run_layer_test(
             layers.ConvLSTM1D,

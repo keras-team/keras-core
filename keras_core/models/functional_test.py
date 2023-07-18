@@ -13,10 +13,7 @@ from keras_core.models import Model
 
 
 class FunctionalTest(testing.TestCase):
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_basic_flow_multi_input(self):
         input_a = Input(shape=(3,), batch_size=2, name="input_a")
         input_b = Input(shape=(3,), batch_size=2, name="input_b")
@@ -42,10 +39,7 @@ class FunctionalTest(testing.TestCase):
         out_val = model(in_val)
         self.assertEqual(out_val.shape, (2, 4))
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_scalar_input(self):
         input_a = Input(shape=(3,), batch_size=2, name="input_a")
         input_b = Input(shape=(), batch_size=2, name="input_b")
@@ -57,10 +51,7 @@ class FunctionalTest(testing.TestCase):
         out_val = model(in_val)
         self.assertAllClose(out_val, np.ones((2, 3)))
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_basic_flow_multi_output(self):
         inputs = Input(shape=(3,), batch_size=2, name="input")
         x = layers.Dense(5)(inputs)
@@ -83,10 +74,7 @@ class FunctionalTest(testing.TestCase):
         self.assertEqual(out_val[0].shape, (2, 4))
         self.assertEqual(out_val[1].shape, (2, 5))
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_basic_flow_dict_io(self):
         input_a = Input(shape=(3,), batch_size=2, name="a")
         input_b = Input(shape=(3,), batch_size=2, name="b")
@@ -118,10 +106,7 @@ class FunctionalTest(testing.TestCase):
         out_val = model(in_val)
         self.assertEqual(out_val.shape, (2, 4))
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_named_input_dict_io(self):
         input_a = Input(shape=(3,), batch_size=2, name="a")
         x = layers.Dense(5)(input_a)
@@ -140,10 +125,7 @@ class FunctionalTest(testing.TestCase):
         out_val = model(in_val)
         self.assertEqual(out_val.shape, (2, 4))
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_input_dict_with_extra_field(self):
         input_a = Input(shape=(3,), batch_size=2, name="a")
         x = input_a * 5
@@ -170,10 +152,7 @@ class FunctionalTest(testing.TestCase):
             out_val = model(in_val)
             self.assertEqual(out_val.shape, (2, 3))
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_layer_getters(self):
         # Test mixing ops and layers
         input_a = Input(shape=(3,), batch_size=2, name="input_a")
@@ -191,10 +170,7 @@ class FunctionalTest(testing.TestCase):
         self.assertEqual(model.get_layer(index=3).name, "dense_2")
         self.assertEqual(model.get_layer(name="dense_1").name, "dense_1")
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_training_arg(self):
         class Canary(layers.Layer):
             def call(self, x, training=False):
@@ -213,10 +189,7 @@ class FunctionalTest(testing.TestCase):
         # TODO
         pass
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_passing_inputs_by_name(self):
         input_a = Input(shape=(3,), batch_size=2, name="input_a")
         input_b = Input(shape=(3,), batch_size=2, name="input_b")
@@ -240,10 +213,7 @@ class FunctionalTest(testing.TestCase):
         out_val = model(in_val)
         self.assertEqual(out_val.shape, (2, 4))
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_rank_standardization(self):
         # Downranking
         inputs = Input(shape=(3,), batch_size=2)
@@ -259,10 +229,7 @@ class FunctionalTest(testing.TestCase):
         out_val = model(np.random.random((2, 3)))
         self.assertEqual(out_val.shape, (2, 3, 3))
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_dtype_standardization(self):
         float_input = Input(shape=(2,), dtype="float16")
         int_input = Input(shape=(2,), dtype="int32")
@@ -274,10 +241,7 @@ class FunctionalTest(testing.TestCase):
         self.assertEqual(backend.standardize_dtype(float_data.dtype), "float16")
         self.assertEqual(backend.standardize_dtype(int_data.dtype), "int32")
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_serialization(self):
         # Test basic model
         inputs = Input(shape=(3,), batch_size=2)
@@ -318,10 +282,7 @@ class FunctionalTest(testing.TestCase):
         model = Functional({"a": input_a, "b": input_b}, outputs)
         self.run_class_serialization_test(model)
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_bad_input_spec(self):
         # Single input
         inputs = Input(shape=(4,))
@@ -356,10 +317,7 @@ class FunctionalTest(testing.TestCase):
         ):
             model({"a": np.zeros((2, 3)), "b": np.zeros((2, 4))})
 
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_manual_input_spec(self):
         inputs = Input(shape=(None, 3))
         outputs = layers.Dense(2)(inputs)

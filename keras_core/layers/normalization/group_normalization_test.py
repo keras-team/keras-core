@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 
-from keras_core import backend
 from keras_core import constraints
 from keras_core import layers
 from keras_core import regularizers
@@ -9,10 +8,7 @@ from keras_core import testing
 
 
 class GroupNormalizationTest(testing.TestCase):
-    @pytest.mark.skipif(
-        backend.backend() == "numpy",
-        reason="Trainer not implemented from NumPy backend.",
-    )
+    @pytest.mark.requires_trainable_backend
     def test_groupnorm(self):
         self.run_layer_test(
             layers.GroupNormalization,
