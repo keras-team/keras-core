@@ -47,8 +47,6 @@ def is_tensor(x):
 
 
 def shape(x):
-    # This will work as long as we disallow
-    # dynamic shapes in NumPy.
     return x.shape
 
 
@@ -210,5 +208,5 @@ def while_loop(
     return loop_vars
 
 
-def stop_gradient():
-    raise NotADirectoryError("stop_gradient is not implemented for NumPy.")
+def stop_gradient(x):
+    pass

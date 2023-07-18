@@ -1,7 +1,4 @@
 class NumpyTrainer:
-    def __new__(self):
-        raise NotImplementedError("Trainer not implemented for NumPy backend.")
-
     def fit(self):
         raise NotImplementedError("Trainer not implemented for NumPy backend.")
 
