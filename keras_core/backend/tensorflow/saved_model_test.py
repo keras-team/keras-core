@@ -1,17 +1,16 @@
 """Tests for tf.distribute related functionality under tf implementation."""
 
 import os
+
 import numpy as np
 import pytest
 import tensorflow as tf
-from tensorflow.python.eager import context
 
 from keras_core import backend
 from keras_core import layers
-from keras_core import models
 from keras_core import metrics
+from keras_core import models
 from keras_core import testing
-from keras_core.backend.tensorflow import trainer as tf_trainer
 from keras_core.saving import object_registration
 
 
@@ -36,9 +35,7 @@ class CustomModelX(models.Model):
 )
 class SavedModelTest(testing.TestCase):
     def test_sequential(self):
-        model = models.Sequential([
-            layers.Dense(1)
-        ])
+        model = models.Sequential([layers.Dense(1)])
         model.compile(loss="mse", optimizer="adam")
         X_train = np.random.rand(100, 3)
         y_train = np.random.rand(100, 1)
@@ -48,9 +45,9 @@ class SavedModelTest(testing.TestCase):
         restored_model = tf.saved_model.load(path)
         self.assertAllClose(
             model(X_train),
-            restored_model.signatures['serving_default'](
+            restored_model.signatures["serving_default"](
                 tf.convert_to_tensor(X_train, dtype=tf.float32)
-            )['output_0'],
+            )["output_0"],
             rtol=1e-4,
             atol=1e-4,
         )
@@ -61,7 +58,8 @@ class SavedModelTest(testing.TestCase):
         outputs = layers.Dense(1, name="second_dense")(x)
         model = models.Model(inputs, outputs)
         model.compile(
-            optimizer="adam", loss="mse",
+            optimizer="adam",
+            loss="mse",
         )
         X_train = np.random.rand(100, 3)
         y_train = np.random.rand(100, 1)
@@ -71,9 +69,9 @@ class SavedModelTest(testing.TestCase):
         restored_model = tf.saved_model.load(path)
         self.assertAllClose(
             model(X_train),
-            restored_model.signatures['serving_default'](
+            restored_model.signatures["serving_default"](
                 tf.convert_to_tensor(X_train, dtype=tf.float32)
-            )['output_0'],
+            )["output_0"],
             rtol=1e-4,
             atol=1e-4,
         )
@@ -81,10 +79,10 @@ class SavedModelTest(testing.TestCase):
     def test_subclassed(self):
         model = CustomModelX()
         model.compile(
-                optimizer="adam",
-                loss="mse",
-                metrics=[metrics.Hinge(), "mse"],
-            )
+            optimizer="adam",
+            loss="mse",
+            metrics=[metrics.Hinge(), "mse"],
+        )
         X_train = np.random.rand(100, 3)
         y_train = np.random.rand(100, 1)
         model.fit(X_train, y_train)
@@ -93,9 +91,9 @@ class SavedModelTest(testing.TestCase):
         restored_model = tf.saved_model.load(path)
         self.assertAllClose(
             model(X_train),
-            restored_model.signatures['serving_default'](
+            restored_model.signatures["serving_default"](
                 tf.convert_to_tensor(X_train, dtype=tf.float32)
-            )['output_0'],
+            )["output_0"],
             rtol=1e-4,
             atol=1e-4,
         )
