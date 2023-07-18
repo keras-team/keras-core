@@ -14,7 +14,7 @@ from keras_core import testing
 from keras_core.saving import object_registration
 
 
-@object_registration.register_keras_serializable(package="my_custom_package")
+@object_registration.register_keras_serializable(package="my_package")
 class CustomModelX(models.Model):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
