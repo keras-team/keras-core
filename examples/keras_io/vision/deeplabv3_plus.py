@@ -31,7 +31,8 @@ Each image in CIHP is labeled with pixel-wise annotations for 20 categories, as 
 This dataset can be used for the "human part segmentation" task.
 """
 import os
-os.environ['KERAS_BACKEND'] = 'tensorflow'
+
+os.environ["KERAS_BACKEND"] = "jax"
 
 import keras_core as keras
 from keras_core import layers
@@ -42,7 +43,9 @@ import numpy as np
 from glob import glob
 from scipy.io import loadmat
 import matplotlib.pyplot as plt
-import tensorflow as tf
+from tensorflow import image as tf_image
+from tensorflow import data as tf_data
+from tensorflow import io as tf_io
 
 """shell
 gdown "1B9A9UCJYMwTL4oBEo4RZfbMZMaZhKJaz&confirm=t"
@@ -74,16 +77,16 @@ val_masks = sorted(glob(os.path.join(DATA_DIR, "Category_ids/*")))[
 
 
 def read_image(image_path, mask=False):
-    image = tf.io.read_file(image_path)
+    image = tf_io.read_file(image_path)
     if mask:
-        image = tf.image.decode_png(image, channels=1)
+        image = tf_image.decode_png(image, channels=1)
         image.set_shape([None, None, 1])
-        image = tf.image.resize(images=image, size=[IMAGE_SIZE, IMAGE_SIZE])
+        image = tf_image.resize(images=image, size=[IMAGE_SIZE, IMAGE_SIZE])
     else:
-        image = tf.image.decode_png(image, channels=3)
+        image = tf_image.decode_png(image, channels=3)
         image.set_shape([None, None, 3])
-        image = tf.image.resize(images=image, size=[IMAGE_SIZE, IMAGE_SIZE])
-        image = keras.applications.resnet50.preprocess_input(image)
+        image = tf_image.resize(images=image, size=[IMAGE_SIZE, IMAGE_SIZE])
+        # image = keras.applications.resnet50.preprocess_input(np.array(image))
     return image
 
 
@@ -94,8 +97,8 @@ def load_data(image_list, mask_list):
 
 
 def data_generator(image_list, mask_list):
-    dataset = tf.data.Dataset.from_tensor_slices((image_list, mask_list))
-    dataset = dataset.map(load_data, num_parallel_calls=tf.data.AUTOTUNE)
+    dataset = tf_data.Dataset.from_tensor_slices((image_list, mask_list))
+    dataset = dataset.map(load_data, num_parallel_calls=tf_data.AUTOTUNE)
     dataset = dataset.batch(BATCH_SIZE, drop_remainder=True)
     return dataset
 
@@ -176,8 +179,9 @@ the low-level features from the `conv4_block6_2_relu` block of the backbone.
 
 def DeeplabV3Plus(image_size, num_classes):
     model_input = keras.Input(shape=(image_size, image_size, 3))
+    preprocessed = keras.applications.resnet50.preprocess_input(model_input)
     resnet50 = keras.applications.ResNet50(
-        weights="imagenet", include_top=False, input_tensor=model_input
+        weights="imagenet", include_top=False, input_tensor=preprocessed
     )
     x = resnet50.get_layer("conv4_block6_2_relu").output
     x = DilatedSpatialPyramidPooling(x)
@@ -217,7 +221,7 @@ model.compile(
     metrics=["accuracy"],
 )
 
-history = model.fit(train_dataset, validation_data=val_dataset, epochs=25)
+history = model.fit(train_dataset, validation_data=val_dataset, epochs=1)
 
 plt.plot(history.history["loss"])
 plt.title("Training Loss")
