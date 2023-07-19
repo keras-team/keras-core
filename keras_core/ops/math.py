@@ -243,6 +243,25 @@ class FFT2(Operation):
 
 @keras_core_export("keras_core.ops.fft")
 def fft(a):
+    """Computes the Fast Fourier Transform along last axis of input.
+
+    Args:
+        a: Tuple of the real and imaginary parts of the input tensor. Both
+            tensors in the tuple should be of floating type.
+
+    Returns:
+        A tuple containing two tensors - the real and imaginary parts of the
+        output tensor.
+
+    Example:
+
+    >>> a = (
+    ...     keras_core.ops.convert_to_tensor([1., 2.]),
+    ...     keras_core.ops.convert_to_tensor([0., 1.]),
+    ... )
+    >>> fft(x)
+    (array([ 3., -1.], dtype=float32), array([ 1., -1.], dtype=float32))
+    """
     if any_symbolic_tensors(a):
         return FFT().symbolic_call(a)
     return backend.math.fft(a)
@@ -250,6 +269,27 @@ def fft(a):
 
 @keras_core_export("keras_core.ops.fft2")
 def fft2(a):
+    """Computes the 2D Fast Fourier Transform along the last two axes of input.
+
+    Args:
+        a: Tuple of the real and imaginary parts of the input tensor. Both
+            tensors in the tuple should be of floating type.
+
+    Returns:
+        A tuple containing two tensors - the real and imaginary parts of the
+        output.
+
+    Example:
+
+    >>> x = (
+    ...     keras_core.ops.convert_to_tensor([[1., 2.], [2., 1.]]),
+    ...     keras_core.ops.convert_to_tensor([[0., 1.], [1., 0.]]),
+    ... )
+    >>> fft2(x)
+    (array([[ 6.,  0.],
+        [ 0., -2.]], dtype=float32), array([[ 2.,  0.],
+        [ 0., -2.]], dtype=float32))
+    """
     if any_symbolic_tensors(a):
         return FFT2().symbolic_call(a)
     return backend.math.fft2(a)

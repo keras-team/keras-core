@@ -66,52 +66,12 @@ def _get_complex_tensor_from_tuple(a):
 
 
 def fft(a):
-    """Computes the Fast Fourier Transform along last axis of input.
-
-    Args:
-        a: Tuple of the real and imaginary parts of the input tensor. Both
-            tensors in the tuple should be of floating type.
-
-    Returns:
-        A tuple containing two tensors - the real and imaginary parts of the
-        output tensor.
-
-    Example:
-
-    >>> a = (
-    ...     keras_core.ops.convert_to_tensor([1., 2.]),
-    ...     keras_core.ops.convert_to_tensor([0., 1.]),
-    ... )
-    >>> fft(x)
-    (array([ 3., -1.], dtype=float32), array([ 1., -1.], dtype=float32))
-    """
     complex_input = _get_complex_tensor_from_tuple(a)
     complex_output = tf.signal.fft(complex_input)
     return tf.math.real(complex_output), tf.math.imag(complex_output)
 
 
 def fft2(a):
-    """Computes the 2D Fast Fourier Transform along the last two axes of input.
-
-    Args:
-        a: Tuple of the real and imaginary parts of the input tensor. Both
-            tensors in the tuple should be of floating type.
-
-    Returns:
-        A tuple containing two tensors - the real and imaginary parts of the
-        output.
-
-    Example:
-
-    >>> x = (
-    ...     keras_core.ops.convert_to_tensor([[1., 2.], [2., 1.]]),
-    ...     keras_core.ops.convert_to_tensor([[0., 1.], [1., 0.]]),
-    ... )
-    >>> fft2(x)
-    (array([[ 6.,  0.],
-        [ 0., -2.]], dtype=float32), array([[ 2.,  0.],
-        [ 0., -2.]], dtype=float32))
-    """
     complex_input = _get_complex_tensor_from_tuple(a)
     complex_output = tf.signal.fft2d(complex_input)
     return tf.math.real(complex_output), tf.math.imag(complex_output)
