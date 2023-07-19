@@ -40,6 +40,8 @@ installed `ffmpg`.
 """
 
 import os
+os.environ["KERAS_BACKEND"] = "tensorflow"
+
 import shutil
 import numpy as np
 

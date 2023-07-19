@@ -98,6 +98,8 @@ class_names = [
 """
 
 import os
+os.environ["KERAS_BACKEND"] = "tensorflow"
+
 import io
 import csv
 import numpy as np
