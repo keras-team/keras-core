@@ -8,8 +8,8 @@ from keras_core.backend.common.backend_utils import (
     compute_conv_transpose_padding,
 )
 from keras_core.backend.config import epsilon
-from keras_core.backend.numpy.core import is_tensor
 from keras_core.backend.numpy.core import cast
+from keras_core.backend.numpy.core import is_tensor
 
 
 def relu(x):
