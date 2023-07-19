@@ -147,7 +147,7 @@ from keras_core.ops.operation_utils import reduce_shape
 
 def broadcast_shapes(shape1, shape2):
     """Broadcast input shapes to a unified shape.
-    
+
     Convert to list for mutability.
 
     Args:
