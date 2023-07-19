@@ -212,6 +212,14 @@ class CoreOpsCorrectnessTest(testing.TestCase):
         result = core.fori_loop(0, 10, body_fun, initial_value)
         self.assertAllClose(result, 45)
 
+    def test_fori_loop_shape_inference(self):
+        def body_fun(i, x):
+            return x + i
+
+        # Initial value with a somewhat complicated shape where axes have coprime lengths
+        initial_value = KerasTensor((3, 5, 7))
+        result = core.fori_loop(0, 10, body_fun, initial_value)
+        self.assertEqual(result.shape, (3, 5, 7))
 
     def test_stop_gradient(self):
         class ExampleLayer(layers.Layer):
