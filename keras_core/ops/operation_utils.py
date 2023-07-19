@@ -16,9 +16,9 @@ def compute_pooling_output_shape(
     Args:
     input_shape: Input shape. Must be a tuple of integers.
     pool_size: Size of the pooling operation. Must be a tuple of integers.
-    strides: Stride of the pooling operation. Must be a tuple of integers. 
+    strides: Stride of the pooling operation. Must be a tuple of integers.
         Defaults to pool_size.
-    padding: Padding method. Available methods are 'valid' or 'same'. 
+    padding: Padding method. Available methods are 'valid' or 'same'.
         Defaults to 'valid'.
     data_format: String, either 'channels_last' or 'channels_first'.
         The ordering of the dimensions in the inputs. 'channels_last'
@@ -30,7 +30,7 @@ def compute_pooling_output_shape(
         Tuple[int]: The output shape of the pooling operation.
 
     Examples:
-    
+
     >>> compute_pooling_output_shape((1, 4, 4, 1), (2, 2))
     (1, 2, 2, 1)
     """
