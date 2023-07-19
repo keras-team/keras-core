@@ -291,6 +291,30 @@ class ForiLoop(Operation):
 
 @keras_core_export("keras_core.ops.fori_loop")
 def fori_loop(lower, upper, body_fun, init_val):
+    """
+    For loop implementation.
+
+    Args:
+        lower: The initial value of the loop variable.
+        upper: The upper bound of the loop variable.
+        body_fun: A callable that represents the loop body. Must take two arguments:
+            the loop variable and the loop state. The loop state should be updated
+            and returned by this function.
+        init_val: The initial value of the loop state.
+
+    Returns:
+        The final state after the loop.
+
+    Examples:
+
+    >>> lower = 0
+    >>> upper = 10
+    >>> body_fun = lambda i, s: (i + 1, s + i)
+    >>> init_val = 0
+    >>> keras_core.ops.fori_loop(lower, upper, body_fun, init_val)
+    45
+    """
+
     if any_symbolic_tensors((lower, upper, init_val)):
         return ForiLoop(lower, upper, body_fun).symbolic_call(init_val)
     return backend.core.fori_loop(lower, upper, body_fun, init_val)
