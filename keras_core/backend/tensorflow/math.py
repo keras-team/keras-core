@@ -52,8 +52,8 @@ def _get_complex_tensor_from_tuple(a):
     if real.shape != imag.shape:
         raise ValueError(
             "Input `a` should be a tuple of two tensors - real and imaginary."
-            "Both real and imaginary should have the same shape. "
-            f"Received: real.shape = {real.shape}, imag.shape = {imag.shape}"
+            "Both the real and imaginary parts should have the same shape. "
+            f"Received: a[0].shape = {real.shape}, a[1].shape = {imag.shape}"
         )
     # Ensure dtype is float.
     if not real.dtype.is_floating or not imag.dtype.is_floating:
@@ -65,48 +65,53 @@ def _get_complex_tensor_from_tuple(a):
     return complex_input
 
 
-def fft(a, n=None, axis=-1, norm=None):
-    # TF does not support the following args. Hence, we are not supporting
-    # them right now.
-    if n is not None:
-        raise ValueError(
-            "`n` argument value not supported. "
-            f"Expected `None`. Received: n={n}"
-        )
-    if axis != -1:
-        raise ValueError(
-            "`axis` argument value not supported. "
-            f"Expected `-1`. Received: axis={axis}"
-        )
-    if norm is not None:
-        raise ValueError(
-            "`norm` argument value not supported. "
-            f"Expected `None`. Received: norm={norm}"
-        )
+def fft(a):
+    """Computes the Fast Fourier Transform along last axis of input.
 
+    Args:
+        a: Tuple of the real and imaginary parts of the input tensor. Both
+            tensors in the tuple should be of floating type.
+
+    Returns:
+        A tuple containing two tensors - the real and imaginary parts of the
+        output tensor.
+
+    Example:
+
+    >>> a = (
+    ...     keras_core.ops.convert_to_tensor([1., 2.]),
+    ...     keras_core.ops.convert_to_tensor([0., 1.]),
+    ... )
+    >>> fft(x)
+    (array([ 3., -1.], dtype=float32), array([ 1., -1.], dtype=float32))
+    """
     complex_input = _get_complex_tensor_from_tuple(a)
     complex_output = tf.signal.fft(complex_input)
     return tf.math.real(complex_output), tf.math.imag(complex_output)
 
 
-def fft2(a, s=None, axes=(-2, -1), norm=None):
-    # TF does not support the following args. Hence, we are not supporting
-    # them right now.
-    if s is not None:
-        raise ValueError(
-            "`s` argument value not supported. "
-            f"Expected `None`. Received: s={s}"
-        )
-    if axes != (-2, -1) and axes != [-2, -1]:
-        raise ValueError(
-            "`axes` argument value not supported. "
-            f"Expected `(-2, -1)`/`[-2, -1]`. Received: axes={axes}"
-        )
-    if norm is not None:
-        raise ValueError(
-            "`norm` argument value not supported. "
-            f"Expected `None`. Received: norm={norm}"
-        )
+def fft2(a):
+    """Computes the 2D Fast Fourier Transform along the last two axes of input.
+
+    Args:
+        a: Tuple of the real and imaginary parts of the input tensor. Both
+            tensors in the tuple should be of floating type.
+
+    Returns:
+        A tuple containing two tensors - the real and imaginary parts of the
+        output.
+
+    Example:
+
+    >>> x = (
+    ...     keras_core.ops.convert_to_tensor([[1., 2.], [2., 1.]]),
+    ...     keras_core.ops.convert_to_tensor([[0., 1.], [1., 0.]]),
+    ... )
+    >>> fft2(x)
+    (array([[ 6.,  0.],
+        [ 0., -2.]], dtype=float32), array([[ 2.,  0.],
+        [ 0., -2.]], dtype=float32))
+    """
     complex_input = _get_complex_tensor_from_tuple(a)
     complex_output = tf.signal.fft2d(complex_input)
     return tf.math.real(complex_output), tf.math.imag(complex_output)

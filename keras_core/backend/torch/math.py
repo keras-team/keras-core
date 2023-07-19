@@ -98,8 +98,8 @@ def _get_complex_tensor_from_tuple(a):
     if real.shape != imag.shape:
         raise ValueError(
             "Input `a` should be a tuple of two tensors - real and imaginary."
-            "Both real and imaginary should have the same shape. "
-            f"Received: real.shape = {real.shape}, imag.shape = {imag.shape}"
+            "Both the real and imaginary parts should have the same shape. "
+            f"Received: a[0].shape = {real.shape}, a[1].shape = {imag.shape}"
         )
     # Ensure dtype is float.
     if not torch.is_floating_point(real) or not torch.is_floating_point(imag):
@@ -112,47 +112,13 @@ def _get_complex_tensor_from_tuple(a):
     return complex_input
 
 
-def fft(a, n=None, axis=-1, norm=None):
-    # TF does not support the following args. Hence, we are not supporting
-    # them right now.
-    if n is not None:
-        raise ValueError(
-            "`n` argument value not supported. "
-            f"Expected `None`. Received: n={n}"
-        )
-    if axis != -1:
-        raise ValueError(
-            "`axis` argument value not supported. "
-            f"Expected `-1`. Received: axis={axis}"
-        )
-    if norm is not None:
-        raise ValueError(
-            "`norm` argument value not supported. "
-            f"Expected `None`. Received: norm={norm}"
-        )
+def fft(a):
     complex_input = _get_complex_tensor_from_tuple(a)
     complex_output = torch.fft.fft(complex_input)
     return complex_output.real, complex_output.imag
 
 
-def fft2(a, s=None, axes=(-2, -1), norm=None):
-    # TF does not support the following args. Hence, we are not supporting
-    # them right now.
-    if s is not None:
-        raise ValueError(
-            "`s` argument value not supported. "
-            f"Expected `None`. Received: s={s}"
-        )
-    if axes != (-2, -1) and axes != [-2, -1]:
-        raise ValueError(
-            "`axes` argument value not supported. "
-            f"Expected `(-2, -1)`/`[-2, -1]`. Received: axes={axes}"
-        )
-    if norm is not None:
-        raise ValueError(
-            "`norm` argument value not supported. "
-            f"Expected `None`. Received: norm={norm}"
-        )
+def fft2(a):
     complex_input = _get_complex_tensor_from_tuple(a)
     complex_output = torch.fft.fft2(complex_input)
     return complex_output.real, complex_output.imag

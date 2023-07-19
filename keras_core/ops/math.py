@@ -158,27 +158,6 @@ def qr(x, mode="reduced"):
 
 
 class FFT(Operation):
-    def __init__(self, n=None, axis=-1, norm=None):
-        super().__init__()
-        if n is not None:
-            raise ValueError(
-                "`n` argument value not supported. "
-                f"Expected `None`. Received: n={n}"
-            )
-        if axis != -1:
-            raise ValueError(
-                "`axis` argument value not supported. "
-                f"Expected `-1`. Received: axis={axis}"
-            )
-        if norm is not None:
-            raise ValueError(
-                "`norm` argument value not supported. "
-                f"Expected `None`. Received: norm={norm}"
-            )
-        self.n = n
-        self.axis = axis
-        self.norm = norm
-
     def compute_output_spec(self, a):
         if not isinstance(a, (tuple, list)) or len(a) != 2:
             raise ValueError(
@@ -191,9 +170,9 @@ class FFT(Operation):
         if real.shape != imag.shape:
             raise ValueError(
                 "Input `a` should be a tuple of two tensors - real and "
-                "imaginary. Both real and imaginary should have the same "
-                f"shape. Received: real.shape = {real.shape}, "
-                f"imag.shape = {imag.shape}"
+                "imaginary. Both the real and imaginary parts should have the "
+                f"same shape. Received: a[0].shape = {real.shape}, "
+                f"a[1].shape = {imag.shape}"
             )
 
         # We are calculating 1D FFT. Hence, rank >= 1.
@@ -204,7 +183,7 @@ class FFT(Operation):
             )
 
         # The axis along which we are calculating FFT should be fully-defined.
-        m = real.shape[self.axis]
+        m = real.shape[-1]
         if m is None:
             raise ValueError(
                 f"Input should have its {self.axis}th axis fully-defined. "
@@ -221,27 +200,6 @@ class FFT(Operation):
 
 
 class FFT2(Operation):
-    def __init__(self, s=None, axes=(-2, -1), norm=None):
-        super().__init__()
-        if s is not None:
-            raise ValueError(
-                "`s` argument value not supported. "
-                f"Expected `None`. Received: s={s}"
-            )
-        if axes != (-2, -1) and axes != [-2, -1]:
-            raise ValueError(
-                "`axes` argument value not supported. "
-                f"Expected `(-2, -1)`/`[-2, -1]`. Received: axes={axes}"
-            )
-        if norm is not None:
-            raise ValueError(
-                "`norm` argument value not supported. "
-                f"Expected `None`. Received: norm={norm}"
-            )
-        self.s = s
-        self.axes = axes
-        self.norm = norm
-
     def compute_output_spec(self, a):
         if not isinstance(a, (tuple, list)) or len(a) != 2:
             raise ValueError(
@@ -254,9 +212,9 @@ class FFT2(Operation):
         if real.shape != imag.shape:
             raise ValueError(
                 "Input `a` should be a tuple of two tensors - real and "
-                "imaginary. Both real and imaginary should have the same "
-                f"shape. Received: real.shape = {real.shape}, "
-                f"imag.shape = {imag.shape}"
+                "imaginary. Both the real and imaginary parts should have the "
+                f"same shape. Received: a[0].shape = {real.shape}, "
+                f"a[1].shape = {imag.shape}"
             )
         # We are calculating 2D FFT. Hence, rank >= 2.
         if len(real.shape) < 2:
@@ -266,8 +224,8 @@ class FFT2(Operation):
             )
 
         # The axes along which we are calculating FFT should be fully-defined.
-        m = real.shape[self.axes[0]]
-        n = real.shape[self.axes[1]]
+        m = real.shape[-1]
+        n = real.shape[-2]
         if m is None or n is None:
             raise ValueError(
                 f"Input should have its {self.axes} axes fully-defined. "
@@ -280,18 +238,18 @@ class FFT2(Operation):
         )
 
     def call(self, x):
-        return backend.math.fft2(x, s=self.s, axes=self.axes, norm=self.norm)
+        return backend.math.fft2(x)
 
 
 @keras_core_export("keras_core.ops.fft")
-def fft(a, n=None, axis=-1, norm=None):
+def fft(a):
     if any_symbolic_tensors(a):
-        return FFT(n=n, axis=axis, norm=norm).symbolic_call(a)
-    return backend.math.fft(a, n=n, axis=axis, norm=norm)
+        return FFT().symbolic_call(a)
+    return backend.math.fft(a)
 
 
 @keras_core_export("keras_core.ops.fft2")
-def fft2(a, s=None, axes=(-2, -1), norm=None):
+def fft2(a):
     if any_symbolic_tensors(a):
-        return FFT2(s=s, axes=axes, norm=norm).symbolic_call(a)
-    return backend.math.fft2(a, s=s, axes=axes, norm=norm)
+        return FFT2().symbolic_call(a)
+    return backend.math.fft2(a)
