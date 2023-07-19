@@ -1,4 +1,4 @@
-from tensorflow import nest
+import tree
 
 import keras_core.backend
 from keras_core.layers.layer import Layer
@@ -22,11 +22,11 @@ class TFDataLayer(Layer):
 
     def __call__(self, inputs, **kwargs):
         if backend_utils.in_tf_graph() and not isinstance(
-            inputs, keras_core.backend.KerasTensor
+            inputs, keras_core.KerasTensor
         ):
             # We're in a TF graph, e.g. a tf.data pipeline.
             self.backend.set_backend("tensorflow")
-            inputs = nest.map_structure(
+            inputs = tree.map_structure(
                 lambda x: self.backend.convert_to_tensor(
                     x, dtype=self.compute_dtype
                 ),
