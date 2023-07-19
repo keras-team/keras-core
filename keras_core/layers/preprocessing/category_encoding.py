@@ -108,11 +108,8 @@ class CategoryEncoding(TFDataLayer):
         self._allow_non_tensor_positional_args = True
         self._convert_input_args = False
 
-    def _is_batched_input(self, x):
-        return len(self.backend.core.shape(x)) > 1
-
     def _count(self, inputs, axis=-1):
-        reduction_axis = 1 if self._is_batched_input(inputs) else 0
+        reduction_axis = 1 if len(inputs.shape) > 1 else 0
         outputs = self.backend.numpy.sum(
             self.backend.nn.one_hot(
                 inputs, self.num_tokens, axis=axis, dtype=self.dtype
