@@ -14,25 +14,38 @@ def compute_pooling_output_shape(
     """Computes the output shape of pooling operations.
 
     Args:
-    input_shape: Input shape. Must be a tuple of integers.
-    pool_size: Size of the pooling operation. Must be a tuple of integers.
-    strides: Stride of the pooling operation. Must be a tuple of integers.
-        Defaults to pool_size.
-    padding: Padding method. Available methods are 'valid' or 'same'.
-        Defaults to 'valid'.
-    data_format: String, either 'channels_last' or 'channels_first'.
-        The ordering of the dimensions in the inputs. 'channels_last'
-        corresponds to inputs with shape (batch, height, width, channels)
-        while 'channels_first' corresponds to inputs with shape
-        (batch, channels, height, weight). Defaults to 'channels_last'.
+        input_shape: Input shape. Must be a tuple of integers.
+        pool_size: Size of the pooling operation. Must be a tuple of integers.
+        strides: Stride of the pooling operation. Must be a tuple of integers.
+            Defaults to `pool_size`.
+        padding: Padding method. Available methods are `"valid"` or `"same"`.
+            Defaults to `"valid"`.
+        data_format: String, either `"channels_last`" or `"channels_first`".
+            The ordering of the dimensions in the inputs. `"channels_last`"
+            corresponds to inputs with shape `(batch, height, width, channels)`
+            while `"channels_first`" corresponds to inputs with shape
+            `(batch, channels, height, weight)`. Defaults to `"channels_last`".
 
     Returns:
-        Tuple[int]: The output shape of the pooling operation.
+        Tuple of ints: The output shape of the pooling operation.
 
     Examples:
 
+    # Basic usage with square pooling on a single image
     >>> compute_pooling_output_shape((1, 4, 4, 1), (2, 2))
     (1, 2, 2, 1)
+
+    # Strided pooling on a single image with strides different from pool_size
+    >>> compute_pooling_output_shape((1, 4, 4, 1), (2, 2), strides=(1, 1))
+    (1, 3, 3, 1)
+
+    # Pooling on a batch of images
+    >>> compute_pooling_output_shape((32, 4, 4, 3), (2, 2))
+    (32, 2, 2, 3)
+
+    # Pooling with 'channels_first' data format on a large input shape
+    >>> compute_pooling_output_shape((10, 10, 100, 100), (20, 20), data_format='channels_first')
+    (10, 10, 5, 5)
     """
     strides = pool_size if strides is None else strides
     input_shape_origin = list(input_shape)
