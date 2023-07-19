@@ -907,6 +907,6 @@ def floordiv(x1, x2):
     return torch.floor_divide(x1, x2)
 
 
-def xor(x1, x2):
+def logical_xor(x1, x2):
     x1, x2 = convert_to_tensor(x1), convert_to_tensor(x2)
     return torch.logical_xor(x1, x2)

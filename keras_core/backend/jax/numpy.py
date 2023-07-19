@@ -579,5 +579,5 @@ def floordiv(x1, x2):
     return jnp.floor_divide(x1, x2)
 
 
-def xor(x1, x2):
+def logical_xor(x1, x2):
     return jnp.logical_xor(x1, x2)

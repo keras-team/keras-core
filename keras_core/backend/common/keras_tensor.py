@@ -279,12 +279,12 @@ class KerasTensor:
     def __xor__(self, other):
         from keras_core import ops
 
-        return ops.Xor().symbolic_call(self, other)
+        return ops.LogicalXor().symbolic_call(self, other)
 
     def __rxor__(self, other):
         from keras_core import ops
 
-        return ops.Xor().symbolic_call(other, self)
+        return ops.LogicalXor().symbolic_call(other, self)
 
     def __getitem__(self, key):
         from keras_core import ops

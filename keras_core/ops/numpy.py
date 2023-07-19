@@ -3477,9 +3477,9 @@ def floordiv(x1, x2):
     return backend.numpy.floordiv(x1, x2)
 
 
-class Xor(Operation):
+class LogicalXor(Operation):
     def call(self, x1, x2):
-        return backend.numpy.xor(x1, x2)
+        return backend.numpy.logical_xor(x1, x2)
 
     def compute_output_spec(self, x1, x2):
         x1_shape = getattr(x1, "shape", [])
@@ -3488,8 +3488,8 @@ class Xor(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
-@keras_core_export(["keras_core.ops.xor", "keras_core.ops.numpy.xor"])
-def xor(x1, x2):
+@keras_core_export(["keras_core.ops.logical_xor", "keras_core.ops.numpy.logical_xor"])
+def logical_xor(x1, x2):
     if any_symbolic_tensors((x1, x2)):
-        return Xor().symbolic_call(x1, x2)
+        return LogicalXor().symbolic_call(x1, x2)
     return backend.numpy.xor(x1, x2)

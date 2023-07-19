@@ -606,5 +606,5 @@ def floordiv(x1, x2):
     return tfnp.floor_divide(x1, x2)
 
 
-def xor(x1, x2):
+def logical_xor(x1, x2):
     return tfnp.logical_xor(x1, x2)
