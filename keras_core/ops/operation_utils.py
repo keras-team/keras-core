@@ -11,22 +11,28 @@ def compute_pooling_output_shape(
     padding="valid",
     data_format="channels_last",
 ):
-    """
-    Computes the output shape of pooling operations.
+    """Computes the output shape of pooling operations.
 
     Args:
-        input_shape (Tuple[int]): The shape of the input.
-        pool_size (Tuple[int]): The size of the pooling operation.
-        strides (Tuple[int], optional): The stride of the pooling operation. Defaults to pool_size.
-        padding (str, optional): The padding method, either 'valid' or 'same'. Defaults to 'valid'.
-        data_format (str, optional): The data format, either 'channels_last' or 'channels_first'. Defaults to 'channels_last'.
+    input_shape: Input shape. Must be a tuple of integers.
+    pool_size: Size of the pooling operation. Must be a tuple of integers.
+    strides: Stride of the pooling operation. Must be a tuple of integers. 
+        Defaults to pool_size.
+    padding: Padding method. Available methods are 'valid' or 'same'. 
+        Defaults to 'valid'.
+    data_format: String, either 'channels_last' or 'channels_first'.
+        The ordering of the dimensions in the inputs. 'channels_last'
+        corresponds to inputs with shape (batch, height, width, channels)
+        while 'channels_first' corresponds to inputs with shape
+        (batch, channels, height, weight). Defaults to 'channels_last'.
 
     Returns:
         Tuple[int]: The output shape of the pooling operation.
 
-    Example:
-        >>> compute_pooling_output_shape((1, 4, 4, 1), (2, 2))
-        (1, 2, 2, 1)
+    Examples:
+    
+    >>> compute_pooling_output_shape((1, 4, 4, 1), (2, 2))
+    (1, 2, 2, 1)
     """
     strides = pool_size if strides is None else strides
     input_shape_origin = list(input_shape)
