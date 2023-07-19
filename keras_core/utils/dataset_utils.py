@@ -77,6 +77,7 @@ def split_dataset(
     left_split = list(dataset_as_list[:left_size])
     right_split = list(dataset_as_list[-right_size:])
 
+    return left_split, right_split
     left_split = _restore_dataset_from_list(
         left_split, dataset_type_spec, dataset
     )
@@ -84,7 +85,7 @@ def split_dataset(
         right_split, dataset_type_spec, dataset
     )
 
-    return left_split, right_split
+    
     left_split = tf.data.Dataset.from_tensor_slices(left_split)
     right_split = tf.data.Dataset.from_tensor_slices(right_split)
 
