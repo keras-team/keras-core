@@ -30,9 +30,7 @@ for training our model. The Crowd Instance-level Human Parsing (CIHP) dataset ha
 Each image in CIHP is labeled with pixel-wise annotations for 20 categories, as well as instance-level identification.
 This dataset can be used for the "human part segmentation" task.
 """
-import os
 
-os.environ["KERAS_BACKEND"] = "jax"
 
 import keras_core as keras
 from keras_core import layers
