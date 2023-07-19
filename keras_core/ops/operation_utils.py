@@ -42,10 +42,6 @@ def compute_pooling_output_shape(
     # Pooling on a batch of images
     >>> compute_pooling_output_shape((32, 4, 4, 3), (2, 2))
     (32, 2, 2, 3)
-
-    # Pooling with 'channels_first' data format on a large input shape
-    >>> compute_pooling_output_shape((10, 10, 100, 100), (20, 20), data_format='channels_first')
-    (10, 10, 5, 5)
     """
     strides = pool_size if strides is None else strides
     input_shape_origin = list(input_shape)
