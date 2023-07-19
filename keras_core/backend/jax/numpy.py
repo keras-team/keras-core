@@ -92,9 +92,9 @@ def amin(x, axis=None, keepdims=False):
 
 
 def append(
-        x1,
-        x2,
-        axis=None,
+    x1,
+    x2,
+    axis=None,
 ):
     return jnp.append(x1, x2, axis=axis)
 
@@ -292,7 +292,7 @@ def less_equal(x1, x2):
 
 
 def linspace(
-        start, stop, num=50, endpoint=True, retstep=False, dtype=None, axis=0
+    start, stop, num=50, endpoint=True, retstep=False, dtype=None, axis=0
 ):
     return jnp.linspace(
         start,

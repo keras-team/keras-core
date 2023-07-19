@@ -414,9 +414,9 @@ class Append(Operation):
 
 @keras_core_export(["keras_core.ops.append", "keras_core.ops.numpy.append"])
 def append(
-        x1,
-        x2,
-        axis=None,
+    x1,
+    x2,
+    axis=None,
 ):
     if any_symbolic_tensors((x1, x2)):
         return Append(axis=axis).symbolic_call(x1, x2)
@@ -736,7 +736,7 @@ class Concatenate(Operation):
         total_size_on_axis = 0
         for x in xs:
             if not shape_equal(
-                    x.shape, first_shape, axis=[self.axis], allow_none=True
+                x.shape, first_shape, axis=[self.axis], allow_none=True
             ):
                 raise ValueError(
                     "Every value in `xs` must have the same shape except on "
@@ -893,7 +893,7 @@ class Cross(Operation):
             value_size = []
 
         output_shape = (
-                output_shape[: self.axisc] + value_size + output_shape[self.axisc:]
+            output_shape[: self.axisc] + value_size + output_shape[self.axisc :]
         )
         return KerasTensor(output_shape, dtype=x1.dtype)
 
@@ -1087,9 +1087,9 @@ class Dot(Operation):
             return KerasTensor(x1_shape[:-1], dtype=x1.dtype)
 
         if (
-                x1_shape[-1] is None
-                or x2_shape[-2] is None
-                or x1_shape[-1] == x2_shape[-2]
+            x1_shape[-1] is None
+            or x2_shape[-2] is None
+            or x1_shape[-1] == x2_shape[-2]
         ):
             del x1_shape[-1]
             del x2_shape[-2]
@@ -1255,10 +1255,10 @@ class Einsum(Operation):
                     else -len(split_spec[1])
                 )
                 wildcard_shape = x_shape[
-                                 wildcard_shape_start_index:wildcard_shape_end_index
-                                 ]
+                    wildcard_shape_start_index:wildcard_shape_end_index
+                ]
                 wildcard_shape_str = (
-                        " ".join([str(size) for size in wildcard_shape]) + " "
+                    " ".join([str(size) for size in wildcard_shape]) + " "
                 )
                 expanded_shape = expanded_shape.replace(
                     "...", wildcard_shape_str
@@ -1731,7 +1731,7 @@ def less_equal(x1, x2):
 
 class Linspace(Operation):
     def __init__(
-            self, num=50, endpoint=True, retstep=False, dtype=float, axis=0
+        self, num=50, endpoint=True, retstep=False, dtype=float, axis=0
     ):
         super().__init__()
         self.num = num
@@ -1759,15 +1759,15 @@ class Linspace(Operation):
             output_shape = output_shape + [self.num]
         elif self.axis >= 0:
             output_shape = (
-                    output_shape[: self.axis]
-                    + [self.num]
-                    + output_shape[self.axis:]
+                output_shape[: self.axis]
+                + [self.num]
+                + output_shape[self.axis :]
             )
         else:
             output_shape = (
-                    output_shape[: self.axis + 1]
-                    + [self.num]
-                    + output_shape[self.axis + 1:]
+                output_shape[: self.axis + 1]
+                + [self.num]
+                + output_shape[self.axis + 1 :]
             )
 
         dtype = self.dtype if self.dtype is not None else start.dtype
@@ -1778,7 +1778,7 @@ class Linspace(Operation):
 
 @keras_core_export(["keras_core.ops.linspace", "keras_core.ops.numpy.linspace"])
 def linspace(
-        start, stop, num=50, endpoint=True, retstep=False, dtype=None, axis=0
+    start, stop, num=50, endpoint=True, retstep=False, dtype=None, axis=0
 ):
     if any_symbolic_tensors((start, stop)):
         return Linspace(num, endpoint, retstep, dtype, axis)(start, stop)
@@ -1967,15 +1967,15 @@ class Logspace(Operation):
             output_shape = output_shape + [self.num]
         elif self.axis >= 0:
             output_shape = (
-                    output_shape[: self.axis]
-                    + [self.num]
-                    + output_shape[self.axis:]
+                output_shape[: self.axis]
+                + [self.num]
+                + output_shape[self.axis :]
             )
         else:
             output_shape = (
-                    output_shape[: self.axis + 1]
-                    + [self.num]
-                    + output_shape[self.axis + 1:]
+                output_shape[: self.axis + 1]
+                + [self.num]
+                + output_shape[self.axis + 1 :]
             )
 
         dtype = self.dtype if self.dtype is not None else start.dtype
@@ -2009,9 +2009,9 @@ class Matmul(Operation):
         if len(x2_shape) == 1:
             x2_shape = (x2_shape[0], 1)
         if (
-                x1_shape[-1] is not None
-                and x2_shape[-2] is not None
-                and x1_shape[-1] != x2_shape[-2]
+            x1_shape[-1] is not None
+            and x2_shape[-2] is not None
+            and x1_shape[-1] != x2_shape[-2]
         ):
             raise ValueError(
                 "Inner dimensions (`x1.shape[-1]` and `x2.shape[-2]`) must be "
@@ -2383,7 +2383,7 @@ class Pad(Operation):
         if isinstance(pad_width, int):
             return ((pad_width, pad_width),)
         if isinstance(pad_width, (tuple, list)) and isinstance(
-                pad_width[0], int
+            pad_width[0], int
         ):
             return (pad_width,)
         first_len = len(pad_width[0])
@@ -2836,7 +2836,7 @@ class Take(Operation):
 
         # make sure axis is non-negative
         axis = len(x_shape) + self.axis if self.axis < 0 else self.axis
-        output_shape = x_shape[:axis] + indices_shape + x_shape[axis + 1:]
+        output_shape = x_shape[:axis] + indices_shape + x_shape[axis + 1 :]
         return KerasTensor(output_shape, dtype=x.dtype)
 
 
@@ -2923,7 +2923,7 @@ class Tensordot(Operation):
             x1_select_shape = [x1_shape[ax] for ax in self.axes[0]]
             x2_select_shape = [x2_shape[ax] for ax in self.axes[1]]
             if not shape_equal(
-                    x1_select_shape, x2_select_shape, allow_none=True
+                x1_select_shape, x2_select_shape, allow_none=True
             ):
                 raise ValueError(
                     "Shape mismatch on `x1[axes[0]]` and `x2[axes[1]]`, "
@@ -2944,7 +2944,7 @@ class Tensordot(Operation):
         if self.axes <= 0:
             output_shape = x1_shape + x2_shape
         else:
-            output_shape = x1_shape[: -self.axes] + x2_shape[self.axes:]
+            output_shape = x1_shape[: -self.axes] + x2_shape[self.axes :]
 
         return KerasTensor(output_shape, dtype=x1.dtype)
 

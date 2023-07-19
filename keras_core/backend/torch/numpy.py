@@ -132,9 +132,9 @@ def amin(x, axis=None, keepdims=False):
 
 
 def append(
-        x1,
-        x2,
-        axis=None,
+    x1,
+    x2,
+    axis=None,
 ):
     x1, x2 = convert_to_tensor(x1), convert_to_tensor(x2)
     if axis is None:
@@ -428,7 +428,7 @@ def less_equal(x1, x2):
 
 
 def linspace(
-        start, stop, num=50, endpoint=True, retstep=False, dtype=None, axis=0
+    start, stop, num=50, endpoint=True, retstep=False, dtype=None, axis=0
 ):
     if axis != 0:
         raise ValueError(
@@ -523,7 +523,7 @@ def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
 
         # increments from `start` to `stop` in each dimension
         linspace = start[None] + steps * (stop - start)[None]
-        logspace = base ** linspace
+        logspace = base**linspace
     else:
         logspace = torch.logspace(
             start=start,
@@ -712,9 +712,9 @@ def split(x, indices_or_sections, axis=0):
         start_size = indices_or_sections[0]
         end_size = x.shape[axis] - indices_or_sections[-1]
         chunk_sizes = (
-                [start_size]
-                + torch.diff(idxs).type(torch.int).tolist()
-                + [end_size]
+            [start_size]
+            + torch.diff(idxs).type(torch.int).tolist()
+            + [end_size]
         )
     else:
         chunk_sizes = x.shape[axis] // indices_or_sections
@@ -752,7 +752,7 @@ def take(x, indices, axis=None):
     if axis is not None:
         # make sure axis is non-negative
         axis = len(x.shape) + axis if axis < 0 else axis
-        shape = x.shape[:axis] + indices.shape + x.shape[axis + 1:]
+        shape = x.shape[:axis] + indices.shape + x.shape[axis + 1 :]
         # ravel the `indices` since `index_select` expects `indices`
         # to be a vector (1-D tensor).
         indices = indices.ravel()
