@@ -1,7 +1,6 @@
 import tensorflow as tf
 import torch 
 from torch.utils.data import Dataset as torchDataset
-from torch.utils.data import DataLoader as torchDataLoader
 import numpy as np
 import warnings
 import random
@@ -229,7 +228,7 @@ def _get_data_iterator_from_dataset(dataset, dataset_type_spec):
     
     # torch dataset iterator might be required to change
     elif dataset_type_spec == torchDataset:
-        return torchDataLoader(dataset)
+        return iter(dataset)
     
     elif dataset_type_spec == np.ndarray:
         return iter(dataset)
@@ -454,7 +453,7 @@ def _restore_dataset_from_list(
             return tuple(np.array(sample) for sample in zip(*dataset_as_list))
         
     elif dataset_type_spec == torchDataset:
-        return tuple(np.array(sample, dtype=object) for sample in zip(*dataset_as_list))
+        return tuple(np.array(sample) for sample in zip(*dataset_as_list))
     return dataset_as_list
 
 def is_batched(dataset):
