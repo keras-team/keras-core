@@ -18,7 +18,7 @@ def split_dataset(
     """Split a dataset into a left half and a right half (e.g. train / test).
 
     Args:
-        dataset: A `tf.data.Dataset, torchDataset`  object, or a list/tuple of arrays with the
+        dataset: A `tf.data.Datasetor torchDataset`  object, or a list/tuple of arrays with the
           same length.
         left_size: If float (in the range `[0, 1]`), it signifies
           the fraction of the data to pack in the left dataset. If integer, it
@@ -32,7 +32,7 @@ def split_dataset(
         seed: A random seed for shuffling.
 
     Returns:
-        A tuple of two `tf.data.Dataset` objects: the left and right splits.
+        A tuple of two `tf.data.Dataset or torchDataset` objects: the left and right splits.
 
     Example:
 
@@ -77,29 +77,33 @@ def split_dataset(
     left_split = list(dataset_as_list[:left_size])
     right_split = list(dataset_as_list[-right_size:])
 
-    return left_split, right_split
+    
     left_split = _restore_dataset_from_list(
         left_split, dataset_type_spec, dataset
     )
     right_split = _restore_dataset_from_list(
         right_split, dataset_type_spec, dataset
     )
-
     
-    left_split = tf.data.Dataset.from_tensor_slices(left_split)
-    right_split = tf.data.Dataset.from_tensor_slices(right_split)
+    if dataset_type_spec != torchDataset:
+    
+        left_split = tf.data.Dataset.from_tensor_slices(left_split)
+        right_split = tf.data.Dataset.from_tensor_slices(right_split)
 
-    # apply batching to the splits if the dataset is batched
-    if dataset_type_spec is tf.data.Dataset and is_batched(dataset):
-        batch_size = get_batch_size(dataset)
-        if batch_size is not None:
-            left_split = left_split.batch(batch_size)
-            right_split = right_split.batch(batch_size)
+        # apply batching to the splits if the dataset is batched
+        if dataset_type_spec is tf.data.Dataset and is_batched(dataset):
+            batch_size = get_batch_size(dataset)
+            if batch_size is not None:
+                left_split = left_split.batch(batch_size)
+                right_split = right_split.batch(batch_size)
 
-    left_split = left_split.prefetch(tf.data.AUTOTUNE)
-    right_split = right_split.prefetch(tf.data.AUTOTUNE)
+        left_split = left_split.prefetch(tf.data.AUTOTUNE)
+        right_split = right_split.prefetch(tf.data.AUTOTUNE)
+        return left_split, right_split
 
-    return left_split, right_split
+    elif dataset_type_spec == torchDataset:
+        return dataset.__class__(*left_split), dataset.__class__(*right_split)
+
 
 
 def _convert_dataset_to_list(
@@ -108,10 +112,10 @@ def _convert_dataset_to_list(
     data_size_warning_flag=True,
     ensure_shape_similarity=True,
 ):
-    """Convert `tf.data.Dataset torchDataset` object or list/tuple of NumPy arrays to a list.
+    """Convert `tf.data.Dataset or torchDataset` object or list/tuple of NumPy arrays to a list.
 
     Args:
-        dataset : A `tf.data.Dataset` object or a list/tuple of arrays.
+        dataset : A `tf.data.Dataset or torchDataset` object or a list/tuple of arrays.
         dataset_type_spec : the type of the dataset
         data_size_warning_flag (bool, optional): If set to True, a warning will
           be issued if the dataset takes longer than 10 seconds to iterate.
@@ -448,6 +452,9 @@ def _restore_dataset_from_list(
             return restored_dataset
         else:
             return tuple(np.array(sample) for sample in zip(*dataset_as_list))
+        
+    elif dataset_type_spec == torchDataset:
+        return tuple(np.array(sample, dtype=object) for sample in zip(*dataset_as_list))
     return dataset_as_list
 
 def is_batched(dataset):
