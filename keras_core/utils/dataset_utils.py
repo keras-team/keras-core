@@ -1,6 +1,7 @@
 import tensorflow as tf
 import torch 
 from torch.utils.data import Dataset as torchDataset
+from torch.utils.data import DataLoader as torchDataLoader
 import numpy as np
 import warnings
 import random
@@ -17,7 +18,7 @@ def split_dataset(
     """Split a dataset into a left half and a right half (e.g. train / test).
 
     Args:
-        dataset: A `tf.data.Dataset` object, or a list/tuple of arrays with the
+        dataset: A `tf.data.Dataset, torchDataset`  object, or a list/tuple of arrays with the
           same length.
         left_size: If float (in the range `[0, 1]`), it signifies
           the fraction of the data to pack in the left dataset. If integer, it
@@ -83,6 +84,7 @@ def split_dataset(
         right_split, dataset_type_spec, dataset
     )
 
+    return left_split, right_split
     left_split = tf.data.Dataset.from_tensor_slices(left_split)
     right_split = tf.data.Dataset.from_tensor_slices(right_split)
 
@@ -105,7 +107,7 @@ def _convert_dataset_to_list(
     data_size_warning_flag=True,
     ensure_shape_similarity=True,
 ):
-    """Convert `tf.data.Dataset` object or list/tuple of NumPy arrays to a list.
+    """Convert `tf.data.Dataset torchDataset` object or list/tuple of NumPy arrays to a list.
 
     Args:
         dataset : A `tf.data.Dataset` object or a list/tuple of arrays.
@@ -149,7 +151,7 @@ def _get_data_iterator_from_dataset(dataset, dataset_type_spec):
     """Get the iterator from a dataset.
 
     Args:
-        dataset :  A `tf.data.Dataset` object or a list/tuple of arrays.
+        dataset :  A `tf.data.Dataset or torchDataset` object or a list/tuple of arrays.
         dataset_type_spec : the type of the dataset
 
     Raises:
@@ -219,6 +221,11 @@ def _get_data_iterator_from_dataset(dataset, dataset_type_spec):
         if is_batched(dataset):
             dataset = dataset.unbatch()
         return iter(dataset)
+    
+    # torch dataset iterator might be required to change
+    elif dataset_type_spec == torchDataset:
+        return torchDataLoader(dataset)
+    
     elif dataset_type_spec == np.ndarray:
         return iter(dataset)
     
@@ -253,7 +260,7 @@ def _get_next_sample(
     try:
         dataset_iterator = iter(dataset_iterator)
         first_sample = next(dataset_iterator)
-        if isinstance(first_sample, (tf.Tensor, np.ndarray)):
+        if isinstance(first_sample, (tf.Tensor, np.ndarray)) or torch.is_tensor(first_sample):
             first_sample_shape = np.array(first_sample).shape
         else:
             first_sample_shape = None
