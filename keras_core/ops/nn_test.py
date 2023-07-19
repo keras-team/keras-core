@@ -121,18 +121,6 @@ class NNOpsDynamicShapeTest(testing.TestCase, parameterized.TestCase):
         out = knn.multi_hot(x, 5, axis=0, dtype=dtype)
         self.assertEqual(backend.standardize_dtype(out.dtype), dtype)
 
-    def test_batched_and_unbatched_inputs_multi_hot(self):
-        x = KerasTensor([2, 3, 1])
-        unbatched_input = KerasTensor(
-            [
-                5,
-            ]
-        )
-        self.assertEqual(knn.multi_hot(unbatched_input, 5, -1).shape, (5,))
-        self.assertEqual(knn.multi_hot(x, 5).shape, (2, 1, 5))
-        self.assertEqual(knn.multi_hot(x, 5, 1).shape, (2, 3, 1))
-        self.assertEqual(knn.multi_hot(x, 5, 2).shape, (2, 5, 1))
-
     def test_conv(self):
         # Test 1D conv.
         inputs_1d = KerasTensor([None, 20, 3])
@@ -575,6 +563,18 @@ class NNOpsStaticShapeTest(testing.TestCase):
             ).shape,
             (2, 21, 21, 5),
         )
+
+    def test_batched_and_unbatched_inputs_multi_hot(self):
+        x = KerasTensor([2, 3, 1])
+        unbatched_input = KerasTensor(
+            [
+                5,
+            ]
+        )
+        self.assertEqual(knn.multi_hot(unbatched_input, 5, -1).shape, (5,))
+        self.assertEqual(knn.multi_hot(x, 5).shape, (2, 1, 5))
+        self.assertEqual(knn.multi_hot(x, 5, 1).shape, (2, 3, 1))
+        self.assertEqual(knn.multi_hot(x, 5, 2).shape, (2, 5, 1))
 
     def test_one_hot(self):
         x = KerasTensor([2, 3, 1])
@@ -1140,3 +1140,19 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             target, output, from_logits=True
         )
         self.assertAllClose(result, [0.001822, 0.000459, 0.169846])
+
+    def test_multi_hot(self):
+        tf_keras_layer = tf.keras.layers.CategoryEncoding(4, 'multi_hot')
+
+        # Test 1D multi-hot.
+        indices_1d = np.array([0, 1, 2, 3])
+        self.assertAllClose(
+            knn.multi_hot(indices_1d, 4),
+            tf_keras_layer(indices_1d)
+        )
+
+        # Test 2D multi-hot.
+        indices_2d = np.array([[0, 1], [2, 3]])
+        self.assertAllClose(
+            knn.multi_hot(indices_2d, 4), tf_keras_layer(indices_2d)
+        )
