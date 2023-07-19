@@ -84,7 +84,6 @@ def read_image(image_path, mask=False):
         image = tf_image.decode_png(image, channels=3)
         image.set_shape([None, None, 3])
         image = tf_image.resize(images=image, size=[IMAGE_SIZE, IMAGE_SIZE])
-        # image = keras.applications.resnet50.preprocess_input(np.array(image))
     return image
 
 
