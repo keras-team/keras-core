@@ -88,9 +88,9 @@ def amin(x, axis=None, keepdims=False):
 
 
 def append(
-    x1,
-    x2,
-    axis=None,
+        x1,
+        x2,
+        axis=None,
 ):
     return tfnp.append(x1, x2, axis=axis)
 
@@ -290,7 +290,7 @@ def less_equal(x1, x2):
 
 
 def linspace(
-    start, stop, num=50, endpoint=True, retstep=False, dtype=None, axis=0
+        start, stop, num=50, endpoint=True, retstep=False, dtype=None, axis=0
 ):
     return tfnp.linspace(
         start,
@@ -604,3 +604,7 @@ def eye(N, M=None, k=0, dtype="float32"):
 
 def floordiv(x1, x2):
     return tfnp.floor_divide(x1, x2)
+
+
+def xor(x1, x2):
+    return tfnp.logical_xor(x1, x2)

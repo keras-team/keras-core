@@ -246,10 +246,10 @@ class KerasTensor:
 
         return ops.NotEqual().symbolic_call(self, other)
 
-    # def __eq__(self, other):
-    #     from keras_core import ops
-    #
-    #     return ops.Equal().symbolic_call(self, other)
+    def __eq__(self, other):
+        raise ValueError(
+            "Symbolic KerasTensors cannot be compared using the == operator."
+        )
 
     def __and__(self, other):
         from keras_core import ops
@@ -276,17 +276,24 @@ class KerasTensor:
 
         return ops.LogicalNot().symbolic_call(other, self)
 
+    def __xor__(self, other):
+        from keras_core import ops
+
+        return ops.Xor().symbolic_call(self, other)
+
+    def __rxor__(self, other):
+        from keras_core import ops
+
+        return ops.Xor().symbolic_call(other, self)
+
     def __getitem__(self, key):
         from keras_core import ops
 
         return ops.GetItem().symbolic_call(self, key)
 
     # TODO
-    #   "__xor__",
-    #   "__rxor__",
     #   "broadcast_to"
     #   "astype"
-    #   a few more NumPy ones...
 
 
 def any_symbolic_tensors(args=None, kwargs=None):
