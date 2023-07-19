@@ -1,4 +1,4 @@
-from tensorflow import nest
+import tree
 
 from keras_core import activations
 from keras_core import backend
@@ -493,7 +493,7 @@ class LSTM(RNN):
         self.input_spec = InputSpec(ndim=3)
 
     def inner_loop(self, sequences, initial_state, mask, training=False):
-        if nest.is_nested(mask):
+        if tree.is_nested(mask):
             mask = mask[0]
 
         if not self.dropout and not self.recurrent_dropout:
@@ -502,7 +502,7 @@ class LSTM(RNN):
                 # implementation of the inner LSTM loop. In the case of
                 # TF for instance, it will leverage cuDNN when feasible, and
                 # it will raise NotImplementedError otherwise.
-                return backend.lstm(
+                out = backend.lstm(
                     sequences,
                     initial_state[0],
                     initial_state[1],
@@ -516,6 +516,11 @@ class LSTM(RNN):
                     go_backwards=self.go_backwards,
                     unroll=self.unroll,
                 )
+                # We disable jit_compile for the model in this case,
+                # since cuDNN ops aren't XLA compatible.
+                if backend.backend() == "tensorflow":
+                    self.supports_jit = False
+                return out
             except NotImplementedError:
                 pass
         return super().inner_loop(

@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest import mock
 
 import numpy as np
+import pytest
 
 import keras_core
 from keras_core import ops
@@ -130,6 +131,7 @@ def my_mean_squared_error(y_true, y_pred):
     return ops.mean(ops.square(y_pred - y_true), axis=-1)
 
 
+@pytest.mark.requires_trainable_backend
 class SavingTest(testing.TestCase):
     def _get_subclassed_model(self, compile=True):
         subclassed_model = CustomModelX()
@@ -379,7 +381,7 @@ class SavingTest(testing.TestCase):
     #     with mock.patch(
     #         "re.match", autospec=True
     #     ) as mock_re_match, mock.patch(
-    #         "tensorflow.compat.v2.io.gfile.copy", autospec=True
+    #         "tensorflow.compat.v2.io.file_utils.copy", autospec=True
     #     ) as mock_copy:
     #         # Mock Remote Path check to true to test gfile copy logic
     #         mock_re_match.return_value = True
