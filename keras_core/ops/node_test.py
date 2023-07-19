@@ -1,8 +1,8 @@
 import numpy as np
 
+from keras_core import Layer
 from keras_core import testing
 from keras_core.backend import KerasTensor
-from keras_core import ops, Layer
 from keras_core.ops.node import Node
 
 
@@ -30,25 +30,27 @@ class NodeTest(testing.TestCase):
 
         b = KerasTensor(shape=shape)
         b_layer = DummyLayer()
-        node2 = Node(b_layer, outputs=b, call_args=(a, ), call_kwargs={})
+        node2 = Node(b_layer, outputs=b, call_args=(a,), call_kwargs={})
 
         self.assertEqual(node1.is_input, True)
         self.assertEqual(node2.is_input, False)
 
+        self.assertEqual(node1.operation, a_layer)
+        self.assertEqual(node2.operation, b_layer)
+
         self.assertEqual(node1.output_tensors[0], a)
         self.assertEqual(node1.output_tensors[0].shape, shape)
 
-        self.assertEqual(b_layer.__dict__['_inbound_nodes'][0], node2)
+        self.assertEqual(a_layer.__dict__["_inbound_nodes"][0], node1)
+        self.assertEqual(a_layer.__dict__["_outbound_nodes"][0], node2)
 
+        self.assertEqual(b_layer.__dict__["_inbound_nodes"][0], node2)
         self.assertEqual(node2.parent_nodes[0], node1)
-
-    def test_multi_wired_layers(self):
-        pass
 
     def test_output_tensor_error(self):
         a = np.random.rand(2, 3, 4)
         a_layer = DummyLayer()
         with self.assertRaisesRegex(
-                ValueError, "operation outputs must be tensors."
+            ValueError, "operation outputs must be tensors."
         ):
             Node(a_layer, outputs=a, call_args=(), call_kwargs={})
