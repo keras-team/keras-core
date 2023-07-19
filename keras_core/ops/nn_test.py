@@ -1142,16 +1142,17 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(result, [0.001822, 0.000459, 0.169846])
 
     def test_multi_hot(self):
-        tf_keras_layer = tf.keras.layers.CategoryEncoding(4, "multi_hot")
-
         # Test 1D multi-hot.
         indices_1d = np.array([0, 1, 2, 3])
-        self.assertAllClose(
-            knn.multi_hot(indices_1d, 4), tf_keras_layer(indices_1d)
-        )
+        expected_output_1d = np.array([1, 1, 1, 1])
+        self.assertAllClose(knn.multi_hot(indices_1d, 4), expected_output_1d)
 
         # Test 2D multi-hot.
         indices_2d = np.array([[0, 1], [2, 3]])
-        self.assertAllClose(
-            knn.multi_hot(indices_2d, 4), tf_keras_layer(indices_2d)
-        )
+        expected_output_2d = np.array([[1, 1, 0, 0], [0, 0, 1, 1]])
+        self.assertAllClose(knn.multi_hot(indices_2d, 4), expected_output_2d)
+
+        # Test 1D multi-hot with negative inputs
+        indices_1d = np.array([0, -1, -1, 3])
+        expected_output_1d = np.array([1, 0, 0, 1])
+        self.assertAllClose(knn.multi_hot(indices_1d, 4), expected_output_1d)
