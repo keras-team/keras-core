@@ -50,39 +50,32 @@ class RandomFlip(TFDataLayer):
         self._convert_input_args = False
         self._allow_non_tensor_positional_args = True
 
-    @property
-    def horizontal(self) -> bool:
+    def _horizontal(self):
         return self.mode == HORIZONTAL or self.mode == HORIZONTAL_AND_VERTICAL
 
-    @property
-    def vertical(self) -> bool:
+    def _vertical(self):
         return self.mode == VERTICAL or self.mode == HORIZONTAL_AND_VERTICAL
 
     def call(self, inputs, training=True):
-        def random_flipped_inputs(inputs):
-            flipped_outputs = inputs
-            seed_generator = self._get_seed_generator()
-            if self.horizontal:
-                if (
-                    self.backend.random.uniform(shape=(), seed=seed_generator)
-                    <= 0.5
-                ):
-                    flipped_outputs = self.backend.numpy.flip(
-                        flipped_outputs, axis=-2
-                    )
-            if self.vertical:
-                if (
-                    self.backend.random.uniform(shape=(), seed=seed_generator)
-                    <= 0.5
-                ):
-                    flipped_outputs = self.backend.numpy.flip(
-                        flipped_outputs, axis=-3
-                    )
-            return flipped_outputs
-
         inputs = self.backend.cast(inputs, self.compute_dtype)
         if training:
-            return random_flipped_inputs(inputs)
+            flipped_outputs = inputs
+            seed_generator = self._get_seed_generator()
+            if self._horizontal():
+                flipped_outputs = self.backend.cond(
+                    self.backend.random.uniform(shape=(), seed=seed_generator)
+                    <= 0.5,
+                    lambda: self.backend.numpy.flip(flipped_outputs, axis=-2),
+                    lambda: flipped_outputs,
+                )
+            if self._vertical():
+                flipped_outputs = self.backend.cond(
+                    self.backend.random.uniform(shape=(), seed=seed_generator)
+                    <= 0.5,
+                    lambda: self.backend.numpy.flip(flipped_outputs, axis=-3),
+                    lambda: flipped_outputs,
+                )
+            return flipped_outputs
         else:
             return inputs
 
