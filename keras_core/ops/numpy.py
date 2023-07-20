@@ -229,7 +229,7 @@ class Absolute(Operation):
 
 @keras_core_export(["keras_core.ops.absolute", "keras_core.ops.numpy.absolute"])
 def absolute(x):
-    """Calculate the absolute value element-wise.
+    """Compute the absolute value element-wise.
 
     `keras_core.ops.abs` is a shorthand for this function.
 
@@ -276,7 +276,8 @@ def add(x1, x2):
     """Add arguments element-wise.
 
     Args:
-        x1, x2: Input tensors.
+        x1: First input tensor.
+        x2: Second input tensor.
 
     Returns:
         The tensor containing the element-wise sum of `x1` and `x2`.
@@ -290,10 +291,10 @@ def add(x1, x2):
 
     `Add` also broadcasts shapes:
     >>> x1 = keras_core.ops.convert_to_tensor(
-    ...     [[5,4],
-    ...      [5,6]]
+    ...     [[5, 4],
+    ...      [5, 6]]
     ... )
-    >>> x2 = keras_core.ops.convert_to_tensor([5,6])
+    >>> x2 = keras_core.ops.convert_to_tensor([5, 6])
     >>> keras_core.ops.numpy.add(x1, x2)
     Array([[10, 10],
            [10, 12]], dtype=int32)
@@ -332,7 +333,7 @@ class All(Operation):
 
 @keras_core_export(["keras_core.ops.all", "keras_core.ops.numpy.all"])
 def all(x, axis=None, keepdims=False):
-    """Test whether all array elements along a given axis evaluate to True.
+    """Test whether all array elements along a given axis evaluate to `True`.
 
     Args:
         x: Input tensor.
@@ -341,9 +342,9 @@ def all(x, axis=None, keepdims=False):
             (`axis=None`) is to perform a logical AND over all the dimensions
             of the input array. `axis` may be negative, in which case it counts
             for the last to the first axis.
-        keepdims: If True, axes which are reduced are left in the result as
+        keepdims: If `True`, axes which are reduced are left in the result as
             dimensions with size one. With this option, the result will
-            broadcast correctly against the input array. Default is False.
+            broadcast correctly against the input array. Default is `False`.
     
     Returns:
         The tensor containing the logical AND reduction over the `axis`.
@@ -354,12 +355,12 @@ def all(x, axis=None, keepdims=False):
     >>> keras_core.ops.all(x)
     Array(False, dtype=bool)
 
-    >>> x = keras_core.ops.convert_to_tensor([[True, False],[True, True]])
+    >>> x = keras_core.ops.convert_to_tensor([[True, False], [True, True]])
     >>> keras_core.ops.all(x, axis=0)
     Array([ True, False], dtype=bool)
 
     `keepdims=True` outputs a tensor with dimensions reduced to one.
-    >>> x = keras_core.ops.convert_to_tensor([[True, False],[True, True]])
+    >>> x = keras_core.ops.convert_to_tensor([[True, False], [True, True]])
     >>> keras_core.ops.all(x)
     Array(False, dtype=bool)
     >>> keras_core.ops.all(x).shape
@@ -412,9 +413,9 @@ def any(x, axis=None, keepdims=False):
             (`axis=None`) is to perform a logical OR over all the dimensions
             of the input array. `axis` may be negative, in which case it counts
             for the last to the first axis.
-        keepdims: If True, axes which are reduced are left in the result as
+        keepdims: If `True`, axes which are reduced are left in the result as
             dimensions with size one. With this option, the result will
-            broadcast correctly against the input array. Default is False.
+            broadcast correctly against the input array. Default is `False`.
     
     Returns:
         The tensor containing the logical OR reduction over the `axis`.
@@ -425,12 +426,12 @@ def any(x, axis=None, keepdims=False):
     >>> keras_core.ops.any(x)
     Array(True, dtype=bool)
 
-    >>> x = keras_core.ops.convert_to_tensor([[True, False],[True, True]])
+    >>> x = keras_core.ops.convert_to_tensor([[True, False], [True, True]])
     >>> keras_core.ops.any(x, axis=0)
     Array([ True,  True], dtype=bool)
 
     `keepdims=True` outputs a tensor with dimensions reduced to one.
-    >>> x = keras_core.ops.convert_to_tensor([[True, False],[True, True]])
+    >>> x = keras_core.ops.convert_to_tensor([[True, False], [True, True]])
     >>> keras_core.ops.all(x)
     Array(False, dtype=bool)
     >>> keras_core.ops.all(x).shape
