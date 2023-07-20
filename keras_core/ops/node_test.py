@@ -61,6 +61,6 @@ class NodeTest(testing.TestCase):
         a = np.random.rand(2, 3, 4)
         a_layer = DummyLayer()
         with self.assertRaisesRegex(
-                ValueError, "operation outputs must be tensors."
+            ValueError, "operation outputs must be tensors."
         ):
             Node(a_layer, outputs=a, call_args=(), call_kwargs={})
