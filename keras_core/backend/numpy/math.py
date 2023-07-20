@@ -74,3 +74,40 @@ def qr(x, mode="reduced"):
             f"Received: mode={mode}"
         )
     return np.linalg.qr(x, mode=mode)
+
+
+def _get_complex_array_from_tuple(a):
+    if not isinstance(a, (tuple, list)) or len(a) != 2:
+        raise ValueError(
+            "Input `a` should be a tuple of two tensors - real and imaginary."
+            f"Received: a={a}"
+        )
+    # `convert_to_tensor` does not support passing complex tensors. We separate
+    # the input out into real and imaginary and convert them separately.
+    real, imag = a
+
+    # Check shapes.
+    if real.shape != imag.shape:
+        raise ValueError(
+            "Input `a` should be a tuple of two arrays - real and imaginary."
+            "Both the real and imaginary parts should have the same shape. "
+            f"Received: a[0].shape = {real.shape}, a[1].shape = {imag.shape}"
+        )
+    # Ensure dtype is float.
+    if not np.issubdtype(real.dtype, np.floating) or not np.issubdtype(
+        imag.dtype, np.floating
+    ):
+        raise ValueError(
+            "At least one array in input `a` is not of type float."
+            f"Received: a={a}."
+        )
+    complex_input = real + 1j * imag
+    return complex_input
+
+
+def fft(a):
+    return np.fft.fft(a)
+
+
+def fft2(a):
+    return np.fft.fft2(a)
