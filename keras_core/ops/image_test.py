@@ -18,10 +18,10 @@ class ImageOpsDynamicShapeTest(testing.TestCase):
         out = kimage.resize(x, size=(15, 15))
         self.assertEqual(out.shape, (15, 15, 3))
 
-    def test_affine(self):
+    def test_affine_transform(self):
         x = KerasTensor([None, 20, 20, 3])
         transform = KerasTensor([None, 8])
-        out = kimage.affine(x, transform)
+        out = kimage.affine_transform(x, transform)
         self.assertEqual(out.shape, (None, 20, 20, 3))
 
 
@@ -31,10 +31,10 @@ class ImageOpsStaticShapeTest(testing.TestCase):
         out = kimage.resize(x, size=(15, 15))
         self.assertEqual(out.shape, (15, 15, 3))
 
-    def test_affine(self):
+    def test_affine_transform(self):
         x = KerasTensor([20, 20, 3])
         transform = KerasTensor([8])
-        out = kimage.affine(x, transform)
+        out = kimage.affine_transform(x, transform)
         self.assertEqual(out.shape, (20, 20, 3))
 
 
@@ -127,7 +127,7 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             ("bilinear", "constant", "channels_first"),
         ]
     )
-    def test_affine(self, method, fill_mode, data_format):
+    def test_affine_transform(self, method, fill_mode, data_format):
         # Unbatched case
         if data_format == "channels_first":
             x = np.random.random((3, 50, 50)) * 255
@@ -135,7 +135,7 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             x = np.random.random((50, 50, 3)) * 255
         transform = np.random.random(size=(6))
         transform = np.pad(transform, (0, 2))  # makes c1, c2 always 0
-        out = kimage.affine(
+        out = kimage.affine_transform(
             x,
             transform,
             method=method,
@@ -170,7 +170,7 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             x = np.random.random((2, 50, 50, 3)) * 255
         transform = np.random.random(size=(2, 6))
         transform = np.pad(transform, [(0, 0), (0, 2)])  # makes c1, c2 always 0
-        out = kimage.affine(
+        out = kimage.affine_transform(
             x,
             transform,
             method=method,
