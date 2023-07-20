@@ -109,7 +109,9 @@ class PatchExtract(layers.Layer):
         )
         patch_dim = patches.shape[-1]
         patch_num = patches.shape[1]
-        return tf.reshape(patches, (batch_size, patch_num * patch_num, patch_dim))
+        return tf.reshape(
+            patches, (batch_size, patch_num * patch_num, patch_dim)
+        )
 
 
 class PatchEmbedding(layers.Layer):
@@ -117,7 +119,9 @@ class PatchEmbedding(layers.Layer):
         super().__init__(**kwargs)
         self.num_patch = num_patch
         self.proj = layers.Dense(embed_dim)
-        self.pos_embed = layers.Embedding(input_dim=num_patch, output_dim=embed_dim)
+        self.pos_embed = layers.Embedding(
+            input_dim=num_patch, output_dim=embed_dim
+        )
 
     def call(self, patch):
         pos = tf.range(start=0, limit=self.num_patch, delta=1)
@@ -130,7 +134,12 @@ class PatchEmbedding(layers.Layer):
 
 
 def external_attention(
-    x, dim, num_heads, dim_coefficient=4, attention_dropout=0, projection_dropout=0
+    x,
+    dim,
+    num_heads,
+    dim_coefficient=4,
+    attention_dropout=0,
+    projection_dropout=0,
 ):
     _, num_patch, channel = x.shape
     assert dim % num_heads == 0
@@ -147,7 +156,10 @@ def external_attention(
     # normalize attention map
     attn = layers.Softmax(axis=2)(attn)
     # dobule-normalization
-    attn = ops.divide(attn, ops.convert_to_tensor(1e-9) + ops.sum(attn, axis=-1, keepdims=True))
+    attn = ops.divide(
+        attn,
+        ops.convert_to_tensor(1e-9) + ops.sum(attn, axis=-1, keepdims=True),
+    )
     attn = layers.Dropout(attention_dropout)(attn)
     # a linear layer M_v
     x = layers.Dense(dim * dim_coefficient // num_heads)(attn)
@@ -200,7 +212,9 @@ def transformer_encoder(
         )
     elif attention_type == "self_attention":
         x = layers.MultiHeadAttention(
-            num_heads=num_heads, key_dim=embedding_dim, dropout=attention_dropout
+            num_heads=num_heads,
+            key_dim=embedding_dim,
+            dropout=attention_dropout,
         )(x, x)
     x = layers.add([x, residual_1])
     residual_2 = x
