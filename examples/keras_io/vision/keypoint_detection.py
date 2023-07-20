@@ -65,7 +65,6 @@ from imgaug.augmentables.kps import Keypoint
 import imgaug.augmenters as iaa
 
 from PIL import Image
-from sklearn.model_selection import train_test_split
 from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
@@ -91,9 +90,7 @@ dataframe to extract information for visualization purposes.
 
 IMG_DIR = "Images"
 JSON = "StanfordExtra_V12/StanfordExtra_v12.json"
-KEYPOINT_DEF = (
-    "https://github.com/benjiebob/StanfordExtra/raw/master/keypoint_definitions.csv"
-)
+KEYPOINT_DEF = "https://github.com/benjiebob/StanfordExtra/raw/master/keypoint_definitions.csv"
 
 # Load the ground-truth annotations.
 with open(JSON) as infile:
@@ -195,7 +192,9 @@ def visualize_keypoints(images, keypoints):
     fig, axes = plt.subplots(nrows=len(images), ncols=2, figsize=(16, 12))
     [ax.axis("off") for ax in np.ravel(axes)]
 
-    for (ax_orig, ax_all), image, current_keypoint in zip(axes, images, keypoints):
+    for (ax_orig, ax_all), image, current_keypoint in zip(
+        axes, images, keypoints
+    ):
         ax_orig.imshow(image)
         ax_all.imshow(image)
 
@@ -204,14 +203,21 @@ def visualize_keypoints(images, keypoints):
         if isinstance(current_keypoint, KeypointsOnImage):
             for idx, kp in enumerate(current_keypoint.keypoints):
                 ax_all.scatter(
-                    [kp.x], [kp.y], c=colours[idx], marker="x", s=50, linewidths=5
+                    [kp.x],
+                    [kp.y],
+                    c=colours[idx],
+                    marker="x",
+                    s=50,
+                    linewidths=5,
                 )
         else:
             current_keypoint = np.array(current_keypoint)
             # Since the last entry is the visibility flag, we discard it.
             current_keypoint = current_keypoint[:, :2]
             for idx, (x, y) in enumerate(current_keypoint):
-                ax_all.scatter([x], [y], c=colours[idx], marker="x", s=50, linewidths=5)
+                ax_all.scatter(
+                    [x], [y], c=colours[idx], marker="x", s=50, linewidths=5
+                )
 
     plt.tight_layout(pad=2.0)
     plt.show()
@@ -250,7 +256,7 @@ that applies data augmentation on batches of data using `imgaug`.
 """
 
 
-class KeyPointsDataset(keras.utils.Sequence):
+class KeyPointsDataset(keras.utils.PyDataset):
     def __init__(self, image_keys, aug, batch_size=BATCH_SIZE, train=True):
         super().__init__()
         self.image_keys = image_keys
@@ -268,14 +274,18 @@ class KeyPointsDataset(keras.utils.Sequence):
             np.random.shuffle(self.indexes)
 
     def __getitem__(self, index):
-        indexes = self.indexes[index * self.batch_size : (index + 1) * self.batch_size]
+        indexes = self.indexes[
+            index * self.batch_size : (index + 1) * self.batch_size
+        ]
         image_keys_temp = [self.image_keys[k] for k in indexes]
         (images, keypoints) = self.__data_generation(image_keys_temp)
 
         return (images, keypoints)
 
     def __data_generation(self, image_keys_temp):
-        batch_images = np.empty((self.batch_size, IMG_SIZE, IMG_SIZE, 3), dtype="int")
+        batch_images = np.empty(
+            (self.batch_size, IMG_SIZE, IMG_SIZE, 3), dtype="int"
+        )
         batch_keypoints = np.empty(
             (self.batch_size, 1, 1, NUM_KEYPOINTS), dtype="float32"
         )
@@ -288,14 +298,18 @@ class KeyPointsDataset(keras.utils.Sequence):
             # To apply our data augmentation pipeline, we first need to
             # form Keypoint objects with the original coordinates.
             for j in range(0, len(current_keypoint)):
-                kps.append(Keypoint(x=current_keypoint[j][0], y=current_keypoint[j][1]))
+                kps.append(
+                    Keypoint(x=current_keypoint[j][0], y=current_keypoint[j][1])
+                )
 
             # We then project the original image and its keypoint coordinates.
             current_image = data["img_data"]
             kps_obj = KeypointsOnImage(kps, shape=current_image.shape)
 
             # Apply the augmentation pipeline.
-            (new_image, new_kps_obj) = self.aug(image=current_image, keypoints=kps_obj)
+            (new_image, new_kps_obj) = self.aug(
+                image=current_image, keypoints=kps_obj
+            )
             batch_images[i,] = new_image
 
             # Parse the coordinates from the new keypoint object.
@@ -377,7 +391,9 @@ head for predicting coordinates.
 def get_model():
     # Load the pre-trained weights of MobileNetV2 and freeze the weights
     backbone = keras.applications.MobileNetV2(
-        weights="imagenet", include_top=False, input_shape=(IMG_SIZE, IMG_SIZE, 3)
+        weights="imagenet",
+        include_top=False,
+        input_shape=(IMG_SIZE, IMG_SIZE, 3),
     )
     backbone.trainable = False
 
