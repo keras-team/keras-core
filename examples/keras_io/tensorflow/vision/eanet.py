@@ -32,13 +32,13 @@ pip install -U tensorflow-addons
 ## Setup
 """
 
-import numpy as np
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
-import tensorflow_addons as tfa
 import matplotlib.pyplot as plt
+import numpy as np
 
+import tensorflow as tf
+import keras_core as keras
+from keras_core import layers
+from keras_core import ops
 
 """
 ## Prepare the data
@@ -144,21 +144,21 @@ def external_attention(
 
     x = layers.Dense(dim * dim_coefficient)(x)
     # create tensor [batch_size, num_patches, num_heads, dim*dim_coefficient//num_heads]
-    x = tf.reshape(
-        x, shape=(-1, num_patch, num_heads, dim * dim_coefficient // num_heads)
+    x = ops.reshape(
+        x, (-1, num_patch, num_heads, dim * dim_coefficient // num_heads)
     )
-    x = tf.transpose(x, perm=[0, 2, 1, 3])
+    x = ops.transpose(x, [0, 2, 1, 3])
     # a linear layer M_k
     attn = layers.Dense(dim // dim_coefficient)(x)
     # normalize attention map
     attn = layers.Softmax(axis=2)(attn)
     # dobule-normalization
-    attn = attn / (1e-9 + tf.reduce_sum(attn, axis=-1, keepdims=True))
+    attn = attn / (ops.convert_to_tensor(1e-9) + ops.sum(attn, axis=-1, keepdims=True))
     attn = layers.Dropout(attention_dropout)(attn)
     # a linear layer M_v
     x = layers.Dense(dim * dim_coefficient // num_heads)(attn)
-    x = tf.transpose(x, perm=[0, 2, 1, 3])
-    x = tf.reshape(x, [-1, num_patch, dim * dim_coefficient])
+    x = ops.transpose(x, [0, 2, 1, 3])
+    x = ops.reshape(x, [-1, num_patch, dim * dim_coefficient])
     # a linear layer to project original dim
     x = layers.Dense(dim)(x)
     x = layers.Dropout(projection_dropout)(x)
@@ -256,7 +256,7 @@ def get_model(attention_type="external_attention"):
             attention_type,
         )
 
-    x = layers.GlobalAvgPool1D()(x)
+    x = layers.GlobalAveragePooling1D()(x)
     outputs = layers.Dense(num_classes, activation="softmax")(x)
     model = keras.Model(inputs=inputs, outputs=outputs)
     return model
@@ -272,7 +272,7 @@ model = get_model(attention_type="external_attention")
 
 model.compile(
     loss=keras.losses.CategoricalCrossentropy(label_smoothing=label_smoothing),
-    optimizer=tfa.optimizers.AdamW(
+    optimizer=keras.optimizers.AdamW(
         learning_rate=learning_rate, weight_decay=weight_decay
     ),
     metrics=[
