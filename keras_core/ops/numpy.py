@@ -3470,7 +3470,9 @@ class FloorDiv(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
-@keras_core_export(["keras_core.ops.floor_divide", "keras_core.ops.numpy.floor_divide"])
+@keras_core_export(
+    ["keras_core.ops.floor_divide", "keras_core.ops.numpy.floor_divide"]
+)
 def floor_divide(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return FloorDiv().symbolic_call(x1, x2)
@@ -3488,7 +3490,9 @@ class LogicalXor(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
-@keras_core_export(["keras_core.ops.logical_xor", "keras_core.ops.numpy.logical_xor"])
+@keras_core_export(
+    ["keras_core.ops.logical_xor", "keras_core.ops.numpy.logical_xor"]
+)
 def logical_xor(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return LogicalXor().symbolic_call(x1, x2)
