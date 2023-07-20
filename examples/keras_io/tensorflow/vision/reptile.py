@@ -1,9 +1,8 @@
 """
 Title: Few-Shot learning with Reptile
 Author: [ADMoreau](https://github.com/ADMoreau)
-Converted to Keras Core By: [Muhammad Anas Raza](https://anasrz.com)
 Date created: 2020/05/21
-Last modified: 2023/07/20
+Last modified: 2020/05/30
 Description: Few-shot classification on the Omniglot dataset using Reptile.
 Accelerator: GPU
 """
@@ -18,17 +17,13 @@ The algorithm works by performing Stochastic Gradient Descent using the
 difference between weights trained on a mini-batch of never-seen-before data and the
 model weights prior to training over a fixed number of meta-iterations.
 """
-import os
-
-os.environ["KERAS_BACKEND"] = "tensorflow"
-
-import keras_core as keras
-from keras_core import layers
 
 import matplotlib.pyplot as plt
 import numpy as np
 import random
 import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
 import tensorflow_datasets as tfds
 
 """
@@ -73,9 +68,7 @@ class Dataset:
         # Download the tfrecord files containing the omniglot data and convert to a
         # dataset.
         split = "train" if training else "test"
-        ds = tfds.load(
-            "omniglot", split=split, as_supervised=True, shuffle_files=False
-        )
+        ds = tfds.load("omniglot", split=split, as_supervised=True, shuffle_files=False)
         # Iterate over the dataset to get each individual image and its class,
         # and put that data into a dictionary.
         self.data = {}
@@ -229,9 +222,7 @@ for meta_iter in range(meta_iters):
             for images, labels in train_set:
                 with tf.GradientTape() as tape:
                     preds = model(images)
-                    loss = keras.losses.sparse_categorical_crossentropy(
-                        labels, preds
-                    )
+                    loss = keras.losses.sparse_categorical_crossentropy(labels, preds)
                 grads = tape.gradient(loss, model.trainable_weights)
                 optimizer.apply_gradients(zip(grads, model.trainable_weights))
             test_preds = model.predict(test_images)
@@ -244,8 +235,7 @@ for meta_iter in range(meta_iters):
         testing.append(accuracies[1])
         if meta_iter % 100 == 0:
             print(
-                "batch %d: train=%f test=%f"
-                % (meta_iter, accuracies[0], accuracies[1])
+                "batch %d: train=%f test=%f" % (meta_iter, accuracies[0], accuracies[1])
             )
 
 """
@@ -255,9 +245,7 @@ for meta_iter in range(meta_iters):
 # First, some preprocessing to smooth the training and testing arrays for display.
 window_length = 100
 train_s = np.r_[
-    training[window_length - 1 : 0 : -1],
-    training,
-    training[-1:-window_length:-1],
+    training[window_length - 1 : 0 : -1], training, training[-1:-window_length:-1]
 ]
 test_s = np.r_[
     testing[window_length - 1 : 0 : -1], testing, testing[-1:-window_length:-1]
