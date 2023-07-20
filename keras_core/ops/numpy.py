@@ -3496,4 +3496,4 @@ class LogicalXor(Operation):
 def logical_xor(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return LogicalXor().symbolic_call(x1, x2)
-    return backend.numpy.xor(x1, x2)
+    return backend.numpy.logical_xor(x1, x2)
