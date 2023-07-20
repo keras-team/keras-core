@@ -9,7 +9,7 @@ import rich.markup
 # See https://github.com/keras-team/keras-core/issues/448
 # for below imports
 import rich.table
-from tensorflow import nest
+import tree
 
 from keras_core import backend
 from keras_core.utils import dtype_utils
@@ -86,7 +86,7 @@ def format_layer_shape(layer):
 
     for i in range(len(layer._inbound_nodes)):
         outputs = layer._inbound_nodes[i].output_tensors
-        output_shapes = nest.map_structure(
+        output_shapes = tree.map_structure(
             lambda x: format_shape(x.shape), outputs
         )
     if len(output_shapes) == 1:
@@ -153,7 +153,7 @@ def print_summary(
         nodes = []
         for v in nodes_by_depth:
             if (len(v) > 1) or (
-                len(v) == 1 and len(nest.flatten(v[0].input_tensors)) > 1
+                len(v) == 1 and len(tree.flatten(v[0].input_tensors)) > 1
             ):
                 # if the model has multiple nodes
                 # or if the nodes have multiple inbound_layers
@@ -192,8 +192,8 @@ def print_summary(
             relevant_nodes += v
 
     if show_trainable:
-        default_line_length += 8
-        positions = [p * 0.88 for p in positions] + [1.0]
+        default_line_length += 12
+        positions = [p * 0.90 for p in positions] + [1.0]
         header.append("Trainable")
         alignment.append("center")
 
@@ -262,11 +262,14 @@ def print_summary(
         if not sequential_like:
             fields.append(get_connections(layer))
         if show_trainable:
-            fields.append(
-                bold_text("Y", color=34)
-                if layer.trainable
-                else bold_text("N", color=9)
-            )
+            if layer.weights:
+                fields.append(
+                    bold_text("Y", color=34)
+                    if layer.trainable
+                    else bold_text("N", color=9)
+                )
+            else:
+                fields.append(bold_text("-"))
         return fields
 
     def print_layer(layer, nested_level=0):

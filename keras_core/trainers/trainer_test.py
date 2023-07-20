@@ -21,6 +21,8 @@ elif backend.backend() == "tensorflow":
     from keras_core.backend.tensorflow.trainer import (
         TensorFlowTrainer as Trainer,
     )
+elif backend.backend() == "numpy":
+    from keras_core.backend.numpy.trainer import NumpyTrainer as Trainer
 else:
     raise ImportError(f"Invalid backend: {backend.backend()}")
 
@@ -70,6 +72,7 @@ class TrainingTestingLayer(layers.Layer, Trainer):
         return x * 0
 
 
+@pytest.mark.requires_trainable_backend
 class TestTrainer(testing.TestCase, parameterized.TestCase):
     def test_metric_tracking(self):
         class ModelWithMetric(layers.Dense, Trainer):
@@ -108,6 +111,22 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
 
         # And those weights are tracked at the model level
         self.assertEqual(len(model.metrics_variables), 6)
+
+        # Models with only weighted_metrics should have the same 3 metrics
+        model_weighted = ModelWithMetric(units=3)
+        model_weighted.compile(
+            optimizer=optimizers.SGD(),
+            loss=losses.MeanSquaredError(),
+            weighted_metrics=[metrics.MeanSquaredError()],
+        )
+        model_weighted.fit(
+            x,
+            y,
+            batch_size=2,
+            epochs=1,
+            sample_weight=np.ones(2),
+        )
+        self.assertEqual(len(model_weighted.metrics), 3)
 
     @parameterized.named_parameters(
         [
@@ -497,7 +516,7 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         reason="Only tensorflow supports raggeds",
     )
     def test_trainer_with_raggeds(self, model_class):
-        import tensorflow as tf
+        from keras_core.utils.module_utils import tensorflow as tf
 
         def loss_fn(y, y_pred, sample_weight=None):
             return 0

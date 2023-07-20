@@ -1,10 +1,10 @@
 import numpy as np
-import tensorflow as tf
 
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
 from keras_core.utils import backend_utils
+from keras_core.utils.module_utils import tensorflow as tf
 
 HORIZONTAL = "horizontal"
 VERTICAL = "vertical"
@@ -46,6 +46,12 @@ class RandomFlip(Layer):
     def __init__(
         self, mode=HORIZONTAL_AND_VERTICAL, seed=None, name=None, **kwargs
     ):
+        if not tf.available:
+            raise ImportError(
+                "Layer RandomFlip requires TensorFlow. "
+                "Install it via `pip install tensorflow`."
+            )
+
         super().__init__(name=name)
         self.seed = seed or backend.random.make_default_seed()
         self.layer = tf.keras.layers.RandomFlip(

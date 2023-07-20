@@ -1,4 +1,4 @@
-from tensorflow import nest
+import tree
 
 from keras_core import activations
 from keras_core import backend
@@ -179,7 +179,7 @@ class GRUCell(Layer, DropoutRNNCell):
 
     def call(self, inputs, states, training=False):
         h_tm1 = (
-            states[0] if nest.is_nested(states) else states
+            states[0] if tree.is_nested(states) else states
         )  # previous state
 
         dp_mask = self.get_dropout_mask(inputs)
@@ -284,7 +284,7 @@ class GRUCell(Layer, DropoutRNNCell):
 
         # previous and candidate state mixed by update gate
         h = z * h_tm1 + (1 - z) * hh
-        new_state = [h] if nest.is_nested(states) else h
+        new_state = [h] if tree.is_nested(states) else h
         return h, new_state
 
     def get_config(self):
@@ -511,9 +511,9 @@ class GRU(RNN):
         self.input_spec = InputSpec(ndim=3)
 
     def inner_loop(self, sequences, initial_state, mask, training=False):
-        if nest.is_nested(initial_state):
+        if tree.is_nested(initial_state):
             initial_state = initial_state[0]
-        if nest.is_nested(mask):
+        if tree.is_nested(mask):
             mask = mask[0]
 
         if not self.dropout and not self.recurrent_dropout:
@@ -522,7 +522,7 @@ class GRU(RNN):
                 # implementation of the inner GRU loop. In the case of
                 # TF for instance, it will leverage cuDNN when feasible, and
                 # it will raise NotImplementedError otherwise.
-                return backend.gru(
+                out = backend.gru(
                     sequences,
                     initial_state,
                     mask,
@@ -536,6 +536,11 @@ class GRU(RNN):
                     unroll=self.unroll,
                     reset_after=self.cell.reset_after,
                 )
+                # We disable jit_compile for the model in this case,
+                # since cuDNN ops aren't XLA compatible.
+                if backend.backend() == "tensorflow":
+                    self.supports_jit = False
+                return out
             except NotImplementedError:
                 pass
         return super().inner_loop(
