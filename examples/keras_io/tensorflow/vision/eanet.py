@@ -35,7 +35,7 @@ pip install -U tensorflow-addons
 import matplotlib.pyplot as plt
 import numpy as np
 
-import tensorflow as tf
+from tensorflow import image as tf_image
 import keras_core as keras
 from keras_core import layers
 from keras_core import ops
@@ -105,8 +105,8 @@ class PatchExtract(layers.Layer):
         self.patch_size = patch_size
 
     def call(self, images):
-        batch_size = tf.shape(images)[0]
-        patches = tf.image.extract_patches(
+        batch_size = ops.shape(images)[0]
+        patches = tf_image.extract_patches(
             images=images,
             sizes=(1, self.patch_size, self.patch_size, 1),
             strides=(1, self.patch_size, self.patch_size, 1),
@@ -115,7 +115,7 @@ class PatchExtract(layers.Layer):
         )
         patch_dim = patches.shape[-1]
         patch_num = patches.shape[1]
-        return tf.reshape(patches, (batch_size, patch_num * patch_num, patch_dim))
+        return ops.reshape(patches, (batch_size, patch_num * patch_num, patch_dim))
 
 
 class PatchEmbedding(layers.Layer):
@@ -126,7 +126,7 @@ class PatchEmbedding(layers.Layer):
         self.pos_embed = layers.Embedding(input_dim=num_patch, output_dim=embed_dim)
 
     def call(self, patch):
-        pos = tf.range(start=0, limit=self.num_patch, delta=1)
+        pos = ops.arange(start=0, stop=self.num_patch, step=1)
         return self.proj(patch) + self.pos_embed(pos)
 
 
@@ -171,7 +171,7 @@ def external_attention(
 
 
 def mlp(x, embedding_dim, mlp_dim, drop_rate=0.2):
-    x = layers.Dense(mlp_dim, activation=tf.nn.gelu)(x)
+    x = layers.Dense(mlp_dim, activation=ops.gelu)(x)
     x = layers.Dropout(drop_rate)(x)
     x = layers.Dense(embedding_dim)(x)
     x = layers.Dropout(drop_rate)(x)
