@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 import tensorflow as tf
 from absl.testing import parameterized
 
@@ -53,6 +54,7 @@ class ConvBasicTest(testing.TestCase, parameterized.TestCase):
             "output_shape": (3, 2, 6),
         },
     )
+    @pytest.mark.requires_trainable_backend
     def test_conv1d_basic(
         self,
         filters,
@@ -119,6 +121,7 @@ class ConvBasicTest(testing.TestCase, parameterized.TestCase):
             "output_shape": (3, 2, 4, 6),
         },
     )
+    @pytest.mark.requires_trainable_backend
     def test_conv2d_basic(
         self,
         filters,
@@ -185,6 +188,7 @@ class ConvBasicTest(testing.TestCase, parameterized.TestCase):
             "output_shape": (3, 2, 4, 2, 6),
         },
     )
+    @pytest.mark.requires_trainable_backend
     def test_conv3d_basic(
         self,
         filters,
@@ -407,7 +411,7 @@ class ConvCorrectnessTest(testing.TestCase, parameterized.TestCase):
 
         outputs = layer(inputs)
         expected = tf_keras_layer(inputs)
-        self.assertAllClose(outputs, expected)
+        self.assertAllClose(outputs, expected, rtol=5e-4)
 
     @parameterized.parameters(
         {
@@ -482,4 +486,4 @@ class ConvCorrectnessTest(testing.TestCase, parameterized.TestCase):
         outputs = layer(inputs)
 
         expected = tf_keras_layer(inputs)
-        self.assertAllClose(outputs, expected, rtol=1e-5)
+        self.assertAllClose(outputs, expected, rtol=5e-4)

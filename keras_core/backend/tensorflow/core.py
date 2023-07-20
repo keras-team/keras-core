@@ -28,7 +28,7 @@ class Variable(
         )
 
     def _direct_assign(self, value):
-        self.value.assign(value)
+        self._value.assign(tf.cast(value, self._value.dtype))
 
     def _convert_to_tensor(self, value, dtype=None):
         return convert_to_tensor(value, dtype=dtype)
@@ -141,7 +141,11 @@ def scatter_update(inputs, indices, updates):
     return tf.tensor_scatter_nd_update(inputs, indices, updates)
 
 
-def block_update(inputs, start_indices, updates):
+def slice(inputs, start_indices, shape):
+    return tf.slice(inputs, start_indices, shape)
+
+
+def slice_update(inputs, start_indices, updates):
     return dynamic_update_slice(inputs, updates, start_indices)
 
 
@@ -157,3 +161,7 @@ def while_loop(
         loop_vars,
         maximum_iterations=maximum_iterations,
     )
+
+
+def stop_gradient(variable):
+    return tf.stop_gradient(variable)

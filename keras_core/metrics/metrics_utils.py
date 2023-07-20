@@ -3,7 +3,7 @@ from enum import Enum
 import numpy as np
 
 from keras_core import backend
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core.losses.loss import squeeze_to_same_rank
 from keras_core.utils.python_utils import to_list
 
@@ -195,7 +195,7 @@ def _update_confusion_matrix_variables_optimized(
         sample_weights = 1.0
     else:
         sample_weights = ops.broadcast_to(
-            ops.cast(sample_weights, dtype=y_pred.dtype), y_pred.shape
+            ops.cast(sample_weights, dtype=y_pred.dtype), ops.shape(y_pred)
         )
         if not multi_label:
             sample_weights = ops.reshape(sample_weights, [-1])
@@ -203,7 +203,7 @@ def _update_confusion_matrix_variables_optimized(
         label_weights = 1.0
     else:
         label_weights = ops.expand_dims(label_weights, 0)
-        label_weights = ops.broadcast_to(label_weights, y_pred.shape)
+        label_weights = ops.broadcast_to(label_weights, ops.shape(y_pred))
         if not multi_label:
             label_weights = ops.reshape(label_weights, [-1])
     weights = ops.cast(
@@ -226,7 +226,10 @@ def _update_confusion_matrix_variables_optimized(
     # Since the predict value has to be strictly greater than the thresholds,
     # eg, buckets like [0, 0.5], (0.5, 1], and 0.5 belongs to first bucket.
     # We have to use math.ceil(val) - 1 for the bucket.
-    bucket_indices = ops.ceil(y_pred * (num_thresholds - 1)) - 1
+    bucket_indices = (
+        ops.ceil(y_pred * (ops.cast(num_thresholds, dtype=y_pred.dtype) - 1))
+        - 1
+    )
 
     if thresholds_with_epsilon:
         # In this case, the first bucket should actually take into account since
@@ -506,7 +509,7 @@ def update_confusion_matrix_variables(
         data_tiles = [num_thresholds, 1]
 
     thresh_tiled = ops.tile(
-        ops.reshape(thresholds, thresh_pretile_shape), ops.array(thresh_tiles)
+        ops.reshape(thresholds, thresh_pretile_shape), thresh_tiles
     )
 
     # Tile the predictions for every threshold.
@@ -530,7 +533,7 @@ def update_confusion_matrix_variables(
 
     if label_weights is not None and not multi_label:
         label_weights = ops.expand_dims(label_weights, 0)
-        label_weights = ops.broadcast_to(label_weights, y_pred.shape)
+        label_weights = ops.broadcast_to(label_weights, ops.shape(y_pred))
         label_weights_tiled = ops.tile(
             ops.reshape(label_weights, thresh_tiles), data_tiles
         )

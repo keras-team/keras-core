@@ -1,6 +1,6 @@
 import math
 
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core.api_export import keras_core_export
 from keras_core.utils.numerical_utils import normalize
 
@@ -197,8 +197,8 @@ class L1L2(Regularizer):
         validate_float_arg(l1, name="l1")
         validate_float_arg(l2, name="l2")
 
-        self.l1 = ops.convert_to_tensor(l1)
-        self.l2 = ops.convert_to_tensor(l2)
+        self.l1 = l1
+        self.l2 = l2
 
     def __call__(self, x):
         regularization = ops.convert_to_tensor(0.0, dtype=x.dtype)
@@ -212,7 +212,7 @@ class L1L2(Regularizer):
         return {"l1": float(self.l1), "l2": float(self.l2)}
 
 
-@keras_core_export("keras_core.regularizers.L1")
+@keras_core_export(["keras_core.regularizers.L1", "keras_core.regularizers.l1"])
 class L1(Regularizer):
     """A regularizer that applies a L1 regularization penalty.
 
@@ -241,7 +241,7 @@ class L1(Regularizer):
         return {"l1": float(self.l1)}
 
 
-@keras_core_export("keras_core.regularizers.L2")
+@keras_core_export(["keras_core.regularizers.L2", "keras_core.regularizers.l2"])
 class L2(Regularizer):
     """A regularizer that applies a L2 regularization penalty.
 
@@ -261,7 +261,7 @@ class L2(Regularizer):
     def __init__(self, l2=0.01):
         l2 = 0.01 if l2 is None else l2
         validate_float_arg(l2, name="l2")
-        self.l2 = ops.convert_to_tensor(l2)
+        self.l2 = l2
 
     def __call__(self, x):
         return self.l2 * ops.sum(ops.square(x))
@@ -270,7 +270,12 @@ class L2(Regularizer):
         return {"l2": float(self.l2)}
 
 
-@keras_core_export("keras_core.regularizers.OrthogonalRegularizer")
+@keras_core_export(
+    [
+        "keras_core.regularizers.OrthogonalRegularizer",
+        "keras_core.regularizers.orthogonal_regularizer",
+    ]
+)
 class OrthogonalRegularizer(Regularizer):
     """Regularizer that encourages input vectors to be orthogonal to each other.
 

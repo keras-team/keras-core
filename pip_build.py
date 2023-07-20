@@ -22,6 +22,9 @@ import shutil
 
 import namex
 
+# Needed because importing torch after TF causes the runtime to crash
+import torch  # noqa: F401
+
 package = "keras_core"
 build_directory = "tmp_build_dir"
 dist_directory = "dist"
@@ -57,7 +60,7 @@ def build():
         namex.generate_api_files(package, code_directory="src", verbose=True)
 
         # Make sure to export the __version__ string
-        from keras_core.src import __version__  # noqa: E402
+        from keras_core.src.version import __version__  # noqa: E402
 
         with open(os.path.join(package, "__init__.py")) as f:
             init_contents = f.read()

@@ -1,8 +1,8 @@
-import tensorflow as tf
-
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
+from keras_core.utils import backend_utils
+from keras_core.utils.module_utils import tensorflow as tf
 
 
 @keras_core_export("keras_core.layers.HashedCrossing")
@@ -24,6 +24,9 @@ class HashedCrossing(Layer):
     It can also always be used as part of an input preprocessing pipeline
     with any backend (outside the model itself), which is how we recommend
     to use this layer.
+
+    **Note:** This layer is safe to use inside a `tf.data` pipeline
+    (independently of which backend you're using).
 
     Args:
         num_bins: Number of hash bins.
@@ -72,6 +75,12 @@ class HashedCrossing(Layer):
         dtype=None,
         **kwargs,
     ):
+        if not tf.available:
+            raise ImportError(
+                "Layer HashedCrossing requires TensorFlow. "
+                "Install it via `pip install tensorflow`."
+            )
+
         if output_mode == "int" and dtype is None:
             dtype = "int64"
         super().__init__(name=name, dtype=dtype)
@@ -96,11 +105,39 @@ class HashedCrossing(Layer):
         self.supports_jit = False
 
     def compute_output_shape(self, input_shape):
-        return tuple(self.layer.compute_output_shape(input_shape))
+        if (
+            not len(input_shape) == 2
+            or not isinstance(input_shape[0], tuple)
+            or not isinstance(input_shape[1], tuple)
+        ):
+            raise ValueError(
+                "Expected as input a list/tuple of 2 tensors. "
+                f"Received input_shape={input_shape}"
+            )
+        if input_shape[0][-1] != input_shape[1][-1]:
+            raise ValueError(
+                "Expected the two input tensors to have identical shapes. "
+                f"Received input_shape={input_shape}"
+            )
+
+        if not input_shape:
+            if self.output_mode == "int":
+                return ()
+            return (self.num_bins,)
+        if self.output_mode == "int":
+            return input_shape[0]
+
+        if self.output_mode == "one_hot" and input_shape[0][-1] != 1:
+            output_shape = tuple(input_shape[0]) + (self.num_bins,)
+        output_shape = tuple(input_shape[0])[:-1] + (self.num_bins,)
+        return output_shape
 
     def call(self, inputs):
         outputs = self.layer.call(inputs)
-        if backend.backend() != "tensorflow" and tf.executing_eagerly():
+        if (
+            backend.backend() != "tensorflow"
+            and not backend_utils.in_tf_graph()
+        ):
             outputs = backend.convert_to_tensor(outputs)
         return outputs
 

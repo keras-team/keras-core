@@ -4,10 +4,11 @@ import tempfile
 import unittest
 
 import numpy as np
-from tensorflow import nest
+import tree
 
 from keras_core import backend
-from keras_core import operations as ops
+from keras_core import ops
+from keras_core import utils
 from keras_core.models import Model
 from keras_core.utils import traceback_utils
 
@@ -45,6 +46,10 @@ class TestCase(unittest.TestCase):
         )
 
     def assertAlmostEqual(self, x1, x2, decimal=3, msg=None):
+        if not isinstance(x1, np.ndarray):
+            x1 = backend.convert_to_numpy(x1)
+        if not isinstance(x2, np.ndarray):
+            x2 = backend.convert_to_numpy(x2)
         np.testing.assert_almost_equal(x1, x2, decimal=decimal)
 
     def assertAllEqual(self, x1, x2, msg=None):
@@ -53,6 +58,8 @@ class TestCase(unittest.TestCase):
             if isinstance(e1, (list, tuple)) or isinstance(e2, (list, tuple)):
                 self.assertAllEqual(e1, e2, msg=msg)
             else:
+                e1 = backend.convert_to_numpy(e1)
+                e2 = backend.convert_to_numpy(e2)
                 self.assertEqual(e1, e2, msg=msg)
 
     def assertLen(self, iterable, expected_len, msg=None):
@@ -250,7 +257,7 @@ class TestCase(unittest.TestCase):
                         msg="Unexpected output shape",
                     )
                 if expected_output_dtype is not None:
-                    output_dtype = nest.flatten(output)[0].dtype
+                    output_dtype = tree.flatten(output)[0].dtype
                     self.assertEqual(
                         expected_output_dtype,
                         backend.standardize_dtype(output_dtype),
@@ -260,7 +267,7 @@ class TestCase(unittest.TestCase):
                 if expected_output is not None:
                     self.assertEqual(type(expected_output), type(output))
                     for ref_v, v in zip(
-                        nest.flatten(expected_output), nest.flatten(output)
+                        tree.flatten(expected_output), tree.flatten(output)
                     ):
                         self.assertAllClose(
                             ref_v, v, msg="Unexpected output value"
@@ -279,10 +286,10 @@ class TestCase(unittest.TestCase):
 
             model = TestModel(layer)
             model.compile(optimizer="sgd", loss="mse", jit_compile=True)
-            input_data = nest.map_structure(
+            input_data = tree.map_structure(
                 lambda x: backend.convert_to_numpy(x), input_data
             )
-            output_data = nest.map_structure(
+            output_data = tree.map_structure(
                 lambda x: backend.convert_to_numpy(x), output_data
             )
             model.fit(input_data, output_data, verbose=0)
@@ -336,7 +343,9 @@ def create_keras_tensors(input_shape, dtype):
         return [keras_tensor.KerasTensor(s, dtype=dtype) for s in input_shape]
     if isinstance(input_shape, dict):
         return {
-            k.removesuffix("_shape"): keras_tensor.KerasTensor(v, dtype=dtype)
+            utils.removesuffix(k, "_shape"): keras_tensor.KerasTensor(
+                v, dtype=dtype
+            )
             for k, v in input_shape.items()
         }
 
@@ -370,6 +379,6 @@ def create_eager_tensors(input_shape, dtype):
         return [create_fn(s, dtype=dtype) for s in input_shape]
     if isinstance(input_shape, dict):
         return {
-            k.removesuffix("_shape"): create_fn(v, dtype=dtype)
+            utils.removesuffix(k, "_shape"): create_fn(v, dtype=dtype)
             for k, v in input_shape.items()
         }

@@ -62,7 +62,6 @@ class KerasVariable:
     def _deferred_initialize(self):
         if self._value is not None:
             raise ValueError(f"Variable {self.name} is already initialized.")
-        from keras_core.backend.common.stateless_scope import in_stateless_scope
 
         if in_stateless_scope():
             raise ValueError(
@@ -116,6 +115,12 @@ class KerasVariable:
             scope.add_update((self, value))
         else:
             self._direct_assign(value)
+
+    def assign_add(self, value):
+        self.assign(self + value)
+
+    def assign_sub(self, value):
+        self.assign(self - value)
 
     @property
     def dtype(self):
@@ -377,12 +382,6 @@ PYTHON_DTYPES_MAP = {
     str: "string",
 }
 
-PYTHON_DTYPES_MAP = {
-    bool: "bool",
-    int: "int",  # TBD by backend
-    float: "float32",
-}
-
 
 def standardize_dtype(dtype):
     if dtype is None:
@@ -424,18 +423,11 @@ def standardize_shape(
                 f"Cannot convert '{shape}' to a shape. "
                 f"Found invalid entry '{e}'. "
             )
-            if allow_dynamic_batch_size:
+            if not allow_dynamic_batch_size and e is None:
                 msg += (
                     "Dynamic shapes (shapes with `None` entries) "
-                    f"are not allowed with the {config.backend()}, "
-                    "except for the batch size (axis 0)."
-                )
-            else:
-                msg += (
-                    "Dynamic shapes (shapes with `None` entries) "
-                    f"are not allowed with the {config.backend()}. "
-                    "All dimensions should be positive integers, "
-                    "including the batch size (axis 0)."
+                    f"are not allowed with the {config.backend()} "
+                    "backend."
                 )
             raise ValueError(msg)
         if e < 0:
@@ -459,6 +451,11 @@ def shape_equal(a, b):
 def is_float_dtype(dtype):
     dtype = standardize_dtype(dtype)
     return dtype.startswith("float") or dtype.startswith("bfloat")
+
+
+def is_int_dtype(dtype):
+    dtype = standardize_dtype(dtype)
+    return dtype.startswith("int") or dtype.startswith("uint")
 
 
 def get_autocast_scope():

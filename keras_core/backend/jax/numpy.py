@@ -1,5 +1,7 @@
 import jax.numpy as jnp
 
+from keras_core.backend import config
+from keras_core.backend.jax.core import cast
 from keras_core.backend.jax.core import convert_to_tensor
 
 
@@ -43,7 +45,14 @@ def multiply(x1, x2):
 
 
 def mean(x, axis=None, keepdims=False):
-    return jnp.mean(x, axis=axis, keepdims=keepdims)
+    # `jnp.mean` does not handle low precision (e.g., float16) overflow
+    # correctly, so we compute with float32 and cast back to the original type.
+    outputs = jnp.mean(x, axis=axis, keepdims=keepdims, dtype=jnp.float32)
+    dtype = getattr(x, "dtype", None)
+    if hasattr(dtype, "name") and "float" in dtype.name:
+        return cast(outputs, dtype)
+    else:
+        return cast(outputs, config.floatx())
 
 
 def max(x, axis=None, keepdims=False, initial=None):
@@ -471,6 +480,8 @@ def tan(x):
 
 
 def tensordot(x1, x2, axes=2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.tensordot(x1, x2, axes=axes)
 
 
@@ -545,7 +556,14 @@ def transpose(x, axes=None):
 
 
 def var(x, axis=None, keepdims=False):
-    return jnp.var(x, axis=axis, keepdims=keepdims)
+    # `jnp.var` does not handle low precision (e.g., float16) overflow
+    # correctly, so we compute with float32 and cast back to the original type.
+    outputs = jnp.var(x, axis=axis, keepdims=keepdims, dtype=jnp.float32)
+    dtype = getattr(x, "dtype", None)
+    if hasattr(dtype, "name") and "float" in dtype.name:
+        return cast(outputs, dtype)
+    else:
+        return cast(outputs, config.floatx())
 
 
 def sum(x, axis=None, keepdims=False):

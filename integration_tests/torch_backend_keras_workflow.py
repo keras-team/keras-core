@@ -2,7 +2,7 @@ import numpy as np
 
 import keras_core
 from keras_core import layers
-from keras_core import operations as ops
+from keras_core import ops
 
 keras_core.utils.set_random_seed(1337)
 x = np.random.rand(100, 32, 32, 3)
@@ -29,11 +29,16 @@ history = model.fit(
 model.evaluate(x, y, verbose=0)
 model.predict(x, verbose=0)
 
+# Test on batch functions
+model.train_on_batch(x, y)
+model.test_on_batch(x, y)
+model.predict_on_batch(x)
+
 # Test functional model.
 inputs = keras_core.Input(shape=(32, 32, 3))
 outputs = layers.Conv2D(filters=10, kernel_size=3)(inputs)
 outputs = layers.GlobalAveragePooling2D()(outputs)
-outputs = layers.Dense(1)(outputs)
+outputs = layers.Dense(1, activation="sigmoid")(outputs)
 model = keras_core.Model(inputs, outputs)
 model.compile(
     loss="binary_crossentropy", optimizer="adam", metrics=["mae", "accuracy"]

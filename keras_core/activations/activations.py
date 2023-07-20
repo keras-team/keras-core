@@ -1,5 +1,5 @@
 from keras_core import backend
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core.api_export import keras_core_export
 
 
@@ -416,6 +416,7 @@ def mish(x):
 
     - [Misra, 2019](https://arxiv.org/abs/1908.08681)
     """
+    x = backend.convert_to_tensor(x)
     return Mish.static_call(x)
 
 

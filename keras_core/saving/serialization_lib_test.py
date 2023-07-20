@@ -3,9 +3,10 @@
 import json
 
 import numpy as np
+import pytest
 
 import keras_core
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core import testing
 from keras_core.saving import serialization_lib
 
@@ -87,8 +88,17 @@ class SerializationLibTest(testing.TestCase):
             self.assertEqual(serialized, reserialized)
 
     def test_builtin_layers(self):
-        serialized, _, reserialized = self.roundtrip(keras_core.layers.Dense(3))
+        layer = keras_core.layers.Dense(
+            3,
+            name="foo",
+            trainable=False,
+            dtype="float16",
+        )
+        serialized, restored, reserialized = self.roundtrip(layer)
         self.assertEqual(serialized, reserialized)
+        self.assertEqual(layer.name, restored.name)
+        self.assertEqual(layer.trainable, restored.trainable)
+        self.assertEqual(layer.compute_dtype, restored.compute_dtype)
 
     def test_tensors_and_shapes(self):
         x = ops.random.normal((2, 2), dtype="float64")
@@ -179,6 +189,27 @@ class SerializationLibTest(testing.TestCase):
     #     y2 = new_lmbda(x)
     #     self.assertAllClose(y1, y2, atol=1e-5)
 
+    @pytest.mark.requires_trainable_backend
+    def test_dict_inputs_outputs(self):
+        input_foo = keras_core.Input((2,), name="foo")
+        input_bar = keras_core.Input((2,), name="bar")
+        dense = keras_core.layers.Dense(1)
+        output_foo = dense(input_foo)
+        output_bar = dense(input_bar)
+        model = keras_core.Model(
+            {"foo": input_foo, "bar": input_bar},
+            {"foo": output_foo, "bar": output_bar},
+        )
+        _, new_model, _ = self.roundtrip(model)
+        original_output = model(
+            {"foo": np.zeros((2, 2)), "bar": np.zeros((2, 2))}
+        )
+        restored_output = model(
+            {"foo": np.zeros((2, 2)), "bar": np.zeros((2, 2))}
+        )
+        self.assertAllClose(original_output["foo"], restored_output["foo"])
+        self.assertAllClose(original_output["bar"], restored_output["bar"])
+
     def shared_inner_layer(self):
         input_1 = keras_core.Input((2,))
         input_2 = keras_core.Input((2,))
@@ -194,6 +225,7 @@ class SerializationLibTest(testing.TestCase):
         self.assertIs(model.layers[2], model.layers[3].layer)
         self.assertIs(new_model.layers[2], new_model.layers[3].layer)
 
+    @pytest.mark.requires_trainable_backend
     def test_functional_subclass(self):
         class PlainFunctionalSubclass(keras_core.Model):
             pass

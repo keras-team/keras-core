@@ -1,12 +1,12 @@
 import math
 
 import numpy as np
-import tensorflow as tf
-from tensorflow import nest
+import tree
 
 from keras_core import backend
 from keras_core.trainers.data_adapters import data_adapter_utils
 from keras_core.trainers.data_adapters.data_adapter import DataAdapter
+from keras_core.utils.nest import lists_to_tuples
 
 try:
     import pandas
@@ -27,11 +27,7 @@ class ArrayDataAdapter(DataAdapter):
         shuffle=False,
         class_weight=None,
     ):
-        types_struct = nest.map_structure(lambda x: type(x), x)
-        flat_types = nest.flatten(types_struct)
-        if not all(
-            issubclass(c, data_adapter_utils.ARRAY_TYPES) for c in flat_types
-        ):
+        if not can_convert_arrays((x, y, sample_weight)):
             raise ValueError(
                 "Expected all elements of `x` to be array-like. "
                 f"Received invalid types: x={x}"
@@ -44,7 +40,7 @@ class ArrayDataAdapter(DataAdapter):
                     "You cannot `class_weight` and `sample_weight` "
                     "at the same time."
                 )
-            if tf.nest.is_nested(y):
+            if tree.is_nested(y):
                 if isinstance(sample_weight, np.ndarray):
                     is_samplewise = len(sample_weight.shape) == 1 or (
                         len(sample_weight.shape) == 2
@@ -60,12 +56,12 @@ class ArrayDataAdapter(DataAdapter):
                             "argument with one array per model output."
                         )
                     # Replicate the same sample_weight array on all outputs.
-                    sample_weight = tf.nest.map_structure(
+                    sample_weight = tree.map_structure(
                         lambda _: sample_weight, y
                     )
                 else:
                     try:
-                        tf.nest.assert_same_structure(y, sample_weight)
+                        tree.assert_same_structure(y, sample_weight)
                     except ValueError:
                         raise ValueError(
                             "You should provide one `sample_weight` array per "
@@ -74,7 +70,7 @@ class ArrayDataAdapter(DataAdapter):
                             f"- sample_weight: {sample_weight}\n"
                         )
         if class_weight is not None:
-            if tf.nest.is_nested(y):
+            if tree.is_nested(y):
                 raise ValueError(
                     "`class_weight` is only supported for Models with a single "
                     "output."
@@ -86,7 +82,7 @@ class ArrayDataAdapter(DataAdapter):
         inputs = data_adapter_utils.pack_x_y_sample_weight(x, y, sample_weight)
 
         data_adapter_utils.check_data_cardinality(inputs)
-        num_samples = set(i.shape[0] for i in nest.flatten(inputs)).pop()
+        num_samples = set(i.shape[0] for i in tree.flatten(inputs)).pop()
         self._num_samples = num_samples
         self._inputs = inputs
 
@@ -108,9 +104,11 @@ class ArrayDataAdapter(DataAdapter):
             )
         for i in range(self._size):
             start, stop = i * self._batch_size, (i + 1) * self._batch_size
-            yield tf.nest.map_structure(lambda x: x[start:stop], inputs)
+            yield tree.map_structure(lambda x: x[start:stop], inputs)
 
     def get_tf_dataset(self):
+        from keras_core.utils.module_utils import tensorflow as tf
+
         inputs = self._inputs
         shuffle = self._shuffle
         batch_size = self._batch_size
@@ -180,14 +178,55 @@ class ArrayDataAdapter(DataAdapter):
 
             return flat_dataset
 
+        def slice_inputs(indices_dataset, inputs):
+            """Slice inputs into a Dataset of batches.
+
+            Given a Dataset of batch indices and the unsliced inputs,
+            this step slices the inputs in a parallelized fashion
+            and produces a dataset of input batches.
+
+            Args:
+                indices_dataset: A Dataset of batched indices.
+                inputs: A python data structure that contains the inputs,
+                    targets, and possibly sample weights.
+
+            Returns:
+                A Dataset of input batches matching the batch indices.
+            """
+            dataset = tf.data.Dataset.zip(
+                (indices_dataset, tf.data.Dataset.from_tensors(inputs).repeat())
+            )
+
+            def grab_batch(i, data):
+                return tree.map_structure(
+                    lambda d: tf.gather(d, i, axis=0), data
+                )
+
+            dataset = dataset.map(
+                grab_batch, num_parallel_calls=tf.data.AUTOTUNE
+            )
+
+            # Default optimizations are disabled to avoid the overhead of
+            # (unnecessary) input pipeline graph serialization & deserialization
+            options = tf.data.Options()
+            options.experimental_optimization.apply_default_optimizations = (
+                False
+            )
+            if self._shuffle:
+                options.experimental_external_state_policy = (
+                    tf.data.experimental.ExternalStatePolicy.IGNORE
+                )
+            dataset = dataset.with_options(options)
+            return dataset
+
         indices_dataset = indices_dataset.flat_map(slice_batch_indices)
 
-        dataset = self.slice_inputs(indices_dataset, inputs)
+        dataset = slice_inputs(indices_dataset, inputs)
 
         if shuffle == "batch":
 
             def shuffle_batch(*batch):
-                return tf.nest.map_structure(tf.random.shuffle, batch)
+                return tree.map_structure(tf.random.shuffle, batch)
 
             dataset = dataset.map(shuffle_batch)
 
@@ -197,43 +236,6 @@ class ArrayDataAdapter(DataAdapter):
         )
         dataset = dataset.with_options(options)
         return dataset.prefetch(tf.data.AUTOTUNE)
-
-    def slice_inputs(self, indices_dataset, inputs):
-        """Slice inputs into a Dataset of batches.
-
-        Given a Dataset of batch indices and the unsliced inputs,
-        this step slices the inputs in a parallelized fashion
-        and produces a dataset of input batches.
-
-        Args:
-            indices_dataset: A Dataset of batched indices.
-            inputs: A python data structure that contains the inputs, targets,
-                and possibly sample weights.
-
-        Returns:
-            A Dataset of input batches matching the batch indices.
-        """
-        dataset = tf.data.Dataset.zip(
-            (indices_dataset, tf.data.Dataset.from_tensors(inputs).repeat())
-        )
-
-        def grab_batch(i, data):
-            return tf.nest.map_structure(
-                lambda d: tf.gather(d, i, axis=0), data
-            )
-
-        dataset = dataset.map(grab_batch, num_parallel_calls=tf.data.AUTOTUNE)
-
-        # Default optimizations are disabled to avoid the overhead of
-        # (unnecessary) input pipeline graph serialization and deserialization
-        options = tf.data.Options()
-        options.experimental_optimization.apply_default_optimizations = False
-        if self._shuffle:
-            options.experimental_external_state_policy = (
-                tf.data.experimental.ExternalStatePolicy.IGNORE
-            )
-        dataset = dataset.with_options(options)
-        return dataset
 
     @property
     def num_batches(self):
@@ -252,6 +254,28 @@ class ArrayDataAdapter(DataAdapter):
         return self._partial_batch_size or None
 
 
+def can_convert_arrays(arrays):
+    """Check if array like-inputs can be handled by `ArrayDataAdapter`
+
+    Args:
+        inputs: Structure of `Tensor`s, NumPy arrays, or tensor-like.
+
+    Returns:
+        `True` if `arrays` can be handled by `ArrayDataAdapter`, `False`
+        otherwise.
+    """
+
+    def can_convert_single_array(x):
+        is_none = x is None
+        known_type = isinstance(x, data_adapter_utils.ARRAY_TYPES)
+        convertable_type = hasattr(x, "__array__")
+        return is_none or known_type or convertable_type
+
+    return all(
+        tree.flatten(tree.map_structure(can_convert_single_array, arrays))
+    )
+
+
 def convert_to_arrays(arrays, dtype=None):
     """Process array-like inputs.
 
@@ -262,7 +286,7 @@ def convert_to_arrays(arrays, dtype=None):
     - Converts `list`s to `tuple`s (for `tf.data` support).
 
     Args:
-        inputs: Structure of `Tensor`s, `NumPy` arrays, or tensor-like.
+        inputs: Structure of `Tensor`s, NumPy arrays, or tensor-like.
 
     Returns:
         Structure of NumPy `ndarray`s.
@@ -277,16 +301,22 @@ def convert_to_arrays(arrays, dtype=None):
                 x = np.expand_dims(x.to_numpy(dtype=dtype), axis=-1)
             elif isinstance(x, pandas.DataFrame):
                 x = x.to_numpy(dtype=dtype)
-        if isinstance(x, (tf.Tensor, tf.Variable)):
-            x = x.numpy()
+        if is_tf_ragged_tensor(x):
+            from keras_core.utils.module_utils import tensorflow as tf
+
+            return tf.cast(x, dtype=dtype)
         if not isinstance(x, np.ndarray):
+            # Using `__array__` should handle `tf.Tensor`, `jax.np.ndarray`,
+            # `torch.Tensor`, as well as any other tensor-like object that has
+            # added numpy support.
             if hasattr(x, "__array__"):
-                x = np.array(x, dtype=dtype)
+                x = backend.convert_to_numpy(x).astype(dtype)
             else:
                 raise ValueError(
-                    "Expected a NumPy array, tf.Tensor, "
-                    "Pandas Dataframe, or Pandas Series. "
-                    f"Received invalid input: {x} (of type {type(x)})"
+                    "Expected a NumPy array, tf.Tensor, tf.RaggedTensor, "
+                    "jax.np.ndarray, torch.Tensor, Pandas Dataframe, or "
+                    "Pandas Series. Received invalid input: "
+                    f"{x} (of type {type(x)})"
                 )
         if x.dtype == object:
             return x
@@ -294,5 +324,9 @@ def convert_to_arrays(arrays, dtype=None):
             x = x.astype(dtype)
         return x
 
-    arrays = tf.nest.map_structure(convert_single_array, arrays)
-    return tf.__internal__.nest.list_to_tuple(arrays)
+    arrays = tree.map_structure(convert_single_array, arrays)
+    return lists_to_tuples(arrays)
+
+
+def is_tf_ragged_tensor(x):
+    return x.__class__.__name__ == "RaggedTensor"

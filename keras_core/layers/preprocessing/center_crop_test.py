@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 import tensorflow as tf
 from absl.testing import parameterized
 
@@ -7,6 +8,7 @@ from keras_core import testing
 
 
 class CenterCropTest(testing.TestCase, parameterized.TestCase):
+    @pytest.mark.requires_trainable_backend
     def test_center_crop_basics(self):
         self.run_layer_test(
             layers.CenterCrop,
@@ -94,3 +96,21 @@ class CenterCropTest(testing.TestCase, parameterized.TestCase):
                 size[1],
             )(img)
         self.assertAllClose(ref_out, out)
+
+    def test_tf_data_compatibility(self):
+        layer = layers.CenterCrop(8, 9)
+        input_data = np.random.random((2, 10, 12, 3))
+        ds = tf.data.Dataset.from_tensor_slices(input_data).batch(2).map(layer)
+        for output in ds.take(1):
+            output = output.numpy()
+        self.assertEqual(list(output.shape), [2, 8, 9, 3])
+
+    def test_list_compatibility(self):
+        images = [
+            np.random.rand(10, 10, 3),
+            np.random.rand(10, 10, 3),
+        ]
+        output = layers.CenterCrop(height=6, width=5)(images)
+        ref_output = tf.keras.layers.CenterCrop(6, 5)(images)
+        self.assertListEqual(list(output.shape), [2, 6, 5, 3])
+        self.assertAllClose(ref_output, output)

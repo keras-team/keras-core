@@ -8,6 +8,7 @@ from keras_core.backend.common.keras_tensor import KerasTensor
 
 
 class UpSamplingTest(testing.TestCase):
+    @pytest.mark.requires_trainable_backend
     def test_upsampling_1d(self):
         self.run_layer_test(
             layers.UpSampling1D,
@@ -23,7 +24,7 @@ class UpSamplingTest(testing.TestCase):
         )
 
     def test_upsampling_1d_correctness(self):
-        np.testing.assert_array_equal(
+        self.assertAllClose(
             layers.UpSampling1D(size=2)(np.arange(12).reshape((2, 2, 3))),
             np.array(
                 [
@@ -44,7 +45,7 @@ class UpSamplingTest(testing.TestCase):
         )
 
     def test_upsampling_1d_correctness_with_ones(self):
-        np.testing.assert_array_equal(
+        self.assertAllClose(
             layers.UpSampling1D(size=3)(np.ones((2, 1, 5))), np.ones((2, 3, 5))
         )
 

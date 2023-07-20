@@ -1,12 +1,12 @@
 import math
 
 import numpy as np
-import tensorflow as tf
 
 from keras_core import backend
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
+from keras_core.utils.module_utils import tensorflow as tf
 
 
 @keras_core_export("keras_core.layers.Normalization")
@@ -97,7 +97,6 @@ class Normalization(Layer):
         self, axis=-1, mean=None, variance=None, invert=False, **kwargs
     ):
         super().__init__(**kwargs)
-
         # Standardize `axis` to a tuple.
         if axis is None:
             axis = ()
@@ -117,8 +116,12 @@ class Normalization(Layer):
         self.input_variance = variance
         self.invert = invert
         self.supports_masking = True
+        self._build_input_shape = None
 
     def build(self, input_shape):
+        if input_shape is None:
+            return
+
         ndim = len(input_shape)
         self._build_input_shape = input_shape
 
@@ -262,7 +265,6 @@ class Normalization(Layer):
                 total_count += batch_count
                 batch_weight = float(batch_count) / total_count
                 existing_weight = 1.0 - batch_weight
-
                 new_total_mean = (
                     total_mean * existing_weight + batch_mean * batch_weight
                 )
@@ -294,12 +296,17 @@ class Normalization(Layer):
     def call(self, inputs):
         inputs = backend.convert_to_tensor(inputs, dtype=self.compute_dtype)
         if self.invert:
-            return self.mean + (
-                inputs * ops.maximum(ops.sqrt(self.variance), backend.epsilon())
+            return ops.add(
+                self.mean,
+                ops.multiply(
+                    inputs,
+                    ops.maximum(ops.sqrt(self.variance), backend.epsilon()),
+                ),
             )
         else:
-            return (inputs - self.mean) / ops.maximum(
-                ops.sqrt(self.variance), backend.epsilon()
+            return ops.divide(
+                ops.subtract(inputs, self.mean),
+                ops.maximum(ops.sqrt(self.variance), backend.epsilon()),
             )
 
     def compute_output_shape(self, input_shape):
@@ -321,3 +328,11 @@ class Normalization(Layer):
         super().load_own_variables(store)
         # Ensure that we call finalize_state after variable loading.
         self.finalize_state()
+
+    def get_build_config(self):
+        if self._build_input_shape:
+            return {"input_shape": self._build_input_shape}
+
+    def build_from_config(self, config):
+        if config:
+            self.build(config["input_shape"])

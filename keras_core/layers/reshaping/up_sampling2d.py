@@ -1,12 +1,14 @@
 import numpy as np
 
 from keras_core import backend
-from keras_core import operations as ops
+from keras_core import ops
+from keras_core.api_export import keras_core_export
 from keras_core.layers.input_spec import InputSpec
 from keras_core.layers.layer import Layer
 from keras_core.utils import argument_validation
 
 
+@keras_core_export("keras_core.layers.UpSampling2D")
 class UpSampling2D(Layer):
     """Upsampling layer for 2D inputs.
 
@@ -152,7 +154,13 @@ class UpSampling2D(Layer):
 
         if data_format == "channels_first":
             x = ops.transpose(x, [0, 2, 3, 1])
-        x = ops.image.resize(x, new_shape, method=interpolation)
+        # https://github.com/keras-team/keras-core/issues/294
+        # Use `ops.repeat` for `nearest` interpolation
+        if interpolation == "nearest":
+            x = ops.repeat(x, height_factor, axis=1)
+            x = ops.repeat(x, width_factor, axis=2)
+        else:
+            x = ops.image.resize(x, new_shape, interpolation=interpolation)
         if data_format == "channels_first":
             x = ops.transpose(x, [0, 3, 1, 2])
 

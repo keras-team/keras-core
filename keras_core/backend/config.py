@@ -228,16 +228,29 @@ if "KERAS_BACKEND" in os.environ:
         _BACKEND = _backend
 
 
-@keras_core_export("keras_core.backend.backend")
+if _BACKEND != "tensorflow":
+    # If we are not running on the tensorflow backend, we should stop tensorflow
+    # from using all available GPU memory. See
+    # https://www.tensorflow.org/guide/gpu#limiting_gpu_memory_growth
+    os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
+
+
+@keras_core_export(
+    [
+        "keras_core.config.backend",
+        "keras_core.backend.backend",
+    ]
+)
 def backend():
     """Publicly accessible method for determining the current backend.
 
     Returns:
-        String, the name of the backend Keras is currently using.
+        String, the name of the backend Keras is currently using. One of
+            `"tensorflow"`, `"torch"`, or `"jax"`.
 
     Example:
 
-    >>> keras.backend.backend()
+    >>> keras.config.backend()
     'tensorflow'
     """
     return _BACKEND

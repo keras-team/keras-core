@@ -1,9 +1,10 @@
 import random
 
 import numpy as np
-import tensorflow as tf
 
+from keras_core import backend
 from keras_core.api_export import keras_core_export
+from keras_core.utils.module_utils import tensorflow as tf
 
 
 @keras_core_export("keras_core.utils.set_random_seed")
@@ -21,7 +22,7 @@ def set_random_seed(seed):
     ```python
     import random
     import numpy as np
-    import tensorflow as tf
+    from keras_core.utils.module_utils import tensorflow as tf
     random.seed(seed)
     np.random.seed(seed)
     tf.random.set_seed(seed)
@@ -42,4 +43,9 @@ def set_random_seed(seed):
         )
     random.seed(seed)
     np.random.seed(seed)
-    tf.random.set_seed(seed)
+    if tf.available:
+        tf.random.set_seed(seed)
+    if backend.backend() == "torch":
+        import torch
+
+        torch.manual_seed(seed)

@@ -15,6 +15,7 @@ from keras_core.backend.common.stateless_scope import in_stateless_scope
 from keras_core.backend.common.variables import AutocastScope
 from keras_core.backend.common.variables import get_autocast_scope
 from keras_core.backend.common.variables import is_float_dtype
+from keras_core.backend.common.variables import is_int_dtype
 from keras_core.backend.common.variables import standardize_dtype
 from keras_core.backend.common.variables import standardize_shape
 from keras_core.backend.config import epsilon
@@ -36,5 +37,12 @@ elif backend() == "jax":
 elif backend() == "torch":
     print_msg("Using PyTorch backend.")
     from keras_core.backend.torch import *  # noqa: F403
+elif backend() == "numpy":
+    print_msg(
+        "Using NumPy backend.\nThe NumPy backend does not support "
+        "training. It should only be used for inference, evaluation, "
+        "and debugging."
+    )
+    from keras_core.backend.numpy import *  # noqa: F403
 else:
     raise ValueError(f"Unable to import backend : {backend()}")

@@ -1,4 +1,4 @@
-from tensorflow import nest
+import tree
 
 from keras_core.api_export import keras_core_export
 from keras_core.utils.naming import auto_name
@@ -45,14 +45,14 @@ class KerasTensor:
         return len(self.shape)
 
     def reshape(self, new_shape):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.Reshape(new_shape)(self)
+        return ops.Reshape(new_shape)(self)
 
     def squeeze(self, axis=None):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.Squeeze(axis)(self)
+        return ops.Squeeze(axis)(self)
 
     def __array__(self):
         raise ValueError(
@@ -103,7 +103,7 @@ class KerasTensor:
             "class MyLayer(Layer):\n"
             "    def call(self, x):\n"
             "        return tf_fn(x)\n\n"
-            "x = MyLayer()(x)"
+            "x = MyLayer()(x)\n"
             "```\n"
         )
 
@@ -122,89 +122,89 @@ class KerasTensor:
         raise TypeError("A symbolic KerasTensor cannot be used as a boolean.")
 
     def __add__(self, other):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.Add().symbolic_call(self, other)
+        return ops.Add().symbolic_call(self, other)
 
     def __radd__(self, other):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.Add().symbolic_call(other, self)
+        return ops.Add().symbolic_call(other, self)
 
     def __sub__(self, other):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.Subtract().symbolic_call(self, other)
+        return ops.Subtract().symbolic_call(self, other)
 
     def __rsub__(self, other):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.Subtract().symbolic_call(other, self)
+        return ops.Subtract().symbolic_call(other, self)
 
     def __mul__(self, other):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.Multiply().symbolic_call(self, other)
+        return ops.Multiply().symbolic_call(self, other)
 
     def __rmul__(self, other):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.Multiply().symbolic_call(other, self)
+        return ops.Multiply().symbolic_call(other, self)
 
     def __matmul__(self, other):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.Matmul().symbolic_call(self, other)
+        return ops.Matmul().symbolic_call(self, other)
 
     def __rmatmul__(self, other):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.Matmul().symbolic_call(other, self)
+        return ops.Matmul().symbolic_call(other, self)
 
     def __div__(self, other):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.Divide().symbolic_call(self, other)
+        return ops.Divide().symbolic_call(self, other)
 
     def __rdiv__(self, other):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.Divide().symbolic_call(other, self)
+        return ops.Divide().symbolic_call(other, self)
 
     def __truediv__(self, other):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.TrueDivide().symbolic_call(self, other)
+        return ops.TrueDivide().symbolic_call(self, other)
 
     def __rtruediv__(self, other):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.TrueDivide().symbolic_call(other, self)
+        return ops.TrueDivide().symbolic_call(other, self)
 
     def __neg__(self):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.Negative().symbolic_call(self)
+        return ops.Negative().symbolic_call(self)
 
     def __abs__(self):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.Absolute().symbolic_call(self)
+        return ops.Absolute().symbolic_call(self)
 
     def __pow__(self, other):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.Power().symbolic_call(self, other)
+        return ops.Power().symbolic_call(self, other)
 
     def __rpow__(self, other):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.Power().symbolic_call(other, self)
+        return ops.Power().symbolic_call(other, self)
 
     def __getitem__(self, key):
-        from keras_core import operations
+        from keras_core import ops
 
-        return operations.GetItem().symbolic_call(self, key)
+        return ops.GetItem().symbolic_call(self, key)
 
     # TODO
     #   "__floordiv__",
@@ -232,7 +232,7 @@ class KerasTensor:
 def any_symbolic_tensors(args=None, kwargs=None):
     args = args or ()
     kwargs = kwargs or {}
-    for x in nest.flatten((args, kwargs)):
+    for x in tree.flatten((args, kwargs)):
         if isinstance(x, KerasTensor):
             return True
     return False

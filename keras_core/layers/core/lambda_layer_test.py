@@ -1,11 +1,13 @@
 import numpy as np
+import pytest
 
 from keras_core import layers
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core import testing
 
 
 class LambdaTest(testing.TestCase):
+    @pytest.mark.requires_trainable_backend
     def test_lambda_basics(self):
         self.run_layer_test(
             layers.Lambda,

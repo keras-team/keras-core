@@ -1,6 +1,6 @@
 import copy
 
-from tensorflow import nest
+import tree
 
 from keras_core.api_export import keras_core_export
 from keras_core.layers.core.input_layer import InputLayer
@@ -68,6 +68,11 @@ class Sequential(Model):
             self._maybe_rebuild()
 
     def add(self, layer, rebuild=True):
+        """Adds a layer instance on top of the layer stack.
+
+        Args:
+            layer: layer instance.
+        """
         # Legacy case: if the first layer has an input_shape arg,
         # use it to build an InputLayer.
         if not self._layers:
@@ -107,6 +112,7 @@ class Sequential(Model):
             self._functional = None
 
     def pop(self, rebuild=True):
+        """Removes the last layer in the model."""
         layer = self._layers.pop()
         self.built = False
         self._tracker.locked = False
@@ -179,7 +185,7 @@ class Sequential(Model):
             kwargs = {}
             if layer._call_has_mask_arg():
                 kwargs["mask"] = mask
-            if layer._call_has_training_arg():
+            if layer._call_has_training_arg() and training is not None:
                 kwargs["training"] = training
             outputs = layer(inputs, **kwargs)
             inputs = outputs
@@ -187,7 +193,7 @@ class Sequential(Model):
             def _get_mask_from_keras_tensor(kt):
                 return getattr(kt, "_keras_mask", None)
 
-            mask = nest.map_structure(_get_mask_from_keras_tensor, outputs)
+            mask = tree.map_structure(_get_mask_from_keras_tensor, outputs)
         return outputs
 
     @property
@@ -227,6 +233,22 @@ class Sequential(Model):
             return self._functional.output_shape
         raise ValueError(
             f"Sequential model '{self.name}' has no defined output shape yet."
+        )
+
+    @property
+    def inputs(self):
+        if self._functional:
+            return self._functional.inputs
+        raise ValueError(
+            f"Sequential model '{self.name}' has no defined inputs yet."
+        )
+
+    @property
+    def outputs(self):
+        if self._functional:
+            return self._functional.outputs
+        raise ValueError(
+            f"Sequential model '{self.name}' has no defined outputs yet."
         )
 
     def _is_layer_name_unique(self, layer):

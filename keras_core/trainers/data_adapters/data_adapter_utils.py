@@ -1,9 +1,9 @@
 import math
 
-import jax
 import numpy as np
-import tensorflow as tf
+import tree
 
+from keras_core import backend
 from keras_core.api_export import keras_core_export
 
 try:
@@ -12,15 +12,16 @@ except ImportError:
     pandas = None
 
 
-ARRAY_TYPES = (tf.Tensor, np.ndarray, jax.numpy.ndarray)
+# Leave jax, tf, and torch arrays off this list. Instead we will use
+# `__array__` to detect these types. Doing so allows us to avoid importing a
+# backend framework we are not currently using just to do type-checking.
+ARRAY_TYPES = (np.ndarray,)
+if backend.backend() == "tensorflow":
+    from keras_core.utils.module_utils import tensorflow as tf
+
+    ARRAY_TYPES = ARRAY_TYPES + (np.ndarray, tf.RaggedTensor)
 if pandas:
-    ARRAY_TYPES = ARRAY_TYPES + (
-        tf.Tensor,
-        np.ndarray,
-        pandas.Series,
-        pandas.DataFrame,
-    )
-# TODO: support torch tensors?
+    ARRAY_TYPES = ARRAY_TYPES + (pandas.Series, pandas.DataFrame)
 
 
 @keras_core_export("keras_core.utils.unpack_x_y_sample_weight")
@@ -34,8 +35,8 @@ def unpack_x_y_sample_weight(data):
 
     Standalone usage:
 
-    >>> features_batch = tf.ones((10, 5))
-    >>> labels_batch = tf.zeros((10, 5))
+    >>> features_batch = ops.ones((10, 5))
+    >>> labels_batch = ops.zeros((10, 5))
     >>> data = (features_batch, labels_batch)
     >>> # `y` and `sample_weight` will default to `None` if not provided.
     >>> x, y, sample_weight = unpack_x_y_sample_weight(data)
@@ -71,15 +72,15 @@ def pack_x_y_sample_weight(x, y=None, sample_weight=None):
     """Packs user-provided data into a tuple.
 
     This is a convenience utility for packing data into the tuple formats
-    that `Model.fit` uses.
+    that `Model.fit()` uses.
 
     Standalone usage:
 
-    >>> x = tf.ones((10, 1))
+    >>> x = ops.ones((10, 1))
     >>> data = pack_x_y_sample_weight(x)
-    >>> isinstance(data, tf.Tensor)
+    >>> isinstance(data, ops.Tensor)
     True
-    >>> y = tf.ones((10, 1))
+    >>> y = ops.ones((10, 1))
     >>> data = pack_x_y_sample_weight(x, y)
     >>> isinstance(data, tuple)
     True
@@ -91,7 +92,7 @@ def pack_x_y_sample_weight(x, y=None, sample_weight=None):
         sample_weight: Sample weight for each element.
 
     Returns:
-        Tuple in the format used in `Model.fit`.
+        Tuple in the format used in `Model.fit()`.
     """
     if y is None:
         # For single x-input, we do no tuple wrapping since in this case
@@ -116,7 +117,7 @@ def list_to_tuple(maybe_list):
 
 
 def check_data_cardinality(data):
-    num_samples = set(int(i.shape[0]) for i in tf.nest.flatten(data))
+    num_samples = set(int(i.shape[0]) for i in tree.flatten(data))
     if len(num_samples) > 1:
         msg = (
             "Data cardinality is ambiguous. "
@@ -124,7 +125,7 @@ def check_data_cardinality(data):
         )
         for label, single_data in zip(["x", "y", "sample_weight"], data):
             sizes = ", ".join(
-                str(i.shape[0]) for i in tf.nest.flatten(single_data)
+                str(i.shape[0]) for i in tree.flatten(single_data)
             )
             msg += f"'{label}' sizes: {sizes}\n"
         raise ValueError(msg)
@@ -132,11 +133,11 @@ def check_data_cardinality(data):
 
 def sync_shuffle(data, num_samples=None):
     if num_samples is None:
-        num_samples_set = set(int(i.shape[0]) for i in tf.nest.flatten(data))
+        num_samples_set = set(int(i.shape[0]) for i in tree.flatten(data))
         assert len(num_samples_set) == 1
         num_samples = num_samples_set.pop()
     p = np.random.permutation(num_samples)
-    return tf.nest.map_structure(lambda x: x[p], data)
+    return tree.map_structure(lambda x: x[p], data)
 
 
 def train_validation_split(arrays, validation_split):
@@ -158,12 +159,12 @@ def train_validation_split(arrays, validation_split):
     def _can_split(t):
         return isinstance(t, ARRAY_TYPES) or t is None
 
-    flat_arrays = tf.nest.flatten(arrays)
+    flat_arrays = tree.flatten(arrays)
     unsplitable = [type(t) for t in flat_arrays if not _can_split(t)]
     if unsplitable:
         raise ValueError(
             "Argument `validation_split` is only supported "
-            "for tf.Tensors or NumPy "
+            "for tensors or NumPy "
             "arrays. Found incompatible type in the input: {unsplitable}"
         )
 
@@ -194,10 +195,10 @@ def train_validation_split(arrays, validation_split):
             return t
         return t[start:end]
 
-    train_arrays = tf.nest.map_structure(
+    train_arrays = tree.map_structure(
         lambda x: _split(x, start=0, end=split_at), arrays
     )
-    val_arrays = tf.nest.map_structure(
+    val_arrays = tree.map_structure(
         lambda x: _split(x, start=split_at, end=batch_dim), arrays
     )
     return train_arrays, val_arrays
@@ -205,10 +206,12 @@ def train_validation_split(arrays, validation_split):
 
 def class_weight_to_sample_weights(y, class_weight):
     sample_weight = np.ones(shape=(y.shape[0],), dtype=y.dtype)
-    if len(y.shape) > 1 and y.shape[-1] != 1:
-        y = np.argmax(y, axis=-1)
-    else:
-        y = np.round(np.squeeze(y, axis=-1)).astype("int32")
+    if len(y.shape) > 1:
+        if y.shape[-1] != 1:
+            y = np.argmax(y, axis=-1)
+        else:
+            y = np.squeeze(y, axis=-1)
+    y = np.round(y).astype("int32")
     for i in range(y.shape[0]):
         sample_weight[i] = class_weight.get(int(y[i]), 1.0)
     return sample_weight

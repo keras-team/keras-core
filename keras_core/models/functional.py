@@ -2,14 +2,15 @@ import copy
 import inspect
 import warnings
 
-from tensorflow import nest
+import tree
 
 from keras_core import backend
-from keras_core import operations as ops
+from keras_core import ops
+from keras_core.layers.input_spec import InputSpec
 from keras_core.layers.layer import Layer
 from keras_core.models.model import Model
-from keras_core.operations.function import Function
-from keras_core.operations.function import make_node_key
+from keras_core.ops.function import Function
+from keras_core.ops.function import make_node_key
 from keras_core.saving import serialization_lib
 from keras_core.utils import tracking
 
@@ -30,10 +31,10 @@ class Functional(Function, Model):
     Example:
 
     ```
-    inputs = {'x1': keras_core.Input(shape=(10,)),
-              'x2': keras_core.Input(shape=(1,))}
+    inputs = {'x1': keras_core.Input(shape=(10,), name='x1'),
+              'x2': keras_core.Input(shape=(1,), name='x2')}
     t = keras_core.layers.Dense(1, activation='relu')(inputs['x1'])
-    outputs = keras_core.layers.Add()([t, inputs['x2'])
+    outputs = keras_core.layers.Add()([t, inputs['x2']])
     model = keras_core.Model(inputs, outputs)
     ```
 
@@ -152,6 +153,11 @@ class Functional(Function, Model):
 
         self._layers = self.layers
         self.built = True
+        # We will convert directly (to the correct dtype per input).
+        self._convert_input_args = False
+        self._allow_non_tensor_positional_args = True
+        output_layers = [x._keras_history[0] for x in self.outputs]
+        self.output_names = [x.name for x in output_layers]
         self._post_build()
 
     @property
@@ -170,7 +176,8 @@ class Functional(Function, Model):
         else:
             masks = self._flatten_to_reference_inputs(mask)
             for x, mask in zip(inputs, masks):
-                x._keras_mask = mask
+                if mask is not None:
+                    x._keras_mask = mask
         outputs = self._run_through_graph(
             inputs, operation_fn=lambda op: operation_fn(op, training=training)
         )
@@ -185,14 +192,14 @@ class Functional(Function, Model):
 
     @property
     def input_shape(self):
-        input_shapes = nest.map_structure(lambda x: x.shape, self.inputs)
+        input_shapes = tree.map_structure(lambda x: x.shape, self.inputs)
         if isinstance(input_shapes, list) and len(input_shapes) == 1:
             return input_shapes[0]
         return input_shapes
 
     @property
     def output_shape(self):
-        output_shapes = nest.map_structure(lambda x: x.shape, self.outputs)
+        output_shapes = tree.map_structure(lambda x: x.shape, self.outputs)
         if isinstance(output_shapes, list) and len(output_shapes) == 1:
             return output_shapes[0]
         return output_shapes
@@ -203,13 +210,13 @@ class Functional(Function, Model):
     def _flatten_to_reference_inputs(self, inputs, allow_extra_keys=True):
         if isinstance(inputs, dict):
             ref_inputs = self._inputs_struct
-            if not nest.is_nested(ref_inputs):
-                ref_inputs = [self._nested_inputs]
+            if not tree.is_nested(ref_inputs):
+                ref_inputs = [self._inputs_struct]
             if isinstance(ref_inputs, dict):
                 # In the case that the graph is constructed with dict input
                 # tensors, We will use the original dict key to map with the
                 # keys in the input data. Note that the model.inputs is using
-                # nest.flatten to process the input tensors, which means the
+                # tree.flatten to process the input tensors, which means the
                 # dict input tensors are ordered by their keys.
                 ref_input_names = sorted(ref_inputs.keys())
             else:
@@ -218,7 +225,7 @@ class Functional(Function, Model):
                 ]
             # Raise an warning if there are more input data comparing to input
             # tensor
-            if allow_extra_keys and len(inputs) > len(ref_input_names):
+            if not allow_extra_keys and len(inputs) > len(ref_input_names):
                 warnings.warn(
                     "Input dict contained keys {} which did not match any "
                     "model input. They will be ignored by the model.".format(
@@ -230,7 +237,17 @@ class Functional(Function, Model):
             # construction.
             return [inputs[n] for n in ref_input_names]
         # Otherwise both ref inputs and inputs will already be in same order.
-        return nest.flatten(inputs)
+        return tree.flatten(inputs)
+
+    def _convert_inputs_to_tensors(self, flat_inputs):
+        flat_dtypes = [x.dtype for x in self._inputs]
+        converted = []
+        for x, dtype in zip(flat_inputs, flat_dtypes):
+            if backend.is_tensor(x):
+                converted.append(backend.cast(x, dtype=dtype))
+            else:
+                converted.append(backend.convert_to_tensor(x, dtype=dtype))
+        return converted
 
     def _adjust_input_rank(self, flat_inputs):
         flat_ref_shapes = [x.shape for x in self._inputs]
@@ -263,6 +280,7 @@ class Functional(Function, Model):
 
     def _standardize_inputs(self, inputs):
         flat_inputs = self._flatten_to_reference_inputs(inputs)
+        flat_inputs = self._convert_inputs_to_tensors(flat_inputs)
         return self._adjust_input_rank(flat_inputs)
 
     @property
@@ -279,6 +297,46 @@ class Functional(Function, Model):
     def add_loss(self, loss):
         # Symbolic only. TODO
         raise NotImplementedError
+
+    @property
+    def input_spec(self):
+        if hasattr(self, "_manual_input_spec"):
+            return self._manual_input_spec
+
+        def shape_with_no_batch_size(x):
+            x = list(x)
+            if x:
+                x[0] = None
+            return tuple(x)
+
+        if isinstance(self._inputs_struct, dict):
+            # Case where `_nested_inputs` is a plain dict of Inputs.
+            names = sorted(self._inputs_struct.keys())
+            return [
+                InputSpec(
+                    shape=shape_with_no_batch_size(
+                        self._inputs_struct[name].shape
+                    ),
+                    allow_last_axis_squeeze=True,
+                    name=name,
+                )
+                for name in names
+            ]
+        else:
+            # Single input, or list/tuple of inputs.
+            # The data may be passed as a dict keyed by input name.
+            return [
+                InputSpec(
+                    shape=shape_with_no_batch_size(x.shape),
+                    allow_last_axis_squeeze=True,
+                    name=x._keras_history[0].name,
+                )
+                for x in self._inputs
+            ]
+
+    @input_spec.setter
+    def input_spec(self, value):
+        self._manual_input_spec = value
 
     def get_config(self):
         if not functional_like_constructor(self.__class__):
@@ -333,78 +391,26 @@ class Functional(Function, Model):
         config["layers"] = layer_configs
 
         # Gather info about inputs and outputs.
-        model_inputs = []
-        for tensor in self._inputs:
+        def get_tensor_config(tensor):
             operation = tensor._keras_history[0]
             node_index = tensor._keras_history[1]
             tensor_index = tensor._keras_history[2]
             node_key = make_node_key(operation, node_index)
-            if node_key not in self._nodes:
-                continue
+            assert node_key in self._nodes
             new_node_index = node_reindexing_map[node_key]
-            model_inputs.append([operation.name, new_node_index, tensor_index])
-        config["input_layers"] = model_inputs
-        model_outputs = []
-        for tensor in self._outputs:
-            operation = tensor._keras_history[0]
-            node_index = tensor._keras_history[1]
-            tensor_index = tensor._keras_history[2]
-            node_key = make_node_key(operation, node_index)
-            if node_key not in self._nodes:
-                continue
-            new_node_index = node_reindexing_map[node_key]
-            model_outputs.append([operation.name, new_node_index, tensor_index])
-        config["output_layers"] = model_outputs
+            return [operation.name, new_node_index, tensor_index]
+
+        def map_tensors(tensors):
+            if isinstance(tensors, dict):
+                return {k: get_tensor_config(v) for k, v in tensors.items()}
+            if isinstance(tensors, (list, tuple)):
+                return [get_tensor_config(v) for v in tensors]
+            else:
+                return [get_tensor_config(tensors)]
+
+        config["input_layers"] = map_tensors(self._inputs_struct)
+        config["output_layers"] = map_tensors(self._outputs_struct)
         return copy.deepcopy(config)
-
-    @classmethod
-    def from_config(cls, config, custom_objects=None):
-        functional_config_keys = [
-            "name",
-            "layers",
-            "input_layers",
-            "output_layers",
-        ]
-        is_functional_config = all(
-            key in config for key in functional_config_keys
-        )
-        argspec = inspect.getfullargspec(cls.__init__)
-        functional_init_args = inspect.getfullargspec(Functional.__init__).args[
-            1:
-        ]
-        revivable_as_functional = (
-            cls in {Functional, Model}
-            or argspec.args[1:] == functional_init_args
-            or (argspec.varargs == "args" and argspec.varkw == "kwargs")
-        )
-        if is_functional_config and revivable_as_functional:
-            # Revive Functional model
-            # (but not Functional subclasses with a custom __init__)
-            return cls._from_config(config, custom_objects=custom_objects)
-
-        # Either the model has a custom __init__, or the config
-        # does not contain all the information necessary to
-        # revive a Functional model. This happens when the user creates
-        # subclassed models where `get_config()` is returning
-        # insufficient information to be considered a Functional model.
-        # In this case, we fall back to provide all config into the
-        # constructor of the class.
-        try:
-            return cls(**config)
-        except TypeError as e:
-            raise TypeError(
-                "Unable to revive model from config. When overriding "
-                "the `get_config()` method, make sure that the "
-                "returned config contains all items used as arguments "
-                f"in the  constructor to {cls}, "
-                "which is the default behavior. "
-                "You can override this default behavior by defining a "
-                "`from_config(cls, config)` class method to specify "
-                "how to create an "
-                f"instance of {cls.__name__} from its config.\n\n"
-                f"Received config={config}\n\n"
-                f"Error encountered during deserialization: {e}"
-            )
 
     @classmethod
     def _from_config(cls, config, custom_objects=None):
@@ -507,24 +513,23 @@ class Functional(Function, Model):
         # Create lits of input and output tensors and return new class
         name = config.get("name")
         trainable = config.get("trainable")
-        input_tensors = []
-        output_tensors = []
-        for layer_data in config["input_layers"]:
-            layer_name, node_index, tensor_index = layer_data
+
+        def get_tensor(layer_name, node_index, tensor_index):
             assert layer_name in created_layers
             layer = created_layers[layer_name]
             layer_output_tensors = layer._inbound_nodes[
                 node_index
             ].output_tensors
-            input_tensors.append(layer_output_tensors[tensor_index])
-        for layer_data in config["output_layers"]:
-            layer_name, node_index, tensor_index = layer_data
-            assert layer_name in created_layers
-            layer = created_layers[layer_name]
-            layer_output_tensors = layer._inbound_nodes[
-                node_index
-            ].output_tensors
-            output_tensors.append(layer_output_tensors[tensor_index])
+            return layer_output_tensors[tensor_index]
+
+        def map_tensors(tensors):
+            if isinstance(tensors, dict):
+                return {k: get_tensor(*v) for k, v in tensors.items()}
+            else:
+                return [get_tensor(*v) for v in tensors]
+
+        input_tensors = map_tensors(config["input_layers"])
+        output_tensors = map_tensors(config["output_layers"])
         return cls(
             inputs=input_tensors,
             outputs=output_tensors,
@@ -538,6 +543,7 @@ def operation_fn(operation, training):
         if (
             hasattr(operation, "_call_has_training_arg")
             and operation._call_has_training_arg()
+            and training is not None
         ):
             kwargs["training"] = training
         return operation(*args, **kwargs)
@@ -634,6 +640,6 @@ def deserialize_node(node_data, created_layers):
             return inbound_node.output_tensors[inbound_tensor_index]
         return x
 
-    args = nest.map_structure(convert_revived_tensor, args)
-    kwargs = nest.map_structure(convert_revived_tensor, kwargs)
+    args = tree.map_structure(convert_revived_tensor, args)
+    kwargs = tree.map_structure(convert_revived_tensor, kwargs)
     return args, kwargs

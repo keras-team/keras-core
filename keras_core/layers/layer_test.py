@@ -1,9 +1,10 @@
 import numpy as np
+import pytest
 
 from keras_core import backend
 from keras_core import layers
 from keras_core import models
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core import testing
 
 
@@ -263,6 +264,7 @@ class LayerTest(testing.TestCase):
         layer(layers.Input(batch_shape=(2, 2)))
         self.assertLen(layer.losses, 0)
 
+    @pytest.mark.requires_trainable_backend
     def test_add_loss(self):
         class LossLayer(layers.Layer):
             def call(self, x):
@@ -356,22 +358,31 @@ class LayerTest(testing.TestCase):
         y = layer(x)
         self.assertEqual(ops.min(y), 1)
 
+    @pytest.mark.skipif(
+        backend.backend() == "torch",
+        reason="Some torch ops not implemented for float16 on CPU.",
+    )
     def test_mixed_precision(self):
+        print("Run with backend.backend()", backend.backend())
         x = np.ones((4, 4))
 
         layer = layers.Dense(2, dtype="float16")
         y = layer(x)
         self.assertEqual(layer.compute_dtype, "float16")
         self.assertEqual(layer.variable_dtype, "float16")
-        self.assertEqual(y.dtype.name, "float16")
+        self.assertEqual(backend.standardize_dtype(y.dtype), "float16")
 
         layer = layers.Dense(2, dtype="mixed_float16")
         y = layer(x)
         self.assertEqual(layer.compute_dtype, "float16")
         self.assertEqual(layer.variable_dtype, "float32")
-        self.assertEqual(y.dtype.name, "float16")
+        self.assertEqual(backend.standardize_dtype(y.dtype), "float16")
         self.assertEqual(layer.kernel.dtype, "float32")
 
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Numpy backend does not support masking.",
+    )
     def test_masking(self):
         class BasicMaskedLayer(layers.Layer):
             def __init__(self):
@@ -592,40 +603,92 @@ class LayerTest(testing.TestCase):
     def test_build_signature_errors(self):
         class NoShapeSuffix(layers.Layer):
             def build(self, foo_shape, bar):
-                self._built = True
+                self.built = True
 
             def call(self, foo, bar):
                 return foo + bar
 
         class NonMatchingArgument(layers.Layer):
             def build(self, foo_shape, baz_shape):
-                self._built = True
+                self.built = True
 
             def call(self, foo, bar):
-                return foo + bar
+                return foo[:, 0] + bar[:, 0]
 
         class MatchingArguments(layers.Layer):
-            def build(self, foo_shape, bar_shape):
-                self._built = True
+            def build(self, bar_shape, foo_shape):
+                self.foo_shape = foo_shape
+                self.bar_shape = bar_shape
+                self.built = True
 
             def call(self, foo, bar):
-                return foo + bar
+                return foo[:, 0] + bar[:, 0]
 
-        foo = backend.numpy.ones((4, 4))
-        bar = backend.numpy.ones((4, 4))
+        class SubsetArguments(layers.Layer):
+            def build(self, baz_shape, foo_shape):
+                self.foo_shape = foo_shape
+                self.baz_shape = baz_shape
+                self.built = True
+
+            def call(self, foo, bar=None, baz=None):
+                return foo[:, 0] + bar[:, 0] + baz[:, 0]
+
+        class SingleArgument(layers.Layer):
+            def build(self, anything_whatsoever):
+                self.foo_shape = anything_whatsoever
+                self.built = True
+
+            def call(self, foo, bar):
+                return foo[:, 0] + bar[:, 0]
+
+        foo = backend.numpy.ones((4, 1))
+        bar = backend.numpy.ones((4, 2))
+        baz = backend.numpy.ones((4, 3))
         with self.assertRaisesRegex(
             ValueError,
             r"argument `bar`, which does not end in `_shape`",
         ):
-            NoShapeSuffix()(foo, bar)
+            layer = NoShapeSuffix()
+            layer(foo, bar)
 
         with self.assertRaisesRegex(
             ValueError,
             r"`baz_shape`, but `call\(\)` does not have argument `baz`",
         ):
-            NonMatchingArgument()(foo, bar)
+            layer = NonMatchingArgument()
+            layer(foo, bar)
 
-        MatchingArguments()(foo, bar)
+        # Align by name when build and call arguments match.
+        layer = MatchingArguments()
+        layer(foo, bar)
+        self.assertEqual(layer.foo_shape, foo.shape)
+        self.assertEqual(layer.bar_shape, bar.shape)
+
+        # Align by name when build supports a subset of call arguments.
+        layer = SubsetArguments()
+        layer(foo, bar, baz)
+        self.assertEqual(layer.foo_shape, foo.shape)
+        self.assertEqual(layer.baz_shape, baz.shape)
+
+        # When build has only one argument, match the first call argument.
+        layer = SingleArgument()
+        layer(foo, bar)
+        self.assertEqual(layer.foo_shape, foo.shape)
+
+    def test_training_arg_not_specified(self):
+        class NoTrainingSpecified(layers.Layer):
+            def __init__(self):
+                super().__init__()
+
+            def build(self, input_shape):
+                self.activation = layers.Activation("linear")
+
+            def call(self, inputs):
+                return self.activation(inputs)
+
+        layer = NoTrainingSpecified()
+        inputs = ops.random.uniform(shape=(1, 100, 100, 3))
+        layer(inputs, training=True)
 
     def test_tracker_locking(self):
         class BadLayer(layers.Layer):
@@ -639,3 +702,13 @@ class LayerTest(testing.TestCase):
             "cannot add new elements of state",
         ):
             layer(np.random.random((3, 2)))
+
+    def test_init_after_state_tracking(self):
+        class MyLayer(layers.Layer):
+            def __init__(self):
+                self.some_attr = True
+                self.w = backend.Variable(np.random.random((2,)))
+                super().__init__()
+
+        layer = MyLayer()
+        self.assertEqual(len(layer.weights), 1)

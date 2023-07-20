@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from keras_core import layers
 from keras_core import models
@@ -6,6 +7,7 @@ from keras_core import testing
 
 
 class MaskingTest(testing.TestCase):
+    @pytest.mark.requires_trainable_backend
     def test_masking_basics(self):
         self.run_layer_test(
             layers.Masking,
@@ -19,6 +21,7 @@ class MaskingTest(testing.TestCase):
             supports_masking=True,
         )
 
+    @pytest.mark.requires_trainable_backend
     def test_masking_correctness(self):
         x = np.array(
             [
@@ -31,6 +34,8 @@ class MaskingTest(testing.TestCase):
         layer = layers.Masking(mask_value=0.0)
         self.assertAllClose(layer.compute_mask(x), expected_mask)
 
+        test_obj = self
+
         class TestLayer(layers.Layer):
             def __init__(self, **kwargs):
                 super().__init__(**kwargs)
@@ -41,7 +46,7 @@ class MaskingTest(testing.TestCase):
 
             def call(self, inputs, mask=None):
                 assert mask is not None
-                np.testing.assert_allclose(mask, expected_mask)
+                test_obj.assertAllClose(mask, expected_mask)
                 return inputs
 
         model = models.Sequential(

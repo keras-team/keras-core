@@ -1,14 +1,18 @@
 import numpy as np
+import pytest
 
+from keras_core import backend
 from keras_core import layers
 from keras_core import testing
 
 
 def squared_l2_norm(x):
+    x = backend.convert_to_numpy(x)
     return np.sum(x**2)
 
 
 class UnitNormalizationTest(testing.TestCase):
+    @pytest.mark.requires_trainable_backend
     def test_un_basics(self):
         self.run_layer_test(
             layers.UnitNormalization,

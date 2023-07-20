@@ -4,10 +4,11 @@ import pytest
 from keras_core import backend
 from keras_core import layers
 from keras_core import models
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core import testing
 
 
+@pytest.mark.requires_trainable_backend
 class MergingLayersTest(testing.TestCase):
     def test_add_basic(self):
         self.run_layer_test(

@@ -3,6 +3,8 @@ import torch
 
 from keras_core.backend.torch.core import cast
 from keras_core.backend.torch.core import convert_to_tensor
+from keras_core.backend.torch.core import get_device
+from keras_core.backend.torch.core import is_tensor
 from keras_core.backend.torch.core import to_torch_dtype
 
 TORCH_INT_TYPES = (
@@ -39,7 +41,12 @@ def multiply(x1, x2):
 
 
 def mean(x, axis=None, keepdims=False):
+    if isinstance(x, (list, tuple)):
+        x = stack(x)
     x = convert_to_tensor(x)
+    if axis == () or axis == []:
+        # Torch handles the empty axis case differently from numpy.
+        return x
     # Conversion to float necessary for `torch.mean`
     x = cast(x, "float32") if x.dtype in TORCH_INT_TYPES else x
     return torch.mean(x, axis=axis, keepdims=keepdims)
@@ -47,17 +54,17 @@ def mean(x, axis=None, keepdims=False):
 
 def max(x, axis=None, keepdims=False, initial=None):
     x = convert_to_tensor(x)
+    if 0 in x.shape:
+        return 0
     if axis is None:
         result = torch.max(x)
     else:
-        if isinstance(axis, list):
-            axis = axis[-1]
-        result = torch.max(x, dim=axis, keepdim=keepdims)
-
+        result = amax(x, axis=axis, keepdims=keepdims)
     if isinstance(getattr(result, "values", None), torch.Tensor):
         result = result.values
 
     if initial is not None:
+        initial = convert_to_tensor(initial)
         return torch.maximum(result, torch.full(result.shape, initial))
     return result
 
@@ -66,14 +73,20 @@ def ones(shape, dtype="float32"):
     dtype = to_torch_dtype(dtype)
     if isinstance(shape, int):
         shape = (shape,)
-    return torch.ones(size=shape, dtype=dtype)
+    return torch.ones(size=shape, dtype=dtype, device=get_device())
 
 
 def zeros(shape, dtype="float32"):
     dtype = to_torch_dtype(dtype)
     if isinstance(shape, int):
         shape = (shape,)
-    return torch.zeros(size=shape, dtype=dtype)
+    return torch.zeros(size=shape, dtype=dtype, device=get_device())
+
+
+def zeros_like(x, dtype=None):
+    x = convert_to_tensor(x)
+    dtype = to_torch_dtype(dtype)
+    return torch.zeros_like(x, dtype=dtype)
 
 
 def absolute(x):
@@ -134,7 +147,11 @@ def append(
 
 def arange(start, stop=None, step=1, dtype=None):
     dtype = to_torch_dtype(dtype)
-    return torch.arange(start, stop, step=step, dtype=dtype)
+    if stop is None:
+        return torch.arange(end=start, dtype=dtype, device=get_device())
+    return torch.arange(
+        start, stop, step=step, dtype=dtype, device=get_device()
+    )
 
 
 def arccos(x):
@@ -172,14 +189,14 @@ def argsort(x, axis=-1):
     if axis is None:
         axis = -1
         x = x.reshape(-1)
-    return torch.argsort(x, dim=axis)
+    return torch.argsort(x, dim=axis, stable=True)
 
 
 def array(x, dtype=None):
     dtype = to_torch_dtype(dtype)
-    if not isinstance(x, torch.Tensor):
+    if isinstance(x, torch.Tensor):
         return x
-    return x.numpy()
+    return torch.tensor(x, dtype=dtype, device=get_device())
 
 
 def average(x, axis=None, weights=None):
@@ -299,7 +316,7 @@ def dot(x, y):
 
 def empty(shape, dtype="float32"):
     dtype = to_torch_dtype(dtype)
-    return torch.empty(size=shape, dtype=dtype)
+    return torch.empty(size=shape, dtype=dtype, device=get_device())
 
 
 def equal(x1, x2):
@@ -344,7 +361,9 @@ def full(shape, fill_value, dtype=None):
         expand_size = len(shape) - len(fill_value.shape)
         tile_shape = tuple(shape[:expand_size]) + (1,) * len(fill_value.shape)
         return torch.tile(fill_value, tile_shape)
-    return torch.full(size=shape, fill_value=fill_value, dtype=dtype)
+    return torch.full(
+        size=shape, fill_value=fill_value, dtype=dtype, device=get_device()
+    )
 
 
 def full_like(x, fill_value, dtype=None):
@@ -425,7 +444,7 @@ def linspace(
     if hasattr(start, "__len__") and hasattr(stop, "__len__"):
         start, stop = convert_to_tensor(start), convert_to_tensor(stop)
         stop = cast(stop, dtype) if endpoint is False and dtype else stop
-        steps = torch.arange(num, dtype=dtype) / (num - 1)
+        steps = torch.arange(num, dtype=dtype, device=get_device()) / (num - 1)
 
         # reshape `steps` to allow for broadcasting
         for i in range(start.ndim):
@@ -499,7 +518,7 @@ def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
     if hasattr(start, "__len__") and hasattr(stop, "__len__"):
         start, stop = convert_to_tensor(start), convert_to_tensor(stop)
         stop = cast(stop, dtype) if endpoint is False and dtype else stop
-        steps = torch.arange(num, dtype=dtype) / (num - 1)
+        steps = torch.arange(num, dtype=dtype, device=get_device()) / (num - 1)
 
         # reshape `steps` to allow for broadcasting
         for i in range(start.ndim):
@@ -526,8 +545,7 @@ def maximum(x1, x2):
 
 def meshgrid(*x, indexing="xy"):
     x = [convert_to_tensor(sc_tensor) for sc_tensor in x]
-    result = torch.meshgrid(x, indexing=indexing)
-    return [arr.numpy() for arr in result]
+    return torch.meshgrid(x, indexing=indexing)
 
 
 def min(x, axis=None, keepdims=False, initial=None):
@@ -543,6 +561,7 @@ def min(x, axis=None, keepdims=False, initial=None):
         result = result.values
 
     if initial is not None:
+        initial = convert_to_tensor(initial)
         return torch.minimum(result, initial)
     return result
 
@@ -595,7 +614,7 @@ def outer(x1, x2):
 
 def pad(x, pad_width, mode="constant"):
     x = convert_to_tensor(x)
-    pad_sum = ()
+    pad_sum = []
     pad_width = list(pad_width)[::-1]  # torch uses reverse order
     for pad in pad_width:
         pad_sum += pad
@@ -637,7 +656,25 @@ def reciprocal(x):
 
 def repeat(x, repeats, axis=None):
     x = convert_to_tensor(x)
+
+    if get_device() == "meta":
+        # Import upper level modules locally to avoid circular imports
+        # TODO: Refactor the upper level modules to avoid these imports.
+        from keras_core.backend import KerasTensor
+        from keras_core.backend import standardize_dtype
+        from keras_core.ops.numpy import repeat
+
+        x = KerasTensor(x.shape, standardize_dtype(x.dtype))
+        outputs = repeat(x, repeats, axis=axis)
+
+        return torch.empty(
+            size=outputs.shape,
+            dtype=to_torch_dtype(outputs.dtype),
+            device=get_device(),
+        )
+
     repeats = convert_to_tensor(repeats, dtype=int)
+
     return torch.repeat_interleave(x, repeats, dim=axis)
 
 
@@ -712,8 +749,18 @@ def swapaxes(x, axis1, axis2):
 def take(x, indices, axis=None):
     x = convert_to_tensor(x)
     indices = convert_to_tensor(indices).long()
+    if x.ndim == 2 and (axis is None or axis == 0):
+        # This case is equivalent to embedding lookup.
+        return torch.nn.functional.embedding(indices, x)
     if axis is not None:
-        return torch.index_select(x, dim=axis, index=indices).squeeze(axis)
+        # make sure axis is non-negative
+        axis = len(x.shape) + axis if axis < 0 else axis
+        shape = x.shape[:axis] + indices.shape + x.shape[axis + 1 :]
+        # ravel the `indices` since `index_select` expects `indices`
+        # to be a vector (1-D tensor).
+        indices = indices.ravel()
+        out = torch.index_select(x, dim=axis, index=indices).squeeze(axis)
+        return out.reshape(shape)
     return torch.take(x, index=indices)
 
 
@@ -742,6 +789,8 @@ def round(x, decimals=0):
 
 
 def tile(x, repeats):
+    if is_tensor(repeats):
+        repeats = tuple(repeats.int().numpy())
     x = convert_to_tensor(x)
     return torch.tile(x, dims=repeats)
 
@@ -754,7 +803,7 @@ def trace(x, offset=None, axis1=None, axis2=None):
 def tri(N, M=None, k=0, dtype="float32"):
     dtype = to_torch_dtype(dtype)
     M = M or N
-    x = torch.ones((N, M), dtype=dtype)
+    x = torch.ones((N, M), dtype=dtype, device=get_device())
     return torch.tril(x, diagonal=k)
 
 
@@ -837,7 +886,12 @@ def var(x, axis=None, keepdims=False):
 
 
 def sum(x, axis=None, keepdims=False):
+    if isinstance(x, (list, tuple)):
+        x = stack(x)
     x = convert_to_tensor(x)
+    if axis == () or axis == []:
+        # Torch handles the empty axis case differently from numpy.
+        return x
     if axis is not None:
         return torch.sum(x, axis=axis, keepdim=keepdims)
     return torch.sum(x)
@@ -848,7 +902,7 @@ def eye(N, M=None, k=None, dtype="float32"):
     M = N if M is None else M
     k = 0 if k is None else k
     if k == 0:
-        return torch.eye(N, M, dtype=dtype)
+        return torch.eye(N, M, dtype=dtype, device=get_device())
     diag_length = np.maximum(N, M)
-    diag = torch.ones(diag_length, dtype=dtype)
+    diag = torch.ones(diag_length, dtype=dtype, device=get_device())
     return torch.diag(diag, diagonal=k)[:N, :M]

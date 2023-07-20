@@ -1,8 +1,9 @@
 from keras_core import constraints
 from keras_core import initializers
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core import regularizers
 from keras_core.api_export import keras_core_export
+from keras_core.backend import standardize_dtype
 from keras_core.layers.input_spec import InputSpec
 from keras_core.layers.layer import Layer
 
@@ -188,28 +189,52 @@ class BatchNormalization(Layer):
         return input_shape
 
     def call(self, inputs, training=None, mask=None):
+        input_dtype = standardize_dtype(inputs.dtype)
+        if input_dtype in ("float16", "bfloat16"):
+            # BN is prone to overflowing for float16/bfloat16 inputs, so we opt
+            # out BN for mixed precision.
+            inputs = ops.cast(inputs, "float32")
+
         broadcast_shape = [1] * len(inputs.shape)
         broadcast_shape[self.axis] = inputs.shape[self.axis]
         if training and self.trainable:
             mean = ops.mean(inputs, axis=self._reduction_axes, keepdims=True)
-            variance = ops.var(inputs, axis=self._reduction_axes, keepdims=True)
+            variance = ops.mean(
+                ops.square(inputs), axis=self._reduction_axes, keepdims=True
+            ) - ops.square(mean)
             outputs = (inputs - mean) / ops.sqrt(variance + self.epsilon)
             mean = ops.squeeze(mean, self._reduction_axes)
             variance = ops.squeeze(variance, self._reduction_axes)
+            moving_mean = ops.cast(self.moving_mean, inputs.dtype)
+            moving_variance = ops.cast(self.moving_variance, inputs.dtype)
             self.moving_mean.assign(
-                self.moving_mean * self.momentum + mean * (1.0 - self.momentum)
+                ops.cast(
+                    moving_mean * self.momentum + mean * (1.0 - self.momentum),
+                    inputs.dtype,
+                )
+            )
+            self.moving_variance.assign(
+                ops.cast(
+                    moving_variance * self.momentum
+                    + variance * (1.0 - self.momentum),
+                    inputs.dtype,
+                )
             )
         else:
-            moving_mean = ops.reshape(self.moving_mean, broadcast_shape)
-            moving_variance = ops.reshape(self.moving_variance, broadcast_shape)
+            moving_mean = ops.cast(self.moving_mean, inputs.dtype)
+            moving_variance = ops.cast(self.moving_variance, inputs.dtype)
+            moving_mean = ops.reshape(moving_mean, broadcast_shape)
+            moving_variance = ops.reshape(moving_variance, broadcast_shape)
             outputs = (inputs - moving_mean) / ops.sqrt(
                 moving_variance + self.epsilon
             )
         if self.scale:
             gamma = ops.reshape(self.gamma, broadcast_shape)
+            gamma = ops.cast(gamma, outputs.dtype)
             outputs = outputs * gamma
         if self.center:
             beta = ops.reshape(self.beta, broadcast_shape)
+            beta = ops.cast(beta, outputs.dtype)
             outputs = outputs + beta
         return outputs
 

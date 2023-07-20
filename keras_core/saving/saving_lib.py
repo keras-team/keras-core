@@ -4,14 +4,13 @@ import datetime
 import io
 import json
 import os
-import re
 import tempfile
 import warnings
 import zipfile
 
 import numpy as np
-from tensorflow.io import gfile
 
+from keras_core.backend.common import global_state
 from keras_core.layers.layer import Layer
 from keras_core.losses.loss import Loss
 from keras_core.metrics.metric import Metric
@@ -19,9 +18,9 @@ from keras_core.optimizers.optimizer import Optimizer
 from keras_core.saving.serialization_lib import ObjectSharingScope
 from keras_core.saving.serialization_lib import deserialize_keras_object
 from keras_core.saving.serialization_lib import serialize_keras_object
+from keras_core.utils import file_utils
 from keras_core.utils import naming
-
-keras_version = "0.0.0"  # TODO
+from keras_core.version import __version__ as keras_version
 
 try:
     import h5py
@@ -34,25 +33,6 @@ _VARS_FNAME = "model.weights"  # Will become e.g. "model.weights.h5"
 _ASSETS_DIRNAME = "assets"
 
 
-ATTR_SKIPLIST = frozenset(
-    {
-        "_operations",
-        "_layers",
-        "_functional",
-        "_losses",
-        "_inbound_nodes",
-        "_outbound_nodes",
-        "_variables",
-        "weights",
-        "non_trainable_weights",
-        "trainable_weights",
-        "variables",
-        "non_trainable_variables",
-        "trainable_variables",
-    }
-)
-
-
 def save_model(model, filepath, weights_format="h5"):
     """Save a zip-archive representing a Keras model to the given filepath.
 
@@ -60,7 +40,7 @@ def save_model(model, filepath, weights_format="h5"):
 
     - JSON-based configuration file (config.json): Records of model, layer, and
         other trackables' configuration.
-    - NPZ-based trackable state files, found in respective directories, such as
+    - H5-based trackable state files, found in respective directories, such as
         model/states.npz, model/dense_layer/states.npz, etc.
     - Metadata file.
 
@@ -104,8 +84,7 @@ def save_model(model, filepath, weights_format="h5"):
             "date_saved": datetime.datetime.now().strftime("%Y-%m-%d@%H:%M:%S"),
         }
     )
-    # TODO(rameshsampath): Need a better logic for local vs remote path
-    if is_remote_path(filepath):
+    if file_utils.is_remote_path(filepath):
         # Remote path. Zip to local drive and copy to remote
         zip_filepath = os.path.join(get_temp_dir(), "tmp_model.keras")
     else:
@@ -142,10 +121,10 @@ def save_model(model, filepath, weights_format="h5"):
         weights_store.close()
         asset_store.close()
 
-    if is_remote_path(filepath):
+    if file_utils.is_remote_path(filepath):
         # Using gfile context manager doesn't close zip file when
         # writing to GCS. Hence writing to local and copying to filepath.
-        gfile.copy(zip_filepath, filepath, overwrite=True)
+        file_utils.copy(zip_filepath, filepath, overwrite=True)
         os.remove(zip_filepath)
 
 
@@ -159,7 +138,7 @@ def load_model(filepath, custom_objects=None, compile=True, safe_mode=True):
             f"Received: filepath={filepath}"
         )
 
-    with gfile.GFile(filepath, mode="r+b") as gfile_handle, zipfile.ZipFile(
+    with file_utils.File(filepath, mode="r+b") as gfile_handle, zipfile.ZipFile(
         gfile_handle, "r"
     ) as zf:
         with zf.open(_CONFIG_FILENAME, "r") as f:
@@ -257,33 +236,39 @@ def load_weights_only(model, filepath, skip_mismatch=False):
         visited_trackables=set(),
     )
     weights_store.close()
-    if temp_dir and gfile.exists(temp_dir):
-        gfile.rmtree(temp_dir)
+    if temp_dir and file_utils.exists(temp_dir):
+        file_utils.rmtree(temp_dir)
     if archive:
         archive.close()
 
 
-def is_remote_path(filepath):
-    if re.match(r"^(/cns|/cfs|/gcs|.*://).*$", str(filepath)):
-        return True
-    return False
-
-
 def _write_to_zip_recursively(zipfile_to_save, system_path, zip_path):
-    if not gfile.isdir(system_path):
+    if not file_utils.isdir(system_path):
         zipfile_to_save.write(system_path, zip_path)
     else:
-        for file_name in gfile.listdir(system_path):
-            system_file_path = gfile.join(system_path, file_name)
-            zip_file_path = gfile.join(zip_path, file_name)
+        for file_name in file_utils.listdir(system_path):
+            system_file_path = file_utils.join(system_path, file_name)
+            zip_file_path = file_utils.join(zip_path, file_name)
             _write_to_zip_recursively(
                 zipfile_to_save, system_file_path, zip_file_path
             )
 
 
 def _walk_trackable(trackable):
+    if isinstance(trackable, Layer):
+        obj_type = "Layer"
+    elif isinstance(trackable, Optimizer):
+        obj_type = "Optimizer"
+    elif isinstance(trackable, Metric):
+        obj_type = "Metric"
+    elif isinstance(trackable, Loss):
+        obj_type = "Loss"
+    else:
+        raise ValueError(f"Invalid obj_type: {obj_type}")
+    attr_skiplist = get_attr_skiplist(obj_type)
+
     for child_attr in dir(trackable):
-        if child_attr.startswith("__") or child_attr in ATTR_SKIPLIST:
+        if child_attr.startswith("__") or child_attr in attr_skiplist:
             continue
         try:
             child_obj = getattr(trackable, child_attr)
@@ -314,7 +299,7 @@ def _save_state(
                 child_obj,
                 weights_store,
                 assets_store,
-                inner_path=gfile.join(inner_path, child_attr),
+                inner_path=file_utils.join(inner_path, child_attr),
                 visited_trackables=visited_trackables,
             )
         elif isinstance(child_obj, (list, dict, tuple, set)):
@@ -322,7 +307,7 @@ def _save_state(
                 child_obj,
                 weights_store,
                 assets_store,
-                inner_path=gfile.join(inner_path, child_attr),
+                inner_path=file_utils.join(inner_path, child_attr),
                 visited_trackables=visited_trackables,
             )
 
@@ -376,7 +361,7 @@ def _load_state(
                 child_obj,
                 weights_store,
                 assets_store,
-                inner_path=gfile.join(inner_path, child_attr),
+                inner_path=file_utils.join(inner_path, child_attr),
                 skip_mismatch=skip_mismatch,
                 visited_trackables=visited_trackables,
             )
@@ -385,7 +370,7 @@ def _load_state(
                 child_obj,
                 weights_store,
                 assets_store,
-                inner_path=gfile.join(inner_path, child_attr),
+                inner_path=file_utils.join(inner_path, child_attr),
                 skip_mismatch=skip_mismatch,
                 visited_trackables=visited_trackables,
             )
@@ -413,7 +398,7 @@ def _save_container_state(
                 trackable,
                 weights_store,
                 assets_store,
-                inner_path=gfile.join(inner_path, name),
+                inner_path=file_utils.join(inner_path, name),
                 visited_trackables=visited_trackables,
             )
 
@@ -442,7 +427,7 @@ def _load_container_state(
                 trackable,
                 weights_store,
                 assets_store,
-                inner_path=gfile.join(inner_path, name),
+                inner_path=file_utils.join(inner_path, name),
                 skip_mismatch=skip_mismatch,
                 visited_trackables=visited_trackables,
             )
@@ -467,30 +452,30 @@ class DiskIOStore:
             self.tmp_dir = get_temp_dir()
             if self.mode == "r":
                 self.archive.extractall(path=self.tmp_dir)
-            self.working_dir = gfile.join(self.tmp_dir, self.root_path)
+            self.working_dir = file_utils.join(self.tmp_dir, self.root_path)
             if self.mode == "w":
-                gfile.makedirs(self.working_dir)
+                file_utils.makedirs(self.working_dir)
         else:
             if mode == "r":
                 self.working_dir = root_path
             else:
                 self.tmp_dir = get_temp_dir()
-                self.working_dir = gfile.join(self.tmp_dir, self.root_path)
-                gfile.makedirs(self.working_dir)
+                self.working_dir = file_utils.join(self.tmp_dir, self.root_path)
+                file_utils.makedirs(self.working_dir)
 
     def make(self, path):
         if not path:
             return self.working_dir
-        path = gfile.join(self.working_dir, path)
-        if not gfile.exists(path):
-            gfile.makedirs(path)
+        path = file_utils.join(self.working_dir, path)
+        if not file_utils.exists(path):
+            file_utils.makedirs(path)
         return path
 
     def get(self, path):
         if not path:
             return self.working_dir
-        path = gfile.join(self.working_dir, path)
-        if gfile.exists(path):
+        path = file_utils.join(self.working_dir, path)
+        if file_utils.exists(path):
             return path
         return None
 
@@ -499,8 +484,8 @@ class DiskIOStore:
             _write_to_zip_recursively(
                 self.archive, self.working_dir, self.root_path
             )
-        if self.tmp_dir and gfile.exists(self.tmp_dir):
-            gfile.rmtree(self.tmp_dir)
+        if self.tmp_dir and file_utils.exists(self.tmp_dir):
+            file_utils.rmtree(self.tmp_dir)
 
 
 class H5IOStore:
@@ -602,6 +587,33 @@ def get_temp_dir():
     testfile = tempfile.TemporaryFile(dir=temp_dir)
     testfile.close()
     return temp_dir
+
+
+def get_attr_skiplist(obj_type):
+    skiplist = global_state.get_global_attribute(
+        f"saving_attr_skiplist_{obj_type}", None
+    )
+    if skiplist is not None:
+        return skiplist
+    if obj_type == "Layer":
+        ref_obj = Layer()
+        skiplist = dir(ref_obj)
+    elif obj_type == "Metric":
+        ref_obj = Metric()
+        skiplist = dir(ref_obj)
+    elif obj_type == "Optimizer":
+        ref_obj = Optimizer(1.0)
+        skiplist = dir(ref_obj)
+        skiplist.remove("variables")
+    elif obj_type == "Loss":
+        ref_obj = Loss()
+        skiplist = dir(ref_obj)
+    else:
+        raise ValueError(f"Invalid obj_type: {obj_type}")
+    global_state.set_global_attribute(
+        f"saving_attr_skiplist_{obj_type}", skiplist
+    )
+    return skiplist
 
 
 def _is_keras_trackable(obj):

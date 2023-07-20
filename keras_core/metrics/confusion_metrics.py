@@ -3,7 +3,7 @@ import numpy as np
 from keras_core import activations
 from keras_core import backend
 from keras_core import initializers
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core.api_export import keras_core_export
 from keras_core.metrics import metrics_utils
 from keras_core.metrics.metric import Metric
@@ -655,7 +655,9 @@ class SensitivitySpecificityBase(Metric):
         Returns:
             maximal dependent value, if no value satisfies the constraint 0.0.
         """
-        feasible = ops.array(ops.nonzero(predicate(constrained, self.value)))
+        feasible = backend.convert_to_numpy(
+            ops.nonzero(predicate(constrained, self.value))
+        )
 
         print(feasible)
         feasible_exists = ops.greater(ops.size(feasible), 0)

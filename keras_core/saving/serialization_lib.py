@@ -5,9 +5,7 @@ import inspect
 import types
 import warnings
 
-import jax
 import numpy as np
-import tensorflow as tf
 
 from keras_core import api_export
 from keras_core import backend
@@ -15,6 +13,7 @@ from keras_core.api_export import keras_core_export
 from keras_core.backend.common import global_state
 from keras_core.saving import object_registration
 from keras_core.utils import python_utils
+from keras_core.utils.module_utils import tensorflow as tf
 
 PLAIN_TYPES = (str, int, float, bool)
 
@@ -160,13 +159,13 @@ def serialize_keras_object(obj):
                 "keras_history": history,
             },
         }
-    if isinstance(obj, tf.TensorShape):
+    if tf.available and isinstance(obj, tf.TensorShape):
         return obj.as_list() if obj._dims is not None else None
-    if isinstance(obj, (tf.Tensor, jax.numpy.ndarray)):
+    if backend.is_tensor(obj):
         return {
             "class_name": "__tensor__",
             "config": {
-                "value": np.array(obj).tolist(),
+                "value": backend.convert_to_numpy(obj).tolist(),
                 "dtype": backend.standardize_dtype(obj.dtype),
             },
         }
@@ -182,7 +181,7 @@ def serialize_keras_object(obj):
         else:
             # Treat numpy floats / etc as plain types.
             return obj.item()
-    if isinstance(obj, tf.DType):
+    if tf.available and isinstance(obj, tf.DType):
         return obj.name
     if isinstance(obj, types.FunctionType) and obj.__name__ == "<lambda>":
         warnings.warn(
@@ -200,7 +199,7 @@ def serialize_keras_object(obj):
                 "value": python_utils.func_dump(obj),
             },
         }
-    if isinstance(obj, tf.TypeSpec):
+    if tf.available and isinstance(obj, tf.TypeSpec):
         ts_config = obj._serialize()
         # TensorShape and tf.DType conversion
         ts_config = list(
@@ -468,7 +467,6 @@ def deserialize_keras_object(
 
     Returns:
         The object described by the `config` dictionary.
-
     """
     safe_scope_arg = in_safe_mode()  # Enforces SafeModeScope
     safe_mode = safe_scope_arg if safe_scope_arg is not None else safe_mode
@@ -605,7 +603,7 @@ def deserialize_keras_object(
                 "or call `keras_core.config.enable_unsafe_deserialization()`."
             )
         return python_utils.func_load(inner_config["value"])
-    if config["class_name"] == "__typespec__":
+    if tf is not None and config["class_name"] == "__typespec__":
         obj = _retrieve_class_or_fn(
             config["spec_name"],
             config["registered_name"],
@@ -614,7 +612,7 @@ def deserialize_keras_object(
             full_config=config,
             custom_objects=custom_objects,
         )
-        # Conversion to TensorShape and tf.DType
+        # Conversion to TensorShape and DType
         inner_config = map(
             lambda x: tf.TensorShape(x)
             if isinstance(x, list)

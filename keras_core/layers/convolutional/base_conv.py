@@ -3,12 +3,12 @@
 from keras_core import activations
 from keras_core import constraints
 from keras_core import initializers
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core import regularizers
 from keras_core.backend import standardize_data_format
 from keras_core.layers.input_spec import InputSpec
 from keras_core.layers.layer import Layer
-from keras_core.operations.operation_utils import compute_conv_output_shape
+from keras_core.ops.operation_utils import compute_conv_output_shape
 from keras_core.utils.argument_validation import standardize_padding
 from keras_core.utils.argument_validation import standardize_tuple
 
@@ -204,16 +204,21 @@ class BaseConv(Layer):
             self.bias = None
         self.built = True
 
-    def call(self, inputs):
-        outputs = ops.conv(
+    def convolution_op(self, inputs, kernel):
+        return ops.conv(
             inputs,
-            self.kernel,
+            kernel,
             strides=list(self.strides),
             padding=self.padding,
             dilation_rate=self.dilation_rate,
             data_format=self.data_format,
         )
 
+    def call(self, inputs):
+        outputs = self.convolution_op(
+            inputs,
+            self.kernel,
+        )
         if self.use_bias:
             if self.data_format == "channels_last":
                 bias_shape = (1,) * (self.rank + 1) + (self.filters,)

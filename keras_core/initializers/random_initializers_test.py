@@ -21,9 +21,27 @@ class InitializersTest(testing.TestCase):
         self.assertEqual(initializer.stddev, stddev)
         self.assertEqual(initializer.seed, seed)
         self.assertEqual(values.shape, shape)
-        self.assertAllClose(np.std(values), stddev, atol=1e-1)
+        self.assertAllClose(
+            np.std(backend.convert_to_numpy(values)), stddev, atol=1e-1
+        )
 
         self.run_class_serialization_test(initializer)
+
+        # Test that a fixed seed yields the same results each call.
+        initializer = initializers.RandomNormal(
+            mean=mean, stddev=stddev, seed=1337
+        )
+        values = initializer(shape=shape)
+        next_values = initializer(shape=shape)
+        self.assertAllClose(values, next_values)
+
+        # Test that a SeedGenerator yields different results each call.
+        initializer = initializers.RandomNormal(
+            mean=mean, stddev=stddev, seed=backend.random.SeedGenerator(1337)
+        )
+        values = initializer(shape=shape)
+        next_values = initializer(shape=shape)
+        self.assertNotAllClose(values, next_values)
 
         # Test serialization with SeedGenerator
         initializer = initializers.RandomNormal(
@@ -66,6 +84,7 @@ class InitializersTest(testing.TestCase):
         self.assertEqual(initializer.maxval, maxval)
         self.assertEqual(initializer.seed, seed)
         self.assertEqual(values.shape, shape)
+        values = backend.convert_to_numpy(values)
         self.assertGreaterEqual(np.min(values), minval)
         self.assertLess(np.max(values), maxval)
 
@@ -83,7 +102,11 @@ class InitializersTest(testing.TestCase):
         self.assertEqual(initializer.scale, scale)
         self.assertEqual(initializer.seed, seed)
         self.assertEqual(values.shape, shape)
-        self.assertAllClose(np.std(values), np.sqrt(scale / 25), atol=1e-1)
+        self.assertAllClose(
+            np.std(backend.convert_to_numpy(values)),
+            np.sqrt(scale / 25),
+            atol=1e-1,
+        )
         self.run_class_serialization_test(initializer)
 
         initializer = initializers.VarianceScaling(
@@ -93,7 +116,11 @@ class InitializersTest(testing.TestCase):
         self.assertEqual(initializer.scale, scale)
         self.assertEqual(initializer.seed, seed)
         self.assertEqual(values.shape, shape)
-        self.assertAllClose(np.std(values), np.sqrt(scale / 20), atol=1e-1)
+        self.assertAllClose(
+            np.std(backend.convert_to_numpy(values)),
+            np.sqrt(scale / 20),
+            atol=1e-1,
+        )
         self.run_class_serialization_test(initializer)
 
     def test_orthogonal_initializer(self):
@@ -101,8 +128,22 @@ class InitializersTest(testing.TestCase):
         gain = 2.0
         seed = 1234
         initializer = initializers.OrthogonalInitializer(gain=gain, seed=seed)
-        _ = initializer(shape=shape)
-        # TODO: test correctness
+        values = initializer(shape=shape)
+        self.assertEqual(initializer.seed, seed)
+        self.assertEqual(initializer.gain, gain)
+
+        self.assertEqual(values.shape, shape)
+        array = np.array(values)
+        # Making sure that the columns have gain * unit norm value
+        for column in array.T:
+            self.assertAlmostEqual(np.linalg.norm(column), gain * 1.0)
+
+        # Making sure that each column is orthonormal to the other column
+        for i in range(array.shape[-1]):
+            for j in range(i + 1, array.shape[-1]):
+                self.assertAlmostEqual(
+                    np.dot(array[..., i], array[..., j]), 0.0
+                )
 
         self.run_class_serialization_test(initializer)
 

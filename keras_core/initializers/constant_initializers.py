@@ -1,4 +1,4 @@
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core.api_export import keras_core_export
 from keras_core.backend import standardize_dtype
 from keras_core.initializers.initializer import Initializer
@@ -30,6 +30,7 @@ class Constant(Initializer):
         self.value = float(value)
 
     def __call__(self, shape, dtype=None):
+        dtype = standardize_dtype(dtype)
         return self.value * ops.ones(shape=shape, dtype=dtype)
 
     def get_config(self):

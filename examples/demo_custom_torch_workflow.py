@@ -1,3 +1,9 @@
+# flake8: noqa
+import os
+
+# Set backend env to torch
+os.environ["KERAS_BACKEND"] = "torch"
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -9,7 +15,7 @@ import numpy as np
 num_classes = 10
 input_shape = (28, 28, 1)
 learning_rate = 0.01
-batch_size = 128
+batch_size = 64
 num_epochs = 1
 
 # Load the data and split it between train and test sets
@@ -44,7 +50,6 @@ model = keras_core.Sequential(
 #################################################################
 
 # Instantiate the torch optimizer
-print("Num params:", len(list(model.parameters())))
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 # Instantiate the torch loss function
@@ -93,6 +98,7 @@ train(model, train_loader, num_epochs, optimizer, loss_fn)
 ######## Using a Keras model or layer in a torch Module ########
 ################################################################
 
+
 class MyModel(nn.Module):
     def __init__(self):
         super().__init__()
@@ -116,7 +122,6 @@ class MyModel(nn.Module):
 torch_module = MyModel()
 
 # Instantiate the torch optimizer
-print("Num params:", len(list(torch_module.parameters())))
 optimizer = optim.Adam(torch_module.parameters(), lr=learning_rate)
 
 # Instantiate the torch loss function

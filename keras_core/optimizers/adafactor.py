@@ -1,5 +1,5 @@
 from keras_core import backend
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core.api_export import keras_core_export
 from keras_core.optimizers import optimizer
 
@@ -94,8 +94,12 @@ class Adafactor(optimizer.Optimizer):
             if len(var.shape) < 2:
                 # Don't factor if variable is of dimension < 2, but we still
                 # need to create dummy variables as placeholder.
-                self._r.append(backend.Variable(0, name=var.name))
-                self._c.append(backend.Variable(0, name=var.name))
+                self._r.append(
+                    backend.Variable(0, name=var.name, trainable=False)
+                )
+                self._c.append(
+                    backend.Variable(0, name=var.name, trainable=False)
+                )
             else:
                 # Always factor the last 2 dimenstions.
                 r_shape = var.shape[:-1]

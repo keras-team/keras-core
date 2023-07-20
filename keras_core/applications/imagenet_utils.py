@@ -5,6 +5,7 @@ import numpy as np
 
 from keras_core import activations
 from keras_core import backend
+from keras_core import ops
 from keras_core.api_export import keras_core_export
 from keras_core.utils import file_utils
 
@@ -102,7 +103,7 @@ def preprocess_input(x, data_format=None, mode="caffe"):
     if isinstance(x, np.ndarray):
         return _preprocess_numpy_input(x, data_format=data_format, mode=mode)
     else:
-        return _preprocess_symbolic_input(x, data_format=data_format, mode=mode)
+        return _preprocess_tensor_input(x, data_format=data_format, mode=mode)
 
 
 preprocess_input.__doc__ = PREPROCESS_INPUT_DOC.format(
@@ -117,17 +118,17 @@ def decode_predictions(preds, top=5):
     """Decodes the prediction of an ImageNet model.
 
     Args:
-      preds: Numpy array encoding a batch of predictions.
-      top: Integer, how many top-guesses to return. Defaults to 5.
+        preds: NumPy array encoding a batch of predictions.
+        top: Integer, how many top-guesses to return. Defaults to 5.
 
     Returns:
-      A list of lists of top class prediction tuples
-      `(class_name, class_description, score)`.
-      One list of tuples per sample in batch input.
+        A list of lists of top class prediction tuples
+        `(class_name, class_description, score)`.
+        One list of tuples per sample in batch input.
 
     Raises:
-      ValueError: In case of invalid shape of the `pred` array
-        (must be 2D).
+        ValueError: In case of invalid shape of the `pred` array
+            (must be 2D).
     """
     global CLASS_INDEX
 
@@ -136,7 +137,7 @@ def decode_predictions(preds, top=5):
             "`decode_predictions` expects "
             "a batch of predictions "
             "(i.e. a 2D array of shape (samples, 1000)). "
-            "Found array with shape: " + str(preds.shape)
+            f"Received array with shape: {preds.shape}"
         )
     if CLASS_INDEX is None:
         fpath = file_utils.get_file(
@@ -148,6 +149,7 @@ def decode_predictions(preds, top=5):
         with open(fpath) as f:
             CLASS_INDEX = json.load(f)
     results = []
+    preds = ops.convert_to_numpy(preds)
     for pred in preds:
         top_indices = pred.argsort()[-top:][::-1]
         result = [tuple(CLASS_INDEX[str(i)]) + (pred[i],) for i in top_indices]
@@ -190,7 +192,7 @@ def _preprocess_numpy_input(x, data_format, mode):
     else:
         if data_format == "channels_first":
             # 'RGB'->'BGR'
-            if x.ndim == 3:
+            if len(x.shape) == 3:
                 x = x[::-1, ...]
             else:
                 x = x[:, ::-1, ...]
@@ -202,7 +204,7 @@ def _preprocess_numpy_input(x, data_format, mode):
 
     # Zero-center by mean pixel
     if data_format == "channels_first":
-        if x.ndim == 3:
+        if len(x.shape) == 3:
             x[0, :, :] -= mean[0]
             x[1, :, :] -= mean[1]
             x[2, :, :] -= mean[2]
@@ -229,7 +231,7 @@ def _preprocess_numpy_input(x, data_format, mode):
     return x
 
 
-def _preprocess_symbolic_input(x, data_format, mode):
+def _preprocess_tensor_input(x, data_format, mode):
     """Preprocesses a tensor encoding a batch of images.
 
     Args:
@@ -249,6 +251,8 @@ def _preprocess_symbolic_input(x, data_format, mode):
     Returns:
         Preprocessed tensor.
     """
+    ndim = len(x.shape)
+
     if mode == "tf":
         x /= 127.5
         x -= 1.0
@@ -260,31 +264,28 @@ def _preprocess_symbolic_input(x, data_format, mode):
     else:
         if data_format == "channels_first":
             # 'RGB'->'BGR'
-            if backend.ndim(x) == 3:
-                x = x[::-1, ...]
+            if len(x.shape) == 3:
+                x = ops.stack([x[i, ...] for i in (2, 1, 0)], axis=0)
             else:
-                x = x[:, ::-1, ...]
+                x = ops.stack([x[:, i, :] for i in (2, 1, 0)], axis=1)
         else:
             # 'RGB'->'BGR'
-            x = x[..., ::-1]
+            x = ops.stack([x[..., i] for i in (2, 1, 0)], axis=-1)
         mean = [103.939, 116.779, 123.68]
         std = None
 
-    mean_tensor = backend.constant(-np.array(mean))
+    mean_tensor = ops.convert_to_tensor(-np.array(mean), dtype=x.dtype)
 
     # Zero-center by mean pixel
-    if backend.dtype(x) != backend.dtype(mean_tensor):
-        x = backend.bias_add(
-            x,
-            backend.cast(mean_tensor, backend.dtype(x)),
-            data_format=data_format,
-        )
+    if data_format == "channels_first":
+        mean_tensor = ops.reshape(mean_tensor, (1, 3) + (1,) * (ndim - 2))
     else:
-        x = backend.bias_add(x, mean_tensor, data_format)
+        mean_tensor = ops.reshape(mean_tensor, (1,) * (ndim - 1) + (3,))
+    x += mean_tensor
     if std is not None:
-        std_tensor = backend.constant(np.array(std), dtype=backend.dtype(x))
+        std_tensor = ops.convert_to_tensor(np.array(std), dtype=x.dtype)
         if data_format == "channels_first":
-            std_tensor = backend.reshape(std_tensor, (-1, 1, 1))
+            std_tensor = ops.reshape(std_tensor, (-1, 1, 1))
         x /= std_tensor
     return x
 

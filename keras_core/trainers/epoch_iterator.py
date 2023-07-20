@@ -41,14 +41,12 @@ or until there is no data
 import types
 import warnings
 
-import tensorflow as tf
-from tensorflow import nest
-
 from keras_core.trainers.data_adapters import array_data_adapter
-from keras_core.trainers.data_adapters import data_adapter_utils
 from keras_core.trainers.data_adapters import generator_data_adapter
 from keras_core.trainers.data_adapters import py_dataset_adapter
 from keras_core.trainers.data_adapters import tf_dataset_adapter
+from keras_core.trainers.data_adapters import torch_data_adapter
+from keras_core.utils.module_utils import tensorflow as tf
 
 
 class EpochIterator:
@@ -68,8 +66,7 @@ class EpochIterator:
         if steps_per_epoch:
             self._current_iterator = None
             self._insufficient_data = False
-        first_element = next(iter(nest.flatten(x)), None)
-        if isinstance(first_element, data_adapter_utils.ARRAY_TYPES):
+        if array_data_adapter.can_convert_arrays((x, y, sample_weight)):
             self.data_adapter = array_data_adapter.ArrayDataAdapter(
                 x,
                 y,
@@ -79,7 +76,7 @@ class EpochIterator:
                 batch_size=batch_size,
                 steps=steps_per_epoch,
             )
-        elif isinstance(x, tf.data.Dataset):
+        elif tf.available and isinstance(x, tf.data.Dataset):
             self.data_adapter = tf_dataset_adapter.TFDatasetAdapter(
                 x, class_weight=class_weight
             )
@@ -107,6 +104,25 @@ class EpochIterator:
                 raise_unsupported_arg(
                     "sample_weights", "the sample weights", "PyDataset"
                 )
+        elif is_torch_dataloader(x):
+            self.data_adapter = torch_data_adapter.TorchDataLoaderAdapter(x)
+            if y is not None:
+                raise_unsupported_arg("y", "the targets", "torch DataLoader")
+            if sample_weight is not None:
+                raise_unsupported_arg(
+                    "sample_weights", "the sample weights", "torch DataLoader"
+                )
+            if class_weight is not None:
+                raise ValueError(
+                    "Argument `class_weight` is not supported for torch "
+                    f"DataLoader inputs. Received: class_weight={class_weight}"
+                )
+            # TODO: should we warn or not?
+            # warnings.warn(
+            #     "`shuffle=True` was passed, but will be ignored since the "
+            #     "data `x` was provided as a torch DataLoader. The DataLoader "
+            #     "is expected to already be shuffled."
+            # )
         elif isinstance(x, types.GeneratorType):
             self.data_adapter = generator_data_adapter.GeneratorDataAdapter(x)
             if y is not None:
@@ -153,13 +169,19 @@ class EpochIterator:
             for step in range(self.steps_per_epoch):
                 if self._insufficient_data:
                     break
+
+                if tf.available:
+                    errors = (StopIteration, tf.errors.OutOfRangeError)
+                else:
+                    errors = (StopIteration,)
+
                 try:
                     data = next(self._current_iterator)
                     buffer.append(data)
                     if len(buffer) == self.steps_per_execution:
                         yield step - len(buffer) + 1, buffer
                         buffer = []
-                except (StopIteration, tf.errors.OutOfRangeError):
+                except errors:
                     warnings.warn(
                         "Your input ran out of data; interrupting epoch. "
                         "Make sure that your dataset or generator can generate "
@@ -201,3 +223,13 @@ def raise_unsupported_arg(arg_name, arg_description, input_type):
         f"should not be passed. Instead, the {arg_description} should "
         f"be included as part of the {input_type}."
     )
+
+
+def is_torch_dataloader(x):
+    if hasattr(x, "__class__"):
+        for parent in x.__class__.__mro__:
+            if parent.__name__ == "DataLoader" and str(
+                parent.__module__
+            ).startswith("torch.utils.data"):
+                return True
+    return False

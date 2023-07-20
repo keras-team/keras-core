@@ -1,5 +1,5 @@
 from keras_core import backend
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core.api_export import keras_core_export
 from keras_core.optimizers import optimizer
 
@@ -76,10 +76,14 @@ class Nadam(optimizer.Optimizer):
         """
         if self.built:
             return
+        if var_list:
+            dtype = var_list[0].dtype
+        else:
+            dtype = backend.floatx()
         super().build(var_list)
         self._momentums = []
         self._velocities = []
-        self._u_product = backend.Variable(1.0, dtype=var_list[0].dtype)
+        self._u_product = backend.Variable(1.0, dtype=dtype)
 
         for var in var_list:
             self._momentums.append(
@@ -92,6 +96,18 @@ class Nadam(optimizer.Optimizer):
                     reference_variable=var, name="v"
                 )
             )
+
+    def _internal_apply_gradients(self, grads_and_vars):
+        dtype = self._u_product.dtype
+        self._u_product.assign(
+            self._u_product
+            * self.beta_1
+            * (
+                1.0
+                - 0.5 * ops.power(0.96, ops.cast(self.iterations + 1, dtype))
+            )
+        )
+        super()._internal_apply_gradients(grads_and_vars)
 
     def update_step(self, gradient, variable, learning_rate):
         """Update step given gradient and the associated model variable."""
@@ -106,9 +122,7 @@ class Nadam(optimizer.Optimizer):
         beta_2 = ops.cast(self.beta_2, var_dtype)
         u_t = beta_1 * (1.0 - 0.5 * (ops.power(decay, local_step)))
         u_t_1 = beta_1 * (1.0 - 0.5 * (ops.power(decay, next_step)))
-
-        u_product_t = self._u_product * u_t
-        self._u_product.assign(u_product_t)
+        u_product_t = ops.cast(self._u_product, var_dtype)
 
         u_product_t_1 = u_product_t * u_t_1
         beta_2_power = ops.power(beta_2, local_step)

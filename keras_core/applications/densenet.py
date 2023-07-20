@@ -1,11 +1,9 @@
-from tensorflow.io import gfile
-
 from keras_core import backend
 from keras_core import layers
 from keras_core.api_export import keras_core_export
 from keras_core.applications import imagenet_utils
 from keras_core.models import Functional
-from keras_core.operations import operation_utils
+from keras_core.ops import operation_utils
 from keras_core.utils import file_utils
 
 BASE_WEIGHTS_PATH = (
@@ -182,7 +180,7 @@ def DenseNet(
     Returns:
         A model instance.
     """
-    if not (weights in {"imagenet", None} or gfile.exists(weights)):
+    if not (weights in {"imagenet", None} or file_utils.exists(weights)):
         raise ValueError(
             "The `weights` argument should be either "
             "`None` (random initialization), `imagenet` "

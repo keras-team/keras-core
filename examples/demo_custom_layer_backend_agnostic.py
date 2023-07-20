@@ -2,12 +2,11 @@ import numpy as np
 
 import keras_core
 from keras_core import Model
-from keras_core import backend
 from keras_core import initializers
 from keras_core import layers
 from keras_core import losses
 from keras_core import metrics
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core import optimizers
 
 
@@ -18,12 +17,13 @@ class MyDense(layers.Layer):
 
     def build(self, input_shape):
         input_dim = input_shape[-1]
-        w_shape = (input_dim, self.units)
-        w_value = initializers.GlorotUniform()(w_shape)
-        # State must be stored in backend.Variable objects.
-        self.w = backend.Variable(w_value, name="kernel", trainable=True)
+        self.w = self.add_weight(
+            shape=(input_dim, self.units),
+            initializer=initializers.GlorotNormal(),
+            name="kernel",
+            trainable=True,
+        )
 
-        # You can also use add_weight
         self.b = self.add_weight(
             shape=(self.units,),
             initializer=initializers.Zeros(),

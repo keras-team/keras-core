@@ -38,10 +38,8 @@ class Dropout(Layer):
             training mode (adding dropout) or in inference mode (doing nothing).
     """
 
-    def __init__(
-        self, rate, noise_shape=None, seed=None, name=None, dtype=None
-    ):
-        super().__init__(name=name, dtype=dtype)
+    def __init__(self, rate, noise_shape=None, seed=None, **kwargs):
+        super().__init__(**kwargs)
         if not 0 <= rate <= 1:
             raise ValueError(
                 f"Invalid value received for argument "
@@ -53,6 +51,7 @@ class Dropout(Layer):
         self.noise_shape = noise_shape
         self.seed_generator = backend.random.SeedGenerator(seed)
         self.supports_masking = True
+        self.built = True
 
     def call(self, inputs, training=False):
         if training and self.rate > 0:

@@ -1,4 +1,4 @@
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core.api_export import keras_core_export
 from keras_core.layers.input_spec import InputSpec
 from keras_core.layers.layer import Layer
@@ -56,8 +56,8 @@ class ZeroPadding1D(Layer):
 
     def compute_output_shape(self, input_shape):
         output_shape = list(input_shape)
-        if input_shape[1] is not None:
-            input_shape[1] += self.padding[0] + self.padding[1]
+        if output_shape[1] is not None:
+            output_shape[1] += self.padding[0] + self.padding[1]
         return tuple(output_shape)
 
     def call(self, inputs):

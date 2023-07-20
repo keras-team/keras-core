@@ -1,9 +1,10 @@
 import numpy as np
-import tensorflow as tf
 
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
+from keras_core.utils import backend_utils
+from keras_core.utils.module_utils import tensorflow as tf
 
 
 @keras_core_export("keras_core.layers.StringLookup")
@@ -45,6 +46,9 @@ class StringLookup(Layer):
     It can also always be used as part of an input preprocessing pipeline
     with any backend (outside the model itself), which is how we recommend
     to use this layer.
+
+    **Note:** This layer is safe to use inside a `tf.data` pipeline
+    (independently of which backend you're using).
 
     Args:
         max_tokens: Maximum size of the vocabulary for this layer. This should
@@ -304,6 +308,12 @@ class StringLookup(Layer):
         dtype=None,
         **kwargs,
     ):
+        if not tf.available:
+            raise ImportError(
+                "Layer StringLookup requires TensorFlow. "
+                "Install it via `pip install tensorflow`."
+            )
+
         if output_mode == "int" and dtype is None:
             dtype = "int64"
         super().__init__(name=name)
@@ -435,18 +445,33 @@ class StringLookup(Layer):
         if not isinstance(inputs, (tf.Tensor, np.ndarray, list, tuple)):
             inputs = tf.convert_to_tensor(np.array(inputs))
         outputs = self.layer.call(inputs)
-        if backend.backend() != "tensorflow" and tf.executing_eagerly():
+        if (
+            backend.backend() != "tensorflow"
+            and not backend_utils.in_tf_graph()
+        ):
             outputs = backend.convert_to_tensor(outputs)
         return outputs
 
     def save_own_variables(self, store):
-        self.layer.save_own_variables(store)
+        if hasattr(self.layer, "save_own_variables"):
+            self.layer.save_own_variables(store)
+        else:
+            self.layer._save_own_variables(store)
 
     def load_own_variables(self, store):
-        self.layer.load_own_variables(store)
+        if hasattr(self.layer, "load_own_variables"):
+            self.layer.load_own_variables(store)
+        else:
+            self.layer._load_own_variables(store)
 
     def save_assets(self, dir_path):
-        self.layer.save_assets(dir_path)
+        if hasattr(self.layer, "save_assets"):
+            self.layer.save_assets(dir_path)
+        else:
+            self.layer._save_assets(dir_path)
 
     def load_assets(self, dir_path):
-        self.layer.load_assets(dir_path)
+        if hasattr(self.layer, "save_assets"):
+            self.layer.load_assets(dir_path)
+        else:
+            self.layer._load_assets(dir_path)

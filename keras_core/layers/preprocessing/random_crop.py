@@ -1,9 +1,10 @@
 import numpy as np
-import tensorflow as tf
 
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
+from keras_core.utils import backend_utils
+from keras_core.utils.module_utils import tensorflow as tf
 
 
 @keras_core_export("keras_core.layers.RandomCrop")
@@ -32,6 +33,9 @@ class RandomCrop(Layer):
     with any backend (outside the model itself), which is how we recommend
     to use this layer.
 
+    **Note:** This layer is safe to use inside a `tf.data` pipeline
+    (independently of which backend you're using).
+
     Input shape:
         3D (unbatched) or 4D (batched) tensor with shape:
         `(..., height, width, channels)`, in `"channels_last"` format.
@@ -49,6 +53,12 @@ class RandomCrop(Layer):
     """
 
     def __init__(self, height, width, seed=None, name=None, **kwargs):
+        if not tf.available:
+            raise ImportError(
+                "Layer RandomCrop requires TensorFlow. "
+                "Install it via `pip install tensorflow`."
+            )
+
         super().__init__(name=name, **kwargs)
         self.seed = seed or backend.random.make_default_seed()
         self.layer = tf.keras.layers.RandomCrop(
@@ -59,12 +69,17 @@ class RandomCrop(Layer):
         )
         self.supports_masking = False
         self.supports_jit = False
+        self._convert_input_args = False
+        self._allow_non_tensor_positional_args = True
 
     def call(self, inputs, training=True):
         if not isinstance(inputs, (tf.Tensor, np.ndarray, list, tuple)):
-            inputs = tf.convert_to_tensor(np.array(inputs))
-        outputs = self.layer.call(inputs)
-        if backend.backend() != "tensorflow":
+            inputs = tf.convert_to_tensor(backend.convert_to_numpy(inputs))
+        outputs = self.layer.call(inputs, training=training)
+        if (
+            backend.backend() != "tensorflow"
+            and not backend_utils.in_tf_graph()
+        ):
             outputs = backend.convert_to_tensor(outputs)
         return outputs
 

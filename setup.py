@@ -23,27 +23,33 @@ def get_version(rel_path):
 
 HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
-VERSION = get_version("keras_core/__init__.py")
+if os.path.exists("keras_core/version.py"):
+    VERSION = get_version("keras_core/version.py")
+else:
+    VERSION = get_version("keras_core/__init__.py")
 
 setup(
     name="keras-core",
     description="Multi-backend Keras.",
     long_description_content_type="text/markdown",
+    long_description=README,
     version=VERSION,
     url="https://github.com/keras-team/keras-core",
     author="Keras team",
-    author_email="keras@google.com",
+    author_email="keras-users@googlegroups.com",
     license="Apache License 2.0",
     install_requires=[
         "absl-py",
         "numpy",
-        "packaging",
         "rich",
+        "namex",
+        "h5py",
+        "dm-tree",
     ],
     # Supported Python versions
     python_requires=">=3.8",
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
@@ -51,7 +57,6 @@ setup(
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3 :: Only",
         "Operating System :: Unix",
-        "Operating System :: Microsoft :: Windows",
         "Operating System :: MacOS",
         "Intended Audience :: Science/Research",
         "Topic :: Scientific/Engineering",

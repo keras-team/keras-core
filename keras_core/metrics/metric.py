@@ -1,6 +1,6 @@
 from keras_core import backend
 from keras_core import initializers
-from keras_core import operations as ops
+from keras_core import ops
 from keras_core.api_export import keras_core_export
 from keras_core.utils.naming import auto_name
 from keras_core.utils.tracking import Tracker
@@ -72,7 +72,9 @@ class Metric:
             values = ops.cast(values, self.dtype)
             if sample_weight is not None:
                 sample_weight = ops.cast(sample_weight, self.dtype)
-                sample_weight = ops.broadcast_to(sample_weight, values.shape)
+                sample_weight = ops.broadcast_to(
+                    sample_weight, ops.shape(values)
+                )
                 values = ops.multiply(values, sample_weight)
             self.true_positives.assign(self.true_positives + ops.sum(values))
 
@@ -109,6 +111,31 @@ class Metric:
         """Accumulate statistics for the metric."""
         raise NotImplementedError
 
+    def stateless_update_state(self, metric_variables, *args, **kwargs):
+        if len(metric_variables) != len(self.variables):
+            raise ValueError(
+                "Argument `metric_variables` must be a list of tensors "
+                f"corresponding 1:1 to {self.__class__.__name__}().variables. "
+                f"Received list with length {len(metric_variables)}, but "
+                f"expected {len(self.variables)} variables."
+            )
+        # Gather variable mapping
+        mapping = list(zip(self.variables, metric_variables))
+
+        # Call in stateless scope
+        with backend.StatelessScope(state_mapping=mapping) as scope:
+            self.update_state(*args, **kwargs)
+
+        # Gather updated variables
+        metric_variables = []
+        for v in self.variables:
+            new_v = scope.get_current_value(v)
+            if new_v is not None:
+                metric_variables.append(new_v)
+            else:
+                metric_variables.append(v)
+        return metric_variables
+
     def result(self):
         """Compute the current metric value.
 
@@ -116,6 +143,22 @@ class Metric:
             A scalar tensor, or a dictionary of scalar tensors.
         """
         raise NotImplementedError
+
+    def stateless_result(self, metric_variables):
+        if len(metric_variables) != len(self.variables):
+            raise ValueError(
+                "Argument `metric_variables` must be a list of tensors "
+                f"corresponding 1:1 to {self.__class__.__name__}().variables. "
+                f"Received list with length {len(metric_variables)}, but "
+                f"expected {len(self.variables)} variables."
+            )
+        # Gather variable mapping
+        mapping = list(zip(self.variables, metric_variables))
+
+        # Call in stateless scope
+        with backend.StatelessScope(state_mapping=mapping):
+            res = self.result()
+        return res
 
     @property
     def dtype(self):
@@ -135,9 +178,11 @@ class Metric:
         self._tracker.add_to_store("variables", variable)
         return variable
 
-    def add_weight(self, *args, **kwargs):
+    def add_weight(self, shape=(), initializer=None, dtype=None, name=None):
         # Backwards compatibility alias
-        return self.add_variable(*args, **kwargs)
+        return self.add_variable(
+            shape=shape, initializer=initializer, dtype=dtype, name=name
+        )
 
     @property
     def variables(self):

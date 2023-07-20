@@ -1,5 +1,6 @@
 # flake8: noqa
 import numpy as np
+import pytest
 from absl.testing import parameterized
 
 from keras_core import backend
@@ -13,6 +14,7 @@ class UpSampling2dTest(testing.TestCase, parameterized.TestCase):
         length_row=[2],
         length_col=[2, 3],
     )
+    @pytest.mark.requires_trainable_backend
     def test_upsampling_2d(self, data_format, length_row, length_col):
         num_samples = 2
         stack_size = 2
@@ -63,6 +65,7 @@ class UpSampling2dTest(testing.TestCase, parameterized.TestCase):
         length_row=[2],
         length_col=[2, 3],
     )
+    @pytest.mark.requires_trainable_backend
     def test_upsampling_2d_bilinear(self, data_format, length_row, length_col):
         num_samples = 2
         stack_size = 2
@@ -103,7 +106,7 @@ class UpSampling2dTest(testing.TestCase, parameterized.TestCase):
     def test_upsampling_2d_correctness(self):
         input_shape = (2, 2, 1, 3)
         x = np.arange(np.prod(input_shape)).reshape(input_shape)
-        np.testing.assert_array_equal(
+        self.assertAllClose(
             layers.UpSampling2D(size=(1, 2))(x),
             # fmt: off
             np.array(
@@ -122,11 +125,14 @@ class UpSampling2dTest(testing.TestCase, parameterized.TestCase):
     def test_upsampling_2d_various_interpolation_methods(self):
         input_shape = (2, 2, 1, 3)
         x = np.arange(np.prod(input_shape)).reshape(input_shape)
-        for interpolation in [
-            "bicubic",
-            "bilinear",
-            "lanczos3",
-            "lanczos5",
-            "nearest",
-        ]:
+        for interpolation in ["nearest", "bilinear", "bicubic"]:
+            layers.UpSampling2D(size=(1, 2), interpolation=interpolation)(x)
+
+    @pytest.mark.skipif(
+        backend.backend() == "torch", reason="Torch does not support lanczos."
+    )
+    def test_upsampling_2d_lanczos_interpolation_methods(self):
+        input_shape = (2, 2, 1, 3)
+        x = np.arange(np.prod(input_shape)).reshape(input_shape)
+        for interpolation in ["lanczos3", "lanczos5"]:
             layers.UpSampling2D(size=(1, 2), interpolation=interpolation)(x)

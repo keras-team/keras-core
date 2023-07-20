@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from keras_core import layers
 from keras_core import testing
@@ -6,6 +7,7 @@ from keras_core.backend.common import keras_tensor
 
 
 class DenseTest(testing.TestCase):
+    @pytest.mark.requires_trainable_backend
     def test_dense_basics(self):
         # 2D case, no bias.
         self.run_layer_test(
@@ -23,7 +25,7 @@ class DenseTest(testing.TestCase):
             expected_num_non_trainable_weights=0,
             expected_num_seed_generators=0,
             expected_num_losses=0,
-            supports_masking=False,
+            supports_masking=True,
         )
         # 3D case, some regularizers.
         self.run_layer_test(
@@ -40,7 +42,7 @@ class DenseTest(testing.TestCase):
             expected_num_non_trainable_weights=0,
             expected_num_seed_generators=0,
             expected_num_losses=2,  # we have 2 regularizers.
-            supports_masking=False,
+            supports_masking=True,
         )
 
     def test_dense_correctness(self):

@@ -7,7 +7,12 @@ from keras_core.backend.common.backend_utils import (
     compute_conv_transpose_padding,
 )
 from keras_core.backend.config import epsilon
+from keras_core.backend.torch.core import cast
 from keras_core.backend.torch.core import convert_to_tensor
+from keras_core.backend.torch.core import get_device
+from keras_core.backend.torch.numpy import expand_dims
+from keras_core.backend.torch.numpy import maximum
+from keras_core.backend.torch.numpy import where
 from keras_core.utils.argument_validation import standardize_tuple
 
 
@@ -215,6 +220,14 @@ def max_pool(
             inputs, pool_size, strides, operation_type="pooling"
         )
 
+    device = get_device()
+    # Torch max pooling ops do not support symbolic tensors.
+    # Create a real tensor to execute the ops.
+    if device == "meta":
+        inputs = torch.empty(
+            size=inputs.shape, dtype=inputs.dtype, device="cpu"
+        )
+
     if num_spatial_dims == 1:
         outputs = tnn.max_pool1d(inputs, kernel_size=pool_size, stride=strides)
     elif num_spatial_dims == 2:
@@ -227,6 +240,8 @@ def max_pool(
             "corresponding to 1D, 2D and 3D inputs. "
             f"Received input shape: {inputs.shape}."
         )
+
+    outputs = outputs.to(device)
     if data_format == "channels_last":
         outputs = _transpose_spatial_outputs(outputs)
     return outputs
@@ -250,20 +265,51 @@ def average_pool(
     data_format = standardize_data_format(data_format)
     if data_format == "channels_last":
         inputs = _transpose_spatial_inputs(inputs)
-
+    padding_value = 0
     if padding == "same":
-        # Torch does not natively support `"same"` padding, we need to manually
-        # apply the right amount of padding to `inputs`.
-        inputs = _apply_same_padding(
-            inputs, pool_size, strides, operation_type="pooling"
-        )
+        spatial_shape = inputs.shape[2:]
+        num_spatial_dims = len(spatial_shape)
+        padding_value = []
+        uneven_padding = []
+
+        for i in range(num_spatial_dims):
+            padding_size = _compute_padding_length(
+                spatial_shape[i], pool_size[i], strides[i]
+            )
+            # Torch only supports even padding on each dim, to replicate the
+            # behavior of "same" padding of `tf.keras` as much as possible,
+            # we need to pad evenly using the shorter padding.
+            padding_value.append(padding_size[0])
+            if padding_size[0] != padding_size[1]:
+                # Handle unequal padding.
+                # `torch.nn.pad` sets padding value in the reverse order.
+                uneven_padding = [0, 1] + uneven_padding
+        inputs = tnn.pad(inputs, uneven_padding)
 
     if num_spatial_dims == 1:
-        outputs = tnn.avg_pool1d(inputs, kernel_size=pool_size, stride=strides)
+        outputs = tnn.avg_pool1d(
+            inputs,
+            kernel_size=pool_size,
+            stride=strides,
+            padding=padding_value,
+            count_include_pad=False,
+        )
     elif num_spatial_dims == 2:
-        outputs = tnn.avg_pool2d(inputs, kernel_size=pool_size, stride=strides)
+        outputs = tnn.avg_pool2d(
+            inputs,
+            kernel_size=pool_size,
+            stride=strides,
+            padding=padding_value,
+            count_include_pad=False,
+        )
     elif num_spatial_dims == 3:
-        outputs = tnn.avg_pool3d(inputs, kernel_size=pool_size, stride=strides)
+        outputs = tnn.avg_pool3d(
+            inputs,
+            kernel_size=pool_size,
+            stride=strides,
+            padding=padding_value,
+            count_include_pad=False,
+        )
     else:
         raise ValueError(
             "Inputs to pooling op must have ndim=3, 4 or 5, "
@@ -422,15 +468,13 @@ def conv_transpose(
     if isinstance(dilation_rate, int):
         dilation_rate = [dilation_rate] * len(kernel_spatial_shape)
     for i, value in enumerate(padding_values):
-        total_padding = value[0] + value[1]
+        both_side_padding = value[0]
+        longer_side_padding = value[1] - value[0]
         padding_arg.append(
             dilation_rate[i] * (kernel_spatial_shape[i] - 1)
-            - total_padding // 2
+            - both_side_padding,
         )
-        if total_padding % 2 == 0:
-            output_padding_arg.append(0)
-        else:
-            output_padding_arg.append(1)
+        output_padding_arg.append(longer_side_padding)
 
     if num_spatial_dims == 1:
         outputs = tnn.conv_transpose1d(
@@ -470,11 +514,18 @@ def conv_transpose(
     return outputs
 
 
-def one_hot(x, num_classes, axis=-1):
+def one_hot(x, num_classes, axis=-1, dtype="float32"):
     # Axis is the output axis. By default, PyTorch, outputs to last axis.
     # If axis is not last, change output to axis and shift remaining elements.
     x = convert_to_tensor(x, dtype=torch.long)
-    output = tnn.one_hot(x, num_classes)
+
+    # Torch one_hot does not natively handle negative values, so we add some
+    # manual handling for negatives in the input to one_hot by using max(x, 0).
+    # The output will have some invalid results, so we set them back to 0 using
+    # `where` afterwards.
+    output = tnn.one_hot(maximum(x, 0), num_classes)
+    output = where(expand_dims(x, axis=-1) >= 0, output, 0)
+    output = convert_to_tensor(output, dtype=dtype)
     dims = output.dim()
     if axis != -1 and axis != dims:
         new_axes_order = list(range(dims))
@@ -484,6 +535,15 @@ def one_hot(x, num_classes, axis=-1):
             new_axes_order[ax] -= 1
         output = output.permute(new_axes_order)
     return output
+
+
+def multi_hot(x, num_classes, axis=-1, dtype="float32"):
+    reduction_axis = 1 if len(x.shape) > 1 else 0
+    outputs = torch.amax(
+        one_hot(cast(x, "int32"), num_classes, axis=axis, dtype=dtype),
+        dim=reduction_axis,
+    )
+    return outputs
 
 
 def categorical_crossentropy(target, output, from_logits=False, axis=-1):
@@ -542,7 +602,6 @@ def sparse_categorical_crossentropy(target, output, from_logits=False, axis=-1):
 
 
 def binary_crossentropy(target, output, from_logits=False):
-    # TODO: `torch.as_tensor` has device arg. Need to think how to pass it.
     target = convert_to_tensor(target)
     output = convert_to_tensor(output)
 
@@ -559,4 +618,5 @@ def binary_crossentropy(target, output, from_logits=False):
             output, target, reduction="none"
         )
     else:
+        output = torch.clip(output, epsilon(), 1.0 - epsilon())
         return tnn.binary_cross_entropy(output, target, reduction="none")

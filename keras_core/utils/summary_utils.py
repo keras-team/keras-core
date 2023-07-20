@@ -3,7 +3,13 @@ import re
 import shutil
 
 import rich
-from tensorflow import nest
+import rich.console
+import rich.markup
+
+# See https://github.com/keras-team/keras-core/issues/448
+# for below imports
+import rich.table
+import tree
 
 from keras_core import backend
 from keras_core.utils import dtype_utils
@@ -63,8 +69,10 @@ def highlight_symbol(x):
     return f"[color(33)]{x}[/]"
 
 
-def bold_text(x):
+def bold_text(x, color=None):
     """Bolds text using rich markup."""
+    if color:
+        return f"[bold][color({color})]{x}[/][/]"
     return f"[bold]{x}[/]"
 
 
@@ -78,12 +86,14 @@ def format_layer_shape(layer):
 
     for i in range(len(layer._inbound_nodes)):
         outputs = layer._inbound_nodes[i].output_tensors
-        output_shapes = nest.map_structure(
+        output_shapes = tree.map_structure(
             lambda x: format_shape(x.shape), outputs
         )
     if len(output_shapes) == 1:
-        output_shapes = output_shapes[0]
-    return str(output_shapes)
+        return output_shapes[0]
+    out = str(output_shapes)
+    out = out.replace("'", "")
+    return out
 
 
 def print_summary(
@@ -143,7 +153,7 @@ def print_summary(
         nodes = []
         for v in nodes_by_depth:
             if (len(v) > 1) or (
-                len(v) == 1 and len(nest.flatten(v[0].input_tensors)) > 1
+                len(v) == 1 and len(tree.flatten(v[0].input_tensors)) > 1
             ):
                 # if the model has multiple nodes
                 # or if the nodes have multiple inbound_layers
@@ -166,26 +176,32 @@ def print_summary(
                     break
 
     if sequential_like:
-        line_length = line_length or 84
+        default_line_length = 84
         positions = positions or [0.45, 0.84, 1.0]
         # header names for the different log elements
         header = ["Layer (type)", "Output Shape", "Param #"]
+        alignment = ["left", "left", "right"]
     else:
-        line_length = line_length or 108
+        default_line_length = 108
         positions = positions or [0.3, 0.56, 0.70, 1.0]
         # header names for the different log elements
         header = ["Layer (type)", "Output Shape", "Param #", "Connected to"]
+        alignment = ["left", "left", "right", "left"]
         relevant_nodes = []
         for v in model._nodes_by_depth.values():
             relevant_nodes += v
 
     if show_trainable:
-        line_length += 8
-        positions = [p * 0.86 for p in positions] + [1.0]
+        default_line_length += 12
+        positions = [p * 0.90 for p in positions] + [1.0]
         header.append("Trainable")
+        alignment.append("center")
 
     # Compute columns widths
-    line_length = min(line_length, shutil.get_terminal_size().columns - 4)
+    default_line_length = min(
+        default_line_length, shutil.get_terminal_size().columns - 4
+    )
+    line_length = line_length or default_line_length
     column_widths = []
     current = 0
     for pos in positions:
@@ -198,7 +214,6 @@ def print_summary(
     # Render summary as a rich table.
     columns = []
     # Right align parameter counts.
-    alignment = ["left", "left", "right", "left", "left"]
     for i, name in enumerate(header):
         column = rich.table.Column(
             name,
@@ -206,26 +221,8 @@ def print_summary(
             width=column_widths[i],
         )
         columns.append(column)
+
     table = rich.table.Table(*columns, width=line_length, show_lines=True)
-
-    def get_layer_fields(layer, prefix=""):
-        output_shape = format_layer_shape(layer)
-        name = prefix + layer.name
-        cls_name = layer.__class__.__name__
-        name = rich.markup.escape(name)
-        name += f" ({highlight_symbol(rich.markup.escape(cls_name))})"
-
-        if not hasattr(layer, "built"):
-            params = highlight_number(0)
-        elif not layer.built:
-            params = highlight_number(0) + " (unbuilt)"
-        else:
-            params = highlight_number(f"{layer.count_params():,}")
-
-        fields = [name, output_shape, params]
-        if show_trainable:
-            fields.append("Y" if layer.trainable else "N")
-        return fields
 
     def get_connections(layer):
         connections = ""
@@ -247,6 +244,34 @@ def print_summary(
             connections = "-"
         return connections
 
+    def get_layer_fields(layer, prefix=""):
+        output_shape = format_layer_shape(layer)
+        name = prefix + layer.name
+        cls_name = layer.__class__.__name__
+        name = rich.markup.escape(name)
+        name += f" ({highlight_symbol(rich.markup.escape(cls_name))})"
+
+        if not hasattr(layer, "built"):
+            params = highlight_number(0)
+        elif not layer.built:
+            params = highlight_number(0) + " (unbuilt)"
+        else:
+            params = highlight_number(f"{layer.count_params():,}")
+
+        fields = [name, output_shape, params]
+        if not sequential_like:
+            fields.append(get_connections(layer))
+        if show_trainable:
+            if layer.weights:
+                fields.append(
+                    bold_text("Y", color=34)
+                    if layer.trainable
+                    else bold_text("N", color=9)
+                )
+            else:
+                fields.append(bold_text("-"))
+        return fields
+
     def print_layer(layer, nested_level=0):
         if nested_level:
             prefix = "   " * nested_level + "└" + " "
@@ -254,10 +279,6 @@ def print_summary(
             prefix = ""
 
         fields = get_layer_fields(layer, prefix=prefix)
-        if not sequential_like:
-            fields.append(get_connections(layer))
-        if show_trainable:
-            fields.append("Y" if layer.trainable else "N")
 
         rows = [fields]
         if expand_nested and hasattr(layer, "layers") and layer.layers:
