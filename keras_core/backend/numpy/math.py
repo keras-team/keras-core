@@ -79,7 +79,7 @@ def qr(x, mode="reduced"):
 def _get_complex_array_from_tuple(a):
     if not isinstance(a, (tuple, list)) or len(a) != 2:
         raise ValueError(
-            "Input `a` should be a tuple of two tensors - real and imaginary."
+            "Input `a` should be a tuple of two arrays - real and imaginary."
             f"Received: a={a}"
         )
     # `convert_to_tensor` does not support passing complex tensors. We separate
