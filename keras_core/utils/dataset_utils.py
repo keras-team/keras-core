@@ -152,7 +152,7 @@ def image_dataset_from_directory(
 
     Returns:
 
-    A `tf.data.Dataset` object.
+    A `tf.data.Dataset  or torchDataset ` object.
 
     - If `label_mode` is `None`, it yields `float32` tensors of shape
         `(batch_size, image_size[0], image_size[1], num_channels)`,
