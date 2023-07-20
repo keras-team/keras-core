@@ -902,7 +902,7 @@ def eye(N, M=None, k=None, dtype="float32"):
     return torch.diag(diag, diagonal=k)[:N, :M]
 
 
-def floordiv(x1, x2):
+def floor_divide(x1, x2):
     x1, x2 = convert_to_tensor(x1), convert_to_tensor(x2)
     return torch.floor_divide(x1, x2)
 
