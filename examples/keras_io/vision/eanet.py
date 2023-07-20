@@ -24,12 +24,10 @@ implicitly considers the correlations between all samples.
 """
 ## Setup
 """
+
 import keras_core as keras
 from keras_core import layers
 from keras_core import ops
-
-import numpy as np
-import tensorflow as tf
 
 import matplotlib.pyplot as plt
 
@@ -98,20 +96,24 @@ class PatchExtract(layers.Layer):
         super().__init__(**kwargs)
         self.patch_size = patch_size
 
-    def call(self, images):
-        batch_size = tf.shape(images)[0]
-        patches = tf.image.extract_patches(
-            images=images,
-            sizes=(1, self.patch_size, self.patch_size, 1),
-            strides=(1, self.patch_size, self.patch_size, 1),
-            rates=(1, 1, 1, 1),
-            padding="VALID",
+    def call(self, x):
+        B, H, W, C = (
+            ops.shape(x)[0],
+            ops.shape(x)[1],
+            ops.shape(x)[2],
+            ops.shape(x)[3],
         )
-        patch_dim = patches.shape[-1]
-        patch_num = patches.shape[1]
-        return tf.reshape(
-            patches, (batch_size, patch_num * patch_num, patch_dim)
-        )
+        H_ = H // self.patch_size
+        W_ = W // self.patch_size
+        x = ops.reshape(x, (B, H_, self.patch_size, W_, self.patch_size, C))  #
+        x = ops.transpose(x, axes=(0, 2, 4, 1, 3, 5))
+        x = ops.reshape(
+            x, (B, H_ * W_, self.patch_size, self.patch_size, C)
+        )  # [B, H_*W_, C, p_H, p_W]
+        x = ops.reshape(
+            x, (B, -1, self.patch_size * self.patch_size * C)
+        )  # [B, H'*W', C*p_H*p_W]
+        return x
 
 
 class PatchEmbedding(layers.Layer):
@@ -124,7 +126,7 @@ class PatchEmbedding(layers.Layer):
         )
 
     def call(self, patch):
-        pos = tf.range(start=0, limit=self.num_patch, delta=1)
+        pos = ops.arange(start=0, stop=self.num_patch, step=1)
         return self.proj(patch) + self.pos_embed(pos)
 
 
@@ -156,10 +158,12 @@ def external_attention(
     # normalize attention map
     attn = layers.Softmax(axis=2)(attn)
     # dobule-normalization
-    attn = ops.divide(
-        attn,
-        ops.convert_to_tensor(1e-9) + ops.sum(attn, axis=-1, keepdims=True),
-    )
+    attn = layers.Lambda(
+        lambda attn: ops.divide(
+            attn,
+            ops.convert_to_tensor(1e-9) + ops.sum(attn, axis=-1, keepdims=True),
+        )
+    )(attn)
     attn = layers.Dropout(attention_dropout)(attn)
     # a linear layer M_v
     x = layers.Dense(dim * dim_coefficient // num_heads)(attn)
