@@ -47,11 +47,11 @@ def resize(
     return jax.image.resize(image, size, method=method, antialias=antialias)
 
 
-AFFINE_METHODS = {  # map to order
+AFFINE_TRANSFORM_METHODS = {  # map to order
     "nearest": 0,
     "bilinear": 1,
 }
-AFFINE_FILL_MODES = (
+AFFINE_TRANSFORM_FILL_MODES = (
     "constant",
     "nearest",
     "wrap",
@@ -60,7 +60,7 @@ AFFINE_FILL_MODES = (
 )
 
 
-def affine(
+def affine_transform(
     image,
     transform,
     method="bilinear",
@@ -68,15 +68,15 @@ def affine(
     fill_value=0,
     data_format="channels_last",
 ):
-    if method not in AFFINE_METHODS.keys():
+    if method not in AFFINE_TRANSFORM_METHODS.keys():
         raise ValueError(
             "Invalid value for argument `method`. Expected of one "
-            f"{AFFINE_METHODS.keys()}. Received: method={method}"
+            f"{set(AFFINE_TRANSFORM_METHODS.keys())}. Received: method={method}"
         )
-    if fill_mode not in AFFINE_FILL_MODES:
+    if fill_mode not in AFFINE_TRANSFORM_FILL_MODES:
         raise ValueError(
             "Invalid value for argument `fill_mode`. Expected of one "
-            f"{AFFINE_FILL_MODES}. Received: method={fill_mode}"
+            f"{AFFINE_TRANSFORM_FILL_MODES}. Received: method={fill_mode}"
         )
 
     transform = convert_to_tensor(transform)
@@ -143,7 +143,7 @@ def affine(
     # apply affine transformation
     _map_coordinates = functools.partial(
         jax.scipy.ndimage.map_coordinates,
-        order=AFFINE_METHODS[method],
+        order=AFFINE_TRANSFORM_METHODS[method],
         mode=fill_mode,
         cval=fill_value,
     )

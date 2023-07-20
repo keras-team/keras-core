@@ -44,11 +44,11 @@ def resize(
     return resized
 
 
-AFFINE_METHODS = (
+AFFINE_TRANSFORM_METHODS = (
     "nearest",
     "bilinear",
 )
-AFFINE_FILL_MODES = (
+AFFINE_TRANSFORM_FILL_MODES = (
     "constant",
     "nearest",
     "wrap",
@@ -57,7 +57,7 @@ AFFINE_FILL_MODES = (
 )
 
 
-def affine(
+def affine_transform(
     image,
     transform,
     method="bilinear",
@@ -65,15 +65,15 @@ def affine(
     fill_value=0,
     data_format="channels_last",
 ):
-    if method not in AFFINE_METHODS:
+    if method not in AFFINE_TRANSFORM_METHODS:
         raise ValueError(
             "Invalid value for argument `method`. Expected of one "
-            f"{AFFINE_METHODS}. Received: method={method}"
+            f"{AFFINE_TRANSFORM_METHODS}. Received: method={method}"
         )
-    if fill_mode not in AFFINE_FILL_MODES:
+    if fill_mode not in AFFINE_TRANSFORM_FILL_MODES:
         raise ValueError(
             "Invalid value for argument `fill_mode`. Expected of one "
-            f"{AFFINE_FILL_MODES}. Received: method={fill_mode}"
+            f"{AFFINE_TRANSFORM_FILL_MODES}. Received: method={fill_mode}"
         )
     if len(image.shape) not in (3, 4):
         raise ValueError(

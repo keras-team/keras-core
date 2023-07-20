@@ -104,7 +104,7 @@ def resize(
     )
 
 
-class Affine(Operation):
+class AffineTransform(Operation):
     def __init__(
         self,
         method="bilinear",
@@ -119,7 +119,7 @@ class Affine(Operation):
         self.data_format = data_format
 
     def call(self, image, transform):
-        return backend.image.affine(
+        return backend.image.affine_transform(
             image,
             transform,
             method=self.method,
@@ -144,8 +144,8 @@ class Affine(Operation):
         return KerasTensor(image.shape, dtype=image.dtype)
 
 
-@keras_core_export("keras_core.ops.image.affine")
-def affine(
+@keras_core_export("keras_core.ops.image.affine_transform")
+def affine_transform(
     image,
     transform,
     method="bilinear",
@@ -153,15 +153,78 @@ def affine(
     fill_value=0,
     data_format="channels_last",
 ):
-    # TODO: add docstring
+    """Applies the given transform(s) to the image(s).
+
+    Args:
+        image: Input image or batch of images. Must be 3D or 4D.
+        transform: Projective transform matrix/matrices. A vector of length 8 or
+            tensor of size N x 8. If one row of transform is
+            `[a0, a1, a2, b0, b1, b2, c0, c1]`, then it maps the output point
+            `(x, y)` to a transformed input point
+            `(x', y') = ((a0 x + a1 y + a2) / k, (b0 x + b1 y + b2) / k)`,
+            where `k = c0 x + c1 y + 1`. The transform is inverted compared to
+            the transform mapping input points to output points. Note that
+            gradients are not backpropagated into transformation parameters.
+            Note that `c0` and `c1` are only effective when using TensorFlow
+            backend and will be considered as `0` when using other backends.
+        method: Interpolation method. Available methods are `"nearest"`,
+            and `"bilinear"`. Defaults to `"bilinear"`.
+        fill_mode: Points outside the boundaries of the input are filled
+            according to the given mode. Available methods are `"constant"`,
+            `"nearest"` and `"reflect"`. Defaults to `"constant"`.
+        fill_value: Value used for points outside the boundaries of the input if
+            mode=`"constant"`.
+        data_format: string, either `"channels_last"` or `"channels_first"`.
+            The ordering of the dimensions in the inputs. `"channels_last"`
+            corresponds to inputs with shape `(batch, height, width, channels)`
+            while `"channels_first"` corresponds to inputs with shape
+            `(batch, channels, height, weight)`. It defaults to the
+            `image_data_format` value found in your Keras config file at
+            `~/.keras/keras.json`. If you never set it, then it will be
+            `"channels_last"`.
+
+    Returns:
+        Applied affine transform image or batch of images.
+
+    Examples:
+
+    >>> x = np.random.random((2, 64, 80, 3)) # batch of 2 RGB images
+    >>> transform = np.array(
+    ...     [
+    ...         [1.5, 0, -20, 0, 1.5, -16, 0, 0],  # zoom
+    ...         [1, 0, -20, 0, 1, -16, 0, 0],  # translation
+    ...     ]
+    ... )
+    >>> y = keras_core.ops.image.affine_transform(x, transform)
+    >>> y.shape
+    (2, 64, 80, 3)
+
+    >>> x = np.random.random((64, 80, 3)) # single RGB image
+    >>> transform = np.array([1.0, 0.5, -20, 0.5, 1.0, -16, 0, 0])  # shear
+    >>> y = keras_core.ops.image.affine_transform(x, transform)
+    >>> y.shape
+    (64, 80, 3)
+
+    >>> x = np.random.random((2, 3, 64, 80)) # batch of 2 RGB images
+    >>> transform = np.array(
+    ...     [
+    ...         [1.5, 0, -20, 0, 1.5, -16, 0, 0],  # zoom
+    ...         [1, 0, -20, 0, 1, -16, 0, 0],  # translation
+    ...     ]
+    ... )
+    >>> y = keras_core.ops.image.affine_transform(x, transform,
+    ...     data_format="channels_first")
+    >>> y.shape
+    (2, 3, 64, 80)
+    """
     if any_symbolic_tensors((image, transform)):
-        return Affine(
+        return AffineTransform(
             method=method,
             fill_mode=fill_mode,
             fill_value=fill_value,
             data_format=data_format,
         ).symbolic_call(image, transform)
-    return backend.image.affine(
+    return backend.image.affine_transform(
         image,
         transform,
         method=method,
