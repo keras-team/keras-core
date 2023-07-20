@@ -246,11 +246,6 @@ class KerasTensor:
 
         return ops.NotEqual().symbolic_call(self, other)
 
-    def __eq__(self, other):
-        raise ValueError(
-            "Symbolic KerasTensors cannot be compared using the == operator."
-        )
-
     def __and__(self, other):
         from keras_core import ops
 
@@ -290,10 +285,6 @@ class KerasTensor:
         from keras_core import ops
 
         return ops.GetItem().symbolic_call(self, key)
-
-    # TODO
-    #   "broadcast_to"
-    #   "astype"
 
 
 def any_symbolic_tensors(args=None, kwargs=None):

@@ -3461,7 +3461,7 @@ def eye(N, M=None, k=0, dtype="float32"):
 
 class FloorDiv(Operation):
     def call(self, x1, x2):
-        return backend.numpy.floordiv(x1, x2)
+        return backend.numpy.floor_divide(x1, x2)
 
     def compute_output_spec(self, x1, x2):
         x1_shape = getattr(x1, "shape", [])
@@ -3470,11 +3470,11 @@ class FloorDiv(Operation):
         return KerasTensor(output_shape, dtype=x1.dtype)
 
 
-@keras_core_export(["keras_core.ops.floordiv", "keras_core.ops.numpy.floordiv"])
-def floordiv(x1, x2):
+@keras_core_export(["keras_core.ops.floor_divide", "keras_core.ops.numpy.floor_divide"])
+def floor_divide(x1, x2):
     if any_symbolic_tensors((x1, x2)):
         return FloorDiv().symbolic_call(x1, x2)
-    return backend.numpy.floordiv(x1, x2)
+    return backend.numpy.floor_divide(x1, x2)
 
 
 class LogicalXor(Operation):

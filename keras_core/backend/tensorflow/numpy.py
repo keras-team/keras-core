@@ -602,7 +602,7 @@ def eye(N, M=None, k=0, dtype="float32"):
     return tfnp.eye(N, M=M, k=k, dtype=dtype)
 
 
-def floordiv(x1, x2):
+def floor_divide(x1, x2):
     return tfnp.floor_divide(x1, x2)
 
 

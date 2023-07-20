@@ -249,7 +249,7 @@ class NumpyTwoInputOpsDynamicShapeTest(testing.TestCase):
     def test_floordiv(self):
         x = KerasTensor((None, 3))
         y = KerasTensor((2, None))
-        self.assertEqual(knp.floordiv(x, y).shape, (2, 3))
+        self.assertEqual(knp.floor_divide(x, y).shape, (2, 3))
 
     def test_xor(self):
         x = KerasTensor((None, 3))
@@ -643,12 +643,12 @@ class NumpyTwoInputOpsStaticShapeTest(testing.TestCase):
     def test_floordiv(self):
         x = KerasTensor((2, 3))
         y = KerasTensor((2, 3))
-        self.assertEqual(knp.floordiv(x, y).shape, (2, 3))
+        self.assertEqual(knp.floor_divide(x, y).shape, (2, 3))
 
         with self.assertRaises(ValueError):
             x = KerasTensor([2, 3])
             y = KerasTensor([2, 3, 4])
-            knp.floordiv(x, y)
+            knp.floor_divide(x, y)
 
     def test_xor(self):
         x = KerasTensor((2, 3))
@@ -2991,8 +2991,8 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         y = np.array([[4, 5, 6], [3, 2, 1]])
         z = np.array([[[1, 2, 3], [3, 2, 1]]])
-        self.assertAllClose(knp.floordiv(x, y), np.floor_divide(x, y))
-        self.assertAllClose(knp.floordiv(x, z), np.floor_divide(x, z))
+        self.assertAllClose(knp.floor_divide(x, y), np.floor_divide(x, y))
+        self.assertAllClose(knp.floor_divide(x, z), np.floor_divide(x, z))
 
         self.assertAllClose(knp.FloorDiv()(x, y), np.floor_divide(x, y))
         self.assertAllClose(knp.FloorDiv()(x, z), np.floor_divide(x, z))
