@@ -173,7 +173,7 @@ def affine_transform(
             according to the given mode. Available methods are `"constant"`,
             `"nearest"` and `"reflect"`. Defaults to `"constant"`.
         fill_value: Value used for points outside the boundaries of the input if
-            mode=`"constant"`.
+            fill_mode=`"constant"`. Defaults to `0`.
         data_format: string, either `"channels_last"` or `"channels_first"`.
             The ordering of the dimensions in the inputs. `"channels_last"`
             corresponds to inputs with shape `(batch, height, width, channels)`
