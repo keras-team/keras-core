@@ -1,11 +1,8 @@
-import tensorflow as tf
 import torch 
-from torch.utils.data import Dataset as torchDataset
 import numpy as np
 import warnings
 import random
 import time
-
 from keras_core.api_export import keras_core_export
 from keras_core.utils.module_utils import tensorflow as tf
 
@@ -17,7 +14,7 @@ def split_dataset(
     """Split a dataset into a left half and a right half (e.g. train / test).
 
     Args:
-        dataset: A `tf.data.Datasetor torchDataset`  object, or a list/tuple of arrays with the
+        dataset: A `tf.data.Dataset or torchDataset`  object, or a list/tuple of arrays with the
           same length.
         left_size: If float (in the range `[0, 1]`), it signifies
           the fraction of the data to pack in the left dataset. If integer, it
@@ -43,6 +40,8 @@ def split_dataset(
     200
 
     """
+    from torch.utils.data import Dataset as torchDataset
+
 
     dataset_type_spec = _get_type_spec(dataset)
 
@@ -169,6 +168,7 @@ def _get_data_iterator_from_dataset(dataset, dataset_type_spec):
     Returns:
         iterator: An `iterator` object.
     """
+    from torch.utils.data import Dataset as torchDataset
     if dataset_type_spec == list:
         if len(dataset) == 0:
             raise ValueError(
@@ -436,6 +436,7 @@ def _rescale_dataset_split_sizes(left_size, right_size, total_length):
 def _restore_dataset_from_list(
     dataset_as_list, dataset_type_spec, original_dataset
 ):
+    from torch.utils.data import Dataset as torchDataset
     """Restore the dataset from the list of arrays."""
     if dataset_type_spec in [tuple, list]:
         return tuple(np.array(sample) for sample in zip(*dataset_as_list))
@@ -468,6 +469,7 @@ def get_batch_size(dataset):
         return None
 
 def _get_type_spec(dataset):
+    from torch.utils.data import Dataset as torchDataset
     """Get the type spec of the dataset."""
     if isinstance(dataset, tuple):
         return tuple
