@@ -3,22 +3,26 @@ import torch.nn.functional as tnn
 
 from keras_core.backend.torch.core import convert_to_tensor
 
-RESIZE_METHODS = {}  # populated after torchvision import
+RESIZE_INTERPOLATIONS = {}  # populated after torchvision import
 
-UNSUPPORTED_METHODS = (
+UNSUPPORTED_INTERPOLATIONS = (
     "lanczos3",
     "lanczos5",
 )
 
 
 def resize(
-    image, size, method="bilinear", antialias=False, data_format="channels_last"
+    image,
+    size,
+    interpolation="bilinear",
+    antialias=False,
+    data_format="channels_last",
 ):
     try:
         import torchvision
         from torchvision.transforms import InterpolationMode as im
 
-        RESIZE_METHODS.update(
+        RESIZE_INTERPOLATIONS.update(
             {
                 "bilinear": im.BILINEAR,
                 "nearest": im.NEAREST_EXACT,
@@ -30,16 +34,16 @@ def resize(
             "The torchvision package is necessary to use `resize` with the "
             "torch backend. Please install torchvision."
         )
-    if method in UNSUPPORTED_METHODS:
+    if interpolation in UNSUPPORTED_INTERPOLATIONS:
         raise ValueError(
             "Resizing with Lanczos interpolation is "
             "not supported by the PyTorch backend. "
-            f"Received: method={method}."
+            f"Received: interpolation={interpolation}."
         )
-    if method not in RESIZE_METHODS:
+    if interpolation not in RESIZE_INTERPOLATIONS:
         raise ValueError(
-            "Invalid value for argument `method`. Expected of one "
-            f"{RESIZE_METHODS}. Received: method={method}"
+            "Invalid value for argument `interpolation`. Expected of one "
+            f"{RESIZE_INTERPOLATIONS}. Received: interpolation={interpolation}"
         )
     if not len(size) == 2:
         raise ValueError(
@@ -63,7 +67,7 @@ def resize(
     resized = torchvision.transforms.functional.resize(
         img=image,
         size=size,
-        interpolation=RESIZE_METHODS[method],
+        interpolation=RESIZE_INTERPOLATIONS[interpolation],
         antialias=antialias,
     )
     if data_format == "channels_last":
@@ -74,7 +78,7 @@ def resize(
     return resized
 
 
-AFFINE_TRANSFORM_METHODS = (
+AFFINE_TRANSFORM_INTERPOLATIONS = (
     "nearest",
     "bilinear",
 )
@@ -90,7 +94,7 @@ AFFINE_TRANSFORM_FILL_MODES = {
 def _apply_grid_transform(
     img,
     grid,
-    method="bilinear",
+    interpolation="bilinear",
     fill_mode="zeros",
     fill_value=None,
 ):
@@ -116,7 +120,7 @@ def _apply_grid_transform(
     float_img = tnn.grid_sample(
         float_img,
         grid,
-        mode=method,
+        mode=interpolation,
         padding_mode=fill_mode,
         align_corners=False,
     )
@@ -132,7 +136,7 @@ def _apply_grid_transform(
         fill_img = torch.tensor(
             fill_list, dtype=float_img.dtype, device=float_img.device
         ).view(1, -1, 1, 1)
-        if method == "nearest":
+        if interpolation == "nearest":
             bool_mask = mask < 0.5
             float_img[bool_mask] = fill_img.expand_as(float_img)[bool_mask]
         else:  # 'bilinear'
@@ -149,21 +153,22 @@ def _apply_grid_transform(
 def affine_transform(
     image,
     transform,
-    method="bilinear",
+    interpolation="bilinear",
     fill_mode="constant",
     fill_value=0,
     data_format="channels_last",
 ):
-    if method not in AFFINE_TRANSFORM_METHODS:
+    if interpolation not in AFFINE_TRANSFORM_INTERPOLATIONS:
         raise ValueError(
-            "Invalid value for argument `method`. Expected of one "
-            f"{AFFINE_TRANSFORM_METHODS}. Received: method={method}"
+            "Invalid value for argument `interpolation`. Expected of one "
+            f"{AFFINE_TRANSFORM_INTERPOLATIONS}. Received: "
+            f"interpolation={interpolation}"
         )
     if fill_mode not in AFFINE_TRANSFORM_FILL_MODES.keys():
         raise ValueError(
             "Invalid value for argument `fill_mode`. Expected of one "
             f"{set(AFFINE_TRANSFORM_FILL_MODES.keys())}. "
-            f"Received: method={fill_mode}"
+            f"Received: fill_mode={fill_mode}"
         )
 
     image = convert_to_tensor(image)
@@ -212,7 +217,9 @@ def affine_transform(
     )
 
     grid = tnn.affine_grid(theta, image.shape)
-    affined = _apply_grid_transform(image, grid, method, fill_mode, fill_value)
+    affined = _apply_grid_transform(
+        image, grid, interpolation, fill_mode, fill_value
+    )
 
     if data_format == "channels_last":
         affined = affined.permute((0, 2, 3, 1))

@@ -5,7 +5,7 @@ import jax.numpy as jnp
 
 from keras_core.backend.jax.core import convert_to_tensor
 
-RESIZE_METHODS = (
+RESIZE_INTERPOLATIONS = (
     "bilinear",
     "nearest",
     "lanczos3",
@@ -15,12 +15,16 @@ RESIZE_METHODS = (
 
 
 def resize(
-    image, size, method="bilinear", antialias=False, data_format="channels_last"
+    image,
+    size,
+    interpolation="bilinear",
+    antialias=False,
+    data_format="channels_last",
 ):
-    if method not in RESIZE_METHODS:
+    if interpolation not in RESIZE_INTERPOLATIONS:
         raise ValueError(
-            "Invalid value for argument `method`. Expected of one "
-            f"{RESIZE_METHODS}. Received: method={method}"
+            "Invalid value for argument `interpolation`. Expected of one "
+            f"{RESIZE_INTERPOLATIONS}. Received: interpolation={interpolation}"
         )
     if not len(size) == 2:
         raise ValueError(
@@ -44,39 +48,43 @@ def resize(
             "or rank 4 (batch of images). Received input with shape: "
             f"image.shape={image.shape}"
         )
-    return jax.image.resize(image, size, method=method, antialias=antialias)
+    return jax.image.resize(
+        image, size, method=interpolation, antialias=antialias
+    )
 
 
-AFFINE_TRANSFORM_METHODS = {  # map to order
+AFFINE_TRANSFORM_INTERPOLATIONS = {  # map to order
     "nearest": 0,
     "bilinear": 1,
 }
-AFFINE_TRANSFORM_FILL_MODES = (
-    "constant",
-    "nearest",
-    "wrap",
-    "mirror",
-    "reflect",
-)
+AFFINE_TRANSFORM_FILL_MODES = {
+    "constant": "grid-constant",
+    "nearest": "nearest",
+    "wrap": "grid-wrap",
+    "mirror": "mirror",
+    "reflect": "reflect",
+}
 
 
 def affine_transform(
     image,
     transform,
-    method="bilinear",
+    interpolation="bilinear",
     fill_mode="constant",
     fill_value=0,
     data_format="channels_last",
 ):
-    if method not in AFFINE_TRANSFORM_METHODS.keys():
+    if interpolation not in AFFINE_TRANSFORM_INTERPOLATIONS.keys():
         raise ValueError(
-            "Invalid value for argument `method`. Expected of one "
-            f"{set(AFFINE_TRANSFORM_METHODS.keys())}. Received: method={method}"
+            "Invalid value for argument `interpolation`. Expected of one "
+            f"{set(AFFINE_TRANSFORM_INTERPOLATIONS.keys())}. Received: "
+            f"interpolation={interpolation}"
         )
-    if fill_mode not in AFFINE_TRANSFORM_FILL_MODES:
+    if fill_mode not in AFFINE_TRANSFORM_FILL_MODES.keys():
         raise ValueError(
             "Invalid value for argument `fill_mode`. Expected of one "
-            f"{AFFINE_TRANSFORM_FILL_MODES}. Received: method={fill_mode}"
+            f"{set(AFFINE_TRANSFORM_FILL_MODES.keys())}. "
+            f"Received: fill_mode={fill_mode}"
         )
 
     transform = convert_to_tensor(transform)
@@ -143,7 +151,7 @@ def affine_transform(
     # apply affine transformation
     _map_coordinates = functools.partial(
         jax.scipy.ndimage.map_coordinates,
-        order=AFFINE_TRANSFORM_METHODS[method],
+        order=AFFINE_TRANSFORM_INTERPOLATIONS[interpolation],
         mode=fill_mode,
         cval=fill_value,
     )
