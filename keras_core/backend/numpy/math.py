@@ -106,8 +106,12 @@ def _get_complex_array_from_tuple(a):
 
 
 def fft(a):
-    return np.fft.fft(a)
+    complex_input = _get_complex_array_from_tuple(a)
+    complex_output = np.fft.fft(complex_input)
+    return np.real(complex_output), np.imag(complex_output)
 
 
 def fft2(a):
-    return np.fft.fft2(a)
+    complex_input = _get_complex_array_from_tuple(a)
+    complex_output = np.fft.fft2(complex_input)
+    return np.real(complex_output), np.imag(complex_output)
