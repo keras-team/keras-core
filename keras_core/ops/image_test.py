@@ -54,20 +54,20 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             ("bilinear", True, "channels_first"),
         ]
     )
-    def test_resize(self, method, antialias, data_format):
+    def test_resize(self, interpolation, antialias, data_format):
         if backend.backend() == "torch":
-            if "lanczos" in method:
+            if "lanczos" in interpolation:
                 self.skipTest(
                     "Resizing with Lanczos interpolation is "
                     "not supported by the PyTorch backend. "
-                    f"Received: method={method}."
+                    f"Received: interpolation={interpolation}."
                 )
-            if method == "bicubic" and antialias is False:
+            if interpolation == "bicubic" and antialias is False:
                 self.skipTest(
                     "Resizing with Bicubic interpolation in "
                     "PyTorch backend produces noise. Please "
                     "turn on anti-aliasing. "
-                    f"Received: method={method}, "
+                    f"Received: interpolation={interpolation}, "
                     f"antialias={antialias}."
                 )
         # Unbatched case
@@ -78,14 +78,14 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         out = kimage.resize(
             x,
             size=(25, 25),
-            method=method,
+            interpolation=interpolation,
             antialias=antialias,
             data_format=data_format,
         )
         if data_format == "channels_first":
             x = np.transpose(x, (1, 2, 0))
         ref_out = tf.image.resize(
-            x, size=(25, 25), method=method, antialias=antialias
+            x, size=(25, 25), method=interpolation, antialias=antialias
         )
         if data_format == "channels_first":
             ref_out = np.transpose(ref_out, (2, 0, 1))
@@ -100,14 +100,14 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         out = kimage.resize(
             x,
             size=(25, 25),
-            method=method,
+            interpolation=interpolation,
             antialias=antialias,
             data_format=data_format,
         )
         if data_format == "channels_first":
             x = np.transpose(x, (0, 2, 3, 1))
         ref_out = tf.image.resize(
-            x, size=(25, 25), method=method, antialias=antialias
+            x, size=(25, 25), method=interpolation, antialias=antialias
         )
         if data_format == "channels_first":
             ref_out = np.transpose(ref_out, (0, 3, 1, 2))
@@ -120,25 +120,37 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             ("nearest", "constant", "channels_last"),
             ("bilinear", "nearest", "channels_last"),
             ("nearest", "nearest", "channels_last"),
-            # ("bilinear", "wrap", "channels_last"),  no wrap in torch
-            # ("nearest", "wrap", "channels_last"),  no wrap in torch
+            ("bilinear", "wrap", "channels_last"),
+            ("nearest", "wrap", "channels_last"),
             ("bilinear", "reflect", "channels_last"),
             ("nearest", "reflect", "channels_last"),
             ("bilinear", "constant", "channels_first"),
         ]
     )
-    def test_affine_transform(self, method, fill_mode, data_format):
+    def test_affine_transform(self, interpolation, fill_mode, data_format):
+        if fill_mode == "wrap" and backend.backend() == "torch":
+            self.skipTest(
+                "Applying affine transform with fill_mode=wrap is not support"
+                " in torch backend"
+            )
+        if fill_mode == "wrap" and backend.backend() in ("jax", "numpy"):
+            self.skipTest(
+                "The numerical results of applying affine transform with "
+                "fill_mode=wrap in tensorflow is inconsistent with jax and "
+                "numpy backends"
+            )
+
         # Unbatched case
         if data_format == "channels_first":
             x = np.random.random((3, 50, 50)) * 255
         else:
             x = np.random.random((50, 50, 3)) * 255
         transform = np.random.random(size=(6))
-        transform = np.pad(transform, (0, 2))  # makes c1, c2 always 0
+        transform = np.pad(transform, (0, 2))  # makes c0, c1 always 0
         out = kimage.affine_transform(
             x,
             transform,
-            method=method,
+            interpolation=interpolation,
             fill_mode=fill_mode,
             data_format=data_format,
         )
@@ -149,7 +161,7 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             transforms=tf.cast(tf.expand_dims(transform, axis=0), tf.float32),
             output_shape=tf.shape(x)[:-1],
             fill_value=0,
-            interpolation=method.upper(),
+            interpolation=interpolation.upper(),
             fill_mode=fill_mode.upper(),
         )
         ref_out = ref_out[0]
@@ -169,11 +181,11 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         else:
             x = np.random.random((2, 50, 50, 3)) * 255
         transform = np.random.random(size=(2, 6))
-        transform = np.pad(transform, [(0, 0), (0, 2)])  # makes c1, c2 always 0
+        transform = np.pad(transform, [(0, 0), (0, 2)])  # makes c0, c1 always 0
         out = kimage.affine_transform(
             x,
             transform,
-            method=method,
+            interpolation=interpolation,
             fill_mode=fill_mode,
             data_format=data_format,
         )
@@ -184,7 +196,7 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             transforms=tf.cast(transform, tf.float32),
             output_shape=tf.shape(x)[1:-1],
             fill_value=0,
-            interpolation=method.upper(),
+            interpolation=interpolation.upper(),
             fill_mode=fill_mode.upper(),
         )
         if data_format == "channels_first":
