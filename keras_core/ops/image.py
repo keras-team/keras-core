@@ -9,13 +9,13 @@ class Resize(Operation):
     def __init__(
         self,
         size,
-        method="bilinear",
+        interpolation="bilinear",
         antialias=False,
         data_format="channels_last",
     ):
         super().__init__()
         self.size = tuple(size)
-        self.method = method
+        self.interpolation = interpolation
         self.antialias = antialias
         self.data_format = data_format
 
@@ -23,7 +23,7 @@ class Resize(Operation):
         return backend.image.resize(
             image,
             self.size,
-            method=self.method,
+            interpolation=self.interpolation,
             antialias=self.antialias,
             data_format=self.data_format,
         )
@@ -53,14 +53,18 @@ class Resize(Operation):
 
 @keras_core_export("keras_core.ops.image.resize")
 def resize(
-    image, size, method="bilinear", antialias=False, data_format="channels_last"
+    image,
+    size,
+    interpolation="bilinear",
+    antialias=False,
+    data_format="channels_last",
 ):
-    """Resize images to size using the specified method.
+    """Resize images to size using the specified interpolation method.
 
     Args:
         image: Input image or batch of images. Must be 3D or 4D.
         size: Size of output image in `(height, width)` format.
-        method: Interpolation method. Available methods are `"nearest"`,
+        interpolation: Interpolation method. Available methods are `"nearest"`,
             `"bilinear"`, and `"bicubic"`. Defaults to `"bilinear"`.
         antialias: Whether to use an antialiasing filter when downsampling an
             image. Defaults to `False`.
@@ -97,23 +101,30 @@ def resize(
 
     if any_symbolic_tensors((image,)):
         return Resize(
-            size, method=method, antialias=antialias, data_format=data_format
+            size,
+            interpolation=interpolation,
+            antialias=antialias,
+            data_format=data_format,
         ).symbolic_call(image)
     return backend.image.resize(
-        image, size, method=method, antialias=antialias, data_format=data_format
+        image,
+        size,
+        interpolation=interpolation,
+        antialias=antialias,
+        data_format=data_format,
     )
 
 
 class AffineTransform(Operation):
     def __init__(
         self,
-        method="bilinear",
+        interpolation="bilinear",
         fill_mode="constant",
         fill_value=0,
         data_format="channels_last",
     ):
         super().__init__()
-        self.method = method
+        self.interpolation = interpolation
         self.fill_mode = fill_mode
         self.fill_value = fill_value
         self.data_format = data_format
@@ -122,7 +133,7 @@ class AffineTransform(Operation):
         return backend.image.affine_transform(
             image,
             transform,
-            method=self.method,
+            interpolation=self.interpolation,
             fill_mode=self.fill_mode,
             fill_value=self.fill_value,
             data_format=self.data_format,
@@ -148,7 +159,7 @@ class AffineTransform(Operation):
 def affine_transform(
     image,
     transform,
-    method="bilinear",
+    interpolation="bilinear",
     fill_mode="constant",
     fill_value=0,
     data_format="channels_last",
@@ -167,13 +178,14 @@ def affine_transform(
             gradients are not backpropagated into transformation parameters.
             Note that `c0` and `c1` are only effective when using TensorFlow
             backend and will be considered as `0` when using other backends.
-        method: Interpolation method. Available methods are `"nearest"`,
+        interpolation: Interpolation method. Available methods are `"nearest"`,
             and `"bilinear"`. Defaults to `"bilinear"`.
         fill_mode: Points outside the boundaries of the input are filled
             according to the given mode. Available methods are `"constant"`,
-            `"nearest"` and `"reflect"`. Defaults to `"constant"`.
+            `"nearest"`, `"wrap"` and `"reflect"`. Defaults to `"constant"`.
+            Note that `"wrap"` is not supported by Torch backend.
         fill_value: Value used for points outside the boundaries of the input if
-            fill_mode=`"constant"`. Defaults to `0`.
+            `fill_mode="constant"`. Defaults to `0`.
         data_format: string, either `"channels_last"` or `"channels_first"`.
             The ordering of the dimensions in the inputs. `"channels_last"`
             corresponds to inputs with shape `(batch, height, width, channels)`
@@ -219,7 +231,7 @@ def affine_transform(
     """
     if any_symbolic_tensors((image, transform)):
         return AffineTransform(
-            method=method,
+            interpolation=interpolation,
             fill_mode=fill_mode,
             fill_value=fill_value,
             data_format=data_format,
@@ -227,7 +239,7 @@ def affine_transform(
     return backend.image.affine_transform(
         image,
         transform,
-        method=method,
+        interpolation=interpolation,
         fill_mode=fill_mode,
         fill_value=fill_value,
         data_format=data_format,
