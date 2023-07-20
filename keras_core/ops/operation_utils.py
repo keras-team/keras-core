@@ -20,11 +20,11 @@ def compute_pooling_output_shape(
             Defaults to `pool_size`.
         padding: Padding method. Available methods are `"valid"` or `"same"`.
             Defaults to `"valid"`.
-        data_format: String, either `"channels_last`" or `"channels_first`".
-            The ordering of the dimensions in the inputs. `"channels_last`"
+        data_format: String, either `"channels_last"` or `"channels_first"`.
+            The ordering of the dimensions in the inputs. `"channels_last"`
             corresponds to inputs with shape `(batch, height, width, channels)`
-            while `"channels_first`" corresponds to inputs with shape
-            `(batch, channels, height, weight)`. Defaults to `"channels_last`".
+            while `"channels_first"` corresponds to inputs with shape
+            `(batch, channels, height, weight)`. Defaults to `"channels_last"`.
 
     Returns:
         Tuple of ints: The output shape of the pooling operation.
