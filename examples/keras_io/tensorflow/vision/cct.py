@@ -40,13 +40,14 @@ code snippets from another example,
 """
 
 import os
-os.environ["KERAS_BACKEND"] = "tensorflow"
+os.environ["KERAS_BACKEND"] = "torch"
 
 from keras_core import layers
 import keras_core as keras
+from keras_core import ops
+from keras_core import random
 
 import matplotlib.pyplot as plt
-import tensorflow as tf
 import numpy as np
 
 """
@@ -68,7 +69,7 @@ stochastic_depth_rate = 0.1
 learning_rate = 0.001
 weight_decay = 0.0001
 batch_size = 128
-num_epochs = 30
+num_epochs = 1
 image_size = 32
 
 """
@@ -143,9 +144,9 @@ class CCTTokenizer(layers.Layer):
         outputs = self.conv_model(images)
         # After passing the images through our mini-network the spatial dimensions
         # are flattened to form sequences.
-        reshaped = tf.reshape(
+        reshaped = ops.reshape(
             outputs,
-            (-1, tf.shape(outputs)[1] * tf.shape(outputs)[2], tf.shape(outputs)[-1]),
+            (-1, ops.shape(outputs)[1] * ops.shape(outputs)[2], ops.shape(outputs)[-1]),
         )
         return reshaped
 
@@ -154,10 +155,10 @@ class CCTTokenizer(layers.Layer):
         # the number of sequences and initialize an `Embedding` layer to
         # compute the positional embeddings later.
         if self.positional_emb:
-            dummy_inputs = tf.ones((1, image_size, image_size, 3))
+            dummy_inputs = ops.ones((1, image_size, image_size, 3))
             dummy_outputs = self.call(dummy_inputs)
-            sequence_length = tf.shape(dummy_outputs)[1]
-            projection_dim = tf.shape(dummy_outputs)[-1]
+            sequence_length = ops.shape(dummy_outputs)[1]
+            projection_dim = ops.shape(dummy_outputs)[-1]
 
             embed_layer = layers.Embedding(
                 input_dim=sequence_length, output_dim=projection_dim
@@ -179,11 +180,11 @@ class SequencePooling(layers.Layer):
         self.attention = layers.Dense(1)
 
     def call(self, x):
-        attention_weights = tf.nn.softmax(self.attention(x), axis=1)
-        weighted_representation = tf.matmul(
-        attention_weights, x, transpose_a=True
+        attention_weights = ops.nn.softmax(self.attention(x), axis=1)
+        weighted_representation = ops.matmul(
+        ops.transpose(attention_weights, [0, 2, 1]), x
     )
-        return tf.squeeze(weighted_representation, -2)
+        return ops.squeeze(weighted_representation, -2)
 
 
 """
@@ -200,16 +201,17 @@ encoder.
 
 # Referred from: github.com:rwightman/pytorch-image-models.
 class StochasticDepth(layers.Layer):
-    def __init__(self, drop_prop, **kwargs):
+
+    def __init__(self, drop_path_rate, **kwargs):
         super().__init__(**kwargs)
-        self.drop_prob = drop_prop
+        self.drop_path_rate = drop_path_rate
 
     def call(self, x, training=None):
         if training:
-            keep_prob = 1 - self.drop_prob
-            shape = (tf.shape(x)[0],) + (1,) * (tf.shape(x).shape[0] - 1)
-            random_tensor = keep_prob + tf.random.uniform(shape, 0, 1)
-            random_tensor = tf.floor(random_tensor)
+            keep_prob = 1 - self.drop_path_rate
+            shape = (ops.shape(x)[0],) + (1,) * (len(x.shape) - 1)
+            random_tensor = keep_prob + random.uniform(shape, 0, 1)
+            random_tensor = ops.floor(random_tensor)
             return (x / keep_prob) * random_tensor
         return x
 
@@ -221,7 +223,7 @@ class StochasticDepth(layers.Layer):
 
 def mlp(x, hidden_units, dropout_rate):
     for units in hidden_units:
-        x = layers.Dense(units, activation=tf.nn.gelu)(x)
+        x = layers.Dense(units, activation=ops.gelu)(x)
         x = layers.Dropout(dropout_rate)(x)
     return x
 
@@ -274,7 +276,7 @@ def create_cct_model(
     # Apply positional embedding.
     if positional_emb:
         pos_embed, seq_length = cct_tokenizer.positional_embedding(image_size)
-        positions = tf.range(start=0, limit=seq_length, delta=1)
+        positions = ops.arange(start=0, stop=seq_length, step=1)
         position_embeddings = pos_embed(positions)
         encoded_patches += position_embeddings
 
