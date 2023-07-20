@@ -48,26 +48,23 @@ class Concatenate(Merge):
             return
 
         reduced_inputs_shapes = [list(shape) for shape in input_shape]
-        # max_shape_rank = len(max(reduced_inputs_shapes, key=lambda x: len(x)))
         shape_set = set()
 
         for i in range(len(reduced_inputs_shapes)):
             # Convert self.axis to positive axis for each input
             # in case self.axis is a negative number
             concat_axis = self.axis % len(reduced_inputs_shapes[i])
-            batch_axis = 0
-            # Any axis that has the value of one.
-            # (e.g. shape=(None, 1, 32))
-            redundant_axis_val = 1
-
-            # Remove 1s from the input shapes
-            # if not in the axis that will be used for concatenation
-            # otherwise do not remove it
-            for idx, val in enumerate(reduced_inputs_shapes[i]):
-                if (
-                    idx != concat_axis and idx != batch_axis
-                ) and val == redundant_axis_val:
-                    del reduced_inputs_shapes[i][idx]
+            #  Skip batch axis.
+            for axis, axis_value in enumerate(reduced_inputs_shapes[i][1:],
+                                              start=1):
+                # Remove squeezable axes (axes with value of 1)
+                # if not in the axis that will be used for concatenation
+                # otherwise leave it.
+                # This approach allows building the layer,
+                # but if tensor shapes are not the same when
+                # calling, an exception will be raised.
+                if axis != concat_axis and axis_value == 1:
+                    del reduced_inputs_shapes[i][axis]
 
             del reduced_inputs_shapes[i][self.axis]
             shape_set.add(tuple(reduced_inputs_shapes[i]))
