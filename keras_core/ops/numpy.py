@@ -354,7 +354,7 @@ class Amax(Operation):
 @keras_core_export(["keras_core.ops.amax", "keras_core.ops.numpy.amax"])
 def amax(x, axis=None, keepdims=False):
     if any_symbolic_tensors((x,)):
-        return All(axis=axis, keepdims=keepdims).symbolic_call(x)
+        return Amax(axis=axis, keepdims=keepdims).symbolic_call(x)
     return backend.numpy.amax(x, axis=axis, keepdims=keepdims)
 
 
@@ -379,7 +379,7 @@ class Amin(Operation):
 @keras_core_export(["keras_core.ops.amin", "keras_core.ops.numpy.amin"])
 def amin(x, axis=None, keepdims=False):
     if any_symbolic_tensors((x,)):
-        return All(axis=axis, keepdims=keepdims).symbolic_call(x)
+        return Amin(axis=axis, keepdims=keepdims).symbolic_call(x)
     return backend.numpy.amin(x, axis=axis, keepdims=keepdims)
 
 
@@ -3458,3 +3458,43 @@ class Eye(Operation):
 @keras_core_export(["keras_core.ops.eye", "keras_core.ops.numpy.eye"])
 def eye(N, M=None, k=0, dtype="float32"):
     return backend.numpy.eye(N, M=M, k=k, dtype=dtype)
+
+
+class FloorDivide(Operation):
+    def call(self, x1, x2):
+        return backend.numpy.floor_divide(x1, x2)
+
+    def compute_output_spec(self, x1, x2):
+        x1_shape = getattr(x1, "shape", [])
+        x2_shape = getattr(x2, "shape", [])
+        output_shape = broadcast_shapes(x1_shape, x2_shape)
+        return KerasTensor(output_shape, dtype=x1.dtype)
+
+
+@keras_core_export(
+    ["keras_core.ops.floor_divide", "keras_core.ops.numpy.floor_divide"]
+)
+def floor_divide(x1, x2):
+    if any_symbolic_tensors((x1, x2)):
+        return FloorDivide().symbolic_call(x1, x2)
+    return backend.numpy.floor_divide(x1, x2)
+
+
+class LogicalXor(Operation):
+    def call(self, x1, x2):
+        return backend.numpy.logical_xor(x1, x2)
+
+    def compute_output_spec(self, x1, x2):
+        x1_shape = getattr(x1, "shape", [])
+        x2_shape = getattr(x2, "shape", [])
+        output_shape = broadcast_shapes(x1_shape, x2_shape)
+        return KerasTensor(output_shape, dtype=x1.dtype)
+
+
+@keras_core_export(
+    ["keras_core.ops.logical_xor", "keras_core.ops.numpy.logical_xor"]
+)
+def logical_xor(x1, x2):
+    if any_symbolic_tensors((x1, x2)):
+        return LogicalXor().symbolic_call(x1, x2)
+    return backend.numpy.logical_xor(x1, x2)
