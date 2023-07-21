@@ -1,8 +1,10 @@
-import torch
-import numpy as np
-import warnings
 import random
 import time
+import warnings
+
+import numpy as np
+import torch
+
 from keras_core.api_export import keras_core_export
 from keras_core.utils.module_utils import tensorflow as tf
 
@@ -14,7 +16,9 @@ def split_dataset(
     """Split a dataset into a left half and a right half (e.g. train / test).
 
     Args:
-        dataset: A `tf.data.Dataset or torchDataset`  object, or a list/tuple of arrays with the
+        dataset:
+            A `tf.data.Dataset or torchDataset`  object,
+            or a list/tuple of arrays with the
           same length.
         left_size: If float (in the range `[0, 1]`), it signifies
           the fraction of the data to pack in the left dataset. If integer, it
@@ -28,7 +32,8 @@ def split_dataset(
         seed: A random seed for shuffling.
 
     Returns:
-        A tuple of two `tf.data.Dataset or torchDataset` objects: the left and right splits.
+        A tuple of two `tf.data.Dataset or torchDataset` objects:
+        the left and right splits.
 
     Example:
 
@@ -112,10 +117,13 @@ def _convert_dataset_to_list(
     data_size_warning_flag=True,
     ensure_shape_similarity=True,
 ):
-    """Convert `tf.data.Dataset or torchDataset` object or list/tuple of NumPy arrays to a list.
+    """Convert `tf.data.Dataset or torchDataset` object
+        or list/tuple of NumPy arrays to a list.
 
     Args:
-        dataset : A `tf.data.Dataset or torchDataset` object or a list/tuple of arrays.
+        dataset :
+            A `tf.data.Dataset or torchDataset` object
+            or a list/tuple of arrays.
         dataset_type_spec : the type of the dataset
         data_size_warning_flag (bool, optional): If set to True, a warning will
           be issued if the dataset takes longer than 10 seconds to iterate.
@@ -157,8 +165,11 @@ def _get_data_iterator_from_dataset(dataset, dataset_type_spec):
     """Get the iterator from a dataset.
 
     Args:
-        dataset :  A `tf.data.Dataset or torchDataset` object or a list/tuple of arrays.
-        dataset_type_spec : the type of the dataset
+        dataset :
+            A `tf.data.Dataset or torchDataset` object
+            or a list/tuple of arrays.
+        dataset_type_spec :
+             the type of the dataset
 
     Raises:
         ValueError:

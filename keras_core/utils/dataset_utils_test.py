@@ -1,8 +1,8 @@
-from keras_core.testing import test_case
-from keras_core.utils import naming
-from keras_core.utils.module_utils import tensorflow as tf
-from keras_core.utils.dataset_utils import split_dataset
 import numpy as np
+
+from keras_core.testing import test_case
+from keras_core.utils.dataset_utils import split_dataset
+from keras_core.utils.module_utils import tensorflow as tf
 
 
 class DatasetUtilsTest(test_case.TestCase):
