@@ -126,7 +126,10 @@ def _get_concrete_noise_shape(inputs, noise_shape):
 
 
 def dropout(inputs, rate, noise_shape=None, seed=None):
-    if noise_shape is not None:
+    if noise_shape is not None or not (
+        (seed is None)
+        or (isinstance(seed, SeedGenerator) and seed.initialized_with_none)
+    ):
         keep_prob = 1.0 - rate
         noise_shape = _get_concrete_noise_shape(inputs, noise_shape)
         keep_prob_matrix = torch.full(
