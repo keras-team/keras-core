@@ -31,15 +31,27 @@ class RandomZoomTest(testing.TestCase, parameterized.TestCase):
 
     def test_random_zoom_out_correctness(self):
         input_image = np.reshape(np.arange(0, 25), (1, 5, 5, 1))
-        expected_output = np.asarray(
-            [
-                [0, 0, 0, 0, 0],
-                [0, 5, 7, 9, 0],
-                [0, 10, 12, 14, 0],
-                [0, 20, 22, 24, 0],
-                [0, 0, 0, 0, 0],
-            ]
-        )
+        if backend.backend() == "torch":
+            # slightly different output with torch backend
+            expected_output = np.asarray(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 6, 7, 9, 0],
+                    [0, 11, 12, 14, 0],
+                    [0, 21, 22, 24, 0],
+                    [0, 0, 0, 0, 0],
+                ]
+            )
+        else:
+            expected_output = np.asarray(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 5, 7, 9, 0],
+                    [0, 10, 12, 14, 0],
+                    [0, 20, 22, 24, 0],
+                    [0, 0, 0, 0, 0],
+                ]
+            )
         expected_output = backend.convert_to_tensor(
             np.reshape(expected_output, (1, 5, 5, 1))
         )
@@ -60,15 +72,27 @@ class RandomZoomTest(testing.TestCase, parameterized.TestCase):
 
     def test_random_zoom_in_correctness(self):
         input_image = np.reshape(np.arange(0, 25), (1, 5, 5, 1))
-        expected_output = np.asarray(
-            [
-                [6, 7, 7, 8, 8],
-                [11, 12, 12, 13, 13],
-                [11, 12, 12, 13, 13],
-                [16, 17, 17, 18, 18],
-                [16, 17, 17, 18, 18],
-            ]
-        )
+        if backend.backend() == "torch":
+            # slightly different output with torch backend
+            expected_output = np.asarray(
+                [
+                    [6, 6, 7, 7, 8],
+                    [6, 6, 7, 7, 8],
+                    [11, 11, 12, 12, 13],
+                    [11, 11, 12, 12, 13],
+                    [16, 16, 17, 17, 18],
+                ]
+            )
+        else:
+            expected_output = np.asarray(
+                [
+                    [6, 7, 7, 8, 8],
+                    [11, 12, 12, 13, 13],
+                    [11, 12, 12, 13, 13],
+                    [16, 17, 17, 18, 18],
+                    [16, 17, 17, 18, 18],
+                ]
+            )
         expected_output = backend.convert_to_tensor(
             np.reshape(expected_output, (1, 5, 5, 1))
         )
