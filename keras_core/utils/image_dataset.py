@@ -364,7 +364,7 @@ def paths_and_labels_to_dataset(
         pass
 
     if backend() == "jax":
-        NotImplementedError('Jax function not implemented')
+        NotImplementedError('Jax support not yet implemented')
 
 
 def load_image(
