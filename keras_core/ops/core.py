@@ -311,11 +311,9 @@ class ForiLoop(Operation):
     def compute_output_spec(self, init_val):
         return KerasTensor(init_val.shape, dtype=init_val.dtype)
 
-
 @keras_core_export("keras_core.ops.fori_loop")
 def fori_loop(lower, upper, body_fun, init_val):
-    """
-    For loop implementation.
+    """For loop implementation.
 
     Args:
         lower: The initial value of the loop variable.
@@ -328,7 +326,7 @@ def fori_loop(lower, upper, body_fun, init_val):
     Returns:
         The final state after the loop.
 
-    Examples:
+    Example:
 
     >>> lower = 0
     >>> upper = 10
@@ -337,7 +335,6 @@ def fori_loop(lower, upper, body_fun, init_val):
     >>> keras_core.ops.fori_loop(lower, upper, body_fun, init_val)
     45
     """
-
     if any_symbolic_tensors((lower, upper, init_val)):
         return ForiLoop(lower, upper, body_fun).symbolic_call(init_val)
     return backend.core.fori_loop(lower, upper, body_fun, init_val)
