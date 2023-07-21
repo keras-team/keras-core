@@ -65,6 +65,7 @@ from imgaug.augmentables.kps import Keypoint
 import imgaug.augmenters as iaa
 
 from PIL import Image
+from sklearn.model_selection import train_test_split
 from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
@@ -257,8 +258,10 @@ that applies data augmentation on batches of data using `imgaug`.
 
 
 class KeyPointsDataset(keras.utils.PyDataset):
-    def __init__(self, image_keys, aug, batch_size=BATCH_SIZE, train=True):
-        super().__init__()
+    def __init__(
+        self, image_keys, aug, batch_size=BATCH_SIZE, train=True, **kwargs
+    ):
+        super().__init__(**kwargs)
         self.image_keys = image_keys
         self.aug = aug
         self.batch_size = batch_size
@@ -363,8 +366,12 @@ train_keys, validation_keys = (
 ## Data generator investigation
 """
 
-train_dataset = KeyPointsDataset(train_keys, train_aug)
-validation_dataset = KeyPointsDataset(validation_keys, test_aug, train=False)
+train_dataset = KeyPointsDataset(
+    train_keys, train_aug, workers=2, use_multiprocessing=True
+)
+validation_dataset = KeyPointsDataset(
+    validation_keys, test_aug, train=False, workers=2, use_multiprocessing=True
+)
 
 print(f"Total batches in training set: {len(train_dataset)}")
 print(f"Total batches in validation set: {len(validation_dataset)}")
