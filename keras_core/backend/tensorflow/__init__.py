@@ -24,3 +24,4 @@ from keras_core.backend.tensorflow.rnn import rnn
 from keras_core.backend.tensorflow.image import read_file
 from keras_core.backend.tensorflow.image import decode_image
 from keras_core.backend.tensorflow.image import resize
+from keras_core.backend.tensorflow.image import smart_resize

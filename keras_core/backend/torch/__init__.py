@@ -38,6 +38,7 @@ from keras_core.backend.torch.rnn import gru
 from keras_core.backend.torch.rnn import lstm
 from keras_core.backend.torch.rnn import rnn
 from keras_core.backend.torch.image import resize
+from keras_core.backend.torch.image import smart_resize
 from keras_core.backend.torch.image import decode_image
 from keras_core.backend.torch.image import read_file
 
