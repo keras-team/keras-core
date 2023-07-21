@@ -15,13 +15,16 @@ class RandomZoom(TFDataLayer):
     of integer or floating point dtype.
     By default, the layer will output floats.
 
-    **Note:** This layer wraps `tf.keras.layers.RandomZoom`. It cannot
-    be used as part of the compiled computation graph of a model with
-    any backend other than TensorFlow.
-    It can however be used with any backend when running eagerly.
-    It can also always be used as part of an input preprocessing pipeline
-    with any backend (outside the model itself), which is how we recommend
-    to use this layer.
+    Input shape:
+        3D (unbatched) or 4D (batched) tensor with shape:
+        `(..., height, width, channels)`, in `"channels_last"` format,
+        or `(..., channels, height, width)`, in `"channels_first"` format.
+
+    Output shape:
+        3D (unbatched) or 4D (batched) tensor with shape:
+        `(..., target_height, target_width, channels)`,
+        or `(..., channels, target_height, target_width)`,
+        in `"channels_first"` format.
 
     **Note:** This layer is safe to use inside a `tf.data` pipeline
     (independently of which backend you're using).
@@ -82,14 +85,6 @@ class RandomZoom(TFDataLayer):
     >>> input_img = np.random.random((32, 224, 224, 3))
     >>> layer = keras_core.layers.RandomZoom(.5, .2)
     >>> out_img = layer(input_img)
-
-    Input shape:
-        3D (unbatched) or 4D (batched) tensor with shape:
-        `(..., height, width, channels)`, in `"channels_last"` format.
-
-    Output shape:
-        3D (unbatched) or 4D (batched) tensor with shape:
-        `(..., height, width, channels)`, in `"channels_last"` format.
     """
 
     _FACTOR_VALIDATION_ERROR = (
