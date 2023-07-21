@@ -35,7 +35,7 @@ class SeedGenerator:
         else:
             self.backend = backend
 
-        self.initialized_with_none = seed is None
+        self._initial_seed = seed
         if seed is None:
             seed = make_default_seed()
 
