@@ -69,7 +69,6 @@ class SymbolicArgumentsTest(testing.TestCase):
 
         (value, _) = sym_args.convert(lambda x: x**2)
         args1 = value[0][0]
-        args2 = value[0][1]
 
         self.assertIsInstance(args1, KerasTensor)
 
