@@ -1,5 +1,10 @@
+import multiprocessing
+import os
+
 from keras_core.api_export import keras_core_export
 from keras_core.utils.module_utils import tensorflow as tf
+from keras_core.utils import io_utils
+from keras_core.utils import file_utils
 
 
 @keras_core_export("keras_core.utils.split_dataset")
@@ -43,159 +48,6 @@ def split_dataset(
         right_size=right_size,
         shuffle=shuffle,
         seed=seed,
-    )
-
-
-@keras_core_export(
-    [
-        "keras_core.utils.image_dataset_from_directory",
-        "keras_core.preprocessing.image_dataset_from_directory",
-    ]
-)
-def image_dataset_from_directory(
-    directory,
-    labels="inferred",
-    label_mode="int",
-    class_names=None,
-    color_mode="rgb",
-    batch_size=32,
-    image_size=(256, 256),
-    shuffle=True,
-    seed=None,
-    validation_split=None,
-    subset=None,
-    interpolation="bilinear",
-    follow_links=False,
-    crop_to_aspect_ratio=False,
-):
-    """Generates a `tf.data.Dataset` from image files in a directory.
-
-    If your directory structure is:
-
-    ```
-    main_directory/
-    ...class_a/
-    ......a_image_1.jpg
-    ......a_image_2.jpg
-    ...class_b/
-    ......b_image_1.jpg
-    ......b_image_2.jpg
-    ```
-
-    Then calling `image_dataset_from_directory(main_directory,
-    labels='inferred')` will return a `tf.data.Dataset` that yields batches of
-    images from the subdirectories `class_a` and `class_b`, together with labels
-    0 and 1 (0 corresponding to `class_a` and 1 corresponding to `class_b`).
-
-    Supported image formats: `.jpeg`, `.jpg`, `.png`, `.bmp`, `.gif`.
-    Animated gifs are truncated to the first frame.
-
-    Args:
-        directory: Directory where the data is located.
-            If `labels` is `"inferred"`, it should contain
-            subdirectories, each containing images for a class.
-            Otherwise, the directory structure is ignored.
-        labels: Either `"inferred"`
-            (labels are generated from the directory structure),
-            `None` (no labels),
-            or a list/tuple of integer labels of the same size as the number of
-            image files found in the directory. Labels should be sorted
-            according to the alphanumeric order of the image file paths
-            (obtained via `os.walk(directory)` in Python).
-        label_mode: String describing the encoding of `labels`. Options are:
-            - `"int"`: means that the labels are encoded as integers
-                (e.g. for `sparse_categorical_crossentropy` loss).
-            - `"categorical"` means that the labels are
-                encoded as a categorical vector
-                (e.g. for `categorical_crossentropy` loss).
-            - `"binary"` means that the labels (there can be only 2)
-                are encoded as `float32` scalars with values 0 or 1
-                (e.g. for `binary_crossentropy`).
-            - `None` (no labels).
-        class_names: Only valid if `labels` is `"inferred"`.
-            This is the explicit list of class names
-            (must match names of subdirectories). Used to control the order
-            of the classes (otherwise alphanumerical order is used).
-        color_mode: One of `"grayscale"`, `"rgb"`, `"rgba"`.
-            Defaults to `"rgb"`. Whether the images will be converted to
-            have 1, 3, or 4 channels.
-        batch_size: Size of the batches of data. Defaults to 32.
-            If `None`, the data will not be batched
-            (the dataset will yield individual samples).
-        image_size: Size to resize images to after they are read from disk,
-            specified as `(height, width)`. Defaults to `(256, 256)`.
-            Since the pipeline processes batches of images that must all have
-            the same size, this must be provided.
-        shuffle: Whether to shuffle the data. Defaults to `True`.
-            If set to `False`, sorts the data in alphanumeric order.
-        seed: Optional random seed for shuffling and transformations.
-        validation_split: Optional float between 0 and 1,
-            fraction of data to reserve for validation.
-        subset: Subset of the data to return.
-            One of `"training"`, `"validation"`, or `"both"`.
-            Only used if `validation_split` is set.
-            When `subset="both"`, the utility returns a tuple of two datasets
-            (the training and validation datasets respectively).
-        interpolation: String, the interpolation method used when
-            resizing images. Defaults to `"bilinear"`.
-            Supports `"bilinear"`, `"nearest"`, `"bicubic"`, `"area"`,
-            `"lanczos3"`, `"lanczos5"`, `"gaussian"`, `"mitchellcubic"`.
-        follow_links: Whether to visit subdirectories pointed to by symlinks.
-            Defaults to `False`.
-        crop_to_aspect_ratio: If `True`, resize the images without aspect
-            ratio distortion. When the original aspect ratio differs from the
-            target aspect ratio, the output image will be cropped so as to
-            return the largest possible window in the image
-            (of size `image_size`) that matches the target aspect ratio. By
-            default (`crop_to_aspect_ratio=False`), aspect ratio may not be
-            preserved.
-
-    Returns:
-
-    A `tf.data.Dataset  or torchDataset ` object.
-
-    - If `label_mode` is `None`, it yields `float32` tensors of shape
-        `(batch_size, image_size[0], image_size[1], num_channels)`,
-        encoding images (see below for rules regarding `num_channels`).
-    - Otherwise, it yields a tuple `(images, labels)`, where `images` has
-        shape `(batch_size, image_size[0], image_size[1], num_channels)`,
-        and `labels` follows the format described below.
-
-    Rules regarding labels format:
-
-    - if `label_mode` is `"int"`, the labels are an `int32` tensor of shape
-        `(batch_size,)`.
-    - if `label_mode` is `"binary"`, the labels are a `float32` tensor of
-        1s and 0s of shape `(batch_size, 1)`.
-    - if `label_mode` is `"categorical"`, the labels are a `float32` tensor
-        of shape `(batch_size, num_classes)`, representing a one-hot
-        encoding of the class index.
-
-    Rules regarding number of channels in the yielded images:
-
-    - if `color_mode` is `"grayscale"`,
-        there's 1 channel in the image tensors.
-    - if `color_mode` is `"rgb"`,
-        there are 3 channels in the image tensors.
-    - if `color_mode` is `"rgba"`,
-        there are 4 channels in the image tensors.
-    """
-    # TODO: long-term, port implementation.
-    return tf.keras.utils.image_dataset_from_directory(
-        directory,
-        labels=labels,
-        label_mode=label_mode,
-        class_names=class_names,
-        color_mode=color_mode,
-        batch_size=batch_size,
-        image_size=image_size,
-        shuffle=shuffle,
-        seed=seed,
-        validation_split=validation_split,
-        subset=subset,
-        interpolation=interpolation,
-        follow_links=follow_links,
-        crop_to_aspect_ratio=crop_to_aspect_ratio,
     )
 
 
@@ -583,3 +435,227 @@ def audio_dataset_from_directory(
         subset=subset,
         follow_links=follow_links,
     )
+
+def get_training_or_validation_split(samples, labels, validation_split, subset):
+    """Potentially restict samples & labels to a training or validation split.
+
+    Args:
+      samples: List of elements.
+      labels: List of corresponding labels.
+      validation_split: Float, fraction of data to reserve for validation.
+      subset: Subset of the data to return.
+        Either "training", "validation", or None. If None, we return all of the
+        data.
+
+    Returns:
+      tuple (samples, labels), potentially restricted to the specified subset.
+    """
+    if not validation_split:
+        return samples, labels
+
+    num_val_samples = int(validation_split * len(samples))
+    if subset == "training":
+        print(f"Using {len(samples) - num_val_samples} files for training.")
+        samples = samples[:-num_val_samples]
+        labels = labels[:-num_val_samples]
+    elif subset == "validation":
+        print(f"Using {num_val_samples} files for validation.")
+        samples = samples[-num_val_samples:]
+        labels = labels[-num_val_samples:]
+    else:
+        raise ValueError(
+            '`subset` must be either "training" '
+            f'or "validation", received: {subset}'
+        )
+    return samples, labels
+
+def check_validation_split_arg(validation_split, subset, shuffle, seed):
+    """Raise errors in case of invalid argument values.
+
+    Args:
+      validation_split: float between 0 and 1, fraction of data to reserve for
+        validation.
+      subset: One of "training", "validation" or "both". Only used if
+        `validation_split` is set.
+      shuffle: Whether to shuffle the data. Either True or False.
+      seed: random seed for shuffling and transformations.
+    """
+    if validation_split and not 0 < validation_split < 1:
+        raise ValueError(
+            "`validation_split` must be between 0 and 1, "
+            f"received: {validation_split}"
+        )
+    if (validation_split or subset) and not (validation_split and subset):
+        raise ValueError(
+            "If `subset` is set, `validation_split` must be set, and inversely."
+        )
+    if subset not in ("training", "validation", "both", None):
+        raise ValueError(
+            '`subset` must be either "training", '
+            f'"validation" or "both", received: {subset}'
+        )
+    if validation_split and shuffle and seed is None:
+        raise ValueError(
+            "If using `validation_split` and shuffling the data, you must "
+            "provide a `seed` argument, to make sure that there is no "
+            "overlap between the training and validation subset."
+        )
+
+def iter_valid_files(directory, follow_links, formats):
+    if not follow_links:
+        walk = file_utils.walk(directory)
+    else:
+        walk = os.walk(directory, followlinks=follow_links)
+    for root, _, files in sorted(walk, key=lambda x: x[0]):
+        for fname in sorted(files):
+            if fname.lower().endswith(formats):
+                yield root, fname
+    
+
+def index_subdirectory(directory, class_indices, follow_links, formats):
+    """Recursively walks directory and list image paths and their class index.
+
+    Args:
+      directory: string, target directory.
+      class_indices: dict mapping class names to their index.
+      follow_links: boolean, whether to recursively follow subdirectories
+        (if False, we only list top-level images in `directory`).
+      formats: Allowlist of file extensions to index (e.g. ".jpg", ".txt").
+
+    Returns:
+      tuple `(filenames, labels)`. `filenames` is a list of relative file
+        paths, and `labels` is a list of integer labels corresponding to these
+        files.
+    """
+    dirname = os.path.basename(directory)
+    valid_files = iter_valid_files(directory, follow_links, formats)
+    labels = []
+    filenames = []
+    for root, fname in valid_files:
+        labels.append(class_indices[dirname])
+        absolute_path = file_utils.join(root, fname)
+        relative_path = file_utils.join(
+            dirname, os.path.relpath(absolute_path, directory)
+        )
+        filenames.append(relative_path)
+    return filenames, labels
+    
+    
+def index_directory(
+    directory,
+    labels,
+    formats,
+    class_names=None,
+    shuffle=True,
+    seed=None,
+    follow_links=False,
+):
+    """Make list of all files in `directory`, with their labels.
+
+    Args:
+      directory: Directory where the data is located.
+          If `labels` is "inferred", it should contain
+          subdirectories, each containing files for a class.
+          Otherwise, the directory structure is ignored.
+      labels: Either "inferred"
+          (labels are generated from the directory structure),
+          None (no labels),
+          or a list/tuple of integer labels of the same size as the number of
+          valid files found in the directory. Labels should be sorted according
+          to the alphanumeric order of the image file paths
+          (obtained via `os.walk(directory)` in Python).
+      formats: Allowlist of file extensions to index (e.g. ".jpg", ".txt").
+      class_names: Only valid if "labels" is "inferred". This is the explicit
+          list of class names (must match names of subdirectories). Used
+          to control the order of the classes
+          (otherwise alphanumerical order is used).
+      shuffle: Whether to shuffle the data. Default: True.
+          If set to False, sorts the data in alphanumeric order.
+      seed: Optional random seed for shuffling.
+      follow_links: Whether to visits subdirectories pointed to by symlinks.
+
+    Returns:
+      tuple (file_paths, labels, class_names).
+        file_paths: list of file paths (strings).
+        labels: list of matching integer labels (same length as file_paths)
+        class_names: names of the classes corresponding to these labels, in
+          order.
+    """
+    import numpy as np
+
+    if labels != "inferred":
+        # in the explicit/no-label cases, index from the parent directory down.
+        subdirs = [""]
+        class_names = subdirs
+    else:
+        subdirs = []
+        for subdir in sorted(file_utils.listdir(directory)):
+            if file_utils.isdir(file_utils.join(directory, subdir)):
+                if subdir.endswith("/"):
+                    subdir = subdir[:-1]
+                subdirs.append(subdir)
+        if not class_names:
+            class_names = subdirs
+        else:
+            if set(class_names) != set(subdirs):
+                raise ValueError(
+                    "The `class_names` passed did not match the "
+                    "names of the subdirectories of the target directory. "
+                    f"Expected: {subdirs}, but received: {class_names}"
+                )
+    class_indices = dict(zip(class_names, range(len(class_names))))
+
+    # Build an index of the files
+    # in the different class subfolders.
+    pool = multiprocessing.pool.ThreadPool()
+    results = []
+    filenames = []
+
+    for dirpath in (file_utils.join(directory, subdir) for subdir in subdirs):
+        results.append(
+            pool.apply_async(
+                index_subdirectory,
+                (dirpath, class_indices, follow_links, formats),
+            )
+        )
+    labels_list = []
+    for res in results:
+        partial_filenames, partial_labels = res.get()
+        labels_list.append(partial_labels)
+        filenames += partial_filenames
+    if labels not in ("inferred", None):
+        if len(labels) != len(filenames):
+            raise ValueError(
+                "Expected the lengths of `labels` to match the number "
+                "of files in the target directory. len(labels) is "
+                f"{len(labels)} while we found {len(filenames)} files "
+                f"in directory {directory}."
+            )
+        class_names = sorted(set(labels))
+    else:
+        i = 0
+        labels = np.zeros((len(filenames),), dtype="int32")
+        for partial_labels in labels_list:
+            labels[i : i + len(partial_labels)] = partial_labels
+            i += len(partial_labels)
+
+    if labels is None:
+        io_utils.print_msg(f"Found {len(filenames)} files.")
+    else:
+        io_utils.print_msg(
+            f"Found {len(filenames)} files belonging "
+            f"to {len(class_names)} classes."
+        )
+    pool.close()
+    pool.join()
+    file_paths = [file_utils.join(directory, fname) for fname in filenames]
+
+    if shuffle:
+        # Shuffle globally to erase macro-structure
+        if seed is None:
+            seed = np.random.randint(1e6)
+        rng = np.random.RandomState(seed)
+        rng.shuffle(file_paths)
+        rng = np.random.RandomState(seed)
+        rng.shuffle(labels)
+    return file_paths, labels, class_names

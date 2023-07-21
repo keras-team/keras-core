@@ -445,3 +445,12 @@ def smart_resize(
     if isinstance(x, np.ndarray):
         return np.array(img)
     return img
+
+def get_interpolation(interpolation):
+    interpolation = interpolation.lower()
+    if interpolation not in PIL_INTERPOLATION_METHODS:
+        raise NotImplementedError(
+            "Value not recognized for `interpolation`: {}. Supported values "
+            "are: {}".format(interpolation, PIL_INTERPOLATION_METHODS.keys())
+        )
+    return PIL_INTERPOLATION_METHODS[interpolation]

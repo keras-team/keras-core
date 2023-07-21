@@ -471,3 +471,6 @@ def makedirs(path):
         else:
             _raise_if_no_gfile(path)
     return os.makedirs(path)
+
+def walk(directory):
+    return gfile.walk(directory)
