@@ -111,8 +111,8 @@ class Variable(KerasVariable):
 def convert_to_tensor(x, dtype=None):
     if is_tensor(x):
         if dtype is None:
-            return x
-        return x.to(to_torch_dtype(dtype))
+            return x.to(device=get_device())
+        return x.to(dtype=to_torch_dtype(dtype), device=get_device())
     if isinstance(x, Variable):
         # TorchDynamo has bugs supporting nn.Parameter type check.
         # Return it directly instead of pass it to the rest of the logic in the
