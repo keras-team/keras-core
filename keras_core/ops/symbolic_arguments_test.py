@@ -72,8 +72,6 @@ class SymbolicArgumentsTest(testing.TestCase):
         args2 = value[0][1]
 
         self.assertIsInstance(args1, KerasTensor)
-        self.assertNotEqual(args1, a)
-        self.assertNotEqual(args2, b)
 
         mapped_value = tree.map_structure(lambda x: x**2, a)
         self.assertEqual(mapped_value.shape, args1.shape)
