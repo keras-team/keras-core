@@ -11,7 +11,6 @@ from keras_core import layers
 from keras_core import metrics
 from keras_core import models
 from keras_core import testing
-from keras_core import ops
 from keras_core.saving import object_registration
 
 
@@ -140,12 +139,16 @@ class SavedModelTest(testing.TestCase):
         input_arr_2 = np.random.random((1, 5)).astype("float32")
 
         outputs = restored_model.signatures["serving_default"](
-                    inputs=tf.convert_to_tensor(input_arr_1, dtype=tf.float32),
-                    inputs_1=tf.convert_to_tensor(input_arr_2, dtype=tf.float32),
-                )
+            inputs=tf.convert_to_tensor(input_arr_1, dtype=tf.float32),
+            inputs_1=tf.convert_to_tensor(input_arr_2, dtype=tf.float32),
+        )
 
-        self.assertAllClose(input_arr_1, outputs["output_0"], rtol=1e-4, atol=1e-4)
-        self.assertAllClose(input_arr_2, outputs["output_1"], rtol=1e-4, atol=1e-4)
+        self.assertAllClose(
+            input_arr_1, outputs["output_0"], rtol=1e-4, atol=1e-4
+        )
+        self.assertAllClose(
+            input_arr_2, outputs["output_1"], rtol=1e-4, atol=1e-4
+        )
 
     def test_multi_input_custom_model_and_layer(self):
         @object_registration.register_keras_serializable(package="my_package")
