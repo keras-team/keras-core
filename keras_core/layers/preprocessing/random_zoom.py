@@ -68,6 +68,14 @@ class RandomZoom(TFDataLayer):
         seed: Integer. Used to create a random seed.
         fill_value: a float represents the value to be filled outside
             the boundaries when `fill_mode="constant"`.
+        data_format: string, either `"channels_last"` or `"channels_first"`.
+            The ordering of the dimensions in the inputs. `"channels_last"`
+            corresponds to inputs with shape `(batch, height, width, channels)`
+            while `"channels_first"` corresponds to inputs with shape
+            `(batch, channels, height, width)`. It defaults to the
+            `image_data_format` value found in your Keras config file at
+            `~/.keras/keras.json`. If you never set it, then it will be
+            `"channels_last"`.
 
     Example:
 
