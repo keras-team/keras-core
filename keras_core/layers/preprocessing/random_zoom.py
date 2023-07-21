@@ -79,6 +79,7 @@ class RandomZoom(TFDataLayer):
             `image_data_format` value found in your Keras config file at
             `~/.keras/keras.json`. If you never set it, then it will be
             `"channels_last"`.
+        **kwargs: Base layer keyword arguments, such as `name` and `dtype`.
 
     Example:
 
