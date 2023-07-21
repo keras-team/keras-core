@@ -38,7 +38,7 @@ def split_dataset(
     Example:
 
     >>> data = np.random.random(size=(1000, 4))
-    >>> left_ds, right_ds = tf.keras.utils.split_dataset(data, left_size=0.8)
+    >>> left_ds, right_ds = keras_core.utils.split_dataset(data, left_size=0.8)
     >>> int(left_ds.cardinality())
     800
     >>> int(right_ds.cardinality())
