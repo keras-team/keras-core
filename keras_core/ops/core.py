@@ -224,10 +224,10 @@ class WhileLoop(Operation):
 
 @keras_core_export("keras_core.ops.while_loop")
 def while_loop(
-        cond,
-        body,
-        loop_vars,
-        maximum_iterations=None,
+    cond,
+    body,
+    loop_vars,
+    maximum_iterations=None,
 ):
     """While loop implemetation.
 

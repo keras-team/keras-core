@@ -249,15 +249,7 @@ class CoreOpsCorrectnessTest(testing.TestCase):
             ops.convert_to_numpy(KerasTensor((2,)))
 
     def test_cond(self):
-        t = ops.cond(
-            True,
-            lambda: 0,
-            lambda: 1
-        )
+        t = ops.cond(True, lambda: 0, lambda: 1)
         self.assertEqual(t, 0)
-        f = ops.cond(
-            False,
-            lambda: 0,
-            lambda: 1
-        )
+        f = ops.cond(False, lambda: 0, lambda: 1)
         self.assertEqual(f, 1)
