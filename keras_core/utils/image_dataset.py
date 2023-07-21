@@ -265,6 +265,8 @@ def image_dataset_from_directory(
             interpolation=interpolation,
             crop_to_aspect_ratio=crop_to_aspect_ratio,
         )
+
+
         train_dataset = train_dataset.prefetch(tf.data.AUTOTUNE)
         val_dataset = val_dataset.prefetch(tf.data.AUTOTUNE)
 
@@ -338,19 +340,28 @@ def paths_and_labels_to_dataset(
     interpolation,
     crop_to_aspect_ratio=False,
 ):
-    """Constructs a dataset of images and labels."""
-    # TODO(fchollet): consider making num_parallel_calls settable
-    path_ds = tf.data.Dataset.from_tensor_slices(image_paths)
-    args = (image_size, num_channels, interpolation, crop_to_aspect_ratio)
-    img_ds = path_ds.map(
-        lambda x: load_image(x, *args), num_parallel_calls=tf.data.AUTOTUNE
-    )
-    if label_mode:
-        label_ds = dataset_utils.labels_to_dataset(
-            labels, label_mode, num_classes
+    from keras_core.backend.config import backend
+
+    if backend() == "tensorflow":
+        """Constructs a dataset of images and labels."""
+        # TODO(fchollet): consider making num_parallel_calls settable
+        path_ds = tf.data.Dataset.from_tensor_slices(image_paths)
+        args = (image_size, num_channels, interpolation, crop_to_aspect_ratio)
+        img_ds = path_ds.map(
+            lambda x: load_image(x, *args), num_parallel_calls=tf.data.AUTOTUNE
         )
-        img_ds = tf.data.Dataset.zip((img_ds, label_ds))
-    return img_ds
+        if label_mode:
+            label_ds = dataset_utils.labels_to_dataset(
+                labels, label_mode, num_classes
+            )
+            img_ds = tf.data.Dataset.zip((img_ds, label_ds))
+        return img_ds
+    
+    if backend() == "torch":
+        pass
+
+    if backend() == "jax":
+        NotImplementedError('Jax function not implemented')
 
 
 def load_image(
