@@ -42,3 +42,12 @@ def resize(
         elif len(image.shape) == 3:
             resized = tf.transpose(resized, (2, 0, 1))
     return resized
+
+
+def decode_image(img, channels, expand_animations=False):
+    return tf.image.decode_image(
+        img, channels=channels, expand_animations=expand_animations
+    )
+
+def read_file(path):
+    return tf.io.read_file(path)

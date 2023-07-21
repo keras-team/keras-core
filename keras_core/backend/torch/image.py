@@ -69,3 +69,18 @@ def resize(
         elif len(image.shape) == 3:
             resized = resized.permute((1, 2, 0))
     return resized
+
+
+def decode_image(img, channels, expand_animations=False):
+    from torchvision.io import decode_image
+    if channels != None:
+        NotImplementedError(
+            'channel selection' 
+            'not supported in pytorch backend'
+            )
+        
+    return decode_image(img).permute(1, 2, 0)
+
+def read_file(path):
+    from torchvision.io import read_file
+    return read_file(path)

@@ -19,6 +19,8 @@ from keras_core.utils.module_utils import tensorflow as tf
 from keras_core.utils import dataset_utils
 from keras_core.utils import image_utils
 from keras_core.api_export import keras_core_export
+from keras_core import backend
+
 
 
 ALLOWLIST_FORMATS = (".bmp", ".gif", ".jpeg", ".jpg", ".png")
@@ -358,6 +360,7 @@ def paths_and_labels_to_dataset(
         return img_ds
     
     if backend() == "torch":
+
         pass
 
     if backend() == "jax":
@@ -368,15 +371,15 @@ def load_image(
     path, image_size, num_channels, interpolation, crop_to_aspect_ratio=False
 ):
     """Load an image from a path and resize it."""
-    img = tf.io.read_file(path)
-    img = tf.image.decode_image(
+    img = backend.read_file(path)
+    img = backend.decode_image(
         img, channels=num_channels, expand_animations=False
     )
     if crop_to_aspect_ratio:
-        img = image_utils.smart_resize(
+        img = backend.smart_resize(
             img, image_size, interpolation=interpolation
         )
     else:
-        img = tf.image.resize(img, image_size, method=interpolation)
+        img = backend.resize(img, image_size, method=interpolation)
     img.set_shape((image_size[0], image_size[1], num_channels))
     return img

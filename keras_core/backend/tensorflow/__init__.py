@@ -21,3 +21,5 @@ from keras_core.backend.tensorflow.core import vectorized_map
 from keras_core.backend.tensorflow.rnn import gru
 from keras_core.backend.tensorflow.rnn import lstm
 from keras_core.backend.tensorflow.rnn import rnn
+from keras_core.backend.tensorflow.image import read_file
+from keras_core.backend.tensorflow.image import decode_image
