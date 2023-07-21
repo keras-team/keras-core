@@ -243,7 +243,7 @@ def absolute(x):
 
     >>> x = keras_core.ops.convert_to_tensor([-1.2, 1.2])
     >>> keras_core.ops.absolute(x)
-    Array([1.2, 1.2], dtype=float32)
+    array([1.2 1.2], shape=(2,), dtype=float32)
     """
     if any_symbolic_tensors((x,)):
         return Absolute().symbolic_call(x)
@@ -286,18 +286,18 @@ def add(x1, x2):
 
     >>> x1 = keras_core.ops.convert_to_tensor([1, 4])
     >>> x2 = keras_core.ops.convert_to_tensor([5, 6])
-    >>> keras_core.ops.numpy.add(x1, x2)
-    Array([ 6, 10], dtype=int32)
+    >>> keras_core.ops.add(x1, x2)
+    array([ 6 10], shape=(2,), dtype=int32)
 
-    `Add` also broadcasts shapes:
+    `keras_core.ops.add` also broadcasts shapes:
     >>> x1 = keras_core.ops.convert_to_tensor(
     ...     [[5, 4],
     ...      [5, 6]]
     ... )
     >>> x2 = keras_core.ops.convert_to_tensor([5, 6])
-    >>> keras_core.ops.numpy.add(x1, x2)
-    Array([[10, 10],
-           [10, 12]], dtype=int32)
+    >>> keras_core.ops.add(x1, x2)
+    array([[10 10]
+           [10 12]], shape=(2, 2), dtype=int32)
     """
     if any_symbolic_tensors((x1, x2)):
         return Add().symbolic_call(x1, x2)
@@ -353,22 +353,16 @@ def all(x, axis=None, keepdims=False):
 
     >>> x = keras_core.ops.convert_to_tensor([True, False])
     >>> keras_core.ops.all(x)
-    Array(False, dtype=bool)
+    array(False, shape=(), dtype=bool)
 
     >>> x = keras_core.ops.convert_to_tensor([[True, False], [True, True]])
     >>> keras_core.ops.all(x, axis=0)
-    Array([ True, False], dtype=bool)
+    array([ True False], shape=(2,), dtype=bool)
 
     `keepdims=True` outputs a tensor with dimensions reduced to one.
     >>> x = keras_core.ops.convert_to_tensor([[True, False], [True, True]])
-    >>> keras_core.ops.all(x)
-    Array(False, dtype=bool)
-    >>> keras_core.ops.all(x).shape
-    ()
     >>> keras_core.ops.all(x, keepdims=True)
-    Array([[False]], dtype=bool)
-    >>> keras_core.ops.all(x, keepdims=True).shape
-    (1, 1)
+    array([[False]], shape=(1, 1), dtype=bool)
     """
     if any_symbolic_tensors((x,)):
         return All(axis=axis, keepdims=keepdims).symbolic_call(x)
@@ -424,22 +418,16 @@ def any(x, axis=None, keepdims=False):
 
     >>> x = keras_core.ops.convert_to_tensor([True, False])
     >>> keras_core.ops.any(x)
-    Array(True, dtype=bool)
+    array(True, shape=(), dtype=bool)
 
     >>> x = keras_core.ops.convert_to_tensor([[True, False], [True, True]])
     >>> keras_core.ops.any(x, axis=0)
-    Array([ True,  True], dtype=bool)
+    array([ True  True], shape=(2,), dtype=bool)
 
     `keepdims=True` outputs a tensor with dimensions reduced to one.
     >>> x = keras_core.ops.convert_to_tensor([[True, False], [True, True]])
-    >>> keras_core.ops.all(x)
-    Array(False, dtype=bool)
-    >>> keras_core.ops.all(x).shape
-    ()
     >>> keras_core.ops.all(x, keepdims=True)
-    Array([[False]], dtype=bool)
-    >>> keras_core.ops.all(x, keepdims=True).shape
-    (1, 1)
+    array([[False]], shape=(1, 1), dtype=bool)
     """
     if any_symbolic_tensors((x,)):
         return Any(axis=axis, keepdims=keepdims).symbolic_call(x)
