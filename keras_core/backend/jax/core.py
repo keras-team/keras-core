@@ -242,6 +242,7 @@ def while_loop(
         outputs = outputs[:-1]
     return outputs
 
+
 def fori_loop(lower, upper, body_fun, init_val):
     return jax.lax.fori_loop(lower, upper, body_fun, init_val)
 

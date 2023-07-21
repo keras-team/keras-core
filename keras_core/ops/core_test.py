@@ -56,6 +56,7 @@ class CoreOpsStaticShapeTest(testing.TestCase):
         result = core.fori_loop(0, 10, body_fun, initial_value)
         self.assertEqual(result.shape, (3, 5, 7))
 
+
 class CoreOpsCorrectnessTest(testing.TestCase):
     def test_scatter(self):
         # Test 1D
