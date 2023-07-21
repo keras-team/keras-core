@@ -9,6 +9,7 @@ shape
 cast
 convert_to_tensor
 convert_to_numpy
+cond
 """
 
 import numpy as np
@@ -223,10 +224,10 @@ class WhileLoop(Operation):
 
 @keras_core_export("keras_core.ops.while_loop")
 def while_loop(
-    cond,
-    body,
-    loop_vars,
-    maximum_iterations=None,
+        cond,
+        body,
+        loop_vars,
+        maximum_iterations=None,
 ):
     """While loop implemetation.
 
@@ -374,3 +375,18 @@ def convert_to_numpy(x):
         # We trigger it rather than duplicate it here.
         return np.array(x)
     return backend.convert_to_numpy(x)
+
+
+@keras_core_export("keras_core.ops.cond")
+def cond(pred, true_fn, false_fn):
+    """Conditionally applies `true_fn` or `false_fn`.
+
+    Args:
+        pred: Boolean scalar type
+        true_fn: A callable
+        false_fn: A callable
+
+    Returns:
+        The output of either `true_fn` or `false_fn` depending on pred.
+    """
+    return backend.cond(pred, true_fn, false_fn)
