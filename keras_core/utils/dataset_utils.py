@@ -1,4 +1,4 @@
-import torch 
+import torch
 import numpy as np
 import warnings
 import random
@@ -42,10 +42,15 @@ def split_dataset(
     """
     from torch.utils.data import Dataset as torchDataset
 
-
     dataset_type_spec = _get_type_spec(dataset)
 
-    if dataset_type_spec not in [torchDataset, tf.data.Dataset, list, tuple, np.ndarray]:
+    if dataset_type_spec not in [
+        torchDataset,
+        tf.data.Dataset,
+        list,
+        tuple,
+        np.ndarray,
+    ]:
         raise TypeError(
             "The `dataset` argument must be either a `tf.data.Dataset` "
             "object or a list/tuple of arrays. "
@@ -75,16 +80,14 @@ def split_dataset(
     left_split = list(dataset_as_list[:left_size])
     right_split = list(dataset_as_list[-right_size:])
 
-    
     left_split = _restore_dataset_from_list(
         left_split, dataset_type_spec, dataset
     )
     right_split = _restore_dataset_from_list(
         right_split, dataset_type_spec, dataset
     )
-    
+
     if dataset_type_spec != torchDataset:
-    
         left_split = tf.data.Dataset.from_tensor_slices(left_split)
         right_split = tf.data.Dataset.from_tensor_slices(right_split)
 
@@ -101,7 +104,6 @@ def split_dataset(
 
     elif dataset_type_spec == torchDataset:
         return dataset.__class__(*left_split), dataset.__class__(*right_split)
-
 
 
 def _convert_dataset_to_list(
@@ -150,6 +152,7 @@ def _convert_dataset_to_list(
 
     return dataset_as_list
 
+
 def _get_data_iterator_from_dataset(dataset, dataset_type_spec):
     """Get the iterator from a dataset.
 
@@ -169,6 +172,7 @@ def _get_data_iterator_from_dataset(dataset, dataset_type_spec):
         iterator: An `iterator` object.
     """
     from torch.utils.data import Dataset as torchDataset
+
     if dataset_type_spec == list:
         if len(dataset) == 0:
             raise ValueError(
@@ -225,14 +229,15 @@ def _get_data_iterator_from_dataset(dataset, dataset_type_spec):
         if is_batched(dataset):
             dataset = dataset.unbatch()
         return iter(dataset)
-    
+
     # torch dataset iterator might be required to change
     elif dataset_type_spec == torchDataset:
         return iter(dataset)
-    
+
     elif dataset_type_spec == np.ndarray:
         return iter(dataset)
-    
+
+
 def _get_next_sample(
     dataset_iterator,
     ensure_shape_similarity,
@@ -264,7 +269,9 @@ def _get_next_sample(
     try:
         dataset_iterator = iter(dataset_iterator)
         first_sample = next(dataset_iterator)
-        if isinstance(first_sample, (tf.Tensor, np.ndarray)) or torch.is_tensor(first_sample):
+        if isinstance(first_sample, (tf.Tensor, np.ndarray)) or torch.is_tensor(
+            first_sample
+        ):
             first_sample_shape = np.array(first_sample).shape
         else:
             first_sample_shape = None
@@ -433,10 +440,12 @@ def _rescale_dataset_split_sizes(left_size, right_size, total_length):
     left_size, right_size = int(left_size), int(right_size)
     return left_size, right_size
 
+
 def _restore_dataset_from_list(
     dataset_as_list, dataset_type_spec, original_dataset
 ):
     from torch.utils.data import Dataset as torchDataset
+
     """Restore the dataset from the list of arrays."""
     if dataset_type_spec in [tuple, list]:
         return tuple(np.array(sample) for sample in zip(*dataset_as_list))
@@ -452,14 +461,16 @@ def _restore_dataset_from_list(
             return restored_dataset
         else:
             return tuple(np.array(sample) for sample in zip(*dataset_as_list))
-        
+
     elif dataset_type_spec == torchDataset:
         return tuple(np.array(sample) for sample in zip(*dataset_as_list))
     return dataset_as_list
 
+
 def is_batched(dataset):
     """ "Check if the `tf.data.Dataset` is batched."""
     return hasattr(dataset, "_batch_size")
+
 
 def get_batch_size(dataset):
     """Get the batch size of the dataset."""
@@ -468,8 +479,10 @@ def get_batch_size(dataset):
     else:
         return None
 
+
 def _get_type_spec(dataset):
     from torch.utils.data import Dataset as torchDataset
+
     """Get the type spec of the dataset."""
     if isinstance(dataset, tuple):
         return tuple
@@ -485,7 +498,6 @@ def _get_type_spec(dataset):
         return torchDataset
     else:
         return None
-
 
 
 @keras_core_export(
