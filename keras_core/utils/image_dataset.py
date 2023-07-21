@@ -17,7 +17,7 @@
 import numpy as np
 from keras_core.utils.module_utils import tensorflow as tf
 from keras_core.utils import dataset_utils
-from keras.utils import image_utils
+from keras_core.utils import image_utils
 from keras_core.api_export import keras_core_export
 
 
@@ -47,7 +47,7 @@ def image_dataset_from_directory(
     crop_to_aspect_ratio=False,
     **kwargs,
 ):
-    """Generates a `tf.data.Dataset` from image files in a directory.
+    """Generates a `tf.data.Dataset or torchvision.datasets.DataFolder` from image files in a directory.
 
     If your directory structure is:
 
@@ -62,7 +62,7 @@ def image_dataset_from_directory(
     ```
 
     Then calling `image_dataset_from_directory(main_directory,
-    labels='inferred')` will return a `tf.data.Dataset` that yields batches of
+    labels='inferred')` will return a `tf.data.Dataset torchvision.datasets.DataFolder` that yields batches of
     images from the subdirectories `class_a` and `class_b`, together with labels
     0 and 1 (0 corresponding to `class_a` and 1 corresponding to `class_b`).
 
@@ -198,6 +198,7 @@ def image_dataset_from_directory(
             '`color_mode` must be one of {"rgb", "rgba", "grayscale"}. '
             f"Received: color_mode={color_mode}"
         )
+    
     interpolation = image_utils.get_interpolation(interpolation)
     dataset_utils.check_validation_split_arg(
         validation_split, subset, shuffle, seed
