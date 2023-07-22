@@ -390,9 +390,9 @@ def paths_and_labels_to_dataset(
     if backend() == "torch":
         from torch.utils.data import TensorDataset
         import torch
-        path_ds = TensorDataset(torch.tensor(image_paths))
+        #path_ds = TensorDataset(torch.tensor(image_paths))
         args = (image_size, num_channels, interpolation, crop_to_aspect_ratio)
-        img_ds = [load_image(sample, *args) for sample in path_ds]
+        img_ds = [load_image(sample, *args) for sample in image_paths]
         # img_ds = path_ds.map(
         #     lambda x: load_image(x, *args), num_parallel_calls=tf.data.AUTOTUNE
         # )
@@ -421,5 +421,8 @@ def load_image(
         )
     else:
         img = backend.resize(img, image_size, interpolation=interpolation)
-    img.set_shape((image_size[0], image_size[1], num_channels))
+    from keras_core.backend.config import backend as backend_config
+    if backend_config() == 'tensorflow':
+        img.set_shape((image_size[0], image_size[1], num_channels))
+
     return img

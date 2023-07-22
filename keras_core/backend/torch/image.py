@@ -97,7 +97,7 @@ def read_file(path):
 
 def smart_resize(img, image_size, interpolation):
     NotImplementedError(
-        'Smart resize is not implemented for torch backend'
+        'Smart resize is not yet implemented for torch backend'
         )
 
   

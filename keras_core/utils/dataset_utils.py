@@ -1,4 +1,3 @@
-import multiprocessing
 import os
 
 from keras_core.api_export import keras_core_export
@@ -437,6 +436,7 @@ def audio_dataset_from_directory(
         follow_links=follow_links,
     )
 
+
 def get_training_or_validation_split(samples, labels, validation_split, subset):
     """Potentially restict samples & labels to a training or validation split.
 
@@ -470,6 +470,7 @@ def get_training_or_validation_split(samples, labels, validation_split, subset):
         )
     return samples, labels
 
+
 def check_validation_split_arg(validation_split, subset, shuffle, seed):
     """Raise errors in case of invalid argument values.
 
@@ -502,6 +503,7 @@ def check_validation_split_arg(validation_split, subset, shuffle, seed):
             "overlap between the training and validation subset."
         )
 
+
 def iter_valid_files(directory, follow_links, formats):
     if not follow_links:
         walk = file_utils.walk(directory)
@@ -511,6 +513,7 @@ def iter_valid_files(directory, follow_links, formats):
         for fname in sorted(files):
             if fname.lower().endswith(formats):
                 yield root, fname
+
 
 def labels_to_dataset(labels, label_mode, num_classes):
     """Create a tf.data.Dataset from the list/tuple of labels.
@@ -528,7 +531,7 @@ def labels_to_dataset(labels, label_mode, num_classes):
       A `Dataset` instance.
     """
 
-    if backend() == 'tensorflow':
+    if backend() == "tensorflow":
         label_ds = tf.data.Dataset.from_tensor_slices(labels)
         if label_mode == "binary":
             label_ds = label_ds.map(
@@ -541,25 +544,29 @@ def labels_to_dataset(labels, label_mode, num_classes):
                 num_parallel_calls=tf.data.AUTOTUNE,
             )
 
-    elif backend() == 'torch':
+    elif backend() == "torch":
         from torch.utils.data import TensorDataset
         import torch
-        label_ds = TensorDataset(labels)
+
+        print(labels)
+        label_ds = TensorDataset(torch.tensor(labels))
         if label_mode == "binary":
-            label_ds = label_ds.map(
-                lambda x: torch.unsqueeze(x.type(torch.IntTensor), axis=-1),
-                num_parallel_calls=tf.data.AUTOTUNE,
-            )
+            label_temp = [
+                torch.unsqueeze(sample.type(torch.IntTensor), axis=-1)
+                for sample in label_ds
+            ]
+            label_ds = TensorDataset(torch.tensor(label_temp))
         elif label_mode == "categorical":
-            label_ds = label_ds.map(
-                lambda x: torch.nn.functional.one_hot(x, num_classes),
-                num_parallel_calls=tf.data.AUTOTUNE,
-            )
-    elif backend() == 'jax':
-        NotImplementedError('Method for jax not yet Implemented.')
+            label_temp = [
+                torch.nn.functional.one_hot(sample, num_classes)
+                for sample in label_ds
+            ]
+            label_ds = TensorDataset(torch.tensor(label_temp))
+    elif backend() == "jax":
+        NotImplementedError("Method for jax not yet Implemented.")
 
     return label_ds
-    
+
 
 def index_subdirectory(directory, class_indices, follow_links, formats):
     """Recursively walks directory and list image paths and their class index.
@@ -588,8 +595,8 @@ def index_subdirectory(directory, class_indices, follow_links, formats):
         )
         filenames.append(relative_path)
     return filenames, labels
-    
-    
+
+
 def index_directory(
     directory,
     labels,
@@ -656,7 +663,9 @@ def index_directory(
 
     # Build an index of the files
     # in the different class subfolders.
-    pool = multiprocessing.pool.ThreadPool()
+    from multiprocessing import pool as P
+
+    pool = P.ThreadPool()
     results = []
     filenames = []
 
