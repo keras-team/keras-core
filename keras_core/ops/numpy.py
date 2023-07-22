@@ -475,20 +475,21 @@ def amax(x, axis=None, keepdims=False):
         An array with the maximum value. If `axis` is None, the result is a scalar
         value representing the maximum element in the entire array. If `axis` is
         given, the result is an array with the maximum values along the specified
-        axis or axes.
+        axis.
 
     Examples:
         >>> x = keras_core.ops.convert_to_tensor([[1, 3, 5],[2, 3, 6]])
         >>> keras_core.ops.amax(x)
-        Array(6, dtype=int32)
+        array(6, dtype=int32)
 
         >>> x = keras_core.ops.convert_to_tensor([[1,6,8],[1,5,2]])
         >>> keras_core.ops.amax(x, axis=0)
-        Array([1,6,8], dtype=int32)
+        array([1,6,8], dtype=int32)
 
         >>> x = keras_core.ops.convert_to_tensor([[1,6,8],[1,5,2]])
-        >>> keras_core.ops.amax(x, axis=1)
-        Array([8,5], dtype=int32)
+        >>> keras_core.ops.amax(x, axis=1, keepdims=True)
+        array([[8],
+              [5]], dtype=int32)
     """
     if any_symbolic_tensors((x,)):
         return Amax(axis=axis, keepdims=keepdims).symbolic_call(x)
