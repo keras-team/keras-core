@@ -3,7 +3,7 @@ from keras_core.api_export import keras_core_export
 from keras_core.backend import KerasTensor
 from keras_core.backend import any_symbolic_tensors
 from keras_core.ops.operation import Operation
-
+from keras_core import ops
 
 class Resize(Operation):
     def __init__(
@@ -244,3 +244,126 @@ def affine_transform(
         fill_value=fill_value,
         data_format=data_format,
     )
+
+class ExtractPatches(Operation):
+    def __init__(
+        self, sizes, strides, rates, padding, data_format, name=None
+    ):
+        super().__init__()
+        self.sizes = sizes
+        self.strides = strides
+        self.rates = rates
+        self.padding = padding
+        self.data_format = data_format
+
+    def call(self, image, transform):
+        return backend.image.affine_transform(
+            image,
+            transform,
+            interpolation=self.interpolation,
+            fill_mode=self.fill_mode,
+            fill_value=self.fill_value,
+            data_format=self.data_format,
+        )
+
+    def compute_output_spec(self, image, transform):
+        if len(image.shape) not in (3, 4):
+            raise ValueError(
+                "Invalid image rank: expected rank 3 (single image) "
+                "or rank 4 (batch of images). Received input with shape: "
+                f"image.shape={image.shape}"
+            )
+        if len(transform.shape) not in (1, 2):
+            raise ValueError(
+                "Invalid transform rank: expected rank 1 (single transform) "
+                "or rank 2 (batch of transforms). Received input with shape: "
+                f"transform.shape={transform.shape}"
+            )
+        return KerasTensor(image.shape, dtype=image.dtype)
+
+
+@keras_core_export("keras_core.ops.image.extract_patches")
+def extract_patches(
+    image, sizes, strides, rates, padding, data_format="channels_last", name=None,
+    
+):
+    """Applies the given transform(s) to the image(s).
+
+    Args:
+        image: Input image or batch of images. Must be 3D or 4D.
+        transform: Projective transform matrix/matrices. A vector of length 8 or
+            tensor of size N x 8. If one row of transform is
+            `[a0, a1, a2, b0, b1, b2, c0, c1]`, then it maps the output point
+            `(x, y)` to a transformed input point
+            `(x', y') = ((a0 x + a1 y + a2) / k, (b0 x + b1 y + b2) / k)`,
+            where `k = c0 x + c1 y + 1`. The transform is inverted compared to
+            the transform mapping input points to output points. Note that
+            gradients are not backpropagated into transformation parameters.
+            Note that `c0` and `c1` are only effective when using TensorFlow
+            backend and will be considered as `0` when using other backends.
+        interpolation: Interpolation method. Available methods are `"nearest"`,
+            and `"bilinear"`. Defaults to `"bilinear"`.
+        fill_mode: Points outside the boundaries of the input are filled
+            according to the given mode. Available methods are `"constant"`,
+            `"nearest"`, `"wrap"` and `"reflect"`. Defaults to `"constant"`.
+            Note that `"wrap"` is not supported by Torch backend.
+        fill_value: Value used for points outside the boundaries of the input if
+            `fill_mode="constant"`. Defaults to `0`.
+        data_format: string, either `"channels_last"` or `"channels_first"`.
+            The ordering of the dimensions in the inputs. `"channels_last"`
+            corresponds to inputs with shape `(batch, height, width, channels)`
+            while `"channels_first"` corresponds to inputs with shape
+            `(batch, channels, height, weight)`. It defaults to the
+            `image_data_format` value found in your Keras config file at
+            `~/.keras/keras.json`. If you never set it, then it will be
+            `"channels_last"`.
+
+    Returns:
+        Applied affine transform image or batch of images.
+
+    Examples:
+
+    >>> x = np.random.random((2, 64, 80, 3)) # batch of 2 RGB images
+    >>> transform = np.array(
+    ...     [
+    ...         [1.5, 0, -20, 0, 1.5, -16, 0, 0],  # zoom
+    ...         [1, 0, -20, 0, 1, -16, 0, 0],  # translation
+    ...     ]
+    ... )
+    >>> y = keras_core.ops.image.affine_transform(x, transform)
+    >>> y.shape
+    (2, 64, 80, 3)
+
+    >>> x = np.random.random((64, 80, 3)) # single RGB image
+    >>> transform = np.array([1.0, 0.5, -20, 0.5, 1.0, -16, 0, 0])  # shear
+    >>> y = keras_core.ops.image.affine_transform(x, transform)
+    >>> y.shape
+    (64, 80, 3)
+
+    >>> x = np.random.random((2, 3, 64, 80)) # batch of 2 RGB images
+    >>> transform = np.array(
+    ...     [
+    ...         [1.5, 0, -20, 0, 1.5, -16, 0, 0],  # zoom
+    ...         [1, 0, -20, 0, 1, -16, 0, 0],  # translation
+    ...     ]
+    ... )
+    >>> y = keras_core.ops.image.affine_transform(x, transform,
+    ...     data_format="channels_first")
+    >>> y.shape
+    (2, 3, 64, 80)
+    """
+    # if any_symbolic_tensors((image)):
+    #     return ExtractPatches(
+    #         sizes, strides, rates, padding, data_format=data_format,
+    #     ).symbolic_call(image)
+    patch_h, patch_w = sizes[0], sizes[1] 
+    if data_format == 'channels_last':
+        channels_in = image.shape[-1]
+        out_dim = image.shape[1] // patch_h * image.shape[2] // patch_w
+    elif data_format == 'channels_first':
+        # if batched
+        channels_in = image.shape[1]
+        out_dim = (image.shape[2] // patch_h) * (image.shape[3] // patch_w)
+    kernel = ops.eye(patch_h * patch_w * channels_in, out_dim)
+    kernel = ops.reshape(kernel, (patch_h, patch_w, channels_in, out_dim))
+    return ops.nn.conv(image, kernel, 14, 'VALID')
