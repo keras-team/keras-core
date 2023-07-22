@@ -102,7 +102,17 @@ class RandomTranslation(TFDataLayer):
         self.width_lower, self.width_upper = self._set_factor(
             width_factor, "width_factor"
         )
-        self._check_fill_mode_and_interpolation(fill_mode, interpolation)
+
+        if fill_mode not in self._SUPPORTED_FILL_MODE:
+            raise NotImplementedError(
+                f"Unknown `fill_mode` {fill_mode}. Expected of one "
+                f"{self._SUPPORTED_FILL_MODE}."
+            )
+        if interpolation not in self._SUPPORTED_INTERPOLATION:
+            raise NotImplementedError(
+                f"Unknown `interpolation` {interpolation}. Expected of one "
+                f"{self._SUPPORTED_INTERPOLATION}."
+            )
 
         self.fill_mode = fill_mode
         self.fill_value = fill_value
@@ -139,18 +149,6 @@ class RandomTranslation(TFDataLayer):
             raise ValueError(
                 self._FACTOR_VALIDATION_ERROR
                 + f"Received: input_number={input_number}"
-            )
-
-    def _check_fill_mode_and_interpolation(self, fill_mode, interpolation):
-        if fill_mode not in self._SUPPORTED_FILL_MODE:
-            raise NotImplementedError(
-                f"Unknown `fill_mode` {fill_mode}. Expected of one "
-                f"{self._SUPPORTED_FILL_MODE}."
-            )
-        if interpolation not in self._SUPPORTED_INTERPOLATION:
-            raise NotImplementedError(
-                f"Unknown `interpolation` {interpolation}. Expected of one "
-                f"{self._SUPPORTED_INTERPOLATION}."
             )
 
     def call(self, inputs, training=True):
