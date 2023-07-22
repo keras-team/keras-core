@@ -89,8 +89,9 @@ def set_logging_verbosity(level):
     logging.set_verbosity(verbosity)
 
 
-def print_msg(message, line_break=True):
+def print_msg(message, line_break=True, prefix="Keras:"):
     """Print the message to absl logging or stdout."""
+    message = prefix + message
     if is_interactive_logging_enabled():
         if line_break:
             sys.stdout.write(message + "\n")
