@@ -126,7 +126,7 @@ def load_video(path, max_frames=0):
 
 
 def build_feature_extractor():
-    feature_extractor = keras.applications.DenseNet121(
+    feature_extractor = DenseNet121(
         weights="imagenet",
         include_top=False,
         pooling="avg",
