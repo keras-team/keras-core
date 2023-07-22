@@ -201,7 +201,6 @@ def image_dataset_from_directory(
             f"Received: color_mode={color_mode}"
         )
     
-    interpolation = image_utils.get_interpolation(interpolation)
     dataset_utils.check_validation_split_arg(
         validation_split, subset, shuffle, seed
     )
@@ -360,11 +359,18 @@ def paths_and_labels_to_dataset(
         return img_ds
     
     if backend() == "torch":
-
-        pass
+        from torch.utils.data import TensorDataset
+        path_ds = TensorDataset(image_paths)
+        args = (image_size, num_channels, interpolation, crop_to_aspect_ratio)
+        if label_mode:
+            label_ds = dataset_utils.labels_to_dataset(
+                labels, label_mode, num_classes
+            )
+            img_ds = TensorDataset(img_ds, label_ds)
+        return img_ds
 
     if backend() == "jax":
-        NotImplementedError('Jax support not yet implemented')
+        NotImplementedError('jax support not yet implemented')
 
 
 def load_image(
@@ -380,6 +386,6 @@ def load_image(
             img, image_size, interpolation=interpolation
         )
     else:
-        img = backend.resize(img, image_size, method=interpolation)
+        img = backend.resize(img, image_size, interpolation=interpolation)
     img.set_shape((image_size[0], image_size[1], num_channels))
     return img

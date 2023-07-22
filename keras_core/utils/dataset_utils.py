@@ -5,6 +5,7 @@ from keras_core.api_export import keras_core_export
 from keras_core.utils.module_utils import tensorflow as tf
 from keras_core.utils import io_utils
 from keras_core.utils import file_utils
+from keras_core.backend.config import backend
 
 
 @keras_core_export("keras_core.utils.split_dataset")
@@ -510,6 +511,54 @@ def iter_valid_files(directory, follow_links, formats):
         for fname in sorted(files):
             if fname.lower().endswith(formats):
                 yield root, fname
+
+def labels_to_dataset(labels, label_mode, num_classes):
+    """Create a tf.data.Dataset from the list/tuple of labels.
+
+    Args:
+      labels: list/tuple of labels to be converted into a tf.data.Dataset.
+      label_mode: String describing the encoding of `labels`. Options are:
+      - 'binary' indicates that the labels (there can be only 2) are encoded as
+        `float32` scalars with values 0 or 1 (e.g. for `binary_crossentropy`).
+      - 'categorical' means that the labels are mapped into a categorical
+        vector.  (e.g. for `categorical_crossentropy` loss).
+      num_classes: number of classes of labels.
+
+    Returns:
+      A `Dataset` instance.
+    """
+
+    if backend() == 'tensorflow':
+        label_ds = tf.data.Dataset.from_tensor_slices(labels)
+        if label_mode == "binary":
+            label_ds = label_ds.map(
+                lambda x: tf.expand_dims(tf.cast(x, "float32"), axis=-1),
+                num_parallel_calls=tf.data.AUTOTUNE,
+            )
+        elif label_mode == "categorical":
+            label_ds = label_ds.map(
+                lambda x: tf.one_hot(x, num_classes),
+                num_parallel_calls=tf.data.AUTOTUNE,
+            )
+
+    elif backend() == 'torch':
+        from torch.utils.data import TensorDataset
+        import torch
+        label_ds = TensorDataset(labels)
+        if label_mode == "binary":
+            label_ds = label_ds.map(
+                lambda x: torch.unsqueeze(x.type(torch.IntTensor), axis=-1),
+                num_parallel_calls=tf.data.AUTOTUNE,
+            )
+        elif label_mode == "categorical":
+            label_ds = label_ds.map(
+                lambda x: torch.nn.functional.one_hot(x, num_classes),
+                num_parallel_calls=tf.data.AUTOTUNE,
+            )
+    elif backend() == 'jax':
+        NotImplementedError('Method for jax not yet Implemented.')
+
+    return label_ds
     
 
 def index_subdirectory(directory, class_indices, follow_links, formats):
