@@ -47,7 +47,8 @@ tar -xf ucf101_top5.tar.gz
 """
 
 import os
-os.environ["KERAS_BACKEND"] = "jax" #@param ["tensorflow", "jax", "pytorch"]
+
+os.environ["KERAS_BACKEND"] = "jax"  # @param ["tensorflow", "jax", "pytorch"]
 
 import keras_core as keras
 from keras_core import layers
@@ -212,7 +213,9 @@ complete. For this reason, to save time, here we download already preprocessed N
 !tar -xf top5_data_prepared.tar.gz
 """
 
-train_data, train_labels = np.load("train_data.npy"), np.load("train_labels.npy")
+train_data, train_labels = np.load("train_data.npy"), np.load(
+    "train_labels.npy"
+)
 test_data, test_labels = np.load("test_data.npy"), np.load("test_labels.npy")
 
 print(f"Frame features in train set: {train_data.shape}")
@@ -268,7 +271,10 @@ class TransformerEncoder(layers.Layer):
             num_heads=num_heads, key_dim=embed_dim, dropout=0.3
         )
         self.dense_proj = keras.Sequential(
-            [layers.Dense(dense_dim, activation=keras.activations.gelu), layers.Dense(embed_dim),]
+            [
+                layers.Dense(dense_dim, activation=keras.activations.gelu),
+                layers.Dense(embed_dim),
+            ]
         )
         self.layernorm_1 = layers.LayerNormalization()
         self.layernorm_2 = layers.LayerNormalization()
@@ -296,14 +302,18 @@ def get_compiled_model(shape):
     x = PositionalEmbedding(
         sequence_length, embed_dim, name="frame_position_embedding"
     )(inputs)
-    x = TransformerEncoder(embed_dim, dense_dim, num_heads, name="transformer_layer")(x)
+    x = TransformerEncoder(
+        embed_dim, dense_dim, num_heads, name="transformer_layer"
+    )(x)
     x = layers.GlobalMaxPooling1D()(x)
     x = layers.Dropout(0.5)(x)
     outputs = layers.Dense(classes, activation="softmax")(x)
     model = keras.Model(inputs, outputs)
 
     model.compile(
-        optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"]
+        optimizer="adam",
+        loss="sparse_categorical_crossentropy",
+        metrics=["accuracy"],
     )
     return model
 
@@ -344,7 +354,9 @@ Transformer model works best with a larger dataset and a longer pre-training sch
 
 
 def prepare_single_video(frames):
-    frame_features = np.zeros(shape=(1, MAX_SEQ_LENGTH, NUM_FEATURES), dtype="float32")
+    frame_features = np.zeros(
+        shape=(1, MAX_SEQ_LENGTH, NUM_FEATURES), dtype="float32"
+    )
 
     # Pad shorter videos.
     if len(frames) < MAX_SEQ_LENGTH:
@@ -360,7 +372,9 @@ def prepare_single_video(frames):
         length = min(MAX_SEQ_LENGTH, video_length)
         for j in range(length):
             if np.mean(batch[j, :]) > 0.0:
-                frame_features[i, j, :] = feature_extractor.predict(batch[None, j, :])
+                frame_features[i, j, :] = feature_extractor.predict(
+                    batch[None, j, :]
+                )
             else:
                 frame_features[i, j, :] = 0.0
 
@@ -380,7 +394,7 @@ def predict_action(path):
         plot_x_axis.append(class_vocab[i])
         plot_y_axis.append(probabilities[i])
         print(f"  {class_vocab[i]}: {probabilities[i] * 100:5.2f}%")
-    
+
     plt.bar(plot_x_axis, plot_y_axis, label=plot_x_axis)
     plt.xlabel("class_label")
     plt.xlabel("Probability")
