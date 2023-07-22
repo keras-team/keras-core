@@ -377,16 +377,33 @@ def convert_to_numpy(x):
     return backend.convert_to_numpy(x)
 
 
+class Cond(Operation):
+    def __init__(self, true_fn, false_fn):
+        super().__init__()
+        self.true_fn = true_fn
+        self.false_fn = false_fn
+
+    def call(self, pred):
+        return backend.core.cond(pred, self.true_fn, self.false_fn)
+
+    def compute_output_spec(self, pred):
+        true_output_spec = backend.compute_output_spec(self.true_fn)
+        false_output_spec = backend.compute_output_spec(self.false_fn)
+        assert true_output_spec.dtype == false_output_spec.dtype
+        assert true_output_spec.shape == false_output_spec.shape
+        return true_output_spec
+
+
 @keras_core_export("keras_core.ops.cond")
 def cond(pred, true_fn, false_fn):
     """Conditionally applies `true_fn` or `false_fn`.
 
     Args:
         pred: Boolean scalar type
-        true_fn: A callable
-        false_fn: A callable
+        true_fn: Callable returning the output for the `pred == True` case.
+        false_fn: Callable returning the output for the `pred == False` case.
 
     Returns:
         The output of either `true_fn` or `false_fn` depending on pred.
     """
-    return backend.cond(pred, true_fn, false_fn)
+    return Cond(true_fn, false_fn)(pred)
