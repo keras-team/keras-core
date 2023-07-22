@@ -389,13 +389,18 @@ def paths_and_labels_to_dataset(
     
     if backend() == "torch":
         from torch.utils.data import TensorDataset
-        path_ds = TensorDataset(image_paths)
+        import torch
+        path_ds = TensorDataset(torch.tensor(image_paths))
         args = (image_size, num_channels, interpolation, crop_to_aspect_ratio)
+        img_ds = [load_image(sample, *args) for sample in path_ds]
+        # img_ds = path_ds.map(
+        #     lambda x: load_image(x, *args), num_parallel_calls=tf.data.AUTOTUNE
+        # )
         if label_mode:
             label_ds = dataset_utils.labels_to_dataset(
                 labels, label_mode, num_classes
             )
-            img_ds = TensorDataset(img_ds, label_ds)
+            img_ds = TensorDataset(torch.tensor(img_ds), torch.tensor(label_ds))
         return img_ds
 
     if backend() == "jax":
