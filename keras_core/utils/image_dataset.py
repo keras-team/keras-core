@@ -267,31 +267,49 @@ def image_dataset_from_directory(
             crop_to_aspect_ratio=crop_to_aspect_ratio,
         )
 
+        if backend() == 'tensorflow':
+            train_dataset = train_dataset.prefetch(tf.data.AUTOTUNE)
+            val_dataset = val_dataset.prefetch(tf.data.AUTOTUNE)
 
-        train_dataset = train_dataset.prefetch(tf.data.AUTOTUNE)
-        val_dataset = val_dataset.prefetch(tf.data.AUTOTUNE)
+            if batch_size is not None:
+                if shuffle:
+                    # Shuffle locally at each iteration
+                    train_dataset = train_dataset.shuffle(
+                        buffer_size=batch_size * 8, seed=seed
+                    )
+                train_dataset = train_dataset.batch(batch_size)
+                val_dataset = val_dataset.batch(batch_size)
+            else:
+                if shuffle:
+                    train_dataset = train_dataset.shuffle(
+                        buffer_size=1024, seed=seed
+                    )
 
-        if batch_size is not None:
-            if shuffle:
-                # Shuffle locally at each iteration
-                train_dataset = train_dataset.shuffle(
-                    buffer_size=batch_size * 8, seed=seed
-                )
-            train_dataset = train_dataset.batch(batch_size)
-            val_dataset = val_dataset.batch(batch_size)
-        else:
-            if shuffle:
-                train_dataset = train_dataset.shuffle(
-                    buffer_size=1024, seed=seed
-                )
+            # Users may need to reference `class_names`.
+            train_dataset.class_names = class_names
+            val_dataset.class_names = class_names
 
-        # Users may need to reference `class_names`.
-        train_dataset.class_names = class_names
-        val_dataset.class_names = class_names
+            # Include file paths for images as attribute.
+            train_dataset.file_paths = image_paths_train
+            val_dataset.file_paths = image_paths_val
 
-        # Include file paths for images as attribute.
-        train_dataset.file_paths = image_paths_train
-        val_dataset.file_paths = image_paths_val
+        elif backend() == 'torch':
+            from torch.utils.data import DataLoader 
+            train_dataset = DataLoader(
+                train_dataset,
+                batch_size=batch_size if batch_size is not None else len(train_dataset),
+                shuffle=shuffle
+            )
+
+            val_dataset = DataLoader(
+                val_dataset,
+                batch_size=batch_size if batch_size is not None else len(val_dataset),
+                shuffle=shuffle
+            )
+
+            Warning('Class names and file path not present with torch backend')
+
+
         dataset = [train_dataset, val_dataset]
     else:
         image_paths, labels = dataset_utils.get_training_or_validation_split(
@@ -313,21 +331,32 @@ def image_dataset_from_directory(
             interpolation=interpolation,
             crop_to_aspect_ratio=crop_to_aspect_ratio,
         )
-        dataset = dataset.prefetch(tf.data.AUTOTUNE)
-        if batch_size is not None:
-            if shuffle:
-                # Shuffle locally at each iteration
-                dataset = dataset.shuffle(buffer_size=batch_size * 8, seed=seed)
-            dataset = dataset.batch(batch_size)
-        else:
-            if shuffle:
-                dataset = dataset.shuffle(buffer_size=1024, seed=seed)
+        if backend() == 'tensorflow':
+            dataset = dataset.prefetch(tf.data.AUTOTUNE)
+            if batch_size is not None:
+                if shuffle:
+                    # Shuffle locally at each iteration
+                    dataset = dataset.shuffle(buffer_size=batch_size * 8, seed=seed)
+                dataset = dataset.batch(batch_size)
+            else:
+                if shuffle:
+                    dataset = dataset.shuffle(buffer_size=1024, seed=seed)
 
-        # Users may need to reference `class_names`.
-        dataset.class_names = class_names
+            # Users may need to reference `class_names`.
+            dataset.class_names = class_names
 
-        # Include file paths for images as attribute.
-        dataset.file_paths = image_paths
+            # Include file paths for images as attribute.
+            dataset.file_paths = image_paths
+
+        elif backend() == 'torch':
+            from torch.utils.data import DataLoader 
+            dataset = DataLoader(
+                dataset,
+                batch_size=batch_size if batch_size is not None else len(train_dataset),
+                shuffle=shuffle
+            )
+
+            Warning('Class names and file path not present with torch backend')
     return dataset
 
 
