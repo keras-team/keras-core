@@ -352,7 +352,7 @@ def image_dataset_from_directory(
             from torch.utils.data import DataLoader 
             dataset = DataLoader(
                 dataset,
-                batch_size=batch_size if batch_size is not None else len(train_dataset),
+                batch_size=batch_size if batch_size is not None else len(dataset),
                 shuffle=shuffle
             )
 
