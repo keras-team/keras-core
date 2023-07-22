@@ -4,8 +4,6 @@ from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.ops.image import affine_transform
 from keras_core.random.seed_generator import SeedGenerator
-from keras_core.utils import backend_utils
-from keras_core.utils.module_utils import tensorflow as tf
 from keras_core.layers.preprocessing.tf_data_layer import TFDataLayer
 
 
@@ -23,14 +21,6 @@ class RandomRotation(TFDataLayer):
     Input pixel values can be of any range (e.g. `[0., 1.)` or `[0, 255]`) and
     of integer or floating point dtype.
     By default, the layer will output floats.
-
-    **Note:** This layer wraps `tf.keras.layers.RandomRotation`. It cannot
-    be used as part of the compiled computation graph of a model with
-    any backend other than TensorFlow.
-    It can however be used with any backend when running eagerly.
-    It can also always be used as part of an input preprocessing pipeline
-    with any backend (outside the model itself), which is how we recommend
-    to use this layer.
 
     **Note:** This layer is safe to use inside a `tf.data` pipeline
     (independently of which backend you're using).
@@ -157,15 +147,67 @@ class RandomRotation(TFDataLayer):
     
     This function is returning the 8 elements barring the final 1 as a 1D array
     """
+
     def get_rotation_matrix(self, inputs):
-        pass
+        input_shape = len(inputs.shape)
+        if input_shape == 4:
+            if self.data_format == "channels_last":
+                batch_size = inputs.shape[0]
+                image_height = inputs.shape[1]
+                image_width = inputs.shape[2]
+            else:
+                batch_size = inputs.shape[1]
+                image_height = inputs.shape[2]
+                image_width = inputs.shape[3]
+        else:
+            batch_size = 1
+            if self.data_format == "channels_last":
+                image_height = inputs.shape[0]
+                image_width = inputs.shape[1]
+            else:
+                image_height = inputs.shape[1]
+                image_width = inputs.shape[2]
+
+        lower = self._factor[0] * 2.0 * backend.convert_to_tensor(np.pi)
+        upper = self._factor[1] * 2.0 * backend.convert_to_tensor(np.pi)
+
+        angle = backend.random.uniform(shape=(batch_size,), minval=lower, maxval=upper, dtype=np.float32)
+
+        cos_theta = backend.numpy.cos(angle)
+        sin_theta = backend.numpy.sin(angle)
+
+        x_offset = (
+            (image_width - 1)
+            - (
+                cos_theta * (image_width - 1)
+                - sin_theta * (image_height - 1)
+            )
+        ) / 2.0
+
+        y_offset = (
+            (image_height - 1)
+            - (
+                sin_theta * (image_width - 1)
+                + cos_theta * (image_height - 1)
+            )
+        ) / 2.0
+
+        return backend.numpy.concatenate([
+            backend.numpy.cos(angle)[:, None],
+            -backend.numpy.sin(angle)[:, None],
+            x_offset[:, None],
+            backend.numpy.sin(angle)[:, None],
+            backend.numpy.cos(angle)[:, None],
+            y_offset[:, None],
+            backend.numpy.zeros((batch_size, 2), dtype=np.float32),
+        ], axis=1)
 
     def call(self, inputs, training=True):
-        inputs = self.backend.cast(inputs, self.compute_dtype)
         if training:
             rotation_matrix = self.get_rotation_matrix(inputs)
-            return affine_transform(image=inputs, transform=rotation_matrix, interpolation=self.interpolation,
+            transformed_image = affine_transform(image=inputs, transform=rotation_matrix, interpolation=self.interpolation,
                                     fill_mode=self.fill_mode, fill_value=self.fill_value, data_format=self.data_format)
+            return transformed_image
         else:
             return inputs
 
