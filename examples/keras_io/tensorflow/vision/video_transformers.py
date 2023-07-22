@@ -46,11 +46,13 @@ tar -xf ucf101_top5.tar.gz
 ## Setup
 """
 
+import os
+os.environ["KERAS_BACKEND"] = "jax"
+
 import keras_core as keras
 from keras_core import layers
 from keras_core.applications.densenet import DenseNet121
 
-import tensorflow as tf
 from tensorflow_docs.vis import embed
 
 import matplotlib.pyplot as plt
@@ -58,7 +60,6 @@ import pandas as pd
 import numpy as np
 import imageio
 import cv2
-import os
 
 """
 ## Define hyperparameters
@@ -98,7 +99,8 @@ center_crop_layer = layers.CenterCrop(IMG_SIZE, IMG_SIZE)
 
 def crop_center(frame):
     cropped = center_crop_layer(frame[None, ...])
-    cropped = cropped.numpy().squeeze()
+    cropped = keras.ops.convert_to_numpy(cropped)
+    cropped = keras.ops.squeeze(cropped)
     return cropped
 
 
@@ -240,8 +242,9 @@ class PositionalEmbedding(layers.Layer):
 
     def call(self, inputs):
         # The inputs are of shape: `(batch_size, frames, num_features)`
-        length = tf.shape(inputs)[1]
-        positions = tf.range(start=0, limit=length, delta=1)
+        inputs = keras.backend.cast(inputs, self.compute_dtype)
+        length = keras.backend.shape(inputs)[1]
+        positions = keras.ops.numpy.arange(start=0, stop=length, step=1)
         embedded_positions = self.position_embeddings(positions)
         return inputs + embedded_positions
 
@@ -261,18 +264,12 @@ class TransformerEncoder(layers.Layer):
             num_heads=num_heads, key_dim=embed_dim, dropout=0.3
         )
         self.dense_proj = keras.Sequential(
-            [
-                layers.Dense(dense_dim, activation=tf.nn.gelu),
-                layers.Dense(embed_dim),
-            ]
+            [layers.Dense(dense_dim, activation=keras.activations.gelu), layers.Dense(embed_dim),]
         )
         self.layernorm_1 = layers.LayerNormalization()
         self.layernorm_2 = layers.LayerNormalization()
 
     def call(self, inputs, mask=None):
-        if mask is not None:
-            mask = mask[:, tf.newaxis, :]
-
         attention_output = self.attention(inputs, inputs, attention_mask=mask)
         proj_input = self.layernorm_1(inputs + attention_output)
         proj_output = self.dense_proj(proj_input)
@@ -284,14 +281,14 @@ class TransformerEncoder(layers.Layer):
 """
 
 
-def get_compiled_model():
+def get_compiled_model(shape):
     sequence_length = MAX_SEQ_LENGTH
     embed_dim = NUM_FEATURES
     dense_dim = 4
     num_heads = 1
     classes = len(label_processor.get_vocabulary())
 
-    inputs = keras.Input(shape=(None, None))
+    inputs = keras.Input(shape=shape)
     x = PositionalEmbedding(
         sequence_length, embed_dim, name="frame_position_embedding"
     )(inputs)
@@ -308,12 +305,12 @@ def get_compiled_model():
 
 
 def run_experiment():
-    filepath = "/tmp/video_classifier..weights.h5"
+    filepath = "/tmp/video_classifier.weights.h5"
     checkpoint = keras.callbacks.ModelCheckpoint(
         filepath, save_weights_only=True, save_best_only=True, verbose=1
     )
 
-    model = get_compiled_model()
+    model = get_compiled_model(train_data.shape[1:])
     history = model.fit(
         train_data,
         train_labels,
