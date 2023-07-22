@@ -47,7 +47,7 @@ tar -xf ucf101_top5.tar.gz
 """
 
 import os
-os.environ["KERAS_BACKEND"] = "jax"
+os.environ["KERAS_BACKEND"] = "jax" #@param ["tensorflow", "jax", "pytorch"]
 
 import keras_core as keras
 from keras_core import layers
@@ -106,7 +106,7 @@ def crop_center(frame):
 
 # Following method is modified from this tutorial:
 # https://www.tensorflow.org/hub/tutorials/action_recognition_with_tf_hub
-def load_video(path, max_frames=0):
+def load_video(path, max_frames=0, offload_to_cpu=False):
     cap = cv2.VideoCapture(path)
     frames = []
     try:
@@ -114,14 +114,18 @@ def load_video(path, max_frames=0):
             ret, frame = cap.read()
             if not ret:
                 break
-            frame = crop_center(frame)
             frame = frame[:, :, [2, 1, 0]]
+            frame = crop_center(frame)
+            if offload_to_cpu and keras.backend.backend() == "torch":
+                frame = frame.to("cpu")
             frames.append(frame)
 
             if len(frames) == max_frames:
                 break
     finally:
         cap.release()
+    if offload_to_cpu and keras.backend.backend() == "torch":
+        return np.array([frame.to("cpu").numpy() for frame in frames])
     return np.array(frames)
 
 
@@ -366,7 +370,7 @@ def prepare_single_video(frames):
 def predict_action(path):
     class_vocab = label_processor.get_vocabulary()
 
-    frames = load_video(os.path.join("test", path))
+    frames = load_video(os.path.join("test", path), offload_to_cpu=True)
     frame_features = prepare_single_video(frames)
     probabilities = trained_model.predict(frame_features)[0]
 
