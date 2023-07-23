@@ -3,7 +3,6 @@ import time
 import warnings
 
 import numpy as np
-import torch
 
 from keras_core.api_export import keras_core_export
 from keras_core.utils.module_utils import tensorflow as tf
@@ -278,6 +277,7 @@ def _get_next_sample(
         data_sample: A tuple/list of numpy arrays.
     """
     try:
+        import torch
         dataset_iterator = iter(dataset_iterator)
         first_sample = next(dataset_iterator)
         if isinstance(first_sample, (tf.Tensor, np.ndarray)) or torch.is_tensor(
