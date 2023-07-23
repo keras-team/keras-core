@@ -24,6 +24,7 @@ image patches, without using convolution layers.
 """
 
 import os
+
 os.environ["KERAS_BACKEND"] = "jax"  # @param ["tensorflow", "jax", "torch"]
 
 import keras_core as keras
@@ -118,9 +119,26 @@ class Patches(layers.Layer):
         channels = input_shape[3]
         num_patches_h = height // self.patch_size
         num_patches_w = width // self.patch_size
-        patches = ops.reshape(images, (batch_size, num_patches_h, self.patch_size, num_patches_w, self.patch_size, channels))
+        patches = ops.reshape(
+            images,
+            (
+                batch_size,
+                num_patches_h,
+                self.patch_size,
+                num_patches_w,
+                self.patch_size,
+                channels,
+            ),
+        )
         patches = ops.transpose(patches, (0, 1, 3, 2, 4, 5))
-        patches = ops.reshape(patches, (batch_size, num_patches_h * num_patches_w, self.patch_size * self.patch_size * channels))
+        patches = ops.reshape(
+            patches,
+            (
+                batch_size,
+                num_patches_h * num_patches_w,
+                self.patch_size * self.patch_size * channels,
+            ),
+        )
         return patches
 
     def get_config(self):
@@ -174,11 +192,13 @@ class PatchEncoder(layers.Layer):
         )
 
     def call(self, patch):
-        positions = ops.expand_dims(ops.arange(start=0, stop=self.num_patches, step=1), axis=0)
+        positions = ops.expand_dims(
+            ops.arange(start=0, stop=self.num_patches, step=1), axis=0
+        )
         projected_patches = self.projection(patch)
         encoded = projected_patches + self.position_embedding(positions)
         return encoded
-    
+
     def get_config(self):
         config = super().get_config()
         config.update({"num_patches": self.num_patches})
@@ -236,7 +256,9 @@ def create_vit_classifier():
     representation = layers.Flatten()(representation)
     representation = layers.Dropout(0.5)(representation)
     # Add MLP.
-    features = mlp(representation, hidden_units=mlp_head_units, dropout_rate=0.5)
+    features = mlp(
+        representation, hidden_units=mlp_head_units, dropout_rate=0.5
+    )
     # Classify outputs.
     logits = layers.Dense(num_classes)(features)
     # Create the Keras model.
