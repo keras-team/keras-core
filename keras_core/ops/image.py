@@ -3,7 +3,6 @@ from keras_core.api_export import keras_core_export
 from keras_core.backend import KerasTensor
 from keras_core.backend import any_symbolic_tensors
 from keras_core.ops.operation import Operation
-from keras_core import ops
 
 class Resize(Operation):
     def __init__(
@@ -245,53 +244,42 @@ def affine_transform(
         data_format=data_format,
     )
 
+
 class ExtractPatches(Operation):
     def __init__(
-        self, sizes, strides, rates, padding, data_format, name=None
+        self, size, strides=None, rates=1, padding='valid', data_format="channels_last"
     ):
         super().__init__()
-        self.sizes = sizes
+        self.size = size
         self.strides = strides
         self.rates = rates
         self.padding = padding
         self.data_format = data_format
 
-    def call(self, image, transform):
-        return backend.image.affine_transform(
-            image,
-            transform,
-            interpolation=self.interpolation,
-            fill_mode=self.fill_mode,
-            fill_value=self.fill_value,
-            data_format=self.data_format,
-        )
+    def call(self, image):
+        return _extract_patches(image, self.size, self.strides, self.rates, self.padding, data_format=self.data_format)
+        
 
-    def compute_output_spec(self, image, transform):
+    def compute_output_spec(self, image):
         if len(image.shape) not in (3, 4):
             raise ValueError(
                 "Invalid image rank: expected rank 3 (single image) "
                 "or rank 4 (batch of images). Received input with shape: "
                 f"image.shape={image.shape}"
             )
-        if len(transform.shape) not in (1, 2):
-            raise ValueError(
-                "Invalid transform rank: expected rank 1 (single transform) "
-                "or rank 2 (batch of transforms). Received input with shape: "
-                f"transform.shape={transform.shape}"
-            )
         return KerasTensor(image.shape, dtype=image.dtype)
 
 
 @keras_core_export("keras_core.ops.image.extract_patches")
 def extract_patches(
-    image, sizes, strides, rates, padding, data_format="channels_last", name=None,
+    image, size, strides=None, dilation_rate=1, padding='valid', data_format="channels_last"
     
 ):
-    """Applies the given transform(s) to the image(s).
+    """Extracts patches from the image(s).
 
     Args:
         image: Input image or batch of images. Must be 3D or 4D.
-        transform: Projective transform matrix/matrices. A vector of length 8 or
+        size: Projective transform matrix/matrices. A vector of length 8 or
             tensor of size N x 8. If one row of transform is
             `[a0, a1, a2, b0, b1, b2, c0, c1]`, then it maps the output point
             `(x, y)` to a transformed input point
@@ -301,13 +289,13 @@ def extract_patches(
             gradients are not backpropagated into transformation parameters.
             Note that `c0` and `c1` are only effective when using TensorFlow
             backend and will be considered as `0` when using other backends.
-        interpolation: Interpolation method. Available methods are `"nearest"`,
+        strides: Interpolation method. Available methods are `"nearest"`,
             and `"bilinear"`. Defaults to `"bilinear"`.
-        fill_mode: Points outside the boundaries of the input are filled
+        rates: Points outside the boundaries of the input are filled
             according to the given mode. Available methods are `"constant"`,
             `"nearest"`, `"wrap"` and `"reflect"`. Defaults to `"constant"`.
             Note that `"wrap"` is not supported by Torch backend.
-        fill_value: Value used for points outside the boundaries of the input if
+        padding: Value used for points outside the boundaries of the input if
             `fill_mode="constant"`. Defaults to `0`.
         data_format: string, either `"channels_last"` or `"channels_first"`.
             The ordering of the dimensions in the inputs. `"channels_last"`
@@ -352,18 +340,27 @@ def extract_patches(
     >>> y.shape
     (2, 3, 64, 80)
     """
-    # if any_symbolic_tensors((image)):
-    #     return ExtractPatches(
-    #         sizes, strides, rates, padding, data_format=data_format,
-    #     ).symbolic_call(image)
-    patch_h, patch_w = sizes[0], sizes[1] 
+    if any_symbolic_tensors((image)):
+        return ExtractPatches(
+            size, strides, dilation_rate, padding, data_format=data_format
+        ).symbolic_call(image)
+    
+    return _extract_patches(image, size, strides, dilation_rate, padding, data_format=data_format)
+
+def _extract_patches(image, size, strides=None, dilation_rate=1, padding='valid', data_format="channels_last"):
+    if type(size) == int:
+            patch_h = patch_w = size
+    elif len(size) == 2:
+        patch_h, patch_w = size[0], size[1] 
+    else:
+        raise TypeError(f"Received invalid patch size expected int or tuple of length 2, received {size}")
     if data_format == 'channels_last':
         channels_in = image.shape[-1]
-        out_dim = image.shape[1] // patch_h * image.shape[2] // patch_w
     elif data_format == 'channels_first':
-        # if batched
-        channels_in = image.shape[1]
-        out_dim = (image.shape[2] // patch_h) * (image.shape[3] // patch_w)
-    kernel = ops.eye(patch_h * patch_w * channels_in, out_dim)
-    kernel = ops.reshape(kernel, (patch_h, patch_w, channels_in, out_dim))
-    return ops.nn.conv(image, kernel, 14, 'VALID')
+        channels_in = image.shape[-3]
+    if not strides:
+        strides = size
+    out_dim = patch_h * patch_w * channels_in
+    kernel = backend.numpy.eye(out_dim)
+    kernel = backend.numpy.reshape(kernel, (patch_h, patch_w, channels_in, out_dim))
+    return backend.nn.conv(image, kernel, strides, padding, data_format=data_format, dilation_rate=dilation_rate)
