@@ -477,17 +477,17 @@ def amax(x, axis=None, keepdims=False):
 
     Examples:
 
-    >>> x = keras_core.ops.convert_to_tensor([1, 9, 5, 2, 3, 6])
+    >>> x = keras_core.ops.convert_to_tensor([[1, 3, 5], [2, 3, 6]])
     >>> keras_core.ops.amax(x)
-    <tf.Tensor: shape=(), dtype=int32, numpy=9>
+    array(6, dtype=int32)
 
     >>> x = keras_core.ops.convert_to_tensor([[1, 6, 8], [1, 5, 2]])
     >>> keras_core.ops.amax(x, axis=0)
-    <tf.Tensor: shape=(3,), dtype=int32, numpy=array([1, 6, 8], dtype=int32)>
+    array([1, 6, 8], dtype=int32)
 
     >>> x = keras_core.ops.convert_to_tensor([[1, 6, 8], [1, 5, 2]])
     >>> keras_core.ops.amax(x, axis=1, keepdims=True)
-    <tf.Tensor: shape=(2, 1), dtype=int32, numpy=array([[8],[5]], dtype=int32)>
+    array([[8], [5]], dtype=int32)
     """
     if any_symbolic_tensors((x,)):
         return Amax(axis=axis, keepdims=keepdims).symbolic_call(x)
@@ -535,15 +535,15 @@ def amin(x, axis=None, keepdims=False):
 
     >>> x = keras_core.ops.convert_to_tensor([1, 3, 5, 2, 3, 6])
     >>> keras_core.ops.amin(x)
-    <tf.Tensor: shape=(), dtype=int32, numpy=1>
+    array(1, dtype=int32)
 
     >>> x = keras_core.ops.convert_to_tensor([[1, 6, 8], [7, 5, 3]])
     >>> keras_core.ops.amin(x, axis=0)
-    <tf.Tensor: shape=(3,), dtype=int32, numpy=array([1, 5, 3], dtype=int32)>
+    array([1,5,3], dtype=int32)
 
     >>> x = keras_core.ops.convert_to_tensor([[1, 6, 8], [7, 5, 3]])
     >>> keras_core.ops.amin(x, axis=1, keepdims=True)
-    <tf.Tensor: shape=(2, 1), dtype=int32, numpy= array([[1],[3]], dtype=int32)>
+    array([[1],[3]], dtype=int32)
     """
     if any_symbolic_tensors((x,)):
         return Amin(axis=axis, keepdims=keepdims).symbolic_call(x)
