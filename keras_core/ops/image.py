@@ -262,6 +262,7 @@ class ExtractPatches(Operation):
 
     def compute_output_spec(self, image):
         image_shape = image.shape
+        strides = self.strides
         if len(image_shape) not in (3, 4):
             raise ValueError(
                 "Invalid image rank: expected rank 3 (single image) "
@@ -280,7 +281,7 @@ class ExtractPatches(Operation):
         else:
             raise TypeError(f"Received invalid patch size expected int or tuple of length 2, received {self.size}")
         
-        if not self.strides:
+        if not strides:
             strides = (patch_h, patch_w)
         if len(strides) != 2:
             raise ValueError(
@@ -299,9 +300,16 @@ class ExtractPatches(Operation):
             image_h = image_shape[-2]
             image_w = image_shape[-1]
         out_dim = patch_h * patch_w * channels_in
-        if self.padding == 'valid':
+        if self.padding.lower() == 'valid':
             out_h = int(((image_h - patch_h) / strides_h) + 1)         # [(W−K+2P)/S]+1
             out_w = int(((image_w - patch_w) / strides_w) + 1)
+        else:
+            pad_along_height = max((patch_h - 1) * strides[0] +
+                    patch_h - image_h, 0)
+            pad_along_width = max((patch_w - 1) * strides[1] +
+                   patch_w - image_w, 0)
+            out_h = int(((image_h - patch_h + 2 * pad_along_height) / strides_h) + 1)         # [(W−K+2P)/S]+1
+            out_w = int(((image_w - patch_w + 2 * pad_along_width) / strides_w) + 1)
         if not batched:
             return KerasTensor((out_h, out_w, out_dim), dtype=image.dtype)
         else:
