@@ -4,6 +4,7 @@ from keras_core.backend import KerasTensor
 from keras_core.backend import any_symbolic_tensors
 from keras_core.ops.operation import Operation
 
+
 class Resize(Operation):
     def __init__(
         self,
@@ -247,7 +248,12 @@ def affine_transform(
 
 class ExtractPatches(Operation):
     def __init__(
-        self, size, strides=None, rates=1, padding='valid', data_format="channels_last"
+        self,
+        size,
+        strides=None,
+        rates=1,
+        padding="valid",
+        data_format="channels_last",
     ):
         super().__init__()
         self.size = size
@@ -257,8 +263,14 @@ class ExtractPatches(Operation):
         self.data_format = data_format
 
     def call(self, image):
-        return _extract_patches(image, self.size, self.strides, self.rates, self.padding, data_format=self.data_format)
-        
+        return _extract_patches(
+            image,
+            self.size,
+            self.strides,
+            self.rates,
+            self.padding,
+            data_format=self.data_format,
+        )
 
     def compute_output_spec(self, image):
         image_shape = image.shape
@@ -277,10 +289,12 @@ class ExtractPatches(Operation):
         if type(self.size) == int:
             patch_h = patch_w = self.size
         elif len(self.size) == 2:
-            patch_h, patch_w = self.size[0], self.size[1] 
+            patch_h, patch_w = self.size[0], self.size[1]
         else:
-            raise TypeError(f"Received invalid patch size expected int or tuple of length 2, received {self.size}")
-        
+            raise TypeError(
+                f"Received invalid patch size expected int or tuple of length 2, received {self.size}"
+            )
+
         if not strides:
             strides = (patch_h, patch_w)
         if len(strides) != 2:
@@ -291,36 +305,47 @@ class ExtractPatches(Operation):
             )
         strides_h = strides[0]
         strides_w = strides[1]
-        if self.data_format == 'channels_last':
+        if self.data_format == "channels_last":
             channels_in = image_shape[-1]
             image_h = image_shape[-2]
             image_w = image_shape[-3]
-        elif self.data_format == 'channels_first':
+        elif self.data_format == "channels_first":
             channels_in = image_shape[-3]
             image_h = image_shape[-2]
             image_w = image_shape[-1]
         out_dim = patch_h * patch_w * channels_in
-        if self.padding.lower() == 'valid':
-            out_h = int(((image_h - patch_h) / strides_h) + 1)         # [(W−K+2P)/S]+1
+        if self.padding.lower() == "valid":
+            out_h = int(((image_h - patch_h) / strides_h) + 1)  # [(W−K+2P)/S]+1
             out_w = int(((image_w - patch_w) / strides_w) + 1)
         else:
-            pad_along_height = max((patch_h - 1) * strides[0] +
-                    patch_h - image_h, 0)
-            pad_along_width = max((patch_w - 1) * strides[1] +
-                   patch_w - image_w, 0)
-            out_h = int(((image_h - patch_h + 2 * pad_along_height) / strides_h) + 1)         # [(W−K+2P)/S]+1
-            out_w = int(((image_w - patch_w + 2 * pad_along_width) / strides_w) + 1)
+            pad_along_height = max(
+                (patch_h - 1) * strides[0] + patch_h - image_h, 0
+            )
+            pad_along_width = max(
+                (patch_w - 1) * strides[1] + patch_w - image_w, 0
+            )
+            out_h = int(
+                ((image_h - patch_h + 2 * pad_along_height) / strides_h) + 1
+            )  # [(W−K+2P)/S]+1
+            out_w = int(
+                ((image_w - patch_w + 2 * pad_along_width) / strides_w) + 1
+            )
         if not batched:
             return KerasTensor((out_h, out_w, out_dim), dtype=image.dtype)
         else:
-            return KerasTensor(batch_shape + (out_h, out_w, out_dim), dtype=image.dtype)
-
+            return KerasTensor(
+                batch_shape + (out_h, out_w, out_dim), dtype=image.dtype
+            )
 
 
 @keras_core_export("keras_core.ops.image.extract_patches")
 def extract_patches(
-    image, size, strides=None, dilation_rate=1, padding='valid', data_format="channels_last"
-    
+    image,
+    size,
+    strides=None,
+    dilation_rate=1,
+    padding="valid",
+    data_format="channels_last",
 ):
     """Extracts patches from the image(s).
 
@@ -391,23 +416,44 @@ def extract_patches(
         return ExtractPatches(
             size, strides, dilation_rate, padding, data_format=data_format
         ).symbolic_call(image)
-    
-    return _extract_patches(image, size, strides, dilation_rate, padding, data_format=data_format)
 
-def _extract_patches(image, size, strides=None, dilation_rate=1, padding='valid', data_format="channels_last"):
+    return _extract_patches(
+        image, size, strides, dilation_rate, padding, data_format=data_format
+    )
+
+
+def _extract_patches(
+    image,
+    size,
+    strides=None,
+    dilation_rate=1,
+    padding="valid",
+    data_format="channels_last",
+):
     if type(size) == int:
-            patch_h = patch_w = size
+        patch_h = patch_w = size
     elif len(size) == 2:
-        patch_h, patch_w = size[0], size[1] 
+        patch_h, patch_w = size[0], size[1]
     else:
-        raise TypeError(f"Received invalid patch size expected int or tuple of length 2, received {size}")
-    if data_format == 'channels_last':
+        raise TypeError(
+            f"Received invalid patch size expected int or tuple of length 2, received {size}"
+        )
+    if data_format == "channels_last":
         channels_in = image.shape[-1]
-    elif data_format == 'channels_first':
+    elif data_format == "channels_first":
         channels_in = image.shape[-3]
     if not strides:
         strides = size
     out_dim = patch_h * patch_w * channels_in
     kernel = backend.numpy.eye(out_dim)
-    kernel = backend.numpy.reshape(kernel, (patch_h, patch_w, channels_in, out_dim))
-    return backend.nn.conv(image, kernel, strides, padding, data_format=data_format, dilation_rate=dilation_rate)
+    kernel = backend.numpy.reshape(
+        kernel, (patch_h, patch_w, channels_in, out_dim)
+    )
+    return backend.nn.conv(
+        image,
+        kernel,
+        strides,
+        padding,
+        data_format=data_format,
+        dilation_rate=dilation_rate,
+    )
