@@ -133,10 +133,13 @@ def load_balanced_loss(router_probs, expert_mask):
 
 class Router(layers.Layer):
     def __init__(self, num_experts, expert_capacity):
+        super().__init__()
         self.num_experts = num_experts
         self.route = layers.Dense(units=num_experts)
         self.expert_capacity = expert_capacity
-        super().__init__()
+
+    def build(self, input_shape):
+        pass
 
     def call(self, inputs, training=False):
         # inputs shape: [tokens_per_batch, embed_dim]
@@ -196,15 +199,25 @@ class Router(layers.Layer):
 
 class Switch(layers.Layer):
     def __init__(self, num_experts, embed_dim, num_tokens_per_batch, capacity_factor=1):
+        super().__init__()
         self.num_experts = num_experts
         self.embed_dim = embed_dim
         self.experts = [
             create_feedforward_network(embed_dim) for _ in range(num_experts)
         ]
 
-        self.expert_capacity = num_tokens_per_batch // self.num_experts
+    def build(self, input_shape):
+        if None in input_shape:
+            raise ValueError(
+                "Expected a fully-defined input shape. "
+                f"Received: input_shape={input_shape}"
+            )
+        self.batch_size = input_shape[0]
+        self.num_tokens_per_example = input_shape[1]
+        self.num_tokens_per_batch = self.batch_size * self.num_tokens_per_example
+        self.expert_capacity = self.num_tokens_per_batch // self.num_experts
         self.router = Router(self.num_experts, self.expert_capacity)
-        super().__init__()
+        self.router.build(input_shape)
 
     def unstack(self, tensor, axis=0):
         shape = tensor.shape
@@ -286,7 +299,7 @@ def create_classifier():
     switch = Switch(num_experts, embed_dim, num_tokens_per_batch)
     transformer_block = TransformerBlock(ff_dim, num_heads, switch)
 
-    inputs = layers.Input(shape=(num_tokens_per_example,))
+    inputs = layers.Input(shape=(num_tokens_per_example,), batch_size=batch_size)
     embedding_layer = TokenAndPositionEmbedding(
         num_tokens_per_example, vocab_size, embed_dim
     )
