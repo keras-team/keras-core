@@ -261,13 +261,52 @@ class ExtractPatches(Operation):
         
 
     def compute_output_spec(self, image):
-        if len(image.shape) not in (3, 4):
+        image_shape = image.shape
+        if len(image_shape) not in (3, 4):
             raise ValueError(
                 "Invalid image rank: expected rank 3 (single image) "
                 "or rank 4 (batch of images). Received input with shape: "
                 f"image.shape={image.shape}"
             )
-        return KerasTensor(image.shape, dtype=image.dtype)
+        if len(image_shape) == 3:
+            batched = False
+        else:
+            batched = True
+            batch_shape = image_shape[0:1]
+        if type(self.size) == int:
+            patch_h = patch_w = self.size
+        elif len(self.size) == 2:
+            patch_h, patch_w = self.size[0], self.size[1] 
+        else:
+            raise TypeError(f"Received invalid patch size expected int or tuple of length 2, received {self.size}")
+        
+        if not self.strides:
+            strides = (patch_h, patch_w)
+        if len(strides) != 2:
+            raise ValueError(
+                "Invalid stride: expected tuple of shape (s_h, s_w)"
+                " Received input: "
+                f"strides={strides}"
+            )
+        strides_h = strides[0]
+        strides_w = strides[1]
+        if self.data_format == 'channels_last':
+            channels_in = image_shape[-1]
+            image_h = image_shape[-2]
+            image_w = image_shape[-3]
+        elif self.data_format == 'channels_first':
+            channels_in = image_shape[-3]
+            image_h = image_shape[-2]
+            image_w = image_shape[-1]
+        out_dim = patch_h * patch_w * channels_in
+        if self.padding == 'valid':
+            out_h = int(((image_h - patch_h) / strides_h) + 1)         # [(W−K+2P)/S]+1
+            out_w = int(((image_w - patch_w) / strides_w) + 1)
+        if not batched:
+            return KerasTensor((out_h, out_w, out_dim), dtype=image.dtype)
+        else:
+            return KerasTensor(batch_shape + (out_h, out_w, out_dim), dtype=image.dtype)
+
 
 
 @keras_core_export("keras_core.ops.image.extract_patches")
