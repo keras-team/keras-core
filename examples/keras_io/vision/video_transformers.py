@@ -16,9 +16,6 @@ example. This time, we will be using a Transformer-based model
 in case you need an introduction to Transformers (with code). After reading this
 example, you will know how to develop hybrid Transformer-based models for video
 classification that operate on CNN feature maps.
-
-This example requires TensorFlow 2.5 or higher, as well as TensorFlow Docs, which can be
-installed using the following command:
 """
 
 """shell
@@ -48,7 +45,7 @@ tar -xf ucf101_top5.tar.gz
 
 import os
 
-os.environ["KERAS_BACKEND"] = "jax"  # @param ["tensorflow", "jax", "pytorch"]
+os.environ["KERAS_BACKEND"] = "jax"  # @param ["tensorflow", "jax", "torch"]
 
 import keras_core as keras
 from keras_core import layers
