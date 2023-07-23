@@ -16,16 +16,16 @@ def split_dataset(
 
     Args:
         dataset:
-            A `tf.data.Dataset or torchDataset`  object,
+            A `tf.data.Dataset or torch.utils.data.Dataset`  object,
             or a list/tuple of arrays with the same length.
         left_size: If float (in the range `[0, 1]`), it signifies
-          the fraction of the data to pack in the left dataset. If integer, it
-          signifies the number of samples to pack in the left dataset. If
-          `None`, it uses the complement to `right_size`. Defaults to `None`.
+            the fraction of the data to pack in the left dataset. If integer, it
+            signifies the number of samples to pack in the left dataset. If
+            `None`, it uses the complement to `right_size`. Defaults to `None`.
         right_size: If float (in the range `[0, 1]`), it signifies
-          the fraction of the data to pack in the right dataset. If integer, it
-          signifies the number of samples to pack in the right dataset. If
-          `None`, it uses the complement to `left_size`. Defaults to `None`.
+            the fraction of the data to pack in the right dataset. If integer, it
+            signifies the number of samples to pack in the right dataset. If
+            `None`, it uses the complement to `left_size`. Defaults to `None`.
         shuffle: Boolean, whether to shuffle the data before splitting it.
         seed: A random seed for shuffling.
 
@@ -43,19 +43,11 @@ def split_dataset(
     200
 
     """
-    from torch.utils.data import Dataset as torchDataset
-
     dataset_type_spec = _get_type_spec(dataset)
 
-    if dataset_type_spec not in [
-        torchDataset,
-        tf.data.Dataset,
-        list,
-        tuple,
-        np.ndarray,
-    ]:
+    if dataset_type_spec is None:
         raise TypeError(
-            "The `dataset` argument must be either a `tf.data.Dataset` "
+            "The `dataset` argument must be either a `tf.data.Dataset` or `torch.utils.data.Dataset`"
             "object or a list/tuple of arrays. "
             f"Received: dataset={dataset} of type {type(dataset)}"
         )
@@ -112,20 +104,20 @@ def _convert_dataset_to_list(
     data_size_warning_flag=True,
     ensure_shape_similarity=True,
 ):
-    """Convert `tf.data.Dataset or torchDataset` object
+    """Convert `tf.data.Dataset` or `torch.utils.data.Dataset` object
         or list/tuple of NumPy arrays to a list.
 
     Args:
         dataset :
-            A `tf.data.Dataset or torchDataset` object
+            A `tf.data.Dataset` or `torch.utils.data.Dataset` object
             or a list/tuple of arrays.
         dataset_type_spec : the type of the dataset
         data_size_warning_flag (bool, optional): If set to True, a warning will
-          be issued if the dataset takes longer than 10 seconds to iterate.
-          Defaults to `True`.
+            be issued if the dataset takes longer than 10 seconds to iterate.
+            Defaults to `True`.
         ensure_shape_similarity (bool, optional): If set to True, the shape of
-          the first sample will be used to validate the shape of rest of the
-          samples. Defaults to `True`.
+            the first sample will be used to validate the shape of rest of the
+            samples. Defaults to `True`.
 
     Returns:
         List: A list of tuples/NumPy arrays.
@@ -161,24 +153,22 @@ def _get_data_iterator_from_dataset(dataset, dataset_type_spec):
 
     Args:
         dataset :
-            A `tf.data.Dataset or torchDataset` object
+            A `tf.data.Dataset` or `torch.utils.data.Dataset` object
             or a list/tuple of arrays.
         dataset_type_spec :
              the type of the dataset
 
     Raises:
         ValueError:
-                  - If the dataset is empty.
-                  - If the dataset is not a `tf.data.Dataset` object
-                    or a list/tuple of arrays.
-                  - If the dataset is a list/tuple of arrays and the
-                    length of the list/tuple is not equal to the number
+            - If the dataset is empty.
+            - If the dataset is not a `tf.data.Dataset` object
+            or a list/tuple of arrays.
+            - If the dataset is a list/tuple of arrays and the
+            length of the list/tuple is not equal to the number
 
     Returns:
         iterator: An `iterator` object.
     """
-    from torch.utils.data import Dataset as torchDataset
-
     if dataset_type_spec == list:
         if len(dataset) == 0:
             raise ValueError(
@@ -237,7 +227,7 @@ def _get_data_iterator_from_dataset(dataset, dataset_type_spec):
         return iter(dataset)
 
     # torch dataset iterator might be required to change
-    elif dataset_type_spec == torchDataset:
+    elif is_torch_dataset(dataset):
         return iter(dataset)
 
     elif dataset_type_spec == np.ndarray:
@@ -255,19 +245,20 @@ def _get_next_sample(
     Args:
         dataset_iterator : An `iterator` object.
         ensure_shape_similarity (bool, optional): If set to True, the shape of
-          the first sample will be used to validate the shape of rest of the
-          samples. Defaults to `True`.
+            the first sample will be used to validate the shape of rest of the
+            samples. Defaults to `True`.
         data_size_warning_flag (bool, optional): If set to True, a warning will
-          be issued if the dataset takes longer than 10 seconds to iterate.
-          Defaults to `True`.
+            be issued if the dataset takes longer than 10 seconds to iterate.
+            Defaults to `True`.
         start_time (float): the start time of the dataset iteration. this is
-          used only if `data_size_warning_flag` is set to true.
+            used only if `data_size_warning_flag` is set to true.
 
     Raises:
-        ValueError: - If the dataset is empty.
-                    - If `ensure_shape_similarity` is set to True and the
-                      shape of the first sample is not equal to the shape of
-                      atleast one of the rest of the samples.
+        ValueError: 
+            - If the dataset is empty.
+            - If `ensure_shape_similarity` is set to True and the
+            shape of the first sample is not equal to the shape of
+            atleast one of the rest of the samples.
 
     Yields:
         data_sample: A tuple/list of numpy arrays.
@@ -318,7 +309,22 @@ def _get_next_sample(
         yield sample
 
 def is_torch_tensor(value):
-    return value.__class__.__name__ == 'Tensor'
+    if hasattr(value, "__class__"):
+        for parent in value.__class__.__mro__:
+            if parent.__name__ == "Tensor" and str(
+                parent.__module__
+            ).endswith("torch"):
+                return True
+    return False
+
+def is_torch_dataset(dataset):
+    if hasattr(dataset, "__class__"):
+        for parent in dataset.__class__.__mro__:
+            if parent.__name__ == "Dataset" and str(
+                parent.__module__
+            ).startswith("torch.utils.data"):
+                return True
+    return False
 
 
 def _rescale_dataset_split_sizes(left_size, right_size, total_length):
@@ -335,7 +341,7 @@ def _rescale_dataset_split_sizes(left_size, right_size, total_length):
     Raises:
         TypeError: - If `left_size` or `right_size` is not an integer or float.
         ValueError: - If `left_size` or `right_size` is negative or greater
-                      than 1 or greater than `total_length`.
+                    than 1 or greater than `total_length`.
 
     Returns:
         tuple: A tuple of rescaled left_size and right_size
@@ -455,7 +461,6 @@ def _restore_dataset_from_list(
     dataset_as_list, dataset_type_spec, original_dataset
 ):
    
-    from torch.utils.data import Dataset as torchDataset
     """Restore the dataset from the list of arrays."""
     if dataset_type_spec in [tuple, list]:
         return tuple(np.array(sample) for sample in zip(*dataset_as_list))
@@ -472,7 +477,7 @@ def _restore_dataset_from_list(
         else:
             return tuple(np.array(sample) for sample in zip(*dataset_as_list))
 
-    elif dataset_type_spec == torchDataset:
+    elif is_torch_dataset(original_dataset):
         return tuple(np.array(sample) for sample in zip(*dataset_as_list))
     return dataset_as_list
 
@@ -491,8 +496,6 @@ def get_batch_size(dataset):
 
 
 def _get_type_spec(dataset):
-    from torch.utils.data import Dataset as torchDataset
-
     """Get the type spec of the dataset."""
     if isinstance(dataset, tuple):
         return tuple
@@ -504,7 +507,8 @@ def _get_type_spec(dataset):
         return dict
     elif isinstance(dataset, tf.data.Dataset):
         return tf.data.Dataset
-    elif isinstance(dataset, torchDataset):
+    elif is_torch_dataset(dataset):
+        from torch.utils.data import Dataset as torchDataset
         return torchDataset
     else:
         return None
