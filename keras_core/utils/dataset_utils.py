@@ -23,9 +23,11 @@ def split_dataset(
             signifies the number of samples to pack in the left dataset. If
             `None`, it uses the complement to `right_size`. Defaults to `None`.
         right_size: If float (in the range `[0, 1]`), it signifies
-            the fraction of the data to pack in the right dataset. If integer, it
-            signifies the number of samples to pack in the right dataset. If
-            `None`, it uses the complement to `left_size`. Defaults to `None`.
+            the fraction of the data to pack in the right dataset.
+            If integer, it signifies the number of samples to pack
+            in the right dataset.
+            If `None`, it uses the complement to `left_size`.
+            Defaults to `None`.
         shuffle: Boolean, whether to shuffle the data before splitting it.
         seed: A random seed for shuffling.
 
@@ -47,7 +49,8 @@ def split_dataset(
 
     if dataset_type_spec is None:
         raise TypeError(
-            "The `dataset` argument must be either a `tf.data.Dataset` or `torch.utils.data.Dataset`"
+            "The `dataset` argument must be either"
+            "a `tf.data.Dataset` or `torch.utils.data.Dataset`"
             "object or a list/tuple of arrays. "
             f"Received: dataset={dataset} of type {type(dataset)}"
         )
@@ -82,7 +85,6 @@ def split_dataset(
         right_split, dataset_type_spec, dataset
     )
 
-    
     left_split = tf.data.Dataset.from_tensor_slices(left_split)
     right_split = tf.data.Dataset.from_tensor_slices(right_split)
 
@@ -254,7 +256,7 @@ def _get_next_sample(
             used only if `data_size_warning_flag` is set to true.
 
     Raises:
-        ValueError: 
+        ValueError:
             - If the dataset is empty.
             - If `ensure_shape_similarity` is set to True and the
             shape of the first sample is not equal to the shape of
@@ -264,7 +266,6 @@ def _get_next_sample(
         data_sample: A tuple/list of numpy arrays.
     """
     try:
-        
         dataset_iterator = iter(dataset_iterator)
         first_sample = next(dataset_iterator)
         if isinstance(first_sample, (tf.Tensor, np.ndarray)) or is_torch_tensor(
@@ -308,14 +309,16 @@ def _get_next_sample(
                     data_size_warning_flag = False
         yield sample
 
+
 def is_torch_tensor(value):
     if hasattr(value, "__class__"):
         for parent in value.__class__.__mro__:
-            if parent.__name__ == "Tensor" and str(
-                parent.__module__
-            ).endswith("torch"):
+            if parent.__name__ == "Tensor" and str(parent.__module__).endswith(
+                "torch"
+            ):
                 return True
     return False
+
 
 def is_torch_dataset(dataset):
     if hasattr(dataset, "__class__"):
@@ -460,7 +463,6 @@ def _rescale_dataset_split_sizes(left_size, right_size, total_length):
 def _restore_dataset_from_list(
     dataset_as_list, dataset_type_spec, original_dataset
 ):
-   
     """Restore the dataset from the list of arrays."""
     if dataset_type_spec in [tuple, list]:
         return tuple(np.array(sample) for sample in zip(*dataset_as_list))
@@ -509,6 +511,7 @@ def _get_type_spec(dataset):
         return tf.data.Dataset
     elif is_torch_dataset(dataset):
         from torch.utils.data import Dataset as torchDataset
+
         return torchDataset
     else:
         return None
