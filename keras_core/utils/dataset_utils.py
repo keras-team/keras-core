@@ -17,8 +17,7 @@ def split_dataset(
     Args:
         dataset:
             A `tf.data.Dataset or torchDataset`  object,
-            or a list/tuple of arrays with the
-          same length.
+            or a list/tuple of arrays with the same length.
         left_size: If float (in the range `[0, 1]`), it signifies
           the fraction of the data to pack in the left dataset. If integer, it
           signifies the number of samples to pack in the left dataset. If
