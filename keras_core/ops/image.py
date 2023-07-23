@@ -340,7 +340,7 @@ def extract_patches(
     >>> y.shape
     (2, 3, 64, 80)
     """
-    if any_symbolic_tensors((image)):
+    if any_symbolic_tensors((image,)):
         return ExtractPatches(
             size, strides, dilation_rate, padding, data_format=data_format
         ).symbolic_call(image)
