@@ -53,8 +53,7 @@ import tensorflow as tf
 from keras_core import layers
 import keras_core as keras
 
-np.random.seed(42)
-tf.random.set_seed(42)
+keras.utils.set_random_seed(42)
 
 """
 ## Load the CIFAR-10 dataset
@@ -377,6 +376,4 @@ You may notice it takes less time to train the model with the CutMix augmentatio
 
 You can experiment further with the CutMix technique by following the
 [original paper](https://arxiv.org/abs/1905.04899).
-Example available on HuggingFace.
-[![Generic badge](https://img.shields.io/badge/🤗%20Model-CutMix%20Data%20augmentation-black.svg)](https://huggingface.co/keras-io/CutMix_data_augmentation_for_image_classification)
 """
