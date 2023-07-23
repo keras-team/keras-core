@@ -292,15 +292,16 @@ class ExtractPatches(Operation):
             patch_h, patch_w = self.size[0], self.size[1]
         else:
             raise TypeError(
-                f"Received invalid patch size expected int or tuple of length 2, received {self.size}"
+                f"Received invalid patch size expected"
+                "int or tuple of length 2, received {self.size}"
             )
 
         if not strides:
             strides = (patch_h, patch_w)
         if len(strides) != 2:
             raise ValueError(
-                "Invalid stride: expected tuple of shape (s_h, s_w)"
-                " Received input: "
+                "Invalid stride: expected tu"
+                "ple of shape (s_h, s_w)  Received input: "
                 f"strides={strides}"
             )
         strides_h = strides[0]
@@ -436,7 +437,8 @@ def _extract_patches(
         patch_h, patch_w = size[0], size[1]
     else:
         raise TypeError(
-            f"Received invalid patch size expected int or tuple of length 2, received {size}"
+            f"Received invalid patch size expected "
+            "int or tuple of length 2, received {size}"
         )
     if data_format == "channels_last":
         channels_in = image.shape[-1]
