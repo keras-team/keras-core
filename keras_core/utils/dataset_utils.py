@@ -30,7 +30,7 @@ def split_dataset(
         seed: A random seed for shuffling.
 
     Returns:
-        A tuple of two `tf.data.Dataset or torchDataset` objects:
+        A tuple of two `tf.data.Dataset` objects:
         the left and right splits.
 
     Example:
@@ -90,23 +90,20 @@ def split_dataset(
         right_split, dataset_type_spec, dataset
     )
 
-    if dataset_type_spec != torchDataset:
-        left_split = tf.data.Dataset.from_tensor_slices(left_split)
-        right_split = tf.data.Dataset.from_tensor_slices(right_split)
+    
+    left_split = tf.data.Dataset.from_tensor_slices(left_split)
+    right_split = tf.data.Dataset.from_tensor_slices(right_split)
 
-        # apply batching to the splits if the dataset is batched
-        if dataset_type_spec is tf.data.Dataset and is_batched(dataset):
-            batch_size = get_batch_size(dataset)
-            if batch_size is not None:
-                left_split = left_split.batch(batch_size)
-                right_split = right_split.batch(batch_size)
+    # apply batching to the splits if the dataset is batched
+    if dataset_type_spec is tf.data.Dataset and is_batched(dataset):
+        batch_size = get_batch_size(dataset)
+        if batch_size is not None:
+            left_split = left_split.batch(batch_size)
+            right_split = right_split.batch(batch_size)
 
-        left_split = left_split.prefetch(tf.data.AUTOTUNE)
-        right_split = right_split.prefetch(tf.data.AUTOTUNE)
-        return left_split, right_split
-
-    elif dataset_type_spec == torchDataset:
-        return dataset.__class__(*left_split), dataset.__class__(*right_split)
+    left_split = left_split.prefetch(tf.data.AUTOTUNE)
+    right_split = right_split.prefetch(tf.data.AUTOTUNE)
+    return left_split, right_split
 
 
 def _convert_dataset_to_list(
@@ -276,10 +273,10 @@ def _get_next_sample(
         data_sample: A tuple/list of numpy arrays.
     """
     try:
-        import torch
+        
         dataset_iterator = iter(dataset_iterator)
         first_sample = next(dataset_iterator)
-        if isinstance(first_sample, (tf.Tensor, np.ndarray)) or torch.is_tensor(
+        if isinstance(first_sample, (tf.Tensor, np.ndarray)) or is_torch_tensor(
             first_sample
         ):
             first_sample_shape = np.array(first_sample).shape
@@ -319,6 +316,9 @@ def _get_next_sample(
                     )
                     data_size_warning_flag = False
         yield sample
+
+def is_torch_tensor(value):
+    return value.__class__.__name__ == 'Tensor'
 
 
 def _rescale_dataset_split_sizes(left_size, right_size, total_length):
@@ -454,8 +454,8 @@ def _rescale_dataset_split_sizes(left_size, right_size, total_length):
 def _restore_dataset_from_list(
     dataset_as_list, dataset_type_spec, original_dataset
 ):
+   
     from torch.utils.data import Dataset as torchDataset
-
     """Restore the dataset from the list of arrays."""
     if dataset_type_spec in [tuple, list]:
         return tuple(np.array(sample) for sample in zip(*dataset_as_list))
