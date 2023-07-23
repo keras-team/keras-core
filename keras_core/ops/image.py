@@ -450,10 +450,10 @@ def _extract_patches(
         kernel, (patch_h, patch_w, channels_in, out_dim)
     )
     return backend.nn.conv(
-        image,
-        kernel,
-        strides,
-        padding,
+        inputs=image,
+        kernel=kernel,
+        strides=strides,
+        padding=padding,
         data_format=data_format,
         dilation_rate=dilation_rate,
     )
