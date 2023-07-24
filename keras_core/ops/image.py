@@ -312,24 +312,15 @@ def extract_patches(
 
     Args:
         image: Input image or batch of images. Must be 3D or 4D.
-        size: Projective transform matrix/matrices. A vector of length 8 or
-            tensor of size N x 8. If one row of transform is
-            `[a0, a1, a2, b0, b1, b2, c0, c1]`, then it maps the output point
-            `(x, y)` to a transformed input point
-            `(x', y') = ((a0 x + a1 y + a2) / k, (b0 x + b1 y + b2) / k)`,
-            where `k = c0 x + c1 y + 1`. The transform is inverted compared to
-            the transform mapping input points to output points. Note that
-            gradients are not backpropagated into transformation parameters.
-            Note that `c0` and `c1` are only effective when using TensorFlow
-            backend and will be considered as `0` when using other backends.
-        strides: Interpolation method. Available methods are `"nearest"`,
-            and `"bilinear"`. Defaults to `"bilinear"`.
-        rates: Points outside the boundaries of the input are filled
-            according to the given mode. Available methods are `"constant"`,
-            `"nearest"`, `"wrap"` and `"reflect"`. Defaults to `"constant"`.
-            Note that `"wrap"` is not supported by Torch backend.
-        padding: Value used for points outside the boundaries of the input if
-            `fill_mode="constant"`. Defaults to `0`.
+        size: Patch size int or tuple (patch_height, patch_widht) 
+        strides: strides along height and width. if not specified or 
+                None it is same patch_size
+        dilation_rate: This is the input stride, specifying how far two 
+            consecutive patch samples are in the input. For value other than 1,
+            strides must be 1. NOTE: `strides > 1` not supported in 
+            conjunction with `dilation_rate > 1`
+        padding: The type of padding algorithm to use. 
+            'same' or 'valid'.
         data_format: string, either `"channels_last"` or `"channels_first"`.
             The ordering of the dimensions in the inputs. `"channels_last"`
             corresponds to inputs with shape `(batch, height, width, channels)`
@@ -340,38 +331,18 @@ def extract_patches(
             `"channels_last"`.
 
     Returns:
-        Applied affine transform image or batch of images.
+        Extracted patches 3D (if not batched) or 4D (if batched)
 
     Examples:
 
-    >>> x = np.random.random((2, 64, 80, 3)) # batch of 2 RGB images
-    >>> transform = np.array(
-    ...     [
-    ...         [1.5, 0, -20, 0, 1.5, -16, 0, 0],  # zoom
-    ...         [1, 0, -20, 0, 1, -16, 0, 0],  # translation
-    ...     ]
-    ... )
-    >>> y = keras_core.ops.image.affine_transform(x, transform)
-    >>> y.shape
-    (2, 64, 80, 3)
-
-    >>> x = np.random.random((64, 80, 3)) # single RGB image
-    >>> transform = np.array([1.0, 0.5, -20, 0.5, 1.0, -16, 0, 0])  # shear
-    >>> y = keras_core.ops.image.affine_transform(x, transform)
-    >>> y.shape
-    (64, 80, 3)
-
-    >>> x = np.random.random((2, 3, 64, 80)) # batch of 2 RGB images
-    >>> transform = np.array(
-    ...     [
-    ...         [1.5, 0, -20, 0, 1.5, -16, 0, 0],  # zoom
-    ...         [1, 0, -20, 0, 1, -16, 0, 0],  # translation
-    ...     ]
-    ... )
-    >>> y = keras_core.ops.image.affine_transform(x, transform,
-    ...     data_format="channels_first")
-    >>> y.shape
-    (2, 3, 64, 80)
+    >>> image = np.random.random((1, 20, 20, 3)) # batch of 2 RGB images
+    >>> patches = keras_core.ops.image.extract_patches(image, (5, 5))
+    >>> patches.shape
+    (1, 4, 4, 75)
+    >>> image = np.random.random((20, 20, 3)) # batch of 2 RGB images
+    >>> patches = keras_core.ops.image.extract_patches(image, (3, 3), (1, 1))
+    >>> patches.shape
+    (4, 4, 75)
     """
     if any_symbolic_tensors((image,)):
         return ExtractPatches(
@@ -391,7 +362,7 @@ def _extract_patches(
     padding="valid",
     data_format="channels_last",
 ):
-    if type(size) == int:
+    if isinstance(size, int):
         patch_h = patch_w = size
     elif len(size) == 2:
         patch_h, patch_w = size[0], size[1]
@@ -411,7 +382,11 @@ def _extract_patches(
     kernel = backend.numpy.reshape(
         kernel, (patch_h, patch_w, channels_in, out_dim)
     )
-    return backend.nn.conv(
+    _unbatched = False
+    if len(image.shape) == 3:
+        _unbatched = True
+        image=backend.numpy.expand_dims(image, axis=0)
+    patches = backend.nn.conv(
         inputs=image,
         kernel=kernel,
         strides=strides,
@@ -419,3 +394,6 @@ def _extract_patches(
         data_format=data_format,
         dilation_rate=dilation_rate,
     )
+    if _unbatched:
+        patches = backend.numpy.squeeze(patches, axis=0)
+    return patches

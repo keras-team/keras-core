@@ -232,6 +232,9 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             ((3, 3), (2, 2), 1, "same", "channels_last"),
             ((5, 5), None, 1, "same", "channels_first"),
             ((3, 3), (2, 2), 1, "same", "channels_first"),
+            ((5, 5), (1, 1), 3, "same", "channels_first"),
+            ((5, 5), (2, 2), 3, "same", "channels_first"),
+            ((5, 5), (2, 2), 3, "same", "channels_last"),
         ]
     )
     def test_extract_patches(
@@ -242,6 +245,7 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             and backend.backend() == "tensorflow"
         ):
             pytest.skip("channels_first unsupported on CPU with TF")
+            
         if data_format == "channels_first":
             image = np.random.uniform(size=(1, 3, 20, 20))
         else:
