@@ -119,6 +119,10 @@ def compute_output_spec(fn, *args, **kwargs):
                     return out
 
                 return Partial(_fn)
+            if isinstance(x, dict):
+                return {k: convert_keras_tensor_to_jax(v, fill_value=fill_value) for k, v in x.items()}
+            if isinstance(x, list):
+                return [convert_keras_tensor_to_jax(xi, fill_value=fill_value) for xi in x]
             return x
 
         def wrapped_fn(*args, **kwargs):
