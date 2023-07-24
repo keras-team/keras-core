@@ -44,6 +44,8 @@ elif backend.backend() == "jax":
     from keras_core.backend.jax.layer import JaxLayer as BackendLayer
 elif backend.backend() == "torch":
     from keras_core.backend.torch.layer import TorchLayer as BackendLayer
+elif backend.backend() == "numpy":
+    from keras_core.backend.numpy.layer import NumpyLayer as BackendLayer
 else:
     raise RuntimeError(
         f"Backend '{backend.backend()}' must implement a layer mixin class."
@@ -248,9 +250,12 @@ class Layer(BackendLayer, Operation):
         self._losses = []
         self._loss_ids = set()
 
-        self._call_signature_parameters = [
+        call_signature_parameters = [
             p.name for p in inspect.signature(self.call).parameters.values()
         ]
+        self._call_has_training_arg = "training" in call_signature_parameters
+        self._call_has_mask_arg = "mask" in call_signature_parameters
+
         self._supports_masking = not utils.is_default(self.compute_mask)
         # Whether to automatically convert (+ auto-cast) inputs to `call()`.
         self._convert_input_args = True
@@ -293,11 +298,22 @@ class Layer(BackendLayer, Operation):
                 ),
             }
         )
+        if backend.backend() == "tensorflow":
+            # Remove attribute tracking for lists (TF-specific attribute)
+            _self_setattr_tracking = getattr(
+                self, "_self_setattr_tracking", True
+            )
+            self._self_setattr_tracking = False
+
         self._trainable_variables = trainable_variables
         self._non_trainable_variables = non_trainable_variables
         self._layers = layers
         self._metrics = metrics
         self._seed_generators = seed_generators
+
+        if backend.backend() == "tensorflow":
+            # Reset attribute tracking (TF-specific)
+            self._self_setattr_tracking = _self_setattr_tracking
 
     @property
     def input_spec(self):
@@ -680,7 +696,7 @@ class Layer(BackendLayer, Operation):
                 # Get signature default value
                 training = call_spec.arguments_dict.get("training", None)
         call_context.training = training
-        if self._call_has_training_arg() and training is not None:
+        if self._call_has_training_arg and training is not None:
             # Only populate arg if it has a concrete value
             kwargs["training"] = training
 
@@ -1178,12 +1194,6 @@ class Layer(BackendLayer, Operation):
                 self.input_spec, arg_0, layer_name=self.name
             )
 
-    def _call_has_training_arg(self):
-        return "training" in self._call_signature_parameters
-
-    def _call_has_mask_arg(self):
-        return "mask" in self._call_signature_parameters
-
     def _get_call_context(self):
         """Returns currently active `CallContext`."""
         layer_call_ctx = global_state.get_global_attribute("current_call_ctx")
@@ -1235,6 +1245,12 @@ class Layer(BackendLayer, Operation):
         for tensor, mask in zip(flat_outputs, flat_masks):
             if getattr(tensor, "_keras_mask", None) is None:
                 try:
+                    # Numpy backend does not support masking.
+                    if backend.backend() == "numpy":
+                        warnings.warn(
+                            "The NumPy backend does not support masking at this"
+                            "time. Masks will be ignored."
+                        )
                     tensor._keras_mask = mask
                 except AttributeError:
                     # It's a C type.
