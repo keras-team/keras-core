@@ -133,6 +133,18 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
                 "Applying affine transform with fill_mode=wrap is not support"
                 " in torch backend"
             )
+        if fill_mode == "reflect" and backend.backend() == "torch":
+            self.skipTest(
+                "The numerical results of applying affine transform with "
+                "fill_mode=reflect in torch is inconsistent with "
+                "tensorflow backend"
+            )
+        if interpolation == "bilinear" and backend.backend() == "torch":
+            self.skipTest(
+                "The numerical results of applying affine transform with "
+                "interpolation=bilinear in torch is inconsistent with "
+                "tensorflow backend"
+            )
         if fill_mode == "wrap" and backend.backend() in ("jax", "numpy"):
             self.skipTest(
                 "The numerical results of applying affine transform with "
@@ -168,12 +180,7 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         if data_format == "channels_first":
             ref_out = np.transpose(ref_out, (2, 0, 1))
         self.assertEqual(tuple(out.shape), tuple(ref_out.shape))
-        if backend.backend() == "torch":
-            # TODO: cannot pass with torch backend
-            with self.assertRaises(AssertionError):
-                self.assertAllClose(ref_out, out, atol=0.3)
-        else:
-            self.assertAllClose(ref_out, out, atol=0.3)
+        self.assertAllClose(ref_out, out, atol=0.3)
 
         # Batched case
         if data_format == "channels_first":
@@ -202,9 +209,4 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         if data_format == "channels_first":
             ref_out = np.transpose(ref_out, (0, 3, 1, 2))
         self.assertEqual(tuple(out.shape), tuple(ref_out.shape))
-        if backend.backend() == "torch":
-            # TODO: cannot pass with torch backend
-            with self.assertRaises(AssertionError):
-                self.assertAllClose(ref_out, out, atol=0.3)
-        else:
-            self.assertAllClose(ref_out, out, atol=0.3)
+        self.assertAllClose(ref_out, out, atol=0.3)

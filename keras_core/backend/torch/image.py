@@ -122,7 +122,7 @@ def _apply_grid_transform(
         grid,
         mode=interpolation,
         padding_mode=fill_mode,
-        align_corners=False,
+        align_corners=True,
     )
     # Fill with required color
     if fill_value is not None:
@@ -202,21 +202,53 @@ def affine_transform(
     if data_format == "channels_last":
         image = image.permute((0, 3, 1, 2))
 
-    # deal with transform
-    h, w = image.shape[2], image.shape[3]
-    theta = torch.zeros((image.shape[0], 2, 3)).to(transform)
-    theta[:, 0, 0] = transform[:, 0]
-    theta[:, 0, 1] = transform[:, 1] * h / w
-    theta[:, 0, 2] = (
-        transform[:, 2] * 2 / w + theta[:, 0, 0] + theta[:, 0, 1] - 1
+    batch_size = image.shape[0]
+
+    # get indices
+    shape = [*image.shape[-2:], image.shape[-3]]  # (H, W, C)
+    meshgrid = torch.meshgrid(
+        *[torch.arange(size) for size in shape], indexing="ij"
     )
-    theta[:, 1, 0] = transform[:, 3] * w / h
-    theta[:, 1, 1] = transform[:, 4]
-    theta[:, 1, 2] = (
-        transform[:, 5] * 2 / h + theta[:, 1, 0] + theta[:, 1, 1] - 1
+    indices = torch.concatenate(
+        [torch.unsqueeze(x, dim=-1) for x in meshgrid], dim=-1
+    )
+    indices = torch.tile(indices, (batch_size, 1, 1, 1, 1))
+    indices = indices.to(transform)
+
+    # swap the values
+    a0 = transform[:, 0].clone()
+    a2 = transform[:, 2].clone()
+    b1 = transform[:, 4].clone()
+    b2 = transform[:, 5].clone()
+    transform[:, 0] = b1
+    transform[:, 2] = b2
+    transform[:, 4] = a0
+    transform[:, 5] = a2
+
+    # deal with transform
+    transform = torch.nn.functional.pad(
+        transform, pad=[0, 1, 0, 0], mode="constant", value=1
+    )
+    transform = torch.reshape(transform, (batch_size, 3, 3))
+    offset = transform[:, 0:2, 2].clone()
+    offset = torch.nn.functional.pad(offset, pad=[0, 1, 0, 0])
+    transform[:, 0:2, 2] = 0
+
+    # transform the indices
+    coordinates = torch.einsum("Bhwij, Bjk -> Bhwik", indices, transform)
+    coordinates = torch.moveaxis(coordinates, source=-1, destination=1)
+    coordinates += torch.reshape(a=offset, shape=(*offset.shape, 1, 1, 1))
+    coordinates = coordinates[:, 0:2, ..., 0]
+    coordinates = coordinates.permute((0, 2, 3, 1))
+
+    # normalize coordinates
+    h, w = image.shape[-2], image.shape[-1]
+    coordinates[:, :, :, 1] = coordinates[:, :, :, 1] / (w - 1) * 2.0 - 1.0
+    coordinates[:, :, :, 0] = coordinates[:, :, :, 0] / (h - 1) * 2.0 - 1.0
+    grid = torch.stack(
+        [coordinates[:, :, :, 1], coordinates[:, :, :, 0]], dim=-1
     )
 
-    grid = tnn.affine_grid(theta, image.shape)
     affined = _apply_grid_transform(
         image, grid, interpolation, fill_mode, fill_value
     )
