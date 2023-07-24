@@ -3,6 +3,8 @@ from keras_core.api_export import keras_core_export
 from keras_core.backend import KerasTensor
 from keras_core.backend import any_symbolic_tensors
 from keras_core.ops.operation import Operation
+from keras_core.ops.operation_utils import compute_conv_output_shape
+
 
 
 class Resize(Operation):
@@ -274,69 +276,26 @@ class ExtractPatches(Operation):
 
     def compute_output_spec(self, image):
         image_shape = image.shape
-        strides = self.strides
-        if len(image_shape) not in (3, 4):
-            raise ValueError(
-                "Invalid image rank: expected rank 3 (single image) "
-                "or rank 4 (batch of images). Received input with shape: "
-                f"image.shape={image.shape}"
-            )
-        if len(image_shape) == 3:
-            batched = False
+        if not self.strides:
+            strides = (self.size[0], self.size[1])
+        if self.data_format == 'channels_last':
+            channels_in = image.shape[-1]
         else:
-            batched = True
-            batch_shape = image_shape[0:1]
-        if type(self.size) == int:
-            patch_h = patch_w = self.size
-        elif len(self.size) == 2:
-            patch_h, patch_w = self.size[0], self.size[1]
-        else:
-            raise TypeError(
-                f"Received invalid patch size expected"
-                "int or tuple of length 2, received {self.size}"
-            )
-
-        if not strides:
-            strides = (patch_h, patch_w)
-        if len(strides) != 2:
-            raise ValueError(
-                "Invalid stride: expected tu"
-                "ple of shape (s_h, s_w)  Received input: "
-                f"strides={strides}"
-            )
-        strides_h = strides[0]
-        strides_w = strides[1]
-        if self.data_format == "channels_last":
-            channels_in = image_shape[-1]
-            image_h = image_shape[-2]
-            image_w = image_shape[-3]
-        elif self.data_format == "channels_first":
-            channels_in = image_shape[-3]
-            image_h = image_shape[-2]
-            image_w = image_shape[-1]
-        out_dim = patch_h * patch_w * channels_in
-        if self.padding.lower() == "valid":
-            out_h = int(((image_h - patch_h) / strides_h) + 1)  # [(W−K+2P)/S]+1
-            out_w = int(((image_w - patch_w) / strides_w) + 1)
-        else:
-            pad_along_height = max(
-                (patch_h - 1) * strides[0] + patch_h - image_h, 0
-            )
-            pad_along_width = max(
-                (patch_w - 1) * strides[1] + patch_w - image_w, 0
-            )
-            out_h = int(
-                ((image_h - patch_h + 2 * pad_along_height) / strides_h) + 1
-            )  # [(W−K+2P)/S]+1
-            out_w = int(
-                ((image_w - patch_w + 2 * pad_along_width) / strides_w) + 1
-            )
-        if not batched:
-            return KerasTensor((out_h, out_w, out_dim), dtype=image.dtype)
-        else:
-            return KerasTensor(
-                batch_shape + (out_h, out_w, out_dim), dtype=image.dtype
-            )
+            channels_in = image.shape[-3]
+        if len(image.shape) == 3:
+            image_shape = (1,) + image_shape
+        filters = self.size[0] * self.size[1] * channels_in
+        kernel_size = (self.size[0], self.size[1])
+        out_shape = compute_conv_output_shape(image_shape,
+                        filters,
+                        kernel_size,
+                        strides=strides,
+                        padding=self.padding,
+                        data_format=self.data_format,
+                        dilation_rate=self.rates)
+        if len(image.shape) == 3:
+            out_shape = out_shape[1:]
+        return KerasTensor(shape=out_shape, dtype=image.dtype)
 
 
 @keras_core_export("keras_core.ops.image.extract_patches")
