@@ -312,14 +312,14 @@ def extract_patches(
 
     Args:
         image: Input image or batch of images. Must be 3D or 4D.
-        size: Patch size int or tuple (patch_height, patch_widht) 
-        strides: strides along height and width. if not specified or 
+        size: Patch size int or tuple (patch_height, patch_widht)
+        strides: strides along height and width. if not specified or
                 None it is same patch_size
-        dilation_rate: This is the input stride, specifying how far two 
+        dilation_rate: This is the input stride, specifying how far two
             consecutive patch samples are in the input. For value other than 1,
-            strides must be 1. NOTE: `strides > 1` not supported in 
+            strides must be 1. NOTE: `strides > 1` not supported in
             conjunction with `dilation_rate > 1`
-        padding: The type of padding algorithm to use. 
+        padding: The type of padding algorithm to use.
             'same' or 'valid'.
         data_format: string, either `"channels_last"` or `"channels_first"`.
             The ordering of the dimensions in the inputs. `"channels_last"`
@@ -385,7 +385,7 @@ def _extract_patches(
     _unbatched = False
     if len(image.shape) == 3:
         _unbatched = True
-        image=backend.numpy.expand_dims(image, axis=0)
+        image = backend.numpy.expand_dims(image, axis=0)
     patches = backend.nn.conv(
         inputs=image,
         kernel=kernel,

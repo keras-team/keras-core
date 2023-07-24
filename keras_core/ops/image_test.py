@@ -245,7 +245,7 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             and backend.backend() == "tensorflow"
         ):
             pytest.skip("channels_first unsupported on CPU with TF")
-            
+
         if data_format == "channels_first":
             image = np.random.uniform(size=(1, 3, 20, 20))
         else:
@@ -278,6 +278,6 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             padding=padding.upper(),
         )
         self.assertEqual(tuple(patches_out.shape), tuple(patches_ref.shape))
-        self.assertAllClose(patches_ref.numpy(),
-                            backend.convert_to_numpy(patches_out),
-                            atol=0.3)
+        self.assertAllClose(
+            patches_ref.numpy(), backend.convert_to_numpy(patches_out), atol=0.3
+        )
