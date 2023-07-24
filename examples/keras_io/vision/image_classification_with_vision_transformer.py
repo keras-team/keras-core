@@ -119,25 +119,13 @@ class Patches(layers.Layer):
         channels = input_shape[3]
         num_patches_h = height // self.patch_size
         num_patches_w = width // self.patch_size
+        patches = keras.ops.image.extract_patches(images, size=self.patch_size)
         patches = ops.reshape(
-            images,
-            (
-                batch_size,
-                num_patches_h,
-                self.patch_size,
-                num_patches_w,
-                self.patch_size,
-                channels,
-            ),
-        )
-        patches = ops.transpose(patches, (0, 1, 3, 2, 4, 5))
-        patches = ops.reshape(
-            patches,
-            (
+            patches, (
                 batch_size,
                 num_patches_h * num_patches_w,
                 self.patch_size * self.patch_size * channels,
-            ),
+            )
         )
         return patches
 
