@@ -19,6 +19,7 @@ from keras_core.api_export import keras_core_export
 from keras_core.backend import KerasTensor
 from keras_core.backend import any_symbolic_tensors
 from keras_core.ops.operation import Operation
+from keras_core.utils import traceback_utils
 
 
 class Scatter(Operation):
@@ -378,12 +379,27 @@ def convert_to_numpy(x):
 
 
 class Cond(Operation):
-    def __call__(self, pred, true_fn, false_fn):
-        if isinstance(true_fn(), KerasTensor) or isinstance(
-            false_fn(), KerasTensor
-        ):
-            return super().symbolic_call(pred, true_fn, false_fn)
-        return super().__call__(pred, true_fn, false_fn)
+    @traceback_utils.filter_traceback
+    def __call__(self, *args, **kwargs):
+        def call_fn(*args, **kwargs):
+            if not any_symbolic_tensors(args, kwargs):
+                try:
+                    return self.call(*args, **kwargs)
+                except (TypeError, ValueError):
+                    # fallback on symbolic case
+                    pass
+            return self.symbolic_call(*args, **kwargs)
+
+        if traceback_utils.is_traceback_filtering_enabled():
+            # Wrap self.call to provide helpful info in case of exception
+            call_fn = traceback_utils.inject_argument_info_in_traceback(
+                call_fn,
+                object_name=(f"{self.__class__.__name__}.call()"),
+            )
+            return call_fn(*args, **kwargs)
+
+        # Plain flow.
+        return call_fn(*args, **kwargs)
 
     def call(self, pred, true_fn, false_fn):
         return backend.core.cond(pred, true_fn, false_fn)
