@@ -25,9 +25,13 @@ implicitly considers the correlations between all samples.
 ## Setup
 """
 
+import sys
+sys.path.append('/home/anas/Data/Code/keras-core/keras_core')
+
 import keras_core as keras
 from keras_core import layers
 from keras_core import ops
+
 
 import matplotlib.pyplot as plt
 
@@ -97,22 +101,11 @@ class PatchExtract(layers.Layer):
         self.patch_size = patch_size
 
     def call(self, x):
-        B, H, W, C = (
-            ops.shape(x)[0],
-            ops.shape(x)[1],
-            ops.shape(x)[2],
-            ops.shape(x)[3],
-        )
-        H_ = H // self.patch_size
-        W_ = W // self.patch_size
-        x = ops.reshape(x, (B, H_, self.patch_size, W_, self.patch_size, C))  #
-        x = ops.transpose(x, axes=(0, 2, 4, 1, 3, 5))
-        x = ops.reshape(
-            x, (B, H_ * W_, self.patch_size, self.patch_size, C)
-        )  # [B, H_*W_, C, p_H, p_W]
+        B, C = ops.shape(x)[0], ops.shape(x)[-1]
+        x = ops.image.extract_patches(x, self.patch_size)
         x = ops.reshape(
             x, (B, -1, self.patch_size * self.patch_size * C)
-        )  # [B, H'*W', C*p_H*p_W]
+        ) 
         return x
 
 
@@ -268,7 +261,7 @@ def get_model(attention_type="external_attention"):
             attention_type,
         )
 
-    x = layers.GlobalAvgPool1D()(x)
+    x = layers.GlobalAveragePooling1D()(x)
     outputs = layers.Dense(num_classes, activation="softmax")(x)
     model = keras.Model(inputs=inputs, outputs=outputs)
     return model
