@@ -252,24 +252,24 @@ class ExtractPatches(Operation):
         self,
         size,
         strides=None,
-        rates=1,
+        dilation_rate=1,
         padding="valid",
         data_format="channels_last",
     ):
         super().__init__()
         self.size = size
         self.strides = strides
-        self.rates = rates
+        self.dilation_rate = dilation_rate
         self.padding = padding
         self.data_format = data_format
 
     def call(self, image):
         return _extract_patches(
-            image,
-            self.size,
-            self.strides,
-            self.rates,
-            self.padding,
+            image=image,
+            size=self.size,
+            strides=self.strides,
+            dilation_rate=self.dilation_rate,
+            padding=self.padding,
             data_format=self.data_format,
         )
 
@@ -292,7 +292,7 @@ class ExtractPatches(Operation):
             strides=strides,
             padding=self.padding,
             data_format=self.data_format,
-            dilation_rate=self.rates,
+            dilation_rate=self.dilation_rate,
         )
         if len(image.shape) == 3:
             out_shape = out_shape[1:]
@@ -346,7 +346,11 @@ def extract_patches(
     """
     if any_symbolic_tensors((image,)):
         return ExtractPatches(
-            size, strides, dilation_rate, padding, data_format=data_format
+            size=size,
+            strides=strides,
+            dilation_rate=dilation_rate,
+            padding=padding,
+            data_format=data_format,
         ).symbolic_call(image)
 
     return _extract_patches(
@@ -368,8 +372,8 @@ def _extract_patches(
         patch_h, patch_w = size[0], size[1]
     else:
         raise TypeError(
-            "Received invalid patch size expected "
-            f"int or tuple of length 2, received {size}"
+            "invalid size argument "
+            f"int or tuple of length 2. Received {size}"
         )
     if data_format == "channels_last":
         channels_in = image.shape[-1]
