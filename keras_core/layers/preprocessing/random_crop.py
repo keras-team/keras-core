@@ -59,7 +59,7 @@ class RandomCrop(TFDataLayer):
         self.height = height
         self.width = width
         self.seed = seed or backend.random.make_default_seed()
-        self.seed_generator = SeedGenerator(seed)
+        self.generator = SeedGenerator(seed)
         self.data_format = backend.standardize_data_format(data_format)
 
         if self.data_format == "channels_first":
@@ -93,13 +93,14 @@ class RandomCrop(TFDataLayer):
                 input_shape[self.width_axis],
             )
 
+            seed_generator = self._get_seed_generator(self.backend._backend)
             h_start = self.backend.cast(
                 ops.random.uniform(
                     (),
                     0,
                     maxval=float(input_height - self.height + 1),
                     dtype=inputs.dtype,
-                    seed=self.seed_generator,
+                    seed=seed_generator,
                 ),
                 "int32",
             )
@@ -109,7 +110,7 @@ class RandomCrop(TFDataLayer):
                     0,
                     maxval=float(input_width - self.width + 1),
                     dtype=inputs.dtype,
-                    seed=self.seed_generator,
+                    seed=seed_generator,
                 ),
                 "int32",
             )
