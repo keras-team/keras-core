@@ -237,7 +237,7 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
     def test_extract_patches(
         self, size, strides, dilation_rate, padding, data_format
     ):
-        if data_format =='channels_first':
+        if data_format == "channels_first":
             image = np.random.uniform(size=(1, 3, 20, 20))
         else:
             image = np.random.uniform(size=(1, 20, 20, 3))
@@ -246,40 +246,43 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             and backend.backend() == "tensorflow"
         ):
             pytest.skip("channels_first unsupported on CPU with TF")
-        
-        patch_h, patch_w = size[0], size[1]  
+
+        patch_h, patch_w = size[0], size[1]
         if strides is None:
             strides_h, strides_w = patch_h, patch_w
         else:
             strides_h, strides_w = strides[0], strides[1]
-        if backend.backend() != 'torch':
+        if backend.backend() != "torch":
             patches_out = kimage.extract_patches(
-                    image,
-                    size,
-                    strides=strides,
-                    dilation_rate=dilation_rate,
-                    padding=padding,
-                    data_format=data_format,
+                image,
+                size,
+                strides=strides,
+                dilation_rate=dilation_rate,
+                padding=padding,
+                data_format=data_format,
             )
         else:
             patches_out = kimage.extract_patches(
-                    backend.convert_to_tensor(image, dtype='float32'),
-                    size,
-                    strides=strides,
-                    dilation_rate=dilation_rate,
-                    padding=padding,
-                    data_format=data_format,
+                backend.convert_to_tensor(image, dtype="float32"),
+                size,
+                strides=strides,
+                dilation_rate=dilation_rate,
+                padding=padding,
+                data_format=data_format,
             )
         if data_format == "channels_first":
-            patches_out = backend.numpy.transpose(patches_out, axes=[0, 2, 3, 1])
+            patches_out = backend.numpy.transpose(
+                patches_out, axes=[0, 2, 3, 1]
+            )
         if data_format == "channels_first":
             image = np.transpose(image, [0, 2, 3, 1])
-        patches_ref = tf.image.extract_patches(image, sizes=(1, patch_h, patch_w, 1), 
-                                               strides=(1, strides_h, strides_w, 1), 
-                                               rates=(1, dilation_rate, dilation_rate, 1), 
-                                               padding=padding.upper())
-        
-        
+        patches_ref = tf.image.extract_patches(
+            image,
+            sizes=(1, patch_h, patch_w, 1),
+            strides=(1, strides_h, strides_w, 1),
+            rates=(1, dilation_rate, dilation_rate, 1),
+            padding=padding.upper(),
+        )
 
         self.assertEqual(tuple(patches_out.shape), tuple(patches_ref.shape))
         self.assertAllClose(patches_ref.numpy(), patches_out.numpy(), atol=0.3)

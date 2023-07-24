@@ -6,7 +6,6 @@ from keras_core.ops.operation import Operation
 from keras_core.ops.operation_utils import compute_conv_output_shape
 
 
-
 class Resize(Operation):
     def __init__(
         self,
@@ -278,7 +277,7 @@ class ExtractPatches(Operation):
         image_shape = image.shape
         if not self.strides:
             strides = (self.size[0], self.size[1])
-        if self.data_format == 'channels_last':
+        if self.data_format == "channels_last":
             channels_in = image.shape[-1]
         else:
             channels_in = image.shape[-3]
@@ -286,13 +285,15 @@ class ExtractPatches(Operation):
             image_shape = (1,) + image_shape
         filters = self.size[0] * self.size[1] * channels_in
         kernel_size = (self.size[0], self.size[1])
-        out_shape = compute_conv_output_shape(image_shape,
-                        filters,
-                        kernel_size,
-                        strides=strides,
-                        padding=self.padding,
-                        data_format=self.data_format,
-                        dilation_rate=self.rates)
+        out_shape = compute_conv_output_shape(
+            image_shape,
+            filters,
+            kernel_size,
+            strides=strides,
+            padding=self.padding,
+            data_format=self.data_format,
+            dilation_rate=self.rates,
+        )
         if len(image.shape) == 3:
             out_shape = out_shape[1:]
         return KerasTensor(shape=out_shape, dtype=image.dtype)
