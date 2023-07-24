@@ -39,5 +39,5 @@ elif backend() == "torch":
     from keras_core.backend.torch import *  # noqa: F403
 raise ValueError(
     f"Backend ({backend()}) is not supported, supported backends are:"
-    " 'tensorflow', 'torch', and 'jax'."
+    " 'tensorflow', 'torch', 'jax', and 'numpy'."
 )
