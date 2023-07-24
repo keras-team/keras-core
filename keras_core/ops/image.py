@@ -397,8 +397,8 @@ def _extract_patches(
         patch_h, patch_w = size[0], size[1]
     else:
         raise TypeError(
-            f"Received invalid patch size expected "
-            "int or tuple of length 2, received {size}"
+            "Received invalid patch size expected "
+            f"int or tuple of length 2, received {size}"
         )
     if data_format == "channels_last":
         channels_in = image.shape[-1]
