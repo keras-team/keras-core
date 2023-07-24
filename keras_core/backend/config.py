@@ -252,7 +252,7 @@ def backend():
 
     Returns:
         String, the name of the backend Keras is currently using. One of
-            `"tensorflow"`, `"torch"`, or `"jax"`.
+            `"tensorflow"`, `"torch"`, `"jax"`, or `"numpy"`.
 
     Example:
     >>> keras_core.config.backend()
