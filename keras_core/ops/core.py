@@ -224,10 +224,10 @@ class WhileLoop(Operation):
 
 @keras_core_export("keras_core.ops.while_loop")
 def while_loop(
-        cond,
-        body,
-        loop_vars,
-        maximum_iterations=None,
+    cond,
+    body,
+    loop_vars,
+    maximum_iterations=None,
 ):
     """While loop implemetation.
 
@@ -378,15 +378,26 @@ def convert_to_numpy(x):
 
 
 class Cond(Operation):
+    def __call__(self, pred, true_fn, false_fn):
+        if isinstance(true_fn(), KerasTensor) or isinstance(
+            false_fn(), KerasTensor
+        ):
+            return super().symbolic_call(pred, true_fn, false_fn)
+        return super().__call__(pred, true_fn, false_fn)
+
     def call(self, pred, true_fn, false_fn):
         return backend.core.cond(pred, true_fn, false_fn)
 
     def compute_output_spec(self, pred, true_fn, false_fn):
-        true_fn_spec = backend.compute_output_spec(lambda fn: fn(), true_fn)
-        false_fn_spec = backend.compute_output_spec(lambda fn: fn(), false_fn)
+        def call_fn(fn):
+            return fn()
+
+        true_fn_spec = backend.compute_output_spec(call_fn, true_fn)
+        false_fn_spec = backend.compute_output_spec(call_fn, false_fn)
         if not self._check_output_spec(true_fn_spec, false_fn_spec):
             raise ValueError(
-                "`true_fn` and `false_fn` should return outputs of the same kind (structure, dtype and shape)."
+                "`true_fn` and `false_fn` should return outputs "
+                "of the same kind (struct, dtype and shape). "
                 f"Got {true_fn_spec} and {false_fn_spec} instead."
             )
         return true_fn_spec
@@ -397,14 +408,20 @@ class Cond(Operation):
                 return False
             if true_fn_spec.keys() != false_fn_spec.keys():
                 return False
-            if any((not self._check_output_spec(true_fn_spec[k], false_fn_spec[k])) for k in true_fn_spec.keys()):
+            if any(
+                (not self._check_output_spec(true_fn_spec[k], false_fn_spec[k]))
+                for k in true_fn_spec.keys()
+            ):
                 return False
         elif isinstance(true_fn_spec, list):
             if not isinstance(false_fn_spec, list):
                 return False
             if len(true_fn_spec) != len(false_fn_spec):
                 return False
-            if any((not self._check_output_spec(ti, fi)) for ti, fi in zip(true_fn_spec, false_fn_spec)):
+            if any(
+                (not self._check_output_spec(ti, fi))
+                for ti, fi in zip(true_fn_spec, false_fn_spec)
+            ):
                 return False
         else:
             if true_fn_spec.dtype != false_fn_spec.dtype:

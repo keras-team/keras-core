@@ -1,9 +1,10 @@
+import types
+
 import jax
 import jax.numpy as jnp
-from jax.tree_util import Partial
 import numpy as np
 import tree
-import types
+from jax.tree_util import Partial
 
 from keras_core.backend.common import KerasVariable
 from keras_core.backend.common import standardize_dtype
@@ -113,16 +114,25 @@ def compute_output_spec(fn, *args, **kwargs):
                 jax_tensor = jax.ShapeDtypeStruct(shape, dtype=x.dtype)
                 return jax_tensor
             if isinstance(x, types.FunctionType):
+
                 def _fn(*args, **kwargs):
                     out = x(*args, **kwargs)
-                    out = convert_keras_tensor_to_jax(out, fill_value=fill_value)
+                    out = convert_keras_tensor_to_jax(
+                        out, fill_value=fill_value
+                    )
                     return out
 
                 return Partial(_fn)
             if isinstance(x, dict):
-                return {k: convert_keras_tensor_to_jax(v, fill_value=fill_value) for k, v in x.items()}
+                return {
+                    k: convert_keras_tensor_to_jax(v, fill_value=fill_value)
+                    for k, v in x.items()
+                }
             if isinstance(x, list):
-                return [convert_keras_tensor_to_jax(xi, fill_value=fill_value) for xi in x]
+                return [
+                    convert_keras_tensor_to_jax(xi, fill_value=fill_value)
+                    for xi in x
+                ]
             return x
 
         def wrapped_fn(*args, **kwargs):
@@ -240,10 +250,10 @@ def slice_update(inputs, start_indices, updates):
 
 
 def while_loop(
-        cond,
-        body,
-        loop_vars,
-        maximum_iterations=None,
+    cond,
+    body,
+    loop_vars,
+    maximum_iterations=None,
 ):
     loop_vars = tuple(loop_vars)
     if maximum_iterations is not None:

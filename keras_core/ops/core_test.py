@@ -257,10 +257,10 @@ class CoreOpsCorrectnessTest(testing.TestCase):
         for val in [True, False]:
             out = ops.cond(
                 val,
-                lambda: KerasTensor((None, 3)),
-                lambda: KerasTensor((None, 3)),
+                lambda: KerasTensor((16, 3)),
+                lambda: KerasTensor((16, 3)),
             )
-            self.assertEqual((None, 3), out.shape)
+            self.assertEqual((16, 3), out.shape)
 
         out = ops.cond(
             KerasTensor((), dtype="bool"),
