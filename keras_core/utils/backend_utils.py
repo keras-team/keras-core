@@ -5,7 +5,7 @@ from keras_core import backend as backend_module
 
 def in_tf_graph():
     if "tensorflow" in sys.modules:
-        import tensorflow as tf
+        from keras_core.utils.module_utils import tensorflow as tf
 
         return not tf.executing_eagerly()
     return False
@@ -49,3 +49,11 @@ class DynamicBackend:
             from keras_core.backend import torch as torch_backend
 
             return getattr(torch_backend, name)
+        if self._backend == "numpy":
+            # TODO (ariG23498):
+            # The import `from keras_core.backend import numpy as numpy_backend`
+            # is not working. This is a temporary fix.
+            # The import is redirected to `keras_core.backend.numpy.numpy.py`
+            from keras_core import backend as numpy_backend
+
+            return getattr(numpy_backend, name)

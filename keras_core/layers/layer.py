@@ -19,7 +19,7 @@ import collections
 import inspect
 import warnings
 
-from tensorflow import nest
+import tree
 
 from keras_core import backend
 from keras_core import initializers
@@ -44,6 +44,8 @@ elif backend.backend() == "jax":
     from keras_core.backend.jax.layer import JaxLayer as BackendLayer
 elif backend.backend() == "torch":
     from keras_core.backend.torch.layer import TorchLayer as BackendLayer
+elif backend.backend() == "numpy":
+    from keras_core.backend.numpy.layer import NumpyLayer as BackendLayer
 else:
     raise RuntimeError(
         f"Backend '{backend.backend()}' must implement a layer mixin class."
@@ -84,8 +86,8 @@ class Layer(BackendLayer, Operation):
 
     Attributes:
         name: The name of the layer (string).
-        dtype: The dtype of the layer's weights.
-        variable_dtype: Dtype of the layer's variables.
+        dtype: Dtype of the layer's weights. Alias of `layer.variable_dtype`.
+        variable_dtype: Dtype of the layer's weights.
         compute_dtype: The dtype of the layer's computations.
             Layers automatically cast inputs to this dtype, which causes
             the computations and output to also be in this dtype.
@@ -248,9 +250,12 @@ class Layer(BackendLayer, Operation):
         self._losses = []
         self._loss_ids = set()
 
-        self._call_signature_parameters = [
+        call_signature_parameters = [
             p.name for p in inspect.signature(self.call).parameters.values()
         ]
+        self._call_has_training_arg = "training" in call_signature_parameters
+        self._call_has_mask_arg = "mask" in call_signature_parameters
+
         self._supports_masking = not utils.is_default(self.compute_mask)
         # Whether to automatically convert (+ auto-cast) inputs to `call()`.
         self._convert_input_args = True
@@ -293,11 +298,22 @@ class Layer(BackendLayer, Operation):
                 ),
             }
         )
+        if backend.backend() == "tensorflow":
+            # Remove attribute tracking for lists (TF-specific attribute)
+            _self_setattr_tracking = getattr(
+                self, "_self_setattr_tracking", True
+            )
+            self._self_setattr_tracking = False
+
         self._trainable_variables = trainable_variables
         self._non_trainable_variables = non_trainable_variables
         self._layers = layers
         self._metrics = metrics
         self._seed_generators = seed_generators
+
+        if backend.backend() == "tensorflow":
+            # Reset attribute tracking (TF-specific)
+            self._self_setattr_tracking = _self_setattr_tracking
 
     @property
     def input_spec(self):
@@ -374,21 +390,19 @@ class Layer(BackendLayer, Operation):
         constraint=None,
         name=None,
     ):
-        # TODO: handle layout
-        self._check_super_called()
-        initializer = initializers.get(initializer)
-        variable = backend.Variable(
-            initializer=initializer,
+        """Add a weight variable to the layer.
+
+        Alias of `add_weight()`.
+        """
+        return self.add_weight(
             shape=shape,
-            dtype=dtype or self.variable_dtype,
+            initializer=initializer,
+            dtype=dtype,
             trainable=trainable,
+            regularizer=regularizer,
+            constraint=constraint,
             name=name,
         )
-        # Will be added to layer.losses
-        variable.regularizer = regularizer
-        variable.constraint = constraint
-        self._track_variable(variable)
-        return variable
 
     def add_weight(
         self,
@@ -401,8 +415,6 @@ class Layer(BackendLayer, Operation):
         name=None,
     ):
         """Add a weight variable to the layer.
-
-        Alias of `add_variable()`.
 
         Args:
             shape: Shape tuple for the variable.
@@ -422,15 +434,21 @@ class Layer(BackendLayer, Operation):
             name: String name of the variable. Useful
                 for debugging purposes.
         """
-        return self.add_variable(
-            shape=shape,
+        # TODO: handle layout
+        self._check_super_called()
+        initializer = initializers.get(initializer)
+        variable = backend.Variable(
             initializer=initializer,
-            dtype=dtype,
+            shape=shape,
+            dtype=dtype or self.variable_dtype,
             trainable=trainable,
-            regularizer=regularizer,
-            constraint=constraint,
             name=name,
         )
+        # Will be added to layer.losses
+        variable.regularizer = regularizer
+        variable.constraint = constraint
+        self._track_variable(variable)
+        return variable
 
     @property
     def trainable(self):
@@ -459,9 +477,13 @@ class Layer(BackendLayer, Operation):
 
     @property
     def variables(self):
-        # Return only weights/rng state/metric variables
-        # of all Layers, recursively.
-        # Also deduplicate them.
+        """List of all layer state, including metric variables and random seeds.
+
+        This extends `layer.weights` to include all state used by the layer
+        including state for metrics and `SeedGenerator`s.
+        """
+        # Return all `Variables` associate with the layer including metrics
+        # and random seeds. Also deduplicate them.
         variables = []
         seen_ids = set()
         for v in self._trainable_variables + self._non_trainable_variables:
@@ -481,20 +503,32 @@ class Layer(BackendLayer, Operation):
 
     @property
     def trainable_variables(self):
+        """List of all trainable layer state.
+
+        This is equivalent to `layer.trainable_weights`.
+        """
         if not self.trainable:
             return []
         return [v for v in self.variables if v.trainable]
 
     @property
     def non_trainable_variables(self):
+        """List of all non-trainable layer state.
+
+        This extends `layer.non_trainable_weights` to include all state used by
+        the layer including state for metrics and `SeedGenerator`s.
+        """
         if not self.trainable:
             return self.variables
         return [v for v in self.variables if not v.trainable]
 
     @property
     def weights(self):
-        """List of weight variables of the layer."""
-        # Return only "own weights" of all Layers, recursively.
+        """List of all weight variables of the layer.
+
+        Unlike, `layer.variables` this excludes metric state and random seeds.
+        """
+        # Return only `Variables` directly owned by layers and sub-layers.
         # Also deduplicate them.
         weights = []
         seen_ids = set()
@@ -511,10 +545,9 @@ class Layer(BackendLayer, Operation):
 
     @property
     def trainable_weights(self):
-        """List of trainable weight variables of the layer.
+        """List of all trainable weight variables of the layer.
 
-        These are the weights that get updated by the optimizer
-        during training.
+        These are the weights that get updated by the optimizer during training.
         """
         if not self.trainable:
             return []
@@ -522,10 +555,11 @@ class Layer(BackendLayer, Operation):
 
     @property
     def non_trainable_weights(self):
-        """List of non-trainable weight variables of the layer.
+        """List of all non-trainable weight variables of the layer.
 
-        Non-trainable weights may include batch normalization statistics,
-        metric variables, or RNG seed variables.
+        These are the weights that should not be updated by the optimizer during
+        training. Unlike, `layer.non_trainable_variables` this excludes metric
+        state and random seeds.
         """
         if not self.trainable:
             return self.weights
@@ -555,7 +589,7 @@ class Layer(BackendLayer, Operation):
 
     @property
     def dtype(self):
-        """The dtype of the state (weights) of the layer."""
+        """Alias of `layer.variable_dtype`."""
         return self.variable_dtype
 
     @property
@@ -612,13 +646,13 @@ class Layer(BackendLayer, Operation):
             return x
 
         if self._convert_input_args:
-            args = nest.map_structure(maybe_convert, args)
-            kwargs = nest.map_structure(maybe_convert, kwargs)
+            args = tree.map_structure(maybe_convert, args)
+            kwargs = tree.map_structure(maybe_convert, kwargs)
 
         ##########################################################
         # 2. Enforce that only tensors can be passed positionally.
         if not self._allow_non_tensor_positional_args:
-            for arg in nest.flatten(args):
+            for arg in tree.flatten(args):
                 if not isinstance(arg, KerasTensor) and not backend.is_tensor(
                     arg
                 ):
@@ -662,7 +696,7 @@ class Layer(BackendLayer, Operation):
                 # Get signature default value
                 training = call_spec.arguments_dict.get("training", None)
         call_context.training = training
-        if self._call_has_training_arg() and training is not None:
+        if self._call_has_training_arg and training is not None:
             # Only populate arg if it has a concrete value
             kwargs["training"] = training
 
@@ -675,7 +709,7 @@ class Layer(BackendLayer, Operation):
             ):
                 arg_name = list(call_spec.tensor_arguments_dict.keys())[0]
                 only_tensor_arg = call_spec.tensor_arguments_dict[arg_name]
-                mask = nest.map_structure(
+                mask = tree.map_structure(
                     lambda x: getattr(x, "_keras_mask", None),
                     only_tensor_arg,
                 )
@@ -685,7 +719,7 @@ class Layer(BackendLayer, Operation):
                 expected_mask_arg_name = f"{k}_mask"
                 if expected_mask_arg_name in call_spec.argument_names:
                     if call_spec.arguments_dict[expected_mask_arg_name] is None:
-                        mask = nest.map_structure(
+                        mask = tree.map_structure(
                             lambda x: getattr(x, "_keras_mask", None), v
                         )
                         kwargs[expected_mask_arg_name] = mask
@@ -705,7 +739,7 @@ class Layer(BackendLayer, Operation):
                     self.built = True
                 # Record activity regularizer loss.
                 if self.activity_regularizer is not None:
-                    for output in nest.flatten(outputs):
+                    for output in tree.flatten(outputs):
                         if backend.is_tensor(output):
                             self.add_loss(self.activity_regularizer(output))
 
@@ -898,7 +932,7 @@ class Layer(BackendLayer, Operation):
         ```
         """
         # Eager only.
-        losses = nest.flatten(loss)
+        losses = tree.flatten(loss)
         for x in losses:
             if not backend.is_tensor(x):
                 raise ValueError(
@@ -1064,7 +1098,15 @@ class Layer(BackendLayer, Operation):
                             f"Layer '{self.name}' looks like it has "
                             "unbuilt state, but Keras is not able to "
                             "trace the layer `call()` in order to "
-                            "build it automatically. You must implement "
+                            "build it automatically. Possible causes:\n"
+                            "1. The `call()` method of your layer may be "
+                            "crashing. Try to `__call__()` the layer "
+                            "eagerly on some test input "
+                            "first to see if it works. "
+                            "E.g. `x = np.random.random((3, 4)); "
+                            "y = layer(x)`\n"
+                            "2. If the `call()` method is correct, "
+                            "then you may need to implement "
                             "the `def build(self, input_shape)` method on your "
                             "layer. It should create all variables used by the "
                             "layer (e.g. by calling `layer.build()` on all its "
@@ -1152,12 +1194,6 @@ class Layer(BackendLayer, Operation):
                 self.input_spec, arg_0, layer_name=self.name
             )
 
-    def _call_has_training_arg(self):
-        return "training" in self._call_signature_parameters
-
-    def _call_has_mask_arg(self):
-        return "mask" in self._call_signature_parameters
-
     def _get_call_context(self):
         """Returns currently active `CallContext`."""
         layer_call_ctx = global_state.get_global_attribute("current_call_ctx")
@@ -1193,7 +1229,7 @@ class Layer(BackendLayer, Operation):
         return layers
 
     def _set_mask_metadata(self, inputs, outputs, previous_mask):
-        flat_outputs = nest.flatten(outputs)
+        flat_outputs = tree.flatten(outputs)
 
         mask_already_computed = all(
             getattr(x, "_keras_mask", None) is not None for x in flat_outputs
@@ -1205,10 +1241,16 @@ class Layer(BackendLayer, Operation):
         if output_masks is None:
             return
 
-        flat_masks = nest.flatten(output_masks)
+        flat_masks = tree.flatten(output_masks)
         for tensor, mask in zip(flat_outputs, flat_masks):
             if getattr(tensor, "_keras_mask", None) is None:
                 try:
+                    # Numpy backend does not support masking.
+                    if backend.backend() == "numpy":
+                        warnings.warn(
+                            "The NumPy backend does not support masking at this"
+                            "time. Masks will be ignored."
+                        )
                     tensor._keras_mask = mask
                 except AttributeError:
                     # It's a C type.
@@ -1259,8 +1301,8 @@ class CallSpec:
                 tensor_args.append(value)
                 tensor_arg_names.append(name)
                 tensor_arg_dict[name] = value
-            elif nest.is_nested(value):
-                flat_values = nest.flatten(value)
+            elif tree.is_nested(value):
+                flat_values = tree.flatten(value)
                 if all(is_backend_tensor_or_symbolic(x) for x in flat_values):
                     tensor_args.append(value)
                     tensor_arg_names.append(name)
@@ -1316,7 +1358,7 @@ def get_shapes_dict(call_spec):
             # Do not include catch-alls in shapes dict
             continue
         if k in call_spec.nested_tensor_argument_names:
-            shapes_dict[f"{k}_shape"] = nest.map_structure(
+            shapes_dict[f"{k}_shape"] = tree.map_structure(
                 lambda x: backend.standardize_shape(x.shape), v
             )
         else:

@@ -3,7 +3,12 @@ from keras_core.api_export import keras_core_export
 from keras_core.backend.common import global_state
 
 
-@keras_core_export("keras_core.mixed_precision.DTypePolicy")
+@keras_core_export(
+    [
+        "keras_core.mixed_precision.DTypePolicy",
+        "keras_core.mixed_precision.Policy",
+    ]
+)
 class DTypePolicy:
     """A dtype policy for a Keras layer.
 
@@ -162,7 +167,12 @@ def set_dtype_policy(policy):
     global_state.set_global_setting("dtype_policy", policy)
 
 
-@keras_core_export("keras_core.mixed_precision.dtype_policy")
+@keras_core_export(
+    [
+        "keras_core.mixed_precision.dtype_policy",
+        "keras_core.mixed_precision.global_policy",
+    ]
+)
 def dtype_policy():
     """Returns the current default dtype policy object."""
     policy = global_state.get_global_setting("dtype_policy", None)

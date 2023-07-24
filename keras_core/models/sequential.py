@@ -1,6 +1,6 @@
 import copy
 
-from tensorflow import nest
+import tree
 
 from keras_core.api_export import keras_core_export
 from keras_core.layers.core.input_layer import InputLayer
@@ -183,9 +183,9 @@ class Sequential(Model):
             # end of each iteration `inputs` is set to `outputs` to prepare for
             # the next layer.
             kwargs = {}
-            if layer._call_has_mask_arg():
+            if layer._call_has_mask_arg:
                 kwargs["mask"] = mask
-            if layer._call_has_training_arg() and training is not None:
+            if layer._call_has_training_arg and training is not None:
                 kwargs["training"] = training
             outputs = layer(inputs, **kwargs)
             inputs = outputs
@@ -193,7 +193,7 @@ class Sequential(Model):
             def _get_mask_from_keras_tensor(kt):
                 return getattr(kt, "_keras_mask", None)
 
-            mask = nest.map_structure(_get_mask_from_keras_tensor, outputs)
+            mask = tree.map_structure(_get_mask_from_keras_tensor, outputs)
         return outputs
 
     @property

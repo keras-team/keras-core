@@ -1,14 +1,13 @@
-from tensorflow import nest
+import tree
 
 from keras_core.backend import KerasTensor
 
 
 class SymbolicArguments:
     def __init__(self, *args, **kwargs):
-        # TODO: validation
-        self.args = nest.map_structure(lambda x: x, args)
-        self.kwargs = nest.map_structure(lambda x: x, kwargs)
-        self._flat_arguments = nest.flatten((self.args, self.kwargs))
+        self.args = tree.map_structure(lambda x: x, args)
+        self.kwargs = tree.map_structure(lambda x: x, kwargs)
+        self._flat_arguments = tree.flatten((self.args, self.kwargs))
 
         # Used to avoid expensive `nest` operations in the most common case.
         if (
@@ -26,8 +25,8 @@ class SymbolicArguments:
                 self.keras_tensors.append(arg)
 
     def convert(self, conversion_fn):
-        args = nest.map_structure(conversion_fn, self.args)
-        kwargs = nest.map_structure(conversion_fn, self.kwargs)
+        args = tree.map_structure(conversion_fn, self.args)
+        kwargs = tree.map_structure(conversion_fn, self.kwargs)
         return args, kwargs
 
     def fill_in(self, tensor_dict):

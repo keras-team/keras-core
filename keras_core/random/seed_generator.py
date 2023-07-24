@@ -2,7 +2,7 @@ import random as python_random
 
 import numpy as np
 
-import keras_core.backend
+from keras_core import backend
 from keras_core.api_export import keras_core_export
 
 
@@ -33,10 +33,12 @@ class SeedGenerator:
         if custom_backend is not None:
             self.backend = custom_backend
         else:
-            self.backend = keras_core.backend
+            self.backend = backend
 
+        self._initial_seed = seed
         if seed is None:
             seed = make_default_seed()
+
         if not isinstance(seed, int):
             raise ValueError(
                 "Argument `seed` must be an integer. " f"Received: seed={seed}"

@@ -7,6 +7,7 @@ from keras_core.backend.common.backend_utils import (
     compute_conv_transpose_padding,
 )
 from keras_core.backend.config import epsilon
+from keras_core.backend.torch.core import cast
 from keras_core.backend.torch.core import convert_to_tensor
 from keras_core.backend.torch.core import get_device
 from keras_core.backend.torch.numpy import expand_dims
@@ -467,15 +468,13 @@ def conv_transpose(
     if isinstance(dilation_rate, int):
         dilation_rate = [dilation_rate] * len(kernel_spatial_shape)
     for i, value in enumerate(padding_values):
-        total_padding = value[0] + value[1]
+        both_side_padding = value[0]
+        longer_side_padding = value[1] - value[0]
         padding_arg.append(
             dilation_rate[i] * (kernel_spatial_shape[i] - 1)
-            - total_padding // 2
+            - both_side_padding,
         )
-        if total_padding % 2 == 0:
-            output_padding_arg.append(0)
-        else:
-            output_padding_arg.append(1)
+        output_padding_arg.append(longer_side_padding)
 
     if num_spatial_dims == 1:
         outputs = tnn.conv_transpose1d(
@@ -536,6 +535,15 @@ def one_hot(x, num_classes, axis=-1, dtype="float32"):
             new_axes_order[ax] -= 1
         output = output.permute(new_axes_order)
     return output
+
+
+def multi_hot(x, num_classes, axis=-1, dtype="float32"):
+    reduction_axis = 1 if len(x.shape) > 1 else 0
+    outputs = torch.amax(
+        one_hot(cast(x, "int32"), num_classes, axis=axis, dtype=dtype),
+        dim=reduction_axis,
+    )
+    return outputs
 
 
 def categorical_crossentropy(target, output, from_logits=False, axis=-1):

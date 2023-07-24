@@ -163,7 +163,6 @@ data_sharding = NamedSharding(
         "batch",
     ),
 )
-
 # all variables will be replicated on all devices
 var_mesh = Mesh(devices, axis_names=("_"))
 # in NamedSharding, axes that are not mentioned are replicated (all axes here)
@@ -275,7 +274,7 @@ def train_step(train_state, x, y):
     )
 
     trainable_variables, optimizer_variables = optimizer.stateless_apply(
-        grads, train_state.trainable_variables, train_state.optimizer_variables
+        train_state.optimizer_variables, grads, train_state.trainable_variables
     )
 
     return loss_value, TrainingState(

@@ -44,7 +44,7 @@ class Trainer:
             )
         else:
             self._compile_loss = None
-        if metrics is not None:
+        if metrics is not None or weighted_metrics is not None:
             self._compile_metrics = CompileMetrics(
                 metrics, weighted_metrics, output_names=output_names
             )
@@ -771,7 +771,7 @@ def resolve_auto_jit_compile(model):
 def model_supports_jit(model):
     if platform.system() == "Darwin" and "arm" in platform.processor().lower():
         if backend.backend() == "tensorflow":
-            import tensorflow as tf
+            from keras_core.utils.module_utils import tensorflow as tf
 
             if tf.config.list_physical_devices("GPU"):
                 return False
