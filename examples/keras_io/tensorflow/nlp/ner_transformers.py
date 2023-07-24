@@ -82,8 +82,8 @@ class TokenAndPositionEmbedding(layers.Layer):
         self.pos_emb = keras.layers.Embedding(input_dim=maxlen, output_dim=embed_dim)
 
     def call(self, inputs):
-        maxlen = tf.shape(inputs)[-1]
-        positions = tf.range(start=0, limit=maxlen, delta=1)
+        maxlen = keras.ops.backend.shape(inputs)[-1]
+        positions = keras.ops.arange(start=0, stop=maxlen, step=1)
         position_embeddings = self.pos_emb(positions)
         token_embeddings = self.token_emb(inputs)
         return token_embeddings + position_embeddings
@@ -258,9 +258,9 @@ class CustomNonPaddingTokenLoss(keras.losses.Loss):
             from_logits=True, reduction=keras.losses.Reduction.NONE
         )
         loss = loss_fn(y_true, y_pred)
-        mask = tf.cast((y_true > 0), dtype=tf.float32)
+        mask = keras.backend.cast((y_true > 0), dtype=tf.float32)
         loss = loss * mask
-        return tf.reduce_sum(loss) / tf.reduce_sum(mask)
+        return keras.ops.sum(loss) / tf.reduce_sum(mask)
 
 
 loss = CustomNonPaddingTokenLoss()
@@ -282,7 +282,7 @@ def tokenize_and_convert_to_ids(text):
 sample_input = tokenize_and_convert_to_ids(
     "eu rejects german call to boycott british lamb"
 )
-sample_input = tf.reshape(sample_input, shape=[1, -1])
+sample_input = keras.ops.reshape(sample_input, new_shape=[1, -1])
 print(sample_input)
 
 output = ner_model.predict(sample_input)
