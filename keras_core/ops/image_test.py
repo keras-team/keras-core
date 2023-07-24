@@ -141,16 +141,10 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         ]
     )
     def test_affine_transform(self, interpolation, fill_mode, data_format):
-        if fill_mode == "wrap" and backend.backend() == "torch":
+        if fill_mode in ("wrap", "reflect") and backend.backend() == "torch":
             self.skipTest(
-                "Applying affine transform with fill_mode=wrap is not support"
-                " in torch backend"
-            )
-        if fill_mode == "reflect" and backend.backend() == "torch":
-            self.skipTest(
-                "The numerical results of applying affine transform with "
-                "fill_mode=reflect in torch is inconsistent with "
-                "tensorflow backend"
+                "Applying affine transform with fill_mode=wrap/reflect is not "
+                "support in torch backend"
             )
         if interpolation == "bilinear" and backend.backend() == "torch":
             self.skipTest(

@@ -86,8 +86,8 @@ AFFINE_TRANSFORM_FILL_MODES = {
     "constant": "zeros",
     "nearest": "border",
     # "wrap",  not supported by torch
-    # "mirror",  not supported by torch
-    "reflect": "reflection",
+    "mirror": "reflection",
+    # "reflect", not supported by torch
 }
 
 

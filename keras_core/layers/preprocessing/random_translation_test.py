@@ -57,6 +57,8 @@ class RandomTranslationTest(testing.TestCase, parameterized.TestCase):
 
     @parameterized.parameters(["channels_first", "channels_last"])
     def test_random_translation_up_numeric_reflect(self, data_format):
+        if backend.backend() == "torch":
+            self.skipTest("fill_mode=reflect is not supported in torch backend")
         input_image = np.arange(0, 25)
         expected_output = np.asarray(
             [
@@ -131,6 +133,8 @@ class RandomTranslationTest(testing.TestCase, parameterized.TestCase):
 
     @parameterized.parameters(["channels_first", "channels_last"])
     def test_random_translation_down_numeric_reflect(self, data_format):
+        if backend.backend() == "torch":
+            self.skipTest("fill_mode=reflect is not supported in torch backend")
         input_image = np.arange(0, 25)
         # Shifting by .2 * 5 = 1 pixel.
         expected_output = np.asarray(
@@ -170,6 +174,8 @@ class RandomTranslationTest(testing.TestCase, parameterized.TestCase):
     def test_random_translation_asymmetric_size_numeric_reflect(
         self, data_format
     ):
+        if backend.backend() == "torch":
+            self.skipTest("fill_mode=reflect is not supported in torch backend")
         input_image = np.arange(0, 16)
         # Shifting by .2 * 5 = 1 pixel.
         expected_output = np.asarray(
@@ -249,6 +255,8 @@ class RandomTranslationTest(testing.TestCase, parameterized.TestCase):
 
     @parameterized.parameters(["channels_first", "channels_last"])
     def test_random_translation_left_numeric_reflect(self, data_format):
+        if backend.backend() == "torch":
+            self.skipTest("fill_mode=reflect is not supported in torch backend")
         input_image = np.arange(0, 25)
         # Shifting by .2 * 5 = 1 pixel.
         expected_output = np.asarray(
