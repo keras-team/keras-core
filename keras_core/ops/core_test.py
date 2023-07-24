@@ -276,7 +276,7 @@ class CoreOpsCorrectnessTest(testing.TestCase):
         )
         self.assertEqual((3,), out.shape)
 
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             ops.cond(
                 KerasTensor((), dtype="bool"),
                 lambda: KerasTensor((3,)),
