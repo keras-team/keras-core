@@ -274,6 +274,6 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             padding=padding.upper(),
         )
         self.assertEqual(tuple(patches_out.shape), tuple(patches_ref.shape))
-        self.assertAllClose(patches_ref.numpy(), 
+        self.assertAllClose(patches_ref.numpy(),
                             backend.convert_to_numpy(patches_out),
                             atol=0.3)
