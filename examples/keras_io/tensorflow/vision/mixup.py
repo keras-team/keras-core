@@ -2,7 +2,7 @@
 Title: MixUp augmentation for image classification
 Author: [Sayak Paul](https://twitter.com/RisingSayak)
 Date created: 2021/03/06
-Last modified: 2021/03/06
+Last modified: 2023/07/24
 Description: Data augmentation using the mixup technique for image classification.
 Accelerator: GPU
 """
