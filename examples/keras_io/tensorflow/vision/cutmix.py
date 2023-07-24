@@ -52,6 +52,8 @@ import keras_core as keras
 import matplotlib.pyplot as plt
 
 from keras_core import layers
+
+# TF imports related to tf.data preprocessing 
 from tensorflow import clip_by_value
 from tensorflow import data as tf_data
 from tensorflow import image as tf_image
