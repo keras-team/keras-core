@@ -25,13 +25,9 @@ implicitly considers the correlations between all samples.
 ## Setup
 """
 
-import sys
-sys.path.append('/home/anas/Data/Code/keras-core/keras_core')
-
 import keras_core as keras
 from keras_core import layers
 from keras_core import ops
-
 
 import matplotlib.pyplot as plt
 
@@ -103,9 +99,7 @@ class PatchExtract(layers.Layer):
     def call(self, x):
         B, C = ops.shape(x)[0], ops.shape(x)[-1]
         x = ops.image.extract_patches(x, self.patch_size)
-        x = ops.reshape(
-            x, (B, -1, self.patch_size * self.patch_size * C)
-        ) 
+        x = ops.reshape(x, (B, -1, self.patch_size * self.patch_size * C))
         return x
 
 
