@@ -166,6 +166,10 @@ def affine_transform(
 ):
     """Applies the given transform(s) to the image(s).
 
+    **Note:** The result image with the same transform might be different in
+    torch backend compared to other backends. The reason is the difference of
+    the interpolation implementation in `tnn.grid_sample`.
+
     Args:
         image: Input image or batch of images. Must be 3D or 4D.
         transform: Projective transform matrix/matrices. A vector of length 8 or

@@ -29,6 +29,10 @@ class RandomZoom(TFDataLayer):
     **Note:** This layer is safe to use inside a `tf.data` pipeline
     (independently of which backend you're using).
 
+    **Note:** The result image with the same transform might be different in
+    torch backend compared to other backends. The reason is the difference of
+    the interpolation implementation in `tnn.grid_sample`.
+
     Args:
         height_factor: a float represented as fraction of value,
             or a tuple of size 2 representing lower and upper bound
@@ -116,7 +120,16 @@ class RandomZoom(TFDataLayer):
             self.width_lower, self.width_upper = self._set_factor(
                 width_factor, "width_factor"
             )
-        self._check_fill_mode_and_interpolation(fill_mode, interpolation)
+        if fill_mode not in self._SUPPORTED_FILL_MODE:
+            raise NotImplementedError(
+                f"Unknown `fill_mode` {fill_mode}. Expected of one "
+                f"{self._SUPPORTED_FILL_MODE}."
+            )
+        if interpolation not in self._SUPPORTED_INTERPOLATION:
+            raise NotImplementedError(
+                f"Unknown `interpolation` {interpolation}. Expected of one "
+                f"{self._SUPPORTED_INTERPOLATION}."
+            )
 
         self.fill_mode = fill_mode
         self.fill_value = fill_value
@@ -153,18 +166,6 @@ class RandomZoom(TFDataLayer):
             raise ValueError(
                 self._FACTOR_VALIDATION_ERROR
                 + f"Received: input_number={input_number}"
-            )
-
-    def _check_fill_mode_and_interpolation(self, fill_mode, interpolation):
-        if fill_mode not in self._SUPPORTED_FILL_MODE:
-            raise NotImplementedError(
-                f"Unknown `fill_mode` {fill_mode}. Expected of one "
-                f"{self._SUPPORTED_FILL_MODE}."
-            )
-        if interpolation not in self._SUPPORTED_INTERPOLATION:
-            raise NotImplementedError(
-                f"Unknown `interpolation` {interpolation}. Expected of one "
-                f"{self._SUPPORTED_INTERPOLATION}."
             )
 
     def call(self, inputs, training=True):
