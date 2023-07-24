@@ -224,10 +224,10 @@ class WhileLoop(Operation):
 
 @keras_core_export("keras_core.ops.while_loop")
 def while_loop(
-    cond,
-    body,
-    loop_vars,
-    maximum_iterations=None,
+        cond,
+        body,
+        loop_vars,
+        maximum_iterations=None,
 ):
     """While loop implemetation.
 
@@ -378,20 +378,41 @@ def convert_to_numpy(x):
 
 
 class Cond(Operation):
-    def __init__(self, true_fn, false_fn):
-        super().__init__()
-        self.true_fn = true_fn
-        self.false_fn = false_fn
+    def call(self, pred, true_fn, false_fn):
+        return backend.core.cond(pred, true_fn, false_fn)
 
-    def call(self, pred):
-        return backend.core.cond(pred, self.true_fn, self.false_fn)
+    def compute_output_spec(self, pred, true_fn, false_fn):
+        true_fn_spec = backend.compute_output_spec(lambda fn: fn(), true_fn)
+        false_fn_spec = backend.compute_output_spec(lambda fn: fn(), false_fn)
+        if not self._check_output_spec(true_fn_spec, false_fn_spec):
+            raise ValueError(
+                "`true_fn` and `false_fn` should return outputs of the same kind (structure, dtype and shape)."
+                f"Got {true_fn_spec} and {false_fn_spec} instead."
+            )
+        return true_fn_spec
 
-    def compute_output_spec(self, pred):
-        true_output_spec = backend.compute_output_spec(self.true_fn)
-        false_output_spec = backend.compute_output_spec(self.false_fn)
-        assert true_output_spec.dtype == false_output_spec.dtype
-        assert true_output_spec.shape == false_output_spec.shape
-        return true_output_spec
+    def _check_output_spec(self, true_fn_spec, false_fn_spec):
+        if isinstance(true_fn_spec, dict):
+            if not isinstance(false_fn_spec, dict):
+                return False
+            if true_fn_spec.keys() != false_fn_spec.keys():
+                return False
+            if any((not self._check_output_spec(true_fn_spec[k], false_fn_spec[k])) for k in true_fn_spec.keys()):
+                return False
+        elif isinstance(true_fn_spec, list):
+            if not isinstance(false_fn_spec, list):
+                return False
+            if len(true_fn_spec) != len(false_fn_spec):
+                return False
+            if any((not self._check_output_spec(ti, fi)) for ti, fi in zip(true_fn_spec, false_fn_spec)):
+                return False
+        else:
+            if true_fn_spec.dtype != false_fn_spec.dtype:
+                return False
+            if true_fn_spec.shape != false_fn_spec.shape:
+                return False
+
+        return True
 
 
 @keras_core_export("keras_core.ops.cond")
@@ -406,4 +427,4 @@ def cond(pred, true_fn, false_fn):
     Returns:
         The output of either `true_fn` or `false_fn` depending on pred.
     """
-    return Cond(true_fn, false_fn)(pred)
+    return Cond()(pred, true_fn, false_fn)
