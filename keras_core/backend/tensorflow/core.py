@@ -1,4 +1,5 @@
 import numpy as np
+import types
 import tensorflow as tf
 from tensorflow.compiler.tf2xla.python.xla import dynamic_update_slice
 
@@ -56,7 +57,7 @@ class Variable(
         return self.value._restore_from_tensors(restored_tensors)
 
     def _export_to_saved_model_graph(
-        self, object_map, tensor_map, options, **kwargs
+            self, object_map, tensor_map, options, **kwargs
     ):
         resource_list = self.value._export_to_saved_model_graph(
             object_map, tensor_map, options, **kwargs
@@ -107,6 +108,13 @@ def compute_output_spec(fn, *args, **kwargs):
                     return tf.compat.v1.placeholder(
                         shape=x.shape, dtype=x.dtype
                     )
+                if isinstance(x, types.FunctionType):
+                    def _fn(*x_args, **x_kwargs):
+                        out = x(*x_args, **x_kwargs)
+                        out = convert_keras_tensor_to_tf(out)
+                        return out
+
+                    return _fn
                 return x
 
             args, kwargs = tf.nest.map_structure(
@@ -150,10 +158,10 @@ def slice_update(inputs, start_indices, updates):
 
 
 def while_loop(
-    cond,
-    body,
-    loop_vars,
-    maximum_iterations=None,
+        cond,
+        body,
+        loop_vars,
+        maximum_iterations=None,
 ):
     return tf.while_loop(
         cond,
