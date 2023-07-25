@@ -1,8 +1,8 @@
 """
 Title: Named Entity Recognition using Transformers
 Author: [Varun Singh](https://www.linkedin.com/in/varunsingh2/)
-Date created: Jun 23, 2021
-Last modified: Jun 24, 2021
+Date created: 2021/6/23
+Last modified: 2023/7/25
 Description: NER using the Transformers and data from CoNLL 2003 shared task.
 Accelerator: GPU
 """
@@ -34,12 +34,16 @@ wget https://raw.githubusercontent.com/sighsmile/conlleval/master/conlleval.py
 
 import os
 import numpy as np
-import tensorflow as tf
 import keras_core as keras
 from keras_core import layers
 from datasets import load_dataset
 from collections import Counter
 from conlleval import evaluate
+
+# imports for data preprocessing 
+from tensorflow import data as tf_data
+from tensorflow import strings as tf_strings
+from tensorflow import int32,int64
 
 
 class TransformerBlock(layers.Layer):
@@ -198,8 +202,8 @@ lookup_layer = keras.layers.StringLookup(vocabulary=vocabulary)
 Create 2 new `Dataset` objects from the training and validation data
 """
 
-train_data = tf.data.TextLineDataset("./data/conll_train.txt")
-val_data = tf.data.TextLineDataset("./data/conll_val.txt")
+train_data = tf_data.TextLineDataset("./data/conll_train.txt")
+val_data = tf_data.TextLineDataset("./data/conll_val.txt")
 
 """
 Print out one line to make sure it looks good. The first record in the line is the number of tokens. 
@@ -212,19 +216,19 @@ print(list(train_data.take(1).as_numpy_iterator()))
 We will be using the following map function to transform the data in the dataset:
 """
 
-
+# Data preprocessing using Tensorflow 
 def map_record_to_training_data(record):
-    record = tf.strings.split(record, sep="\t")
-    length = tf.strings.to_number(record[0], out_type=tf.int32)
+    record = tf_strings.split(record, sep="\t")
+    length = tf_strings.to_number(record[0], out_type=int32)
     tokens = record[1 : length + 1]
     tags = record[length + 1 :]
-    tags = tf.strings.to_number(tags, out_type=tf.int64)
+    tags = tf_strings.to_number(tags, out_type=int64)
     tags += 1
     return tokens, tags
 
 
 def lowercase_and_convert_to_ids(tokens):
-    tokens = tf.strings.lower(tokens)
+    tokens = tf_strings.lower(tokens)
     return lookup_layer(tokens)
 
 
@@ -258,9 +262,9 @@ class CustomNonPaddingTokenLoss(keras.losses.Loss):
             from_logits=True, reduction=keras.losses.Reduction.NONE
         )
         loss = loss_fn(y_true, y_pred)
-        mask = keras.backend.cast((y_true > 0), dtype=tf.float32)
+        mask = keras.backend.cast((y_true > 0), dtype="float32")
         loss = loss * mask
-        return keras.ops.sum(loss) / tf.reduce_sum(mask)
+        return keras.ops.sum(loss) / keras.ops.sum(mask)
 
 
 loss = CustomNonPaddingTokenLoss()
@@ -336,6 +340,4 @@ We trained it on the CoNLL 2003 shared task data and got an overall F1 score of 
 State of the art NER models fine-tuned on pretrained models such as BERT or ELECTRA can easily
 get much higher F1 score -between 90-95% on this dataset owing to the inherent knowledge
 of words as part of the pretraining process and the usage of subword tokenization.
-
-You can use the trained model hosted on [Hugging Face Hub](https://huggingface.co/keras-io/ner-with-transformers)
-and try the demo on [Hugging Face Spaces](https://huggingface.co/spaces/keras-io/ner_with_transformers)."""
+"""
