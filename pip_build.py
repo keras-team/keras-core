@@ -97,13 +97,9 @@ def build():
             if os.path.isdir(os.path.join(package, "src", "legacy", path))
         ]
 
-        print("legacy_submodules", legacy_submodules)
         for root, _, fnames in os.walk(os.path.join(package, "_legacy")):
             for fname in fnames:
                 if fname.endswith(".py"):
-                    print("-")
-                    print("root", root)
-                    print("fname", fname)
                     legacy_fpath = os.path.join(root, fname)
                     tf_keras_root = root.replace("/_legacy", "/_tf_keras")
                     core_api_fpath = os.path.join(
@@ -112,16 +108,12 @@ def build():
                     if not os.path.exists(tf_keras_root):
                         os.makedirs(tf_keras_root)
                     tf_keras_fpath = os.path.join(tf_keras_root, fname)
-                    print("legacy_fpath", legacy_fpath)
-                    print("tf_keras_fpath", tf_keras_fpath)
-                    print("core_api_fpath", core_api_fpath)
                     with open(legacy_fpath) as f:
                         legacy_contents = f.read()
                         legacy_contents = legacy_contents.replace(
                             "keras_core._legacy", "keras_core._tf_keras"
                         )
                     if os.path.exists(core_api_fpath):
-                        print("EDITING", core_api_fpath)
                         with open(core_api_fpath) as f:
                             core_api_contents = f.read()
                         core_api_contents = core_api_contents.replace(
