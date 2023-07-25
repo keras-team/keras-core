@@ -12,6 +12,8 @@ from keras_core.models.model import Model
 from keras_core.ops.function import Function
 from keras_core.ops.function import make_node_key
 from keras_core.saving import serialization_lib
+from keras_core.saving.legacy import saving_utils
+from keras_core.saving.legacy import serialization as legacy_serialization
 from keras_core.utils import tracking
 
 
@@ -384,7 +386,10 @@ class Functional(Function, Model):
                     if node_data is not None:
                         filtered_inbound_nodes.append(node_data)
 
-            layer_config = serialization_lib.serialize_keras_object(operation)
+            serialize_obj_fn = serialization_lib.serialize_keras_object
+            if getattr(self, "use_legacy_config", False):
+                serialize_obj_fn = legacy_serialization.serialize_keras_object
+            layer_config = serialize_obj_fn(operation)
             layer_config["name"] = operation.name
             layer_config["inbound_nodes"] = filtered_inbound_nodes
             layer_configs.append(layer_config)
@@ -459,9 +464,14 @@ class Functional(Function, Model):
             layer_name = layer_data["name"]
 
             # Instantiate layer.
-            layer = serialization_lib.deserialize_keras_object(
-                layer_data, custom_objects=custom_objects
-            )
+            if "module" not in layer_data:
+                layer = saving_utils.model_from_config(
+                    layer_data, custom_objects=custom_objects
+                )
+            else:
+                layer = serialization_lib.deserialize_keras_object(
+                    layer_data, custom_objects=custom_objects
+                )
             created_layers[layer_name] = layer
 
             # Gather layer inputs.

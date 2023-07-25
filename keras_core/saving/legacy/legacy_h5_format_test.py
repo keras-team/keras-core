@@ -6,6 +6,8 @@ import tensorflow as tf
 
 import keras_core
 from keras_core import testing
+from keras_core.saving import object_registration
+from keras_core.saving.legacy import legacy_h5_format
 
 # TODO: more thorough testing. Correctness depends
 # on exact weight ordering for each layer, so we need
@@ -65,16 +67,16 @@ class LegacyH5LoadingTest(testing.TestCase):
         output = model(ref_input)
         self.assertAllClose(ref_output, output, atol=1e-5)
         model.set_weights(initial_weights)
-
-        # Check whole model file
-        temp_filepath = os.path.join(self.get_temp_dir(), "model.h5")
-        try:
-            tf_keras_model.save(temp_filepath)
-        except NotImplementedError:
-            # Not implemented for subclassed model
-            return
         model.load_weights(temp_filepath)
         output = model(ref_input)
+        self.assertAllClose(ref_output, output, atol=1e-5)
+
+        # Whole model file
+        ref_output = model(ref_input)
+        temp_filepath = os.path.join(self.get_temp_dir(), "model.h5")
+        legacy_h5_format.save_model_to_hdf5(model, temp_filepath)
+        loaded = legacy_h5_format.load_model_from_hdf5(temp_filepath)
+        output = loaded(ref_input)
         self.assertAllClose(ref_output, output, atol=1e-5)
 
     def test_sequential_model(self):

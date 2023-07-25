@@ -1,6 +1,308 @@
+import json
 import warnings
+import os
 
+import h5py
 import numpy as np
+
+from absl import logging
+from keras_core.utils import io_utils
+from keras_core import optimizers
+from keras_core import backend
+from keras_core.saving import object_registration
+from keras_core.saving.legacy import saving_utils
+from keras_core.saving.legacy.saved_model import json_utils
+
+
+HDF5_OBJECT_HEADER_LIMIT = 64512
+
+
+def save_model_to_hdf5(model, filepath, overwrite=True, include_optimizer=True):
+    # Ensures that all models saved in HDF5 format follow the old serialization
+    model.use_legacy_config = True
+
+    if not isinstance(filepath, h5py.File):
+        # If file exists and should not be overwritten.
+        if not overwrite and os.path.isfile(filepath):
+            proceed = io_utils.ask_to_proceed_with_overwrite(filepath)
+            if not proceed:
+                return
+
+        # Try creating dir if not exist
+        dirpath = os.path.dirname(filepath)
+        if not os.path.exists(dirpath):
+            os.path.makedirs(dirpath)
+
+        f = h5py.File(filepath, mode="w")
+        opened_new_file = True
+    else:
+        f = filepath
+        opened_new_file = False
+    try:
+        model_metadata = saving_utils.model_metadata(model, include_optimizer)
+        for k, v in model_metadata.items():
+            if isinstance(v, (dict, list, tuple)):
+                f.attrs[k] = json.dumps(
+                    v, default=json_utils.get_json_type
+                ).encode("utf8")
+            else:
+                f.attrs[k] = v
+
+        model_weights_group = f.create_group("model_weights")
+        save_weights_to_hdf5_group(model_weights_group, model)
+
+        # TODO(b/128683857): Add integration tests between tf.keras and external
+        # Keras, to avoid breaking TF.js users.
+        if (
+            include_optimizer
+            and hasattr(model, "optimizer")
+            and not isinstance(model.optimizer, optimizer_v1.TFOptimizer)
+        ):
+            save_optimizer_weights_to_hdf5_group(f, model.optimizer)
+
+        f.flush()
+    finally:
+        if opened_new_file:
+            f.close()
+
+        # Remove legacy serialization attribute after H5 saving complete
+        delattr(model, "use_legacy_config")
+
+
+def load_model_from_hdf5(filepath, custom_objects=None, compile=True):
+    """Loads a model saved via `save_model_to_hdf5`.
+
+    Args:
+        filepath: One of the following:
+            - String, path to the saved model
+            - `h5py.File` object from which to load the model
+        custom_objects: Optional dictionary mapping names
+            (strings) to custom classes or functions to be
+            considered during deserialization.
+        compile: Boolean, whether to compile the model
+            after loading.
+
+    Returns:
+        A Keras model instance. If an optimizer was found
+        as part of the saved model, the model is already
+        compiled. Otherwise, the model is uncompiled and
+        a warning will be displayed. When `compile` is set
+        to False, the compilation is omitted without any
+        warning.
+
+    Raises:
+        ImportError: if h5py is not available.
+        ValueError: In case of an invalid savefile.
+    """
+    if h5py is None:
+        raise ImportError(
+            "`load_model()` using h5 format requires h5py. Could not "
+            "import h5py."
+        )
+
+    if not custom_objects:
+        custom_objects = {}
+
+    gco = object_registration.GLOBAL_CUSTOM_OBJECTS
+    custom_objects = {**custom_objects, **gco}
+
+    opened_new_file = not isinstance(filepath, h5py.File)
+    if opened_new_file:
+        f = h5py.File(filepath, mode="r")
+    else:
+        f = filepath
+
+    model = None
+    try:
+        # instantiate model
+        model_config = f.attrs.get("model_config")
+        if model_config is None:
+            raise ValueError(
+                f"No model config found in the file at {filepath}."
+            )
+        if hasattr(model_config, "decode"):
+            model_config = model_config.decode("utf-8")
+        model_config = json_utils.decode(model_config)
+        model = saving_utils.model_from_config(
+            model_config, custom_objects=custom_objects
+        )
+
+        # set weights
+        load_weights_from_hdf5_group(f["model_weights"], model)
+
+        if compile:
+            # instantiate optimizer
+            training_config = f.attrs.get("training_config")
+            if hasattr(training_config, "decode"):
+                training_config = training_config.decode("utf-8")
+            if training_config is None:
+                logging.warning(
+                    "No training configuration found in the save file, so "
+                    "the model was *not* compiled. Compile it manually."
+                )
+                return model
+            training_config = json_utils.decode(training_config)
+
+            # Compile model.
+            model.compile(
+                **saving_utils.compile_args_from_training_config(
+                    training_config, custom_objects
+                ),
+                from_serialized=True,
+            )
+            saving_utils.try_build_compiled_arguments(model)
+
+            # Set optimizer weights.
+            if "optimizer_weights" in f:
+                try:
+                    if isinstance(model.optimizer, optimizer.Optimizer):
+                        model.optimizer.build(model._trainable_variables)
+                    else:
+                        model.optimizer._create_all_weights(
+                            model._trainable_variables
+                        )
+                except (NotImplementedError, AttributeError):
+                    logging.warning(
+                        "Error when creating the weights of optimizer {}, "
+                        "making it impossible to restore the saved optimizer "
+                        "state. As a result, your model is starting with "
+                        "a freshly initialized optimizer."
+                    )
+
+                optimizer_weight_values = (
+                    load_optimizer_weights_from_hdf5_group(f)
+                )
+                try:
+                    model.optimizer.set_weights(optimizer_weight_values)
+                except ValueError:
+                    logging.warning(
+                        "Error in loading the saved optimizer "
+                        "state. As a result, your model is "
+                        "starting with a freshly initialized "
+                        "optimizer."
+                    )
+    finally:
+        if opened_new_file:
+            f.close()
+    return model
+
+
+def save_weights_to_hdf5_group(f, model):
+    """Saves the weights of a list of layers to a HDF5 group.
+
+    Args:
+        f: HDF5 group.
+        model: Model instance.
+    """
+    from keras_core import __version__ as keras_version
+
+    save_attributes_to_hdf5_group(
+        f, "layer_names", [layer.name.encode("utf8") for layer in model.layers]
+    )
+    f.attrs["backend"] = backend.backend().encode("utf8")
+    f.attrs["keras_version"] = str(keras_version).encode("utf8")
+
+    # Sort model layers by layer name to ensure that group names are strictly
+    # growing to avoid prefix issues.
+    for layer in sorted(model.layers, key=lambda x: x.name):
+        g = f.create_group(layer.name)
+        weights = _legacy_weights(layer)
+        save_subset_weights_to_hdf5_group(g, weights)
+    weights = list(v for v in model._trainable_variables + model._non_trainable_variables if v in model.weights)
+    g = f.create_group("top_level_model_weights")
+    save_subset_weights_to_hdf5_group(g, weights)
+
+
+def save_subset_weights_to_hdf5_group(f, weights):
+    """Save top-level weights of a model to a HDF5 group.
+
+    Args:
+        f: HDF5 group.
+        weights: List of weight variables.
+    """
+    weight_values = [backend.convert_to_numpy(w) for w in weights]
+    weight_names = [w.name.encode("utf8") for w in weights]
+    save_attributes_to_hdf5_group(f, "weight_names", weight_names)
+    for name, val in zip(weight_names, weight_values):
+        param_dset = f.create_dataset(name, val.shape, dtype=val.dtype)
+        if not val.shape:
+            # scalar
+            param_dset[()] = val
+        else:
+            param_dset[:] = val
+
+
+def save_optimizer_weights_to_hdf5_group(hdf5_group, optimizer):
+    """Saves optimizer weights of a optimizer to a HDF5 group.
+
+    Args:
+        hdf5_group: HDF5 group.
+        optimizer: optimizer instance.
+    """
+    if isinstance(optimizer, optimizers.Optimizer):
+        symbolic_weights = optimizer.variables
+    else:
+        symbolic_weights = getattr(optimizer, "weights")
+    if symbolic_weights:
+        weights_group = hdf5_group.create_group("optimizer_weights")
+        weight_names = [str(w.name).encode("utf8") for w in symbolic_weights]
+        save_attributes_to_hdf5_group(
+            weights_group, "weight_names", weight_names
+        )
+        weight_values = [backend.convert_to_numpy(w) for w in symbolic_weights]
+        for name, val in zip(weight_names, weight_values):
+            param_dset = weights_group.create_dataset(
+                name, val.shape, dtype=val.dtype
+            )
+            if not val.shape:
+                # scalar
+                param_dset[()] = val
+            else:
+                param_dset[:] = val
+
+
+def save_attributes_to_hdf5_group(group, name, data):
+    """Saves attributes (data) of the specified name into the HDF5 group.
+
+    This method deals with an inherent problem of HDF5 file which is not
+    able to store data larger than HDF5_OBJECT_HEADER_LIMIT bytes.
+
+    Args:
+        group: A pointer to a HDF5 group.
+        name: A name of the attributes to save.
+        data: Attributes data to store.
+
+    Raises:
+      RuntimeError: If any single attribute is too large to be saved.
+    """
+    # Check that no item in `data` is larger than `HDF5_OBJECT_HEADER_LIMIT`
+    # because in that case even chunking the array would not make the saving
+    # possible.
+    bad_attributes = [x for x in data if len(x) > HDF5_OBJECT_HEADER_LIMIT]
+
+    # Expecting this to never be true.
+    if bad_attributes:
+        raise RuntimeError(
+            "The following attributes cannot be saved to HDF5 file because "
+            f"they are larger than {HDF5_OBJECT_HEADER_LIMIT} "
+            f"bytes: {bad_attributes}"
+        )
+
+    data_npy = np.asarray(data)
+
+    num_chunks = 1
+    chunked_data = np.array_split(data_npy, num_chunks)
+
+    # This will never loop forever thanks to the test above.
+    while any(x.nbytes > HDF5_OBJECT_HEADER_LIMIT for x in chunked_data):
+        num_chunks += 1
+        chunked_data = np.array_split(data_npy, num_chunks)
+
+    if num_chunks > 1:
+        for chunk_id, chunk_data in enumerate(chunked_data):
+            group.attrs["%s%d" % (name, chunk_id)] = chunk_data
+    else:
+        group.attrs[name] = data
 
 
 def load_weights_from_hdf5_group(f, model):
@@ -65,6 +367,7 @@ def load_weights_from_hdf5_group(f, model):
 
     if "top_level_model_weights" in f:
         symbolic_weights = list(
+            # model.weights
             v
             for v in model._trainable_variables + model._non_trainable_variables
             if v in model.weights
@@ -170,7 +473,7 @@ def load_weights_from_hdf5_group_by_name(f, model, skip_mismatch=False):
 
     if "top_level_model_weights" in f:
         symbolic_weights = (
-            model._trainable_weights + model._non_trainable_weights
+            model.trainable_weights + model.non_trainable_weights
         )
         weight_values = load_subset_weights_from_hdf5_group(
             f["top_level_model_weights"]
@@ -235,6 +538,24 @@ def load_subset_weights_from_hdf5_group(f):
     """
     weight_names = load_attributes_from_hdf5_group(f, "weight_names")
     return [np.asarray(f[weight_name]) for weight_name in weight_names]
+
+
+def load_optimizer_weights_from_hdf5_group(hdf5_group):
+    """Load optimizer weights from a HDF5 group.
+
+    Args:
+        hdf5_group: A pointer to a HDF5 group.
+
+    Returns:
+        data: List of optimizer weight names.
+    """
+    weights_group = hdf5_group["optimizer_weights"]
+    optimizer_weight_names = load_attributes_from_hdf5_group(
+        weights_group, "weight_names"
+    )
+    return [
+        weights_group[weight_name] for weight_name in optimizer_weight_names
+    ]
 
 
 def load_attributes_from_hdf5_group(group, name):
