@@ -331,7 +331,7 @@ class BaseOptimizer:
 
     def set_weights(self, weights):
         """Set the weights of the optimizer."""
-        if not getattr(self, "_built", False):
+        if not self.built:
             raise ValueError(
                 "You are calling `set_weights()` on an optimizer that has not "
                 "yet been built. Please call "

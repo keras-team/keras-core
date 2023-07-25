@@ -4,7 +4,7 @@ import pytest
 
 from keras_core import backend
 from keras_core import testing
-from keras_core.saving.legacy.saved_model import json_utils
+from keras_core.saving.legacy import json_utils
 
 if backend.backend() == "tensorflow":
     import tensorflow as tf
