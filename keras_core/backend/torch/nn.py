@@ -520,6 +520,7 @@ def one_hot(x, num_classes, axis=-1, dtype="float32"):
     x = convert_to_tensor(x, dtype=torch.long)
 
     # Torch one_hot does not accept values >= num_classes
+    mask = where(x < num_classes, 1, 0)
     x = where(x < num_classes, x, 0)
 
     # Torch one_hot does not natively handle negative values, so we add some
@@ -527,6 +528,8 @@ def one_hot(x, num_classes, axis=-1, dtype="float32"):
     # The output will have some invalid results, so we set them back to 0 using
     # `where` afterwards.
     output = tnn.one_hot(maximum(x, 0), num_classes)
+    # mask out overflowed values
+    output = output * expand_dims(mask, axis=-1)
     output = where(expand_dims(x, axis=-1) >= 0, output, 0)
     output = convert_to_tensor(output, dtype=dtype)
     dims = output.dim()
