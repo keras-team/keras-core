@@ -41,3 +41,15 @@ class ConstantInitializersTest(testing.TestCase):
         )
 
         self.run_class_serialization_test(initializer)
+
+    def test_identity_initializer(self):
+        shape = (3, 3)
+        gain = 2
+
+        initializer = initializers.Identity(gain=gain)
+        values = initializer(shape=shape)
+        self.assertEqual(values.shape, shape)
+        np_values = backend.convert_to_numpy(values).data
+        self.assertEqual(np_values, np.eye(*shape) * gain)
+
+        self.run_class_serialization_test(initializer)
