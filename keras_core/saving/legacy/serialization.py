@@ -5,10 +5,6 @@ import inspect
 import threading
 import weakref
 
-# import tensorflow.compat.v2 as tf
-
-# from keras.utils import tf_contextlib
-# from keras.utils import tf_inspect
 
 # isort: off
 from keras_core.api_export import keras_core_export

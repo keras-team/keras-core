@@ -37,8 +37,7 @@ def model_from_config(config, custom_objects=None):
     global MODULE_OBJECTS
 
     if not hasattr(MODULE_OBJECTS, "ALL_OBJECTS"):
-        # layers.serialization.populate_deserializable_objects()
-        MODULE_OBJECTS.ALL_OBJECTS = layers.__dict__ # layers.serialization.LOCAL.ALL_OBJECTS
+        MODULE_OBJECTS.ALL_OBJECTS = layers.__dict__ 
         MODULE_OBJECTS.ALL_OBJECTS["InputLayer"] = layers.InputLayer
         MODULE_OBJECTS.ALL_OBJECTS["Functional"] = models.Functional
         MODULE_OBJECTS.ALL_OBJECTS["Model"] = models.Model
