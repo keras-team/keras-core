@@ -56,8 +56,8 @@ def get_subclassed_model(keras):
 
 
 @pytest.mark.requires_trainable_backend
-class LegacyH5LoadingTest(testing.TestCase):
-    def _check_reloading(self, ref_input, model, tf_keras_model):
+class LegacyH5WeightsTest(testing.TestCase):
+    def _check_reloading_weights(self, ref_input, model, tf_keras_model):
         ref_output = tf_keras_model(ref_input)
         initial_weights = model.get_weights()
         # Check weights only file
@@ -71,6 +71,28 @@ class LegacyH5LoadingTest(testing.TestCase):
         output = model(ref_input)
         self.assertAllClose(ref_output, output, atol=1e-5)
 
+    def test_sequential_model_weights(self):
+        model = get_sequential_model(keras_core)
+        tf_keras_model = get_sequential_model(tf.keras)
+        ref_input = np.random.random((2, 3))
+        self._check_reloading_weights(ref_input, model, tf_keras_model)
+
+    def test_functional_model_weights(self):
+        model = get_functional_model(keras_core)
+        tf_keras_model = get_functional_model(tf.keras)
+        ref_input = np.random.random((2, 3))
+        self._check_reloading_weights(ref_input, model, tf_keras_model)
+
+    def test_subclassed_model_weights(self):
+        model = get_subclassed_model(keras_core)
+        tf_keras_model = get_subclassed_model(tf.keras)
+        ref_input = np.random.random((2, 3))
+        self._check_reloading_weights(ref_input, model, tf_keras_model)
+
+
+@pytest.mark.requires_trainable_backend
+class LegacyH5WholeModelTest(testing.TestCase):
+    def _check_reloading_model(self, ref_input, model):
         # Whole model file
         ref_output = model(ref_input)
         temp_filepath = os.path.join(self.get_temp_dir(), "model.h5")
@@ -81,18 +103,10 @@ class LegacyH5LoadingTest(testing.TestCase):
 
     def test_sequential_model(self):
         model = get_sequential_model(keras_core)
-        tf_keras_model = get_sequential_model(tf.keras)
         ref_input = np.random.random((2, 3))
-        self._check_reloading(ref_input, model, tf_keras_model)
+        self._check_reloading_model(ref_input, model)
 
-    def test_functional_model(self):
+    def test_functional_model_weights(self):
         model = get_functional_model(keras_core)
-        tf_keras_model = get_functional_model(tf.keras)
         ref_input = np.random.random((2, 3))
-        self._check_reloading(ref_input, model, tf_keras_model)
-
-    def test_subclassed_model(self):
-        model = get_subclassed_model(keras_core)
-        tf_keras_model = get_subclassed_model(tf.keras)
-        ref_input = np.random.random((2, 3))
-        self._check_reloading(ref_input, model, tf_keras_model)
+        self._check_reloading_model(ref_input, model)
