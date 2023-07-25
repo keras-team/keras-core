@@ -389,6 +389,7 @@ class Functional(Function, Model):
 
             serialize_obj_fn = serialization_lib.serialize_keras_object
             if saving_options.in_legacy_saving_scope():
+                # Legacy format serialization used for H5 and SavedModel
                 serialize_obj_fn = legacy_serialization.serialize_keras_object
             layer_config = serialize_obj_fn(operation)
             layer_config["name"] = operation.name
@@ -466,6 +467,8 @@ class Functional(Function, Model):
 
             # Instantiate layer.
             if "module" not in layer_data:
+                # Legacy format deserialization (no "module" key)
+                # used for H5 and SavedModel formats
                 layer = saving_utils.model_from_config(
                     layer_data, custom_objects=custom_objects
                 )

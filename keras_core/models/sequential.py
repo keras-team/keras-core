@@ -263,6 +263,7 @@ class Sequential(Model):
     def get_config(self):
         serialize_fn = serialization_lib.serialize_keras_object
         if saving_options.in_legacy_saving_scope():
+            # Legacy format serialization used for H5 and SavedModel formats
             serialize_fn = legacy_serialization.serialize_keras_object
         layer_configs = []
         for layer in super().layers:
@@ -288,6 +289,8 @@ class Sequential(Model):
         model = cls(name=name)
         for layer_config in layer_configs:
             if "module" not in layer_config:
+                # Legacy format deserialization (no "module" key)
+                # used for H5 and SavedModel formats
                 layer = saving_utils.model_from_config(
                     layer_config,
                     custom_objects=custom_objects,
