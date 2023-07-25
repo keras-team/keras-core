@@ -151,4 +151,4 @@ class Identity(Initializer):
                 f"Received: shape={shape} of rank {len(shape)}."
             )
         dtype = standardize_dtype(dtype)
-        return ops.eye(*shape, dtype=dtype)
+        return self.gain * ops.eye(*shape, dtype=dtype)
