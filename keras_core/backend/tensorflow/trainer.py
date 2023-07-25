@@ -24,7 +24,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
         self.test_function = None
         self.predict_function = None
 
-        if Version(tf.__version__) > Version('2.8.0'):
+        if Version(tf.__version__) >= Version('2.9.0'):
             self.support_reduce_retracing = True
         else:
             self.support_reduce_retracing = False
