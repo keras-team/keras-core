@@ -12,8 +12,8 @@ Accelerator: GPU
 """
 
 import numpy as np
-import tensorflow as tf
-from tensorflow import keras
+import tensorflow.data as tf_data
+import keras_core as keras
 
 """
 ## Introduction
@@ -123,10 +123,10 @@ Our layer will only consider the top 20,000 words, and will truncate or pad sequ
 be actually 200 tokens long.
 """
 
-from tensorflow.keras.layers import TextVectorization
+from keras_core.layers import TextVectorization
 
 vectorizer = TextVectorization(max_tokens=20000, output_sequence_length=200)
-text_ds = tf.data.Dataset.from_tensor_slices(train_samples).batch(128)
+text_ds = tf_data.Dataset.from_tensor_slices(train_samples).batch(128)
 vectorizer.adapt(text_ds)
 
 """
@@ -228,14 +228,15 @@ Note that we set `trainable=False` so as to keep the embeddings fixed (we don't 
 update them during training).
 """
 
-from tensorflow.keras.layers import Embedding
+from keras_core.layers import Embedding
 
 embedding_layer = Embedding(
     num_tokens,
     embedding_dim,
-    embeddings_initializer=keras.initializers.Constant(embedding_matrix),
     trainable=False,
 )
+embedding_layer.build((1,))
+embedding_layer.set_weights([embedding_matrix])
 
 """
 ## Build the model
@@ -243,7 +244,7 @@ embedding_layer = Embedding(
 A simple 1D convnet with global max pooling and a classifier at the end.
 """
 
-from tensorflow.keras import layers
+from keras_core import layers
 
 int_sequences_input = keras.Input(shape=(None,), dtype="int64")
 embedded_sequences = embedding_layer(int_sequences_input)
@@ -297,8 +298,10 @@ x = vectorizer(string_input)
 preds = model(x)
 end_to_end_model = keras.Model(string_input, preds)
 
-probabilities = end_to_end_model.predict(
-    [["this message is about computer graphics and 3D modeling"]]
+probabilities = end_to_end_model(
+    keras.ops.convert_to_tensor(
+        [["this message is about computer graphics and 3D modeling"]]
+    )
 )
 
-class_names[np.argmax(probabilities[0])]
+print(class_names[np.argmax(probabilities[0])])
