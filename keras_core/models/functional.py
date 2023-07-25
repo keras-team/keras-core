@@ -12,6 +12,7 @@ from keras_core.models.model import Model
 from keras_core.ops.function import Function
 from keras_core.ops.function import make_node_key
 from keras_core.saving import serialization_lib
+from keras_core.saving.legacy import saving_options
 from keras_core.saving.legacy import saving_utils
 from keras_core.saving.legacy import serialization as legacy_serialization
 from keras_core.utils import tracking
@@ -387,7 +388,7 @@ class Functional(Function, Model):
                         filtered_inbound_nodes.append(node_data)
 
             serialize_obj_fn = serialization_lib.serialize_keras_object
-            if saving_utils.in_legacy_saving_scope():
+            if saving_options.in_legacy_saving_scope():
                 serialize_obj_fn = legacy_serialization.serialize_keras_object
             layer_config = serialize_obj_fn(operation)
             layer_config["name"] = operation.name

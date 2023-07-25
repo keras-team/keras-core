@@ -9,6 +9,7 @@ from keras_core import backend
 from keras_core import optimizers
 from keras_core.saving import object_registration
 from keras_core.saving.legacy import json_utils
+from keras_core.saving.legacy import saving_options
 from keras_core.saving.legacy import saving_utils
 from keras_core.utils import io_utils
 
@@ -46,7 +47,7 @@ def save_model_to_hdf5(model, filepath, overwrite=True, include_optimizer=True):
         f = filepath
         opened_new_file = False
     try:
-        with saving_utils.keras_option_scope(use_legacy_config=True):
+        with saving_options.keras_option_scope(use_legacy_config=True):
             model_metadata = saving_utils.model_metadata(
                 model, include_optimizer
             )
@@ -126,12 +127,14 @@ def load_model_from_hdf5(filepath, custom_objects=None, compile=True):
         if hasattr(model_config, "decode"):
             model_config = model_config.decode("utf-8")
         model_config = json_utils.decode(model_config)
-        model = saving_utils.model_from_config(
-            model_config, custom_objects=custom_objects
-        )
 
-        # set weights
-        load_weights_from_hdf5_group(f["model_weights"], model)
+        with saving_options.keras_option_scope(use_legacy_config=True):
+            model = saving_utils.model_from_config(
+                model_config, custom_objects=custom_objects
+            )
+
+            # set weights
+            load_weights_from_hdf5_group(f["model_weights"], model)
 
         if compile:
             # instantiate optimizer

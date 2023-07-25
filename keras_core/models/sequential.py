@@ -7,6 +7,7 @@ from keras_core.layers.core.input_layer import InputLayer
 from keras_core.models.functional import Functional
 from keras_core.models.model import Model
 from keras_core.saving import serialization_lib
+from keras_core.saving.legacy import saving_options
 from keras_core.saving.legacy import saving_utils
 from keras_core.saving.legacy import serialization as legacy_serialization
 from keras_core.utils import tracking
@@ -261,7 +262,7 @@ class Sequential(Model):
 
     def get_config(self):
         serialize_fn = serialization_lib.serialize_keras_object
-        if saving_utils.in_legacy_saving_scope():
+        if saving_options.in_legacy_saving_scope():
             serialize_fn = legacy_serialization.serialize_keras_object
         layer_configs = []
         for layer in super().layers:
