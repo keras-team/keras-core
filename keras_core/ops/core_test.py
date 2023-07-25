@@ -298,3 +298,15 @@ class CoreOpsCorrectnessTest(testing.TestCase):
                 lambda: KerasTensor((3,)),
                 lambda: KerasTensor((4,)),
             )
+
+    def test_unstack(self):
+        rng = np.random.default_rng(0)
+        x = rng.uniform(size=(2, 3, 4))
+        x_tensor = ops.convert_to_tensor(x)
+        axis = 1
+        out = ops.unstack(x_tensor, axis)
+        out_ex = [x[:, i, :] for i in range(x.shape[axis])]
+        self.assertEqual(len(out), len(out_ex))
+        for o, o_e in zip(out, out_ex):
+            o = ops.convert_to_numpy(o)
+            self.assertAllClose(o, o_e)

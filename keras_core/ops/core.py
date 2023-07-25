@@ -344,6 +344,30 @@ def fori_loop(lower, upper, body_fun, init_val):
     return backend.core.fori_loop(lower, upper, body_fun, init_val)
 
 
+@keras_core_export("keras_core.ops.unstack")
+def unstack(x, axis=0):
+    """Unpacks the given dimension of a rank-R tensor into rank-(R-1) tensors.
+
+    Args:
+        x: The input tensor (must be non-symbolic).
+        axis: The axis along which to unpack.
+
+    Returns:
+        A list of tensors unpacked along the given axis.
+
+    Example:
+
+    >>> x = keras_core.ops.array([[1, 2], [3, 4]])
+    >>> keras_core.ops.unstack(x, axis=0)
+    [array([1, 2]), array([3, 4])]
+    """
+    if any_symbolic_tensors((x, axis)):
+        raise NotImplementedError(
+            "Symbolic inputs are not support for the unstack operation"
+        )
+    return backend.core.unstack(x, axis=axis)
+
+
 @keras_core_export("keras_core.ops.shape")
 def shape(x):
     """Gets the shape of the tensor input.
