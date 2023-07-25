@@ -261,7 +261,7 @@ class Sequential(Model):
 
     def get_config(self):
         serialize_fn = serialization_lib.serialize_keras_object
-        if getattr(self, "use_legacy_config", None):
+        if saving_utils.in_legacy_saving_scope():
             serialize_fn = legacy_serialization.serialize_keras_object
         layer_configs = []
         for layer in super().layers:

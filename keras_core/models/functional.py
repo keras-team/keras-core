@@ -387,7 +387,7 @@ class Functional(Function, Model):
                         filtered_inbound_nodes.append(node_data)
 
             serialize_obj_fn = serialization_lib.serialize_keras_object
-            if getattr(self, "use_legacy_config", False):
+            if saving_utils.in_legacy_saving_scope():
                 serialize_obj_fn = legacy_serialization.serialize_keras_object
             layer_config = serialize_obj_fn(operation)
             layer_config["name"] = operation.name
