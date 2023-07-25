@@ -20,7 +20,7 @@ vectors to have zero mean. Gradient Centralization morever improves the Lipschit
 the loss function and its gradient so that the training process becomes more efficient
 and stable.
 
-This example requires TensorFlow 2.2 or higher as well as `tensorflow_datasets` which can
+This example requires `tensorflow_datasets` which can
 be installed with this command:
 
 ```
