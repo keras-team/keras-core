@@ -185,5 +185,5 @@ def stop_gradient(variable):
     return tf.stop_gradient(variable)
 
 
-def unstack(x, axis=0):
-    return tf.unstack(x, axis=axis)
+def unstack(x, num=None, axis=0):
+    return tf.unstack(x, num=num, axis=axis)

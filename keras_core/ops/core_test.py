@@ -56,6 +56,23 @@ class CoreOpsStaticShapeTest(testing.TestCase):
         result = core.fori_loop(0, 10, body_fun, initial_value)
         self.assertEqual(result.shape, (3, 5, 7))
 
+    def test_unstack(self):
+        x = KerasTensor((2, 3, 4))
+        axis = 1
+        out = core.unstack(x, axis=axis)
+        self.assertEqual(len(out), 3)
+        for o in out:
+            self.assertEqual(o.shape, (2, 4))
+
+        x = KerasTensor((2, None, None))
+        axis, num = 1, 3
+        out = core.unstack(x, num=num, axis=axis)
+        self.assertEqual(len(out), 3)
+        for o in out:
+            self.assertEqual(o.shape, (2, None))
+
+        pytest.raises(ValueError, lambda: core.unstack(x, axis=axis))
+
 
 class CoreOpsCorrectnessTest(testing.TestCase):
     def test_scatter(self):
@@ -304,7 +321,7 @@ class CoreOpsCorrectnessTest(testing.TestCase):
         x = rng.uniform(size=(2, 3, 4))
         x_tensor = ops.convert_to_tensor(x)
         axis = 1
-        out = ops.unstack(x_tensor, axis)
+        out = ops.unstack(x_tensor, axis=axis)
         out_ex = [x[:, i, :] for i in range(x.shape[axis])]
         self.assertEqual(len(out), len(out_ex))
         for o, o_e in zip(out, out_ex):

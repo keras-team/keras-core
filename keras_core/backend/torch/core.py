@@ -355,5 +355,5 @@ def stop_gradient(variable):
     return variable.detach()
 
 
-def unstack(x, axis=0):
+def unstack(x, num=None, axis=0):
     return x.unbind(axis)

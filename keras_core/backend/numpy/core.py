@@ -219,6 +219,6 @@ def stop_gradient(x):
     pass
 
 
-def unstack(x, axis=0):
+def unstack(x, num=None, axis=0):
     x = np.moveaxis(x, axis, 0)
     return [x[i] for i in range(x.shape[0])]

@@ -344,8 +344,38 @@ def fori_loop(lower, upper, body_fun, init_val):
     return backend.core.fori_loop(lower, upper, body_fun, init_val)
 
 
+class Unstack(Operation):
+    def __init__(self, num=None, axis=0):
+        super().__init__()
+        self.num = num
+        self.axis = axis
+
+    def call(self, x):
+        return backend.core.unstack(x, self.num, self.axis)
+
+    def compute_output_spec(self, x):
+        axis = self.axis
+        if axis < 0:
+            axis = len(x.shape) + axis
+        output_shapes = x.shape[:axis] + x.shape[axis + 1 :]
+        num = self.num
+        if num is None:
+            num = x.shape[axis]
+        if num is None:
+            raise ValueError(
+                "Cannot infer argument `num` from shape "
+                f"{x.shape}. Either provide a tensor with a "
+                "concrete shape in the `axis` dimension or "
+                "explicitly pass the `num` argument."
+            )
+        output = [
+            KerasTensor(shape=output_shapes, dtype=x.dtype) for _ in range(num)
+        ]
+        return output
+
+
 @keras_core_export("keras_core.ops.unstack")
-def unstack(x, axis=0):
+def unstack(x, num=None, axis=0):
     """Unpacks the given dimension of a rank-R tensor into rank-(R-1) tensors.
 
     Args:
@@ -361,11 +391,9 @@ def unstack(x, axis=0):
     >>> keras_core.ops.unstack(x, axis=0)
     [array([1, 2]), array([3, 4])]
     """
-    if any_symbolic_tensors((x, axis)):
-        raise NotImplementedError(
-            "Symbolic inputs are not support for the unstack operation"
-        )
-    return backend.core.unstack(x, axis=axis)
+    if any_symbolic_tensors((x,)):
+        return Unstack(num, axis).symbolic_call(x)
+    return backend.core.unstack(x, num=num, axis=axis)
 
 
 @keras_core_export("keras_core.ops.shape")
