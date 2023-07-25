@@ -379,7 +379,9 @@ def unstack(x, num=None, axis=0):
     """Unpacks the given dimension of a rank-R tensor into rank-(R-1) tensors.
 
     Args:
-        x: The input tensor (must be non-symbolic).
+        x: The input tensor.
+        num: The length of the dimension axis. Automatically inferred
+            if `None`.
         axis: The axis along which to unpack.
 
     Returns:
