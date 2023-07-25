@@ -1,6 +1,7 @@
 """
 Title: Gradient Centralization for Better Training Performance
 Author: [Rishit Dagli](https://github.com/Rishit-dagli)
+Converted to Keras Core by: [Muhammad Anas Raza](https://anasrz.com)
 Date created: 06/18/21
 Last modified: 06/18/21
 Description: Implement Gradient Centralization to improve training performance of DNNs.
@@ -79,15 +80,18 @@ We will rescale the data to `[0, 1]` and perform simple augmentations to our dat
 rescale = layers.Rescaling(1.0 / 255)
 
 data_augmentation = [
-        layers.RandomFlip("horizontal_and_vertical"),
-        layers.RandomRotation(0.3),
-        layers.RandomZoom(0.2),
-    ]
+    layers.RandomFlip("horizontal_and_vertical"),
+    layers.RandomRotation(0.3),
+    layers.RandomZoom(0.2),
+]
+
+
 # Helper to apply augmentation
 def apply_aug(x):
-  for aug in data_augmentation:
-    x = aug(x)
-  return x
+    for aug in data_augmentation:
+        x = aug(x)
+    return x
+
 
 def prepare(ds, shuffle=False, augment=False):
     # Rescale dataset
@@ -240,11 +244,15 @@ notice our optimizer is the one using Gradient Centralization this time.
 """
 
 time_callback_gc = TimeHistory()
-model.compile(loss="binary_crossentropy", optimizer=optimizer, metrics=["accuracy"])
+model.compile(
+    loss="binary_crossentropy", optimizer=optimizer, metrics=["accuracy"]
+)
 
 model.summary()
 
-history_gc = model.fit(train_ds, epochs=10, verbose=1, callbacks=[time_callback_gc])
+history_gc = model.fit(
+    train_ds, epochs=10, verbose=1, callbacks=[time_callback_gc]
+)
 
 """
 ## Comparing performance
