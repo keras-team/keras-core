@@ -187,7 +187,8 @@ def affine_transform(
             f"transform.shape={transform.shape}"
         )
 
-    if fill_mode != "constant":
+    # the default of tnn.grid_sample is zeros
+    if fill_mode != "constant" or (fill_mode == "constant" and fill_value == 0):
         fill_value = None
     fill_mode = AFFINE_TRANSFORM_FILL_MODES[fill_mode]
 
