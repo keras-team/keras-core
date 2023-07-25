@@ -29,10 +29,6 @@ class RandomZoom(TFDataLayer):
     **Note:** This layer is safe to use inside a `tf.data` pipeline
     (independently of which backend you're using).
 
-    **Note:** The result image with the same transform might be different in
-    torch backend compared to other backends. The reason is the difference of
-    the interpolation implementation in `tnn.grid_sample`.
-
     Args:
         height_factor: a float represented as fraction of value,
             or a tuple of size 2 representing lower and upper bound
