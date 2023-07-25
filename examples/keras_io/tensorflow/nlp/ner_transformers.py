@@ -43,7 +43,6 @@ from conlleval import evaluate
 # imports for data preprocessing 
 from tensorflow import data as tf_data
 from tensorflow import strings as tf_strings
-from tensorflow import int32,int64
 
 
 class TransformerBlock(layers.Layer):
@@ -219,10 +218,10 @@ We will be using the following map function to transform the data in the dataset
 # Data preprocessing using Tensorflow 
 def map_record_to_training_data(record):
     record = tf_strings.split(record, sep="\t")
-    length = tf_strings.to_number(record[0], out_type=int32)
+    length = tf_strings.to_number(record[0], out_type="int32")
     tokens = record[1 : length + 1]
     tags = record[length + 1 :]
-    tags = tf_strings.to_number(tags, out_type=int64)
+    tags = tf_strings.to_number(tags, out_type="int64")
     tags += 1
     return tokens, tags
 
