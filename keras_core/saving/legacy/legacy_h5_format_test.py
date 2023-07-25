@@ -6,6 +6,8 @@ import tensorflow as tf
 
 import keras_core
 from keras_core import testing
+from keras_core import models
+from keras_core import layers
 from keras_core.saving import object_registration
 from keras_core.saving.legacy import legacy_h5_format
 
@@ -110,3 +112,14 @@ class LegacyH5WholeModelTest(testing.TestCase):
         model = get_functional_model(keras_core)
         ref_input = np.random.random((2, 3))
         self._check_reloading_model(ref_input, model)
+
+    def test_compiled_model_with_various_layers(self):
+        model = models.Sequential()
+        model.add(layers.Dense(2, input_shape=(3,)))
+        model.add(layers.RepeatVector(3))
+        model.add(layers.TimeDistributed(layers.Dense(3)))
+
+        model.compile(optimizer="rmsprop", loss="mse")
+        ref_input = np.random.random((1, 3))
+        self._check_reloading_model(ref_input, model)
+

@@ -8,6 +8,7 @@ from absl import logging
 from keras_core.utils import io_utils
 from keras_core import optimizers
 from keras_core import backend
+from keras_core import losses
 from keras_core.saving import object_registration
 from keras_core.saving.legacy import saving_utils
 from keras_core.saving.legacy.saved_model import json_utils
@@ -67,7 +68,6 @@ def save_model_to_hdf5(model, filepath, overwrite=True, include_optimizer=True):
         if (
             include_optimizer
             and hasattr(model, "optimizer")
-            and not isinstance(model.optimizer, optimizer_v1.TFOptimizer)
         ):
             save_optimizer_weights_to_hdf5_group(f, model.optimizer)
 
@@ -158,15 +158,14 @@ def load_model_from_hdf5(filepath, custom_objects=None, compile=True):
             model.compile(
                 **saving_utils.compile_args_from_training_config(
                     training_config, custom_objects
-                ),
-                from_serialized=True,
+                )
             )
             saving_utils.try_build_compiled_arguments(model)
 
             # Set optimizer weights.
             if "optimizer_weights" in f:
                 try:
-                    if isinstance(model.optimizer, optimizer.Optimizer):
+                    if isinstance(model.optimizer, optimizers.Optimizer):
                         model.optimizer.build(model._trainable_variables)
                     else:
                         model.optimizer._create_all_weights(

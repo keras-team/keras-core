@@ -1,8 +1,10 @@
 import tree
 import threading
+from absl import logging
 from keras_core import optimizers
 from keras_core import backend
 from keras_core import layers
+from keras_core import losses
 from keras_core import models
 from keras_core.saving import object_registration
 from keras_core.saving.legacy import serialization
@@ -68,7 +70,7 @@ def model_metadata(model, include_optimizer=True, require_config=True):
     )
     if getattr(model, "optimizer", False) and include_optimizer:
         if model.compiled:
-            training_config = model._compile_config
+            training_config = model._compile_config.config
             training_config.pop("optimizer", None)  # Handled separately.
             metadata["training_config"] = _serialize_nested_config(training_config)
             optimizer_config = {
@@ -162,3 +164,16 @@ def _deserialize_nested_config(deserialize_fn, config):
         "Saved configuration not understood. Configuration should be a "
         f"dictionary, string, tuple or list. Received: config={config}."
     )
+
+def try_build_compiled_arguments(model):
+    try:
+        if not model.compiled_loss.built:
+            model.compiled_loss.build(model.outputs)
+        if not model.compiled_metrics.built:
+            model.compiled_metrics.build(model.outputs, model.outputs)
+    except:
+        logging.warning(
+            "Compiled the loaded model, but the compiled metrics have "
+            "yet to be built. `model.compile_metrics` will be empty "
+            "until you train or evaluate the model."
+        )
