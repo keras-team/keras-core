@@ -2,7 +2,6 @@ import json
 import warnings
 import os
 
-import h5py
 import numpy as np
 
 from absl import logging
@@ -14,10 +13,22 @@ from keras_core.saving.legacy import saving_utils
 from keras_core.saving.legacy.saved_model import json_utils
 
 
+try:
+    import h5py
+except ImportError:
+    h5py = None
+
+
 HDF5_OBJECT_HEADER_LIMIT = 64512
 
 
 def save_model_to_hdf5(model, filepath, overwrite=True, include_optimizer=True):
+    if h5py is None:
+        raise ImportError(
+            "`save_model()` using h5 format requires h5py. Could not "
+            "import h5py."
+        )
+
     # Ensures that all models saved in HDF5 format follow the old serialization
     model.use_legacy_config = True
 
