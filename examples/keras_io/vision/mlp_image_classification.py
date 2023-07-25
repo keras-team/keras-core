@@ -28,9 +28,6 @@ main building blocks.
 ## Setup
 """
 
-import sys
-sys.path.append('/content/keras-core')
-
 import numpy as np
 import keras_core as keras
 from keras_core import layers
@@ -55,7 +52,7 @@ print(f"x_test shape: {x_test.shape} - y_test shape: {y_test.shape}")
 
 weight_decay = 0.0001
 batch_size = 128
-num_epochs = 1
+num_epochs = 50
 dropout_rate = 0.2
 image_size = 64  # We'll resize input images to this size.
 patch_size = 8  # Size of the patches to be extracted from the input images.
