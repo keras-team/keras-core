@@ -78,14 +78,16 @@ We will rescale the data to `[0, 1]` and perform simple augmentations to our dat
 
 rescale = layers.Rescaling(1.0 / 255)
 
-data_augmentation = keras.Sequential(
-    [
+data_augmentation = [
         layers.RandomFlip("horizontal_and_vertical"),
         layers.RandomRotation(0.3),
         layers.RandomZoom(0.2),
     ]
-)
-
+# Helper to apply augmentation
+def apply_aug(x):
+  for aug in data_augmentation:
+    x = aug(x)
+  return x
 
 def prepare(ds, shuffle=False, augment=False):
     # Rescale dataset
@@ -100,7 +102,7 @@ def prepare(ds, shuffle=False, augment=False):
     # Use data augmentation only on the training set
     if augment:
         ds = ds.map(
-            lambda x, y: (data_augmentation(x, training=True), y),
+            lambda x, y: (apply_aug(x), y),
             num_parallel_calls=AUTOTUNE,
         )
 
@@ -227,7 +229,7 @@ trained with Gradient Centralization
 """
 
 history_no_gc = model.fit(
-    train_ds, epochs=1, verbose=1, callbacks=[time_callback_no_gc]
+    train_ds, epochs=10, verbose=1, callbacks=[time_callback_no_gc]
 )
 
 """
@@ -242,7 +244,7 @@ model.compile(loss="binary_crossentropy", optimizer=optimizer, metrics=["accurac
 
 model.summary()
 
-history_gc = model.fit(train_ds, epochs=1, verbose=1, callbacks=[time_callback_gc])
+history_gc = model.fit(train_ds, epochs=10, verbose=1, callbacks=[time_callback_gc])
 
 """
 ## Comparing performance
