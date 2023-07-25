@@ -200,12 +200,12 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
                 "Applying affine transform with fill_mode=wrap/reflect is not "
                 "support in torch backend"
             )
-        if fill_mode in "mirror" and backend.backend() == "tensorflow":
+        if fill_mode == "mirror" and backend.backend() == "tensorflow":
             self.skipTest(
                 "Applying affine transform with fill_mode=mirror is not "
                 "support in tensorflow backend"
             )
-        if fill_mode in "wrap" and backend.backend() == "tensorflow":
+        if fill_mode == "wrap" and backend.backend() == "tensorflow":
             self.skipTest(
                 "The numerical results of applying affine transform with "
                 "fill_mode=wrap in tensorflow is inconsistent with scipy"
