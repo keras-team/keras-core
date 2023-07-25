@@ -177,12 +177,6 @@ class Router(layers.Layer):
         expert_mask_flat = ops.sum(expert_mask, axis=-1)
         # Mask out the experts that have overflowed the expert capacity.
         expert_gate *= expert_mask_flat
-        # PyTorch one_hot doesn't allow values of position_in_expert to be
-        # larger than self.expert_capacity
-        if keras.backend.backend() == 'torch':
-            position_in_expert = ops.cast(
-                expert_mask * position_in_expert,
-                "int32")
         # Combine expert outputs and scaling with router probability.
         # combine_tensor shape: [tokens_per_batch, num_experts, expert_capacity]
         combined_tensor = ops.expand_dims(

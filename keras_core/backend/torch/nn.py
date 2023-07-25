@@ -519,6 +519,9 @@ def one_hot(x, num_classes, axis=-1, dtype="float32"):
     # If axis is not last, change output to axis and shift remaining elements.
     x = convert_to_tensor(x, dtype=torch.long)
 
+    # Torch one_hot does not accept values >= num_classes
+    x = where(x < num_classes, x, 0)
+
     # Torch one_hot does not natively handle negative values, so we add some
     # manual handling for negatives in the input to one_hot by using max(x, 0).
     # The output will have some invalid results, so we set them back to 0 using
