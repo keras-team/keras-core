@@ -3,7 +3,7 @@ Title: Gradient Centralization for Better Training Performance
 Author: [Rishit Dagli](https://github.com/Rishit-dagli)
 Converted to Keras Core by: [Muhammad Anas Raza](https://anasrz.com)
 Date created: 06/18/21
-Last modified: 06/18/21
+Last modified: 07/25/23
 Description: Implement Gradient Centralization to improve training performance of DNNs.
 Accelerator: GPU
 """
