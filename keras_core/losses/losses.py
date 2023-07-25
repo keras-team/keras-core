@@ -1642,8 +1642,9 @@ def sparse_categorical_crossentropy(
             default, we assume that `y_pred` encodes a probability distribution.
         ignore_class: Optional integer. The ID of a class to be ignored during
             loss computation. This is useful, for example, in segmentation
-            problems featuring a "void" class (commonly -1 or 255) in segmentation
-            maps. By default (ignore_class=None), all classes are considered.
+            problems featuring a "void" class (commonly -1 or 255) in
+            segmentation maps. By default (ignore_class=None), all classes are
+            considered.
         axis: Defaults to -1. The dimension along which the entropy is
             computed.
 
@@ -1661,7 +1662,7 @@ def sparse_categorical_crossentropy(
     """
 
     if ignore_class is not None:
-        y_pred_shape = ops.convert_to_tensor(ops.shape(y_pred))
+        y_pred_shape = ops.shape(y_pred)
         valid_mask = ops.not_equal(y_true, ops.cast(ignore_class, y_pred.dtype))
         y_true = y_true[valid_mask]
         y_pred = y_pred[valid_mask]
@@ -1674,7 +1675,10 @@ def sparse_categorical_crossentropy(
     )
 
     if ignore_class is not None:
-        res_shape = ops.cast(y_pred_shape[:-1], "int32")
+        if backend.backend() == "jax":
+            res_shape = ops.cast(y_pred_shape[:-1], "int32")
+        else:
+            res_shape = ops.cast(y_pred_shape[:-1], "int64")
         valid_mask = ops.reshape(valid_mask, res_shape)
         valid_idx = ops.stack(ops.where(valid_mask, None, None), -1)
         res = ops.scatter(indices=valid_idx, values=res, shape=res_shape)
