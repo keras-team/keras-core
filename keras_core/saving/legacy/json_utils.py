@@ -11,9 +11,6 @@ from keras_core.saving import serialization_lib
 from keras_core.saving.legacy import serialization
 from keras_core.utils.module_utils import tensorflow as tf
 
-if tf.available:
-    from tensorflow.python.framework import type_spec_registry
-
 _EXTENSION_TYPE_SPEC = "_EXTENSION_TYPE_SPEC"
 
 
@@ -88,6 +85,8 @@ def _decode_helper(
             if obj["class_name"] == "TensorShape":
                 return tf.TensorShape(obj["items"])
             elif obj["class_name"] == "TypeSpec":
+                from tensorflow.python.framework import type_spec_registry
+
                 return type_spec_registry.lookup(obj["type_spec"])._deserialize(
                     _decode_helper(obj["serialized"])
                 )
@@ -185,6 +184,9 @@ def get_json_type(obj):
     #     return obj.__wrapped__
 
     if tf.available and isinstance(obj, tf.TypeSpec):
+
+        from tensorflow.python.framework import type_spec_registry
+
         try:
             type_spec_name = type_spec_registry.get_name(type(obj))
             return {
