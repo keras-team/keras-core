@@ -27,11 +27,14 @@ main building blocks.
 ## Setup
 """
 
+import sys
+sys.path.append('/content/keras-core')
+
 import numpy as np
-import tensorflow as tf
 import keras_core as keras
 from keras_core import layers
 from keras_core.layers import Lambda
+from keras_core import ops
 
 """
 ## Prepare the data
@@ -51,7 +54,7 @@ print(f"x_test shape: {x_test.shape} - y_test shape: {y_test.shape}")
 
 weight_decay = 0.0001
 batch_size = 128
-num_epochs = 50
+num_epochs = 1
 dropout_rate = 0.2
 image_size = 64  # We'll resize input images to this size.
 patch_size = 8  # Size of the patches to be extracted from the input images.
@@ -80,7 +83,7 @@ def build_classifier(blocks, positional_encoding=False):
     # Encode patches to generate a [batch_size, num_patches, embedding_dim] tensor.
     x = layers.Dense(units=embedding_dim)(patches)
     if positional_encoding:
-        positions = tf.range(start=0, limit=num_patches, delta=1)
+        positions = ops.arange(start=0, stop=num_patches, step=1)
         position_embedding = layers.Embedding(
             input_dim=num_patches, output_dim=embedding_dim
         )(positions)
@@ -174,16 +177,13 @@ class Patches(layers.Layer):
         self.num_patches = num_patches
 
     def call(self, images):
-        batch_size = tf.shape(images)[0]
-        patches = tf.image.extract_patches(
-            images=images,
-            sizes=[1, self.patch_size, self.patch_size, 1],
-            strides=[1, self.patch_size, self.patch_size, 1],
-            rates=[1, 1, 1, 1],
-            padding="VALID",
+        batch_size = ops.shape(images)[0]
+        patches = ops.image.extract_patches(
+            image=images,
+            size=[self.patch_size, self.patch_size],
         )
         patch_dims = patches.shape[-1]
-        patches = tf.reshape(
+        patches = ops.reshape(
             patches, [batch_size, self.num_patches, patch_dims]
         )
         return patches
@@ -237,11 +237,11 @@ class MLPMixerLayer(layers.Layer):
         # Apply layer normalization.
         x = self.normalize(inputs)
         # Transpose inputs from [num_batches, num_patches, hidden_units] to [num_batches, hidden_units, num_patches].
-        x_channels = tf.linalg.matrix_transpose(x)
+        x_channels = ops.transpose(x, axes=[0, 2, 1])
         # Apply mlp1 on each channel independently.
         mlp1_outputs = self.mlp1(x_channels)
         # Transpose mlp1_outputs from [num_batches, hidden_dim, num_patches] to [num_batches, num_patches, hidden_units].
-        mlp1_outputs = tf.linalg.matrix_transpose(mlp1_outputs)
+        mlp1_outputs = ops.transpose(mlp1_outputs, axes=[0, 2, 1])
         # Add skip connection.
         x = mlp1_outputs + inputs
         # Apply layer normalization.
@@ -317,10 +317,8 @@ class FNetLayer(layers.Layer):
 
     def call(self, inputs):
         # Apply fourier transformations.
-        x = tf.cast(
-            tf.signal.fft2d(tf.cast(inputs, dtype=tf.dtypes.complex64)),
-            dtype=tf.dtypes.float32,
-        )
+        input_shape = ops.shape(inputs)
+        x, _ = ops.fft((inputs, ops.zeros(input_shape)))
         # Add skip connection.
         x = x + inputs
         # Apply layer normalization.
@@ -399,13 +397,13 @@ class gMLPLayer(layers.Layer):
     def spatial_gating_unit(self, x):
         # Split x along the channel dimensions.
         # Tensors u and v will in th shape of [batch_size, num_patchs, embedding_dim].
-        u, v = tf.split(x, num_or_size_splits=2, axis=2)
+        u, v = ops.split(x, indices_or_sections=2, axis=2)
         # Apply layer normalization.
         v = self.normalize2(v)
         # Apply spatial projection.
-        v_channels = tf.linalg.matrix_transpose(v)
+        v_channels = ops.transpose(v, axes=[0, 2, 1])
         v_projected = self.spatial_projection(v_channels)
-        v_projected = tf.linalg.matrix_transpose(v_projected)
+        v_projected = ops.transpose(v_projected, axes=[0, 2, 1])
         # Apply element-wise multiplication.
         return u * v_projected
 
