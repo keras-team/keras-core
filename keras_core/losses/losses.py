@@ -1679,8 +1679,13 @@ def sparse_categorical_crossentropy(
             res_shape = ops.cast(y_pred_shape[:-1], "int32")
         else:
             res_shape = ops.cast(y_pred_shape[:-1], "int64")
-        valid_mask = ops.reshape(valid_mask, res_shape)
-        valid_idx = ops.stack(ops.where(valid_mask, None, None), -1)
+
+        valid_mask = ops.reshape(valid_mask, tuple(res_shape))
+        valid_idx = ops.where(valid_mask, None, None)
+
+        if isinstance(valid_idx, (tuple, list)):
+            valid_idx = ops.stack(ops.where(valid_mask, None, None), -1)
+
         res = ops.scatter(indices=valid_idx, values=res, shape=res_shape)
         res._keras_mask = valid_mask
     return res
