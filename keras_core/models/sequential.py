@@ -267,9 +267,7 @@ class Sequential(Model):
         for layer in super().layers:
             # `super().layers` include the InputLayer if available (it is
             # filtered out of `self.layers`).
-            layer_configs.append(
-                serialize_fn(layer)
-            )
+            layer_configs.append(serialize_fn(layer))
         config = Model.get_config(self)
         config["name"] = self.name
         config["layers"] = copy.deepcopy(layer_configs)

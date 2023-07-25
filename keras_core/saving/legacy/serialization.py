@@ -5,7 +5,6 @@ import inspect
 import threading
 import weakref
 
-
 # isort: off
 from keras_core.api_export import keras_core_export
 from keras_core.saving import object_registration

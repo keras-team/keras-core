@@ -1,6 +1,8 @@
 import os
 import zipfile
 
+from absl import logging
+
 from keras_core.api_export import keras_core_export
 from keras_core.saving import saving_lib
 from keras_core.saving.legacy import legacy_h5_format
@@ -60,12 +62,11 @@ def save_model(model, filepath, overwrite=True, save_format=None, **kwargs):
 
     # Deprecation warnings
     if save_format == "h5":
-        warnings.warn(
+        logging.warning(
             "You are saving your model as an HDF5 file via `model.save()`. "
             "This file format is considered legacy. "
             "We recommend using instead the native Keras format, "
-            "e.g. `model.save('my_model.keras')`.",
-            stacklevel=2,
+            "e.g. `model.save('my_model.keras')`."
         )
 
     if save_format == "keras":
@@ -80,14 +81,18 @@ def save_model(model, filepath, overwrite=True, save_format=None, **kwargs):
                 return
         saving_lib.save_model(model, filepath)
     elif save_format == "h5":
-        legacy_h5_format.save_model_to_hdf5(model, filepath, overwrite, include_optimizer)
+        legacy_h5_format.save_model_to_hdf5(
+            model, filepath, overwrite, include_optimizer
+        )
     else:
         # TODO(nkovela): Replace code route when SavedModel format is supported
         raise ValueError(
-            "Invalid filepath extension for saving."
-            "Please add either a `.keras` extension for the native Keras format (recommended)"
-            f"or a `.h5` extension. Received: filepath = {filepath}."
+            "Invalid filepath extension for saving. "
+            "Please add either a `.keras` extension for the native Keras "
+            f"format (recommended) or a `.h5` extension. "
+            f"Received: filepath = {filepath}."
         )
+
 
 @keras_core_export(
     ["keras_core.saving.load_model", "keras_core.models.load_model"]

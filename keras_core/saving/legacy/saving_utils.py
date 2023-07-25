@@ -1,16 +1,19 @@
-import tree
 import threading
+
+import tree
 from absl import logging
-from keras_core import optimizers
+
 from keras_core import backend
 from keras_core import layers
 from keras_core import losses
+from keras_core import metrics
 from keras_core import models
+from keras_core import optimizers
 from keras_core.saving import object_registration
 from keras_core.saving.legacy import serialization
 
-
 MODULE_OBJECTS = threading.local()
+
 
 def model_from_config(config, custom_objects=None):
     """Instantiates a Keras model from its config.
@@ -37,7 +40,7 @@ def model_from_config(config, custom_objects=None):
     global MODULE_OBJECTS
 
     if not hasattr(MODULE_OBJECTS, "ALL_OBJECTS"):
-        MODULE_OBJECTS.ALL_OBJECTS = layers.__dict__ 
+        MODULE_OBJECTS.ALL_OBJECTS = layers.__dict__
         MODULE_OBJECTS.ALL_OBJECTS["InputLayer"] = layers.InputLayer
         MODULE_OBJECTS.ALL_OBJECTS["Functional"] = models.Functional
         MODULE_OBJECTS.ALL_OBJECTS["Model"] = models.Model
@@ -71,7 +74,9 @@ def model_metadata(model, include_optimizer=True, require_config=True):
         if model.compiled:
             training_config = model._compile_config.config
             training_config.pop("optimizer", None)  # Handled separately.
-            metadata["training_config"] = _serialize_nested_config(training_config)
+            metadata["training_config"] = _serialize_nested_config(
+                training_config
+            )
             optimizer_config = {
                 "class_name": object_registration.get_registered_name(
                     model.optimizer.__class__
@@ -163,6 +168,17 @@ def _deserialize_nested_config(deserialize_fn, config):
         "Saved configuration not understood. Configuration should be a "
         f"dictionary, string, tuple or list. Received: config={config}."
     )
+
+
+def _deserialize_metric(metric_config):
+    """Deserialize metrics, leaving special strings untouched."""
+    if metric_config in ["accuracy", "acc", "crossentropy", "ce"]:
+        # Do not deserialize accuracy and cross-entropy strings as we have
+        # special case handling for these in compile, based on model output
+        # shape.
+        return metric_config
+    return metrics.deserialize(metric_config)
+
 
 def try_build_compiled_arguments(model):
     try:

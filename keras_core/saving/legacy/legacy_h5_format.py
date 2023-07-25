@@ -1,18 +1,16 @@
 import json
-import warnings
 import os
+import warnings
 
 import numpy as np
-
 from absl import logging
-from keras_core.utils import io_utils
-from keras_core import optimizers
+
 from keras_core import backend
-from keras_core import losses
+from keras_core import optimizers
 from keras_core.saving import object_registration
 from keras_core.saving.legacy import saving_utils
 from keras_core.saving.legacy.saved_model import json_utils
-
+from keras_core.utils import io_utils
 
 try:
     import h5py
@@ -65,10 +63,7 @@ def save_model_to_hdf5(model, filepath, overwrite=True, include_optimizer=True):
 
         # TODO(b/128683857): Add integration tests between tf.keras and external
         # Keras, to avoid breaking TF.js users.
-        if (
-            include_optimizer
-            and hasattr(model, "optimizer")
-        ):
+        if include_optimizer and hasattr(model, "optimizer"):
             save_optimizer_weights_to_hdf5_group(f, model.optimizer)
 
         f.flush()
@@ -218,7 +213,11 @@ def save_weights_to_hdf5_group(f, model):
         g = f.create_group(layer.name)
         weights = _legacy_weights(layer)
         save_subset_weights_to_hdf5_group(g, weights)
-    weights = list(v for v in model._trainable_variables + model._non_trainable_variables if v in model.weights)
+    weights = list(
+        v
+        for v in model._trainable_variables + model._non_trainable_variables
+        if v in model.weights
+    )
     g = f.create_group("top_level_model_weights")
     save_subset_weights_to_hdf5_group(g, weights)
 
@@ -482,9 +481,7 @@ def load_weights_from_hdf5_group_by_name(f, model, skip_mismatch=False):
                     symbolic_weights[i].assign(weight_values[i])
 
     if "top_level_model_weights" in f:
-        symbolic_weights = (
-            model.trainable_weights + model.non_trainable_weights
-        )
+        symbolic_weights = model.trainable_weights + model.non_trainable_weights
         weight_values = load_subset_weights_from_hdf5_group(
             f["top_level_model_weights"]
         )
