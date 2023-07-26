@@ -5,7 +5,7 @@ from absl import logging
 
 from keras_core.api_export import keras_core_export
 from keras_core.saving import saving_lib
-from keras_core.saving.legacy import legacy_h5_format
+from keras_core.legacy.saving import legacy_h5_format
 from keras_core.utils import file_utils
 from keras_core.utils import io_utils
 

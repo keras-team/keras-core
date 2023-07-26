@@ -8,7 +8,7 @@ import keras_core
 from keras_core import layers
 from keras_core import models
 from keras_core import testing
-from keras_core.saving.legacy import legacy_h5_format
+from keras_core.legacy.saving import legacy_h5_format
 
 # TODO: more thorough testing. Correctness depends
 # on exact weight ordering for each layer, so we need

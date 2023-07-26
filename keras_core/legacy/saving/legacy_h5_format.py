@@ -8,9 +8,9 @@ from absl import logging
 from keras_core import backend
 from keras_core import optimizers
 from keras_core.saving import object_registration
-from keras_core.saving.legacy import json_utils
-from keras_core.saving.legacy import saving_options
-from keras_core.saving.legacy import saving_utils
+from keras_core.legacy.saving import json_utils
+from keras_core.legacy.saving import saving_options
+from keras_core.legacy.saving import saving_utils
 from keras_core.utils import io_utils
 
 try:

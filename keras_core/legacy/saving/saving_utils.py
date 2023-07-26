@@ -10,7 +10,7 @@ from keras_core import metrics
 from keras_core import models
 from keras_core import optimizers
 from keras_core.saving import object_registration
-from keras_core.saving.legacy import serialization
+from keras_core.legacy.saving import serialization
 
 MODULE_OBJECTS = threading.local()
 

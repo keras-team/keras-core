@@ -7,9 +7,9 @@ from keras_core.layers.core.input_layer import InputLayer
 from keras_core.models.functional import Functional
 from keras_core.models.model import Model
 from keras_core.saving import serialization_lib
-from keras_core.saving.legacy import saving_options
-from keras_core.saving.legacy import saving_utils
-from keras_core.saving.legacy import serialization as legacy_serialization
+from keras_core.legacy.saving import saving_options
+from keras_core.legacy.saving import saving_utils
+from keras_core.legacy.saving import serialization as legacy_serialization
 from keras_core.utils import tracking
 
 

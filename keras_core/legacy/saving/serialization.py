@@ -263,7 +263,7 @@ def skip_failed_serialization():
 
 @keras_core_export(
     [
-        "keras_core.saving.legacy.serialize_keras_object",
+        "keras_core.legacy.saving.serialize_keras_object",
         "keras_core.utils.legacy.serialize_keras_object",
     ]
 )
@@ -407,7 +407,7 @@ def class_and_config_for_serialized_keras_object(
 
 @keras_core_export(
     [
-        "keras_core.saving.legacy.deserialize_keras_object",
+        "keras_core.legacy.saving.deserialize_keras_object",
         "keras_core.utils.legacy.deserialize_keras_object",
     ]
 )
