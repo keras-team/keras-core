@@ -201,7 +201,9 @@ for _ in range(num_layers):
 # Apply a dense layer to the every temporal slice of an input. For each of step
 # of the output sequence, decide which character should be chosen.
 model.add(layers.Dense(len(chars), activation="softmax"))
-model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+model.compile(
+    loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"]
+)
 model.summary()
 
 """
