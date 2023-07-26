@@ -39,12 +39,12 @@ the curve below is a ResNet-50 pre-trained on ImageNet (ILSVRC-2012).
 ## Setup
 """
 
+import keras_core as keras
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 import tensorflow as tf
-from tensorflow import keras
 import tensorflow_hub as hub
 import tensorflow_datasets as tfds
 
@@ -53,7 +53,7 @@ tfds.disable_progress_bar()
 SEEDS = 42
 
 np.random.seed(SEEDS)
-tf.random.set_seed(SEEDS)
+keras.utils.set_random_seed(SEEDS)
 
 """
 ## Gather Flower Dataset
