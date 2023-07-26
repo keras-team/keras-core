@@ -643,15 +643,13 @@ class Layer(BackendLayer, Operation):
                 return backend.convert_to_tensor(x, dtype=self.compute_dtype)
             return x
 
+        # Used to avoid expensive `tree` operations in the most common case.
         if (
-            not kwargs
-            and len(args) == 1
-            and backend.is_tensor(args[0])
-            and backend.standardize_dtype(args[0].dtype) == self.compute_dtype
-        ):
-            # Used to avoid expensive `tree` operations in the most common case.
-            pass
-        elif self._convert_input_args:
+            kwargs
+            or len(args) != 1
+            or not backend.is_tensor(args[0])
+            or backend.standardize_dtype(args[0].dtype) != self.compute_dtype
+        ) and self._convert_input_args:
             args = tree.map_structure(maybe_convert, args)
             kwargs = tree.map_structure(maybe_convert, kwargs)
 
