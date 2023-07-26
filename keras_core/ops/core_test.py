@@ -71,7 +71,10 @@ class CoreOpsStaticShapeTest(testing.TestCase):
         for o in out:
             self.assertEqual(o.shape, (2, None))
 
-        pytest.raises(ValueError, lambda: core.unstack(x, axis=axis))
+        with self.assertRaisesRegex(
+            ValueError, r"Cannot infer argument `num` from shape"
+        ):
+            core.unstack(x, axis=axis)
 
 
 class CoreOpsCorrectnessTest(testing.TestCase):
