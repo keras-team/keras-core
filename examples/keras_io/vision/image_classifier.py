@@ -24,11 +24,11 @@ classification problems at three levels of complexity:
 
 ## Multi-Backend Support
 
-KerasCV's `ImageClassifier` model supports several backends like Jax, PyTorch,
+KerasCV's `ImageClassifier` model supports several backends like JAX, PyTorch,
 and TensorFlow with the help of `keras_core`. To enable multi-backend support
 in KerasCV, set the `KERAS_CV_MULTI_BACKEND` environment variable. We can
 then switch between different backends by setting the `KERAS_BACKEND`
-environment variable. Currently, `tensorflow`, `jax`, and `torch` are
+environment variable. Currently, `"tensorflow"`, `"jax"`, and `"torch"` are
 supported.
 
 This demonstration uses the Jax backend.
