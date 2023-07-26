@@ -4,6 +4,7 @@ import warnings
 import numpy as np
 import tensorflow as tf
 import tree
+from packaging.version import Version
 from tensorflow.python.eager import context as tf_context
 
 from keras_core import callbacks as callbacks_module
@@ -30,6 +31,9 @@ class TensorFlowTrainer(base_trainer.Trainer):
             self._distribute_strategy = None
 
         self._distribute_reduction_method = None
+        self._supports_reduce_retracing = Version(tf.__version__) >= Version(
+            "2.9.0"
+        )
 
     @property
     def distribute_strategy(self):
@@ -99,11 +103,10 @@ class TensorFlowTrainer(base_trainer.Trainer):
             return self.train_step(data)
 
         if not self.run_eagerly:
-            one_step_on_data = tf.function(
-                one_step_on_data,
-                jit_compile=self.jit_compile,
-                reduce_retracing=True,
-            )
+            kwargs = {"jit_compile": self.jit_compile}
+            if self._supports_reduce_retracing:
+                kwargs.update({"reduce_retracing": True})
+            one_step_on_data = tf.function(one_step_on_data, **kwargs)
 
         @tf.autograph.experimental.do_not_convert
         def one_step_on_iterator(iterator):
@@ -131,7 +134,10 @@ class TensorFlowTrainer(base_trainer.Trainer):
             train_function = one_step_on_iterator
 
         if not self.run_eagerly:
-            train_function = tf.function(train_function, reduce_retracing=True)
+            kwargs = {}
+            if self._supports_reduce_retracing:
+                kwargs.update({"reduce_retracing": True})
+            train_function = tf.function(train_function, **kwargs)
 
         self.train_function = train_function
 
@@ -145,9 +151,10 @@ class TensorFlowTrainer(base_trainer.Trainer):
             return self.test_step(data)
 
         if not self.run_eagerly and self.jit_compile:
-            one_step_on_data = tf.function(
-                one_step_on_data, jit_compile=True, reduce_retracing=True
-            )
+            kwargs = {"jit_compile": True}
+            if self._supports_reduce_retracing:
+                kwargs.update({"reduce_retracing": True})
+            one_step_on_data = tf.function(one_step_on_data, **kwargs)
 
         @tf.autograph.experimental.do_not_convert
         def one_step_on_iterator(iterator):
@@ -175,7 +182,10 @@ class TensorFlowTrainer(base_trainer.Trainer):
             test_function = one_step_on_iterator
 
         if not self.run_eagerly:
-            test_function = tf.function(test_function, reduce_retracing=True)
+            kwargs = {}
+            if self._supports_reduce_retracing:
+                kwargs.update({"reduce_retracing": True})
+            test_function = tf.function(test_function, **kwargs)
 
         self.test_function = test_function
 
@@ -189,9 +199,10 @@ class TensorFlowTrainer(base_trainer.Trainer):
             return self.predict_step(data)
 
         if not self.run_eagerly and self.jit_compile:
-            one_step_on_data = tf.function(
-                one_step_on_data, jit_compile=True, reduce_retracing=True
-            )
+            kwargs = {"jit_compile": True}
+            if self._supports_reduce_retracing:
+                kwargs.update({"reduce_retracing": True})
+            one_step_on_data = tf.function(one_step_on_data, **kwargs)
 
         @tf.autograph.experimental.do_not_convert
         def one_step_on_data_distributed(data):
@@ -222,9 +233,11 @@ class TensorFlowTrainer(base_trainer.Trainer):
             predict_function = one_step_on_data_distributed
 
         if not self.run_eagerly:
-            predict_function = tf.function(
-                predict_function, reduce_retracing=True
-            )
+            kwargs = {}
+            if self._supports_reduce_retracing:
+                kwargs.update({"reduce_retracing": True})
+
+            predict_function = tf.function(predict_function, **kwargs)
 
         self.predict_function = predict_function
 

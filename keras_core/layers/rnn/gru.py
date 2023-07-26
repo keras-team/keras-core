@@ -509,6 +509,14 @@ class GRU(RNN):
             **kwargs,
         )
         self.input_spec = InputSpec(ndim=3)
+        if backend.backend() == "tensorflow" and backend.cudnn_ok(
+            cell.activation,
+            cell.recurrent_activation,
+            self.unroll,
+            cell.use_bias,
+            reset_after=reset_after,
+        ):
+            self.supports_jit = False
 
     def inner_loop(self, sequences, initial_state, mask, training=False):
         if tree.is_nested(initial_state):
