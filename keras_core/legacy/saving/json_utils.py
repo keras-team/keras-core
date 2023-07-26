@@ -7,8 +7,8 @@ import json
 
 import numpy as np
 
-from keras_core.saving import serialization_lib
 from keras_core.legacy.saving import serialization
+from keras_core.saving import serialization_lib
 from keras_core.utils.module_utils import tensorflow as tf
 
 _EXTENSION_TYPE_SPEC = "_EXTENSION_TYPE_SPEC"

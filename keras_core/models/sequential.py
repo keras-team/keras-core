@@ -3,13 +3,13 @@ import copy
 import tree
 
 from keras_core.api_export import keras_core_export
+from keras_core.backend.common import global_state
 from keras_core.layers.core.input_layer import InputLayer
+from keras_core.legacy.saving import saving_utils
+from keras_core.legacy.saving import serialization as legacy_serialization
 from keras_core.models.functional import Functional
 from keras_core.models.model import Model
 from keras_core.saving import serialization_lib
-from keras_core.legacy.saving import saving_options
-from keras_core.legacy.saving import saving_utils
-from keras_core.legacy.saving import serialization as legacy_serialization
 from keras_core.utils import tracking
 
 
@@ -262,7 +262,7 @@ class Sequential(Model):
 
     def get_config(self):
         serialize_fn = serialization_lib.serialize_keras_object
-        if saving_options.in_legacy_saving_scope():
+        if global_state.get_global_attribute("use_legacy_config", False):
             # Legacy format serialization used for H5 and SavedModel formats
             serialize_fn = legacy_serialization.serialize_keras_object
         layer_configs = []

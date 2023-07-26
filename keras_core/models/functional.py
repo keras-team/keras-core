@@ -6,15 +6,15 @@ import tree
 
 from keras_core import backend
 from keras_core import ops
+from keras_core.backend.common import global_state
 from keras_core.layers.input_spec import InputSpec
 from keras_core.layers.layer import Layer
+from keras_core.legacy.saving import saving_utils
+from keras_core.legacy.saving import serialization as legacy_serialization
 from keras_core.models.model import Model
 from keras_core.ops.function import Function
 from keras_core.ops.function import make_node_key
 from keras_core.saving import serialization_lib
-from keras_core.legacy.saving import saving_options
-from keras_core.legacy.saving import saving_utils
-from keras_core.legacy.saving import serialization as legacy_serialization
 from keras_core.utils import tracking
 
 
@@ -388,7 +388,7 @@ class Functional(Function, Model):
                         filtered_inbound_nodes.append(node_data)
 
             serialize_obj_fn = serialization_lib.serialize_keras_object
-            if saving_options.in_legacy_saving_scope():
+            if global_state.get_global_attribute("use_legacy_config", False):
                 # Legacy format serialization used for H5 and SavedModel
                 serialize_obj_fn = legacy_serialization.serialize_keras_object
             layer_config = serialize_obj_fn(operation)
