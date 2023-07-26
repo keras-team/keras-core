@@ -100,7 +100,7 @@ class Trainer:
 
     @jit_compile.setter
     def jit_compile(self, value):
-        if value is True and not model_supports_jit(self):
+        if value and not model_supports_jit(self):
             warnings.warn(
                 "Model doesn't support `jit_compile=True`. "
                 "Proceeding with `jit_compile=False`."
