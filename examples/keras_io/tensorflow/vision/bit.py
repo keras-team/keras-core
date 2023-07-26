@@ -86,9 +86,7 @@ BATCH_SIZE = 64
 STEPS_PER_EPOCH = 10
 AUTO = tf.data.AUTOTUNE  # optimise the pipeline performance
 NUM_CLASSES = 5  # number of classes
-SCHEDULE_LENGTH = (
-    500  # we will train on lower resolution images and will still attain good results
-)
+SCHEDULE_LENGTH = 500  # we will train on lower resolution images and will still attain good results
 SCHEDULE_BOUNDARIES = [
     200,
     300,
@@ -270,7 +268,9 @@ def plot_hist(hist):
     plt.title("Training Progress")
     plt.ylabel("Accuracy/Loss")
     plt.xlabel("Epochs")
-    plt.legend(["train_acc", "val_acc", "train_loss", "val_loss"], loc="upper left")
+    plt.legend(
+        ["train_acc", "val_acc", "train_loss", "val_loss"], loc="upper left"
+    )
     plt.show()
 
 
