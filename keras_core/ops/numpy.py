@@ -706,7 +706,7 @@ def arccos(x):
 
     Example:
     >>> x = keras_core.ops.convert_to_tensor([1, -1])
-    array([0.       , 3.1415927], dtype=float32)
+    array([0., 3.1415927], dtype=float32)
     """
     if any_symbolic_tensors((x,)):
         return Arccos().symbolic_call(x)
@@ -735,7 +735,7 @@ def arcsin(x):
     Example:
     >>> x = keras_core.ops.convert_to_tensor([1, -1, 0])
     >>> keras_core.ops.arcsin(x)
-    array([ 1.5707964, -1.5707964,  0.       ], dtype=float32)
+    array([ 1.5707964, -1.5707964,  0.], dtype=float32)
     """
     if any_symbolic_tensors((x,)):
         return Arcsin().symbolic_call(x)
@@ -764,7 +764,7 @@ def arctan(x):
     Example:
     >>> x = keras_core.ops.convert_to_tensor([0, 1])
     >>> keras_core.ops.arctan(x)
-    array([0.       , 0.7853982], dtype=float32)
+    array([0., 0.7853982], dtype=float32)
     """
     if any_symbolic_tensors((x,)):
         return Arctan().symbolic_call(x)
@@ -788,11 +788,11 @@ def arctan2(x1, x2):
 
     The quadrant (i.e., branch) is chosen so that `arctan2(x1, x2)` is the
     signed angle in radians between the ray ending at the origin and passing
-    through the point (1,0), and the ray ending at the origin and passing
-    through the point (x2, x1). (Note the role reversal: the “y-coordinate” is
-    the first function parameter, the “x-coordinate” is the second.) By IEEE
-    convention, this function is defined for x2 = +/-0 and for either or both
-    of x1 and x2 = +/-inf.
+    through the point `(1, 0)`, and the ray ending at the origin and passing
+    through the point `(x2, x1)`. (Note the role reversal: the "y-coordinate"
+    is the first function parameter, the "x-coordinate" is the second.) By IEEE
+    convention, this function is defined for `x2 = +/-0` and for either or both
+    of `x1` and `x2` `= +/-inf`.
 
     Args:
         x1: First input tensor.
@@ -806,7 +806,7 @@ def arctan2(x1, x2):
     >>> x = keras_core.ops.convert_to_tensor([-1, +1, +1, -1])
     >>> y = keras_core.ops.convert_to_tensor([-1, -1, +1, +1])
     >>> keras_core.ops.arctan2(y, x) * 180 / numpy.pi
-    array([-135.,  -45.,   45.,  135.], dtype=float32)
+    array([-135., -45., 45., 135.], dtype=float32)
 
     Note the order of the parameters. `arctan2` is defined also when x2=0 and
     at several other points, obtaining values in the range `[-pi, pi]`:
@@ -819,7 +819,7 @@ def arctan2(x1, x2):
     ...     keras_core.ops.array([0., 0., numpy.inf]),
     ...     keras_core.ops.array([+0., -0., numpy.inf]),
     ... )
-    array([0.       , 3.1415925, 0.7853982], dtype=float32)
+    array([0., 3.1415925, 0.7853982], dtype=float32)
     """
     if any_symbolic_tensors((x1, x2)):
         return Arctan2().symbolic_call(x1, x2)
