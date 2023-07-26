@@ -25,9 +25,9 @@ class TensorFlowTrainer(base_trainer.Trainer):
         self.predict_function = None
 
         if Version(tf.__version__) >= Version('2.9.0'):
-            self.support_reduce_retracing = True
+            self._support_reduce_retracing = True
         else:
-            self.support_reduce_retracing = False
+            self._support_reduce_retracing = False
 
         # Model must be created under scope of DistStrat it will be trained
         # with.
@@ -107,7 +107,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
 
         if not self.run_eagerly:
             kwargs = {'jit_compile': self.jit_compile}
-            if self.support_reduce_retracing is True:
+            if self._support_reduce_retracing:
                 kwargs.update({'reduce_retracing': True})
             one_step_on_data = tf.function(one_step_on_data, **kwargs)
 
@@ -138,7 +138,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
 
         if not self.run_eagerly:
             kwargs = {}
-            if self.support_reduce_retracing is True:
+            if self._support_reduce_retracing:
                 kwargs.update({'reduce_retracing': True})
             train_function = tf.function(train_function, **kwargs)
 
@@ -155,7 +155,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
 
         if not self.run_eagerly and self.jit_compile:
             kwargs = {'jit_compile': True}
-            if self.support_reduce_retracing is True:
+            if self._support_reduce_retracing:
                 kwargs.update({'reduce_retracing': True})
             one_step_on_data = tf.function(one_step_on_data, **kwargs)
 
@@ -186,7 +186,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
 
         if not self.run_eagerly:
             kwargs = {}
-            if self.support_reduce_retracing is True:
+            if self._support_reduce_retracing:
                 kwargs.update({'reduce_retracing': True})
             test_function = tf.function(test_function, **kwargs)
 
@@ -203,7 +203,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
 
         if not self.run_eagerly and self.jit_compile:
             kwargs = {'jit_compile': True}
-            if self.support_reduce_retracing is True:
+            if self._support_reduce_retracing:
                 kwargs.update({'reduce_retracing': True})
             one_step_on_data = tf.function(one_step_on_data, **kwargs)
 
@@ -237,7 +237,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
 
         if not self.run_eagerly:
             kwargs = {}
-            if self.support_reduce_retracing is True:
+            if self._support_reduce_retracing:
                 kwargs.update({'reduce_retracing': True})
 
             predict_function = tf.function(predict_function, **kwargs)
