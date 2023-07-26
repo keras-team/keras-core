@@ -38,10 +38,11 @@ the curve below is a ResNet-50 pre-trained on ImageNet (ILSVRC-2012).
 """
 ## Setup
 """
+import os
+os.environ['KERAS_BACKEND'] = 'tensorflow'
 
 import keras_core as keras
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 
 import tensorflow as tf
