@@ -141,7 +141,7 @@ class LayerTest(testing.TestCase):
                 self.seed_gen = backend.random.SeedGenerator(seed=1337)
 
             def call(self, x):
-                return backend.random.dropout(x, rate=0.5, seed=self.seed_gen)
+                return x * backend.random.normal(x.shape, seed=self.seed_gen)
 
         layer = RNGLayer()
         self.assertEqual(layer.variables, [layer.seed_gen.state])
@@ -158,8 +158,8 @@ class LayerTest(testing.TestCase):
                 self.seed_gens.append(backend.random.SeedGenerator(seed=10))
 
             def call(self, x):
-                x = backend.random.dropout(x, rate=0.5, seed=self.seed_gens[0])
-                x = backend.random.dropout(x, rate=0.5, seed=self.seed_gens[1])
+                x = x * backend.random.normal(x.shape, seed=self.seed_gens[0])
+                x = x * backend.random.normal(x.shape, seed=self.seed_gens[1])
                 return x
 
         layer = RNGListLayer()
@@ -264,6 +264,7 @@ class LayerTest(testing.TestCase):
         layer(layers.Input(batch_shape=(2, 2)))
         self.assertLen(layer.losses, 0)
 
+    @pytest.mark.requires_trainable_backend
     def test_add_loss(self):
         class LossLayer(layers.Layer):
             def call(self, x):
@@ -378,6 +379,10 @@ class LayerTest(testing.TestCase):
         self.assertEqual(backend.standardize_dtype(y.dtype), "float16")
         self.assertEqual(layer.kernel.dtype, "float32")
 
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Numpy backend does not support masking.",
+    )
     def test_masking(self):
         class BasicMaskedLayer(layers.Layer):
             def __init__(self):
