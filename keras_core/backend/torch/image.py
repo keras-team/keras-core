@@ -86,8 +86,8 @@ AFFINE_TRANSFORM_FILL_MODES = {
     "constant": "zeros",
     "nearest": "border",
     # "wrap",  not supported by torch
-    "mirror": "reflection",
-    # "reflect", not supported by torch
+    "mirror": "reflection",  # torch's reflection is mirror in other backends
+    "reflect": "reflection",  # if fill_mode==reflect, redirect to mirror
 }
 
 
@@ -187,10 +187,9 @@ def affine_transform(
             f"transform.shape={transform.shape}"
         )
 
-    # the default of tnn.grid_sample is zeros
+    # the default fill_value of tnn.grid_sample is "zeros"
     if fill_mode != "constant" or (fill_mode == "constant" and fill_value == 0):
         fill_value = None
-    fill_mode = AFFINE_TRANSFORM_FILL_MODES[fill_mode]
 
     # unbatched case
     need_squeeze = False
@@ -204,9 +203,10 @@ def affine_transform(
         image = image.permute((0, 3, 1, 2))
 
     batch_size = image.shape[0]
+    h, w, c = image.shape[-2], image.shape[-1], image.shape[-3]
 
     # get indices
-    shape = [*image.shape[-2:], image.shape[-3]]  # (H, W, C)
+    shape = [h, w, c]  # (H, W, C)
     meshgrid = torch.meshgrid(
         *[torch.arange(size) for size in shape], indexing="ij"
     )
@@ -243,7 +243,6 @@ def affine_transform(
     coordinates = coordinates.permute((0, 2, 3, 1))
 
     # normalize coordinates
-    h, w = image.shape[-2], image.shape[-1]
     coordinates[:, :, :, 1] = coordinates[:, :, :, 1] / (w - 1) * 2.0 - 1.0
     coordinates[:, :, :, 0] = coordinates[:, :, :, 0] / (h - 1) * 2.0 - 1.0
     grid = torch.stack(
@@ -251,7 +250,12 @@ def affine_transform(
     )
 
     affined = _apply_grid_transform(
-        image, grid, interpolation, fill_mode, fill_value
+        image,
+        grid,
+        interpolation=interpolation,
+        # if fill_mode==reflect, redirect to mirror
+        fill_mode=AFFINE_TRANSFORM_FILL_MODES[fill_mode],
+        fill_value=fill_value,
     )
 
     if data_format == "channels_last":
