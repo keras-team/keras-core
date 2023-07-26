@@ -44,7 +44,7 @@ def mean(x, axis=None, keepdims=False):
     if isinstance(x, (list, tuple)):
         x = stack(x)
     x = convert_to_tensor(x)
-    if axis == () or axis == []:
+    if axis == None or axis == () or axis == []:
         # Torch handles the empty axis case differently from numpy.
         return x
     # Conversion to float necessary for `torch.mean`
