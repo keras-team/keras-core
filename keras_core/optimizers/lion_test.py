@@ -53,7 +53,10 @@ class LionTest(testing.TestCase):
         grads = ops.arange(0.1, 1.1, 0.1)
         first_grads = ops.full((10,), 0.01)
 
-        golden = np.tile([[0.999], [0.998], [0.997], [0.996], [0.995]], (1, 10))
+        golden = np.tile(
+            [[0.999], [0.998], [0.997], [0.996], [0.995]],
+            (1, 10),
+        )
 
         optimizer.apply_gradients(zip([first_grads], [x]))
         for i in range(5):
