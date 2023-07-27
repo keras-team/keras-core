@@ -165,11 +165,19 @@ Notice how the augmentation transforms vary for the kind of dataset we are prepa
 ## Prepare datasets
 """
 
-initial_train_dataset = make_dataset(train_dataset, train=True, image_size=smaller_size)
-initial_val_dataset = make_dataset(val_dataset, train=False, image_size=smaller_size)
+initial_train_dataset = make_dataset(
+    train_dataset, train=True, image_size=smaller_size
+)
+initial_val_dataset = make_dataset(
+    val_dataset, train=False, image_size=smaller_size
+)
 
-finetune_train_dataset = make_dataset(train_dataset, train=True, image_size=bigger_size)
-finetune_val_dataset = make_dataset(val_dataset, train=False, image_size=bigger_size)
+finetune_train_dataset = make_dataset(
+    train_dataset, train=True, image_size=bigger_size
+)
+finetune_val_dataset = make_dataset(
+    val_dataset, train=False, image_size=bigger_size
+)
 
 vanilla_train_dataset = make_dataset(
     train_dataset, train=True, image_size=bigger_size, fixres=False
@@ -236,7 +244,12 @@ def get_training_model(num_classes=5):
 
 
 def train_and_evaluate(
-    model, train_ds, val_ds, epochs, learning_rate=1e-3, use_early_stopping=False
+    model,
+    train_ds,
+    val_ds,
+    epochs,
+    learning_rate=1e-3,
+    use_early_stopping=False,
 ):
     optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
     model.compile(
