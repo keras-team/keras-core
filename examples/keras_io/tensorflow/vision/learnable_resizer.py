@@ -2,7 +2,7 @@
 Title: Learning to Resize in Computer Vision
 Author: [Sayak Paul](https://twitter.com/RisingSayak)
 Date created: 2021/04/30
-Last modified: 2021/05/13
+Last modified: 2023/07/26
 Description: How to optimally learn representations of images for a given resolution.
 Accelerator: GPU
 """
@@ -33,15 +33,14 @@ resizing module as proposed in the paper and demonstrate that on the
 [Cats and Dogs dataset](https://www.microsoft.com/en-us/download/details.aspx?id=54765)
 using the [DenseNet-121](https://arxiv.org/abs/1608.06993) architecture.
 
-This example requires TensorFlow 2.4 or higher.
 """
 
 """
 ## Setup
 """
 
-from tensorflow.keras import layers
-from tensorflow import keras
+from keras_core import layers
+import keras_core as keras
 import tensorflow as tf
 
 import tensorflow_datasets as tfds
@@ -168,7 +167,7 @@ def get_learnable_resizer(filters=16, num_res_blocks=1, interpolation=INTERPOLAT
     x = layers.Conv2D(filters=3, kernel_size=7, strides=1, padding="same")(x)
     final_resize = layers.Add()([naive_resize, x])
 
-    return tf.keras.Model(inputs, final_resize, name="learnable_resizer")
+    return keras.Model(inputs, final_resize, name="learnable_resizer")
 
 
 learnable_resizer = get_learnable_resizer()
@@ -204,7 +203,7 @@ for i, image in enumerate(sample_images[:6]):
 
 
 def get_model():
-    backbone = tf.keras.applications.DenseNet121(
+    backbone = keras.applications.DenseNet121(
         weights=None,
         include_top=True,
         classes=2,
@@ -217,7 +216,7 @@ def get_model():
     x = learnable_resizer(x)
     outputs = backbone(x)
 
-    return tf.keras.Model(inputs, outputs)
+    return keras.Model(inputs, outputs)
 
 
 """
