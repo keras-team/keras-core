@@ -33,11 +33,15 @@ and 9 categorical features.
 ## Setup
 """
 
+import keras_core as keras
+from keras_core import layers
+from keras_core.layers import StringLookup
+
+
 import tensorflow as tf
 import numpy as np
 import pandas as pd
-from tensorflow import keras
-from tensorflow.keras import layers
+
 import math
 
 """
@@ -146,7 +150,6 @@ for training and validation. We also preprocess the input by mapping the target 
 to an index.
 """
 
-from tensorflow.keras.layers import StringLookup
 
 target_label_lookup = StringLookup(
     vocabulary=TARGET_LABELS, mask_token=None, num_oov_indices=0
@@ -216,7 +219,7 @@ def encode_inputs(inputs):
             # Use the numerical features as-is.
             encoded_feature = inputs[feature_name]
             if inputs[feature_name].shape[-1] is None:
-                encoded_feature = tf.expand_dims(encoded_feature, -1)
+                encoded_feature = keras.ops.expand_dims(encoded_feature, -1)
 
         encoded_features.append(encoded_feature)
 
