@@ -22,7 +22,7 @@ class Lion(optimizer.Optimizer):
         learning_rate: A float, a
             `keras_core.optimizers.schedules.LearningRateSchedule` instance, or
             a callable that takes no arguments and returns the actual value to
-            use. The learning rate. Defaults to `0.0001`.
+            use. The learning rate. Defaults to `0.001`.
         beta_1: A float value or a constant float tensor, or a callable
             that takes no arguments and returns the actual value to use. The
             rate to combine the current gradient and the 1st moment estimate.
@@ -43,7 +43,7 @@ class Lion(optimizer.Optimizer):
 
     def __init__(
         self,
-        learning_rate=0.0001,
+        learning_rate=0.001,
         beta_1=0.9,
         beta_2=0.99,
         weight_decay=None,
@@ -70,7 +70,7 @@ class Lion(optimizer.Optimizer):
         self.beta_2 = beta_2
         if beta_1 <= 0 or beta_1 > 1:
             raise ValueError(
-                "Argument `beta_1` must be between [0, 1]. Otherwise, the "
+                "Argument `beta_1` must be in the [0, 1] range. Otherwise, the "
                 f"optimizer degenerates to SignSGD. Received: beta_1={beta_1}."
             )
 
