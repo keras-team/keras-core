@@ -1173,7 +1173,7 @@ class SparseCategoricalCrossentropyTest(testing.TestCase):
                 loss = cce_obj(y_true, logits)
         else:
             loss = cce_obj(y_true, logits)
-        self.assertAllClose([[0.0, 1.48012]], loss, 3)
+            self.assertAllClose([[0.0, 1.48012]], loss, 3)
 
 
 class BinaryFocalCrossentropyTest(testing.TestCase):
