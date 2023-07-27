@@ -121,8 +121,12 @@ presents the structure of the learnable resizing module:
 """
 
 
-def conv_block(x, filters, kernel_size, strides, activation=layers.LeakyReLU(0.2)):
-    x = layers.Conv2D(filters, kernel_size, strides, padding="same", use_bias=False)(x)
+def conv_block(
+    x, filters, kernel_size, strides, activation=layers.LeakyReLU(0.2)
+):
+    x = layers.Conv2D(
+        filters, kernel_size, strides, padding="same", use_bias=False
+    )(x)
     x = layers.BatchNormalization()(x)
     if activation:
         x = activation(x)
@@ -136,18 +140,26 @@ def res_block(x):
     return layers.Add()([inputs, x])
 
 
-def get_learnable_resizer(filters=16, num_res_blocks=1, interpolation=INTERPOLATION):
+def get_learnable_resizer(
+    filters=16, num_res_blocks=1, interpolation=INTERPOLATION
+):
     inputs = layers.Input(shape=[None, None, 3])
 
     # First, perform naive resizing.
-    naive_resize = layers.Resizing(*TARGET_SIZE, interpolation=interpolation)(inputs)
+    naive_resize = layers.Resizing(*TARGET_SIZE, interpolation=interpolation)(
+        inputs
+    )
 
     # First convolution block without batch normalization.
-    x = layers.Conv2D(filters=filters, kernel_size=7, strides=1, padding="same")(inputs)
+    x = layers.Conv2D(
+        filters=filters, kernel_size=7, strides=1, padding="same"
+    )(inputs)
     x = layers.LeakyReLU(0.2)(x)
 
     # Second convolution block with batch normalization.
-    x = layers.Conv2D(filters=filters, kernel_size=1, strides=1, padding="same")(x)
+    x = layers.Conv2D(
+        filters=filters, kernel_size=1, strides=1, padding="same"
+    )(x)
     x = layers.LeakyReLU(0.2)(x)
     x = layers.BatchNormalization()(x)
 
@@ -160,7 +172,11 @@ def get_learnable_resizer(filters=16, num_res_blocks=1, interpolation=INTERPOLAT
 
     # Projection.
     x = layers.Conv2D(
-        filters=filters, kernel_size=3, strides=1, padding="same", use_bias=False
+        filters=filters,
+        kernel_size=3,
+        strides=1,
+        padding="same",
+        use_bias=False,
     )(x)
     x = layers.BatchNormalization()(x)
 
@@ -185,7 +201,9 @@ random weights of the resizer.
 
 sample_images, _ = next(iter(train_ds))
 
-get_np = lambda image: ops.convert_to_numpy(ops.squeeze(image)) # Helper to convert image from any backend to numpy
+get_np = lambda image: ops.convert_to_numpy(
+    ops.squeeze(image)
+)  # Helper to convert image from any backend to numpy
 
 plt.figure(figsize=(16, 10))
 for i, image in enumerate(sample_images[:6]):
@@ -251,7 +269,7 @@ for i, image in enumerate(sample_images[:6]):
 
     ax = plt.subplot(3, 4, 2 * i + 1)
     plt.title("Input Image")
-    plt.imshow(image.numpy().squeeze()) 
+    plt.imshow(image.numpy().squeeze())
     plt.axis("off")
 
     ax = plt.subplot(3, 4, 2 * i + 2)
