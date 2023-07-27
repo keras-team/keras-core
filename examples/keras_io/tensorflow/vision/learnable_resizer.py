@@ -41,7 +41,11 @@ using the [DenseNet-121](https://arxiv.org/abs/1608.06993) architecture.
 
 from keras_core import layers
 import keras_core as keras
-import tensorflow as tf
+from keras_core import ops
+
+from tensorflow import data as tf_data
+from tensorflow import image as tf_image
+from tensorflow import one_hot as tf_one_hot
 
 import tensorflow_datasets as tfds
 
@@ -65,8 +69,8 @@ INP_SIZE = (300, 300)
 TARGET_SIZE = (150, 150)
 INTERPOLATION = "bilinear"
 
-AUTO = tf.data.AUTOTUNE
-BATCH_SIZE = 64
+AUTO = tf_data.AUTOTUNE
+BATCH_SIZE = 50
 EPOCHS = 5
 
 """
@@ -90,8 +94,8 @@ train_ds, validation_ds = tfds.load(
 
 
 def preprocess_dataset(image, label):
-    image = tf.image.resize(image, (INP_SIZE[0], INP_SIZE[1]))
-    label = tf.one_hot(label, depth=2)
+    image = tf_image.resize(image, (INP_SIZE[0], INP_SIZE[1]))
+    label = tf_one_hot(label, depth=2)
     return (image, label)
 
 
@@ -181,6 +185,7 @@ random weights of the resizer.
 
 sample_images, _ = next(iter(train_ds))
 
+get_np = lambda image: ops.convert_to_numpy(ops.squeeze(image)) # Helper to convert image from any backend to numpy
 
 plt.figure(figsize=(16, 10))
 for i, image in enumerate(sample_images[:6]):
@@ -194,7 +199,7 @@ for i, image in enumerate(sample_images[:6]):
     ax = plt.subplot(3, 4, 2 * i + 2)
     resized_image = learnable_resizer(image[None, ...])
     plt.title("Resized Image")
-    plt.imshow(resized_image.numpy().squeeze())
+    plt.imshow(get_np(resized_image))
     plt.axis("off")
 
 """
@@ -246,13 +251,13 @@ for i, image in enumerate(sample_images[:6]):
 
     ax = plt.subplot(3, 4, 2 * i + 1)
     plt.title("Input Image")
-    plt.imshow(image.numpy().squeeze())
+    plt.imshow(image.numpy().squeeze()) 
     plt.axis("off")
 
     ax = plt.subplot(3, 4, 2 * i + 2)
     resized_image = learnable_resizer(image[None, ...])
     plt.title("Resized Image")
-    plt.imshow(resized_image.numpy().squeeze() / 10)
+    plt.imshow(get_np(resized_image) / 10)
     plt.axis("off")
 
 """
