@@ -228,7 +228,7 @@ def compute_output_spec(fn, *args, **kwargs):
                 )
                 return fn(*eager_args, **eager_kwargs)
 
-    with StatelessScope():
+    with StatelessScope(), torch.no_grad():
         outputs = symbolic_call(fn, args, kwargs, fill_value=83)
 
         none_in_shape = any(map(has_none_shape, tree.flatten((args, kwargs))))
@@ -353,3 +353,7 @@ def stop_gradient(variable):
     # We can't use `.requires_grad_(False)` here since it only
     # works when the tensor is a leaf node in the graph.
     return variable.detach()
+
+
+def unstack(x, num=None, axis=0):
+    return x.unbind(axis)
