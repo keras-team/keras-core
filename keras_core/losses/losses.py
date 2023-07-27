@@ -1695,10 +1695,13 @@ def sparse_categorical_crossentropy(
     """
 
     if ignore_class is not None:
-        y_pred_shape = ops.shape(y_pred)
-        valid_mask = ops.not_equal(y_true, ops.cast(ignore_class, y_pred.dtype))
-        y_true = y_true[valid_mask]
-        y_pred = y_pred[valid_mask]
+        if backend.backend()=="torch":
+            raise ValueError("Torch backend doesn't support `ignore_class` param")
+        else:
+            y_pred_shape = ops.shape(y_pred)
+            valid_mask = ops.not_equal(y_true, ops.cast(ignore_class, y_pred.dtype))
+            y_true = y_true[valid_mask]
+            y_pred = y_pred[valid_mask]
 
     res = ops.sparse_categorical_crossentropy(
         y_true,
@@ -1709,18 +1712,20 @@ def sparse_categorical_crossentropy(
 
     if ignore_class is not None:
         if backend.backend() == "jax":
-            res_shape = ops.cast(y_pred_shape[:-1], "int32")
+            res_shape = tuple(ops.cast(y_pred_shape[:-1], "int32"))
         else:
-            res_shape = ops.cast(y_pred_shape[:-1], "int64")
+            res_shape = tuple(ops.cast(y_pred_shape[:-1], "int64"))
 
-        valid_mask = ops.reshape(valid_mask, tuple(res_shape))
-        valid_idx = ops.where(valid_mask, None, None)
+        valid_mask = ops.reshape(valid_mask, res_shape)
+        valid_idx = ops.nonzero(valid_mask)
 
         if isinstance(valid_idx, (tuple, list)):
-            valid_idx = ops.stack(ops.where(valid_mask, None, None), -1)
+            valid_idx = ops.stack(valid_idx, -1)
 
         res = ops.scatter(indices=valid_idx, values=res, shape=res_shape)
-        res._keras_mask = valid_mask
+
+        if backend.backend() != "numpy":
+            res._keras_mask = valid_mask
     return res
 
 
