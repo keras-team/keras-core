@@ -37,10 +37,10 @@ import random
 import string
 import re
 import numpy as np
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
-from tensorflow.keras.layers import TextVectorization
+
+import keras_core as keras
+from keras_core import layers
+from keras_core.layers import TextVectorization
 
 """
 ## Downloading the data
@@ -115,6 +115,8 @@ each punctuation character into its own token,
 which you could achieve by providing a custom `split` function to the `TextVectorization` layer.
 """
 
+import tensorflow.strings as tf_strings
+
 strip_chars = string.punctuation + "¿"
 strip_chars = strip_chars.replace("[", "")
 strip_chars = strip_chars.replace("]", "")
@@ -125,8 +127,8 @@ batch_size = 64
 
 
 def custom_standardization(input_string):
-    lowercase = tf.strings.lower(input_string)
-    return tf.strings.regex_replace(lowercase, "[%s]" % re.escape(strip_chars), "")
+    lowercase = tf_strings.lower(input_string)
+    return tf_strings.regex_replace(lowercase, "[%s]" % re.escape(strip_chars), "")
 
 
 eng_vectorization = TextVectorization(
@@ -160,6 +162,7 @@ that is to say, the words 0 to N used to predict word N+1 (and beyond) in the ta
 it provides the next words in the target sentence -- what the model will try to predict.
 """
 
+import tensorflow.data as tf_data
 
 def format_dataset(eng, spa):
     eng = eng_vectorization(eng)
@@ -177,7 +180,7 @@ def make_dataset(pairs):
     eng_texts, spa_texts = zip(*pairs)
     eng_texts = list(eng_texts)
     spa_texts = list(spa_texts)
-    dataset = tf.data.Dataset.from_tensor_slices((eng_texts, spa_texts))
+    dataset = tf_data.Dataset.from_tensor_slices((eng_texts, spa_texts))
     dataset = dataset.batch(batch_size)
     dataset = dataset.map(format_dataset)
     return dataset.shuffle(2048).prefetch(16).cache()
@@ -216,7 +219,7 @@ sure that it only uses information from target tokens 0 to N when predicting tok
 (otherwise, it could use information from the future, which would
 result in a model that cannot be used at inference time).
 """
-
+import keras_core.ops as ops
 
 class TransformerEncoder(layers.Layer):
     def __init__(self, embed_dim, dense_dim, num_heads, **kwargs):
@@ -239,7 +242,10 @@ class TransformerEncoder(layers.Layer):
 
     def call(self, inputs, mask=None):
         if mask is not None:
-            padding_mask = tf.cast(mask[:, tf.newaxis, :], dtype="int32")
+            padding_mask = ops.cast(mask[:, np.newaxis, :], dtype="int32")
+        else:
+            padding_mask = None
+
         attention_output = self.attention(
             query=inputs, value=inputs, key=inputs, attention_mask=padding_mask
         )
@@ -273,14 +279,17 @@ class PositionalEmbedding(layers.Layer):
         self.embed_dim = embed_dim
 
     def call(self, inputs):
-        length = tf.shape(inputs)[-1]
-        positions = tf.range(start=0, limit=length, delta=1)
+        length = ops.shape(inputs)[-1]
+        positions = ops.arange(0, length, 1)
         embedded_tokens = self.token_embeddings(inputs)
         embedded_positions = self.position_embeddings(positions)
         return embedded_tokens + embedded_positions
 
     def compute_mask(self, inputs, mask=None):
-        return tf.math.not_equal(inputs, 0)
+        if mask is None:
+            return None
+        else:
+            return ops.not_equal(inputs, 0)
 
     def get_config(self):
         config = super().get_config()
@@ -320,8 +329,10 @@ class TransformerDecoder(layers.Layer):
     def call(self, inputs, encoder_outputs, mask=None):
         causal_mask = self.get_causal_attention_mask(inputs)
         if mask is not None:
-            padding_mask = tf.cast(mask[:, tf.newaxis, :], dtype="int32")
-            padding_mask = tf.minimum(padding_mask, causal_mask)
+            padding_mask = ops.cast(mask[:, np.newaxis, :], dtype="int32")
+            padding_mask = ops.minimum(padding_mask, causal_mask)
+        else:
+            padding_mask = None
 
         attention_output_1 = self.attention_1(
             query=inputs, value=inputs, key=inputs, attention_mask=causal_mask
@@ -340,17 +351,17 @@ class TransformerDecoder(layers.Layer):
         return self.layernorm_3(out_2 + proj_output)
 
     def get_causal_attention_mask(self, inputs):
-        input_shape = tf.shape(inputs)
+        input_shape = ops.shape(inputs)
         batch_size, sequence_length = input_shape[0], input_shape[1]
-        i = tf.range(sequence_length)[:, tf.newaxis]
-        j = tf.range(sequence_length)
-        mask = tf.cast(i >= j, dtype="int32")
-        mask = tf.reshape(mask, (1, input_shape[1], input_shape[1]))
-        mult = tf.concat(
-            [tf.expand_dims(batch_size, -1), tf.constant([1, 1], dtype=tf.int32)],
+        i = ops.arange(sequence_length)[:, np.newaxis]
+        j = ops.arange(sequence_length)
+        mask = ops.cast(i >= j, dtype="int32")
+        mask = ops.reshape(mask, (1, input_shape[1], input_shape[1]))
+        mult = ops.concatenate(
+            [ops.expand_dims(batch_size, -1), ops.convert_to_tensor([1, 1])],
             axis=0,
         )
-        return tf.tile(mask, mult)
+        return ops.tile(mask, mult)
 
     def get_config(self):
         config = super().get_config()
