@@ -133,7 +133,9 @@ CATEGORICAL_FEATURE_NAMES = list(CATEGORICAL_FEATURES_WITH_VOCABULARY.keys())
 FEATURE_NAMES = NUMERIC_FEATURE_NAMES + CATEGORICAL_FEATURE_NAMES
 # A list of column default values for each feature.
 COLUMN_DEFAULTS = [
-    [0.0] if feature_name in NUMERIC_FEATURE_NAMES + IGNORE_COLUMN_NAMES else ["NA"]
+    [0.0]
+    if feature_name in NUMERIC_FEATURE_NAMES + IGNORE_COLUMN_NAMES
+    else ["NA"]
     for feature_name in CSV_HEADER
 ]
 # The name of the target feature.
@@ -297,7 +299,9 @@ class NeuralDecisionTree(keras.Model):
         end_idx = 2
         # Traverse the tree in breadth-first order.
         for level in range(self.depth):
-            mu = tf.reshape(mu, [batch_size, -1, 1])  # [batch_size, 2 ** level, 1]
+            mu = tf.reshape(
+                mu, [batch_size, -1, 1]
+            )  # [batch_size, 2 ** level, 1]
             mu = tf.tile(mu, (1, 1, 2))  # [batch_size, 2 ** level, 2]
             level_decisions = decisions[
                 :, begin_idx:end_idx, :
@@ -306,8 +310,12 @@ class NeuralDecisionTree(keras.Model):
             begin_idx = end_idx
             end_idx = begin_idx + 2 ** (level + 1)
 
-        mu = tf.reshape(mu, [batch_size, self.num_leaves])  # [batch_size, num_leaves]
-        probabilities = keras.activations.softmax(self.pi)  # [num_leaves, num_classes]
+        mu = tf.reshape(
+            mu, [batch_size, self.num_leaves]
+        )  # [batch_size, num_leaves]
+        probabilities = keras.activations.softmax(
+            self.pi
+        )  # [num_leaves, num_classes]
         outputs = tf.matmul(mu, probabilities)  # [batch_size, num_classes]
         return outputs
 
@@ -321,14 +329,18 @@ trained simultaneously. The output of the forest model is the average outputs of
 
 
 class NeuralDecisionForest(keras.Model):
-    def __init__(self, num_trees, depth, num_features, used_features_rate, num_classes):
+    def __init__(
+        self, num_trees, depth, num_features, used_features_rate, num_classes
+    ):
         super().__init__()
         self.ensemble = []
         # Initialize the ensemble by adding NeuralDecisionTree instances.
         # Each tree will have its own randomly selected input features to use.
         for _ in range(num_trees):
             self.ensemble.append(
-                NeuralDecisionTree(depth, num_features, used_features_rate, num_classes)
+                NeuralDecisionTree(
+                    depth, num_features, used_features_rate, num_classes
+                )
             )
 
     def call(self, inputs):
@@ -394,7 +406,9 @@ def create_tree_model():
     features = layers.BatchNormalization()(features)
     num_features = features.shape[1]
 
-    tree = NeuralDecisionTree(depth, num_features, used_features_rate, num_classes)
+    tree = NeuralDecisionTree(
+        depth, num_features, used_features_rate, num_classes
+    )
 
     outputs = tree(features)
     model = keras.Model(inputs=inputs, outputs=outputs)
