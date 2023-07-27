@@ -3,7 +3,7 @@ Title: English-to-Spanish translation with a sequence-to-sequence Transformer
 Author: [fchollet](https://twitter.com/fchollet)
 Date created: 2021/05/26
 Last modified: 2023/02/25
-Description: Implementing a sequence-to-sequene Transformer and training it on a machine translation task.
+Description: Implementing a sequence-to-sequence Transformer and training it on a machine translation task.
 Accelerator: GPU
 """
 """
@@ -38,8 +38,12 @@ import string
 import re
 import numpy as np
 
+import tensorflow.data as tf_data
+import tensorflow.strings as tf_strings
+
 import keras_core as keras
 from keras_core import layers
+from keras_core import ops
 from keras_core.layers import TextVectorization
 
 """
@@ -115,8 +119,6 @@ each punctuation character into its own token,
 which you could achieve by providing a custom `split` function to the `TextVectorization` layer.
 """
 
-import tensorflow.strings as tf_strings
-
 strip_chars = string.punctuation + "¿"
 strip_chars = strip_chars.replace("[", "")
 strip_chars = strip_chars.replace("]", "")
@@ -161,8 +163,6 @@ that is to say, the words 0 to N used to predict word N+1 (and beyond) in the ta
 - `target` is the target sentence offset by one step:
 it provides the next words in the target sentence -- what the model will try to predict.
 """
-
-import tensorflow.data as tf_data
 
 def format_dataset(eng, spa):
     eng = eng_vectorization(eng)
@@ -242,7 +242,7 @@ class TransformerEncoder(layers.Layer):
 
     def call(self, inputs, mask=None):
         if mask is not None:
-            padding_mask = ops.cast(mask[:, np.newaxis, :], dtype="int32")
+            padding_mask = ops.cast(mask[:, None, :], dtype="int32")
         else:
             padding_mask = None
 
@@ -329,7 +329,7 @@ class TransformerDecoder(layers.Layer):
     def call(self, inputs, encoder_outputs, mask=None):
         causal_mask = self.get_causal_attention_mask(inputs)
         if mask is not None:
-            padding_mask = ops.cast(mask[:, np.newaxis, :], dtype="int32")
+            padding_mask = ops.cast(mask[:, None, :], dtype="int32")
             padding_mask = ops.minimum(padding_mask, causal_mask)
         else:
             padding_mask = None
@@ -353,7 +353,7 @@ class TransformerDecoder(layers.Layer):
     def get_causal_attention_mask(self, inputs):
         input_shape = ops.shape(inputs)
         batch_size, sequence_length = input_shape[0], input_shape[1]
-        i = ops.arange(sequence_length)[:, np.newaxis]
+        i = ops.arange(sequence_length)[:, None]
         j = ops.arange(sequence_length)
         mask = ops.cast(i >= j, dtype="int32")
         mask = ops.reshape(mask, (1, input_shape[1], input_shape[1]))
