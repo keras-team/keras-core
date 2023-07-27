@@ -1695,11 +1695,15 @@ def sparse_categorical_crossentropy(
     """
 
     if ignore_class is not None:
-        if backend.backend()=="torch":
-            raise ValueError("Torch backend doesn't support `ignore_class` param")
+        if backend.backend() == "torch":
+            raise ValueError(
+                "Torch backend doesn't support `ignore_class` param."
+            )
         else:
             y_pred_shape = ops.shape(y_pred)
-            valid_mask = ops.not_equal(y_true, ops.cast(ignore_class, y_pred.dtype))
+            valid_mask = ops.not_equal(
+                y_true, ops.cast(ignore_class, y_pred.dtype)
+            )
             y_true = y_true[valid_mask]
             y_pred = y_pred[valid_mask]
 
