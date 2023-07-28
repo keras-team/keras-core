@@ -718,12 +718,14 @@ def arccos(x):
         return Arccos().symbolic_call(x)
     return backend.numpy.arccos(x)
 
+
 class Arccosh(Operation):
     def call(self, x):
         return backend.numpy.arccosh(x)
 
     def compute_output_spec(self, x):
         return KerasTensor(x.shape, dtype=x.dtype)
+
 
 def arccosh(x):
     if any_symbolic_tensors((x,)):
@@ -759,12 +761,14 @@ def arcsin(x):
         return Arcsin().symbolic_call(x)
     return backend.numpy.arcsin(x)
 
+
 class Arcsinh(Operation):
     def call(self, x):
         return backend.numpy.arcsinh(x)
 
     def compute_output_spec(self, x):
         return KerasTensor(x.shape, dtype=x.dtype)
+
 
 @keras_core_export(["keras_core.ops.arcsinh", "keras_core.ops.numpy.arcsinh"])
 def arcsinh(x):
@@ -856,12 +860,14 @@ def arctan2(x1, x2):
         return Arctan2().symbolic_call(x1, x2)
     return backend.numpy.arctan2(x1, x2)
 
+
 class Arctanh(Operation):
     def call(self, x):
         return backend.numpy.arctanh(x)
 
     def compute_output_spec(self, x):
         return KerasTensor(x.shape, dtype=x.dtype)
+
 
 @keras_core_export(["keras_core.ops.arctanh", "keras_core.ops.numpy.arctanh"])
 def arctanh(x):
@@ -1332,12 +1338,14 @@ def cos(x):
         return Cos().symbolic_call(x)
     return backend.numpy.cos(x)
 
+
 class Cosh(Operation):
     def call(self, x):
         return backend.numpy.cosh(x)
 
     def compute_output_spec(self, x):
         return KerasTensor(x.shape, dtype=x.dtype)
+
 
 @keras_core_export(["keras_core.ops.cosh", "keras_core.ops.numpy.cosh"])
 def cosh(x):
@@ -3171,12 +3179,14 @@ def sin(x):
         return Sin().symbolic_call(x)
     return backend.numpy.sin(x)
 
+
 class Sinh(Operation):
     def call(self, x):
         return backend.numpy.sinh(x)
 
     def compute_output_spec(self, x):
         return KerasTensor(x.shape, dtype=x.dtype)
+
 
 @keras_core_export(["keras_core.ops.sinh", "keras_core.ops.numpy.sinh"])
 def sinh(x):
@@ -3445,12 +3455,14 @@ def tan(x):
         return Tan().symbolic_call(x)
     return backend.numpy.tan(x)
 
+
 class Tanh(Operation):
     def call(self, x):
         return backend.numpy.tanh(x)
 
     def compute_output_spec(self, x):
         return KerasTensor(x.shape, dtype=x.dtype)
+
 
 @keras_core_export(["keras_core.ops.tanh", "keras_core.ops.numpy.tanh"])
 def tanh(x):
