@@ -728,6 +728,14 @@ class Arccosh(Operation):
 
 
 def arccosh(x):
+    """Inverse hyperbolic cosine, element-wise.
+
+    Arguments:
+        x: Input tensor.
+
+    Returns:
+        Output tensor of same shape as x.
+    """
     if any_symbolic_tensors((x,)):
         return Arccosh().symbolic_call(x)
     return backend.numpy.arccosh(x)
@@ -772,6 +780,14 @@ class Arcsinh(Operation):
 
 @keras_core_export(["keras_core.ops.arcsinh", "keras_core.ops.numpy.arcsinh"])
 def arcsinh(x):
+    """Inverse hyperbolic sine, element-wise.
+
+    Arguments:
+        x: Input tensor.
+
+    Returns:
+        Output tensor of same shape as x.
+    """
     if any_symbolic_tensors((x,)):
         return Arcsinh().symbolic_call(x)
     return backend.numpy.arcsinh(x)
@@ -871,6 +887,14 @@ class Arctanh(Operation):
 
 @keras_core_export(["keras_core.ops.arctanh", "keras_core.ops.numpy.arctanh"])
 def arctanh(x):
+    """Inverse hyperbolic tangent, element-wise.
+
+    Arguments:
+        x: Input tensor.
+
+    Returns:
+        Output tensor of same shape as x.
+    """
     if any_symbolic_tensors((x,)):
         return Arctanh().symbolic_call(x)
     return backend.numpy.arctanh(x)
@@ -1349,6 +1373,14 @@ class Cosh(Operation):
 
 @keras_core_export(["keras_core.ops.cosh", "keras_core.ops.numpy.cosh"])
 def cosh(x):
+    """Hyperbolic cosine, element-wise.
+
+    Arguments:
+        x: Input tensor.
+
+    Returns:
+        Output tensor of same shape as x.
+    """
     if any_symbolic_tensors((x,)):
         return Cosh().symbolic_call(x)
     return backend.numpy.cosh(x)
@@ -3190,6 +3222,14 @@ class Sinh(Operation):
 
 @keras_core_export(["keras_core.ops.sinh", "keras_core.ops.numpy.sinh"])
 def sinh(x):
+    """Hyperbolic sine, element-wise.
+
+    Arguments:
+        x: Input tensor.
+
+    Returns:
+        Output tensor of same shape as x.
+    """
     if any_symbolic_tensors((x,)):
         return Sinh().symbolic_call(x)
     return backend.numpy.sinh(x)
@@ -3466,6 +3506,14 @@ class Tanh(Operation):
 
 @keras_core_export(["keras_core.ops.tanh", "keras_core.ops.numpy.tanh"])
 def tanh(x):
+    """Hyperbolic tangent, element-wise.
+
+    Arguments:
+        x: Input tensor.
+
+    Returns:
+        Output tensor of same shape as x.
+    """
     if any_symbolic_tensors((x,)):
         return Tanh().symbolic_call(x)
     return backend.numpy.tanh(x)
