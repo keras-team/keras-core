@@ -399,6 +399,10 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
             run_eagerly=run_eagerly,
             jit_compile=jit_compile,
         )
+        output = model.predict_on_batch(x)
+        self.assertTrue(isinstance(output, np.ndarray))
+        self.assertAllClose(output[0], np.array([4.0, 4.0, 4.0]))
+
         logs = model.test_on_batch(x, y)
         self.assertTrue(isinstance(logs, list))
         self.assertEqual(len(logs), 2)
@@ -408,10 +412,6 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         self.assertTrue(isinstance(logs, dict))
         self.assertEqual(len(logs), 2)
         self.assertAlmostEqual(logs["loss"], 16.0)
-
-        output = model.predict_on_batch(x)
-        self.assertTrue(isinstance(output, np.ndarray))
-        self.assertAllClose(output[0], np.array([4.0, 4.0, 4.0]))
 
     def test_nested_input_predict(self):
         # https://github.com/keras-team/keras-core/issues/325
