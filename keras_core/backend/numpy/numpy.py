@@ -92,8 +92,8 @@ def arcsin(x):
     return np.arcsin(x)
 
 
-def arccosh(x):
-    return np.arccosh(x)
+def arcsinh(x):
+    return np.arcsinh(x)
 
 
 def arctan(x):

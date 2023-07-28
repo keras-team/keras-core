@@ -499,7 +499,7 @@ def tan(x):
     return jnp.tan(x)
 
 
-def tan(x):
+def tanh(x):
     return jnp.tanh(x)
 
 
