@@ -210,6 +210,12 @@ def diagonal(x, offset=0, axis1=0, axis2=1):
     )
 
 
+def digitize(x, bins):
+    x = convert_to_tensor(x)
+    bins = list(bins)
+    return tf.raw_ops.Bucketize(input=x, boundaries=bins)
+
+
 def dot(x, y):
     return tfnp.dot(x, y)
 

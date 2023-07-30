@@ -327,6 +327,12 @@ def diagonal(x, offset=0, axis1=0, axis2=1):
     )
 
 
+def digitize(x, bins):
+    x = convert_to_tensor(x)
+    bins = convert_to_tensor(bins)
+    return torch.bucketize(x, bins, right=True)
+
+
 def dot(x, y):
     x, y = convert_to_tensor(x), convert_to_tensor(y)
     if x.ndim == 0 or y.ndim == 0:

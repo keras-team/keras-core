@@ -660,6 +660,11 @@ class NumpyTwoInputOpsStaticShapeTest(testing.TestCase):
             y = KerasTensor([2, 3, 4])
             knp.logical_xor(x, y)
 
+    def test_digitize(self):
+        x = KerasTensor((2, 3))
+        bins = KerasTensor((3,))
+        self.assertEqual(knp.digitize(x, bins).shape, (2, 3))
+
 
 class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
     def test_mean(self):
@@ -2091,6 +2096,12 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         y = np.array([4, 5, 6])
         self.assertAllClose(knp.where(x > 1, x, y), np.where(x > 1, x, y))
         self.assertAllClose(knp.Where()(x > 1, x, y), np.where(x > 1, x, y))
+
+    def test_digitize(self):
+        x = np.array([0.0, 1.0, 3.0, 1.6])
+        bins = np.array([0.0, 3.0, 4.5, 7.0])
+        self.assertAllClose(knp.digitize(x, bins), np.digitize(x, bins))
+        self.assertAllClose(knp.Digitize()(x, bins), np.digitize(x, bins))
 
 
 class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
