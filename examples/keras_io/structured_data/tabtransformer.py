@@ -2,7 +2,7 @@
 Title: Structured data learning with TabTransformer
 Author: [Khalid Salama](https://www.linkedin.com/in/khalid-salama-24403144/)
 Date created: 2022/01/18
-Last modified: 2023/07/26
+Last modified: 2022/01/18
 Description: Using contextual embeddings for structured data classification.
 Accelerator: GPU
 """
@@ -132,9 +132,7 @@ CATEGORICAL_FEATURE_NAMES = list(CATEGORICAL_FEATURES_WITH_VOCABULARY.keys())
 FEATURE_NAMES = NUMERIC_FEATURE_NAMES + CATEGORICAL_FEATURE_NAMES
 # A list of column default values for each feature.
 COLUMN_DEFAULTS = [
-    [0.0]
-    if feature_name in NUMERIC_FEATURE_NAMES + [WEIGHT_COLUMN_NAME]
-    else ["NA"]
+    [0.0] if feature_name in NUMERIC_FEATURE_NAMES + [WEIGHT_COLUMN_NAME] else ["NA"]
     for feature_name in CSV_HEADER
 ]
 # The name of the target feature.
@@ -193,11 +191,7 @@ def get_dataset_from_csv(csv_file_path, batch_size=128, shuffle=False):
         header=False,
         na_value="?",
         shuffle=shuffle,
-    ).map(
-        prepare_example,
-        num_parallel_calls=tf.data.AUTOTUNE,
-        deterministic=False,
-    )
+    ).map(prepare_example, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)
     return dataset.cache()
 
 
@@ -225,9 +219,7 @@ def run_experiment(
         metrics=[keras.metrics.BinaryAccuracy(name="accuracy")],
     )
 
-    train_dataset = get_dataset_from_csv(
-        train_data_file, batch_size, shuffle=True
-    )
+    train_dataset = get_dataset_from_csv(train_data_file, batch_size, shuffle=True)
     validation_dataset = get_dataset_from_csv(test_data_file, batch_size)
 
     print("Start training the model...")
@@ -319,9 +311,7 @@ def encode_inputs(inputs, embedding_dims):
 """
 
 
-def create_mlp(
-    hidden_units, dropout_rate, activation, normalization_layer, name=None
-):
+def create_mlp(hidden_units, dropout_rate, activation, normalization_layer, name=None):
     mlp_layers = []
     for units in hidden_units:
         mlp_layers.append(normalization_layer()),
@@ -378,9 +368,7 @@ def create_baseline_model(
     )(features)
 
     # Add a sigmoid as a binary classifer.
-    outputs = layers.Dense(units=1, activation="sigmoid", name="sigmoid")(
-        features
-    )
+    outputs = layers.Dense(units=1, activation="sigmoid", name="sigmoid")(features)
     model = keras.Model(inputs=inputs, outputs=outputs)
     return model
 
@@ -450,9 +438,7 @@ def create_tabtransformer_classifier(
         inputs, embedding_dims
     )
     # Stack categorical feature embeddings for the Tansformer.
-    encoded_categorical_features = ops.stack(
-        encoded_categorical_feature_list, axis=1
-    )
+    encoded_categorical_features = ops.stack(encoded_categorical_feature_list, axis=1)
     # Concatenate numerical features.
     numerical_features = layers.concatenate(numerical_feature_list)
 
@@ -463,8 +449,8 @@ def create_tabtransformer_classifier(
             input_dim=num_columns, output_dim=embedding_dims
         )
         column_indices = ops.arange(start=0, stop=num_columns, step=1)
-        encoded_categorical_features = (
-            encoded_categorical_features + column_embedding(column_indices)
+        encoded_categorical_features = encoded_categorical_features + column_embedding(
+            column_indices
         )
 
     # Create multiple layers of the Transformer block.
@@ -481,9 +467,7 @@ def create_tabtransformer_classifier(
             [attention_output, encoded_categorical_features]
         )
         # Layer normalization 1.
-        x = layers.LayerNormalization(
-            name=f"layer_norm1_{block_idx}", epsilon=1e-6
-        )(x)
+        x = layers.LayerNormalization(name=f"layer_norm1_{block_idx}", epsilon=1e-6)(x)
         # Feedforward.
         feedforward_output = create_mlp(
             hidden_units=[embedding_dims],
@@ -495,9 +479,7 @@ def create_tabtransformer_classifier(
             name=f"feedforward_{block_idx}",
         )(x)
         # Skip connection 2.
-        x = layers.Add(name=f"skip_connection2_{block_idx}")(
-            [feedforward_output, x]
-        )
+        x = layers.Add(name=f"skip_connection2_{block_idx}")([feedforward_output, x])
         # Layer normalization 2.
         encoded_categorical_features = layers.LayerNormalization(
             name=f"layer_norm2_{block_idx}", epsilon=1e-6
@@ -506,9 +488,7 @@ def create_tabtransformer_classifier(
     # Flatten the "contextualized" embeddings of the categorical features.
     categorical_features = layers.Flatten()(encoded_categorical_features)
     # Apply layer normalization to the numerical features.
-    numerical_features = layers.LayerNormalization(epsilon=1e-6)(
-        numerical_features
-    )
+    numerical_features = layers.LayerNormalization(epsilon=1e-6)(numerical_features)
     # Prepare the input for the final MLP block.
     features = layers.concatenate([categorical_features, numerical_features])
 
@@ -526,9 +506,7 @@ def create_tabtransformer_classifier(
     )(features)
 
     # Add a sigmoid as a binary classifer.
-    outputs = layers.Dense(units=1, activation="sigmoid", name="sigmoid")(
-        features
-    )
+    outputs = layers.Dense(units=1, activation="sigmoid", name="sigmoid")(features)
     model = keras.Model(inputs=inputs, outputs=outputs)
     return model
 
