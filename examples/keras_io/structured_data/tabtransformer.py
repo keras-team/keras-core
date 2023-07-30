@@ -28,7 +28,7 @@ from keras_core import ops
 import math
 import numpy as np
 import pandas as pd
-import tensorflow as tf
+from tensorflow import data as tf_data
 import matplotlib.pyplot as plt
 from functools import partial
 
@@ -180,18 +180,41 @@ def prepare_example(features, target):
     return features, target_index, weights
 
 
+lookup_dict = {}
+for feature_name in CATEGORICAL_FEATURE_NAMES:
+    vocabulary = CATEGORICAL_FEATURES_WITH_VOCABULARY[feature_name]
+    # Create a lookup to convert a string values to an integer indices.
+    # Since we are not using a mask token, nor expecting any out of vocabulary
+    # (oov) token, we set mask_token to None and num_oov_indices to 0.
+    lookup = layers.StringLookup(
+        vocabulary=vocabulary, mask_token=None, num_oov_indices=0
+    )
+    lookup_dict[feature_name] = lookup
+
+
+def encode_categorical(batch_x, batch_y, weights):
+    for feature_name in CATEGORICAL_FEATURE_NAMES:
+        batch_x[feature_name] = lookup_dict[feature_name](batch_x[feature_name])
+
+    return batch_x, batch_y, weights
+
+
 def get_dataset_from_csv(csv_file_path, batch_size=128, shuffle=False):
-    dataset = tf.data.experimental.make_csv_dataset(
-        csv_file_path,
-        batch_size=batch_size,
-        column_names=CSV_HEADER,
-        column_defaults=COLUMN_DEFAULTS,
-        label_name=TARGET_FEATURE_NAME,
-        num_epochs=1,
-        header=False,
-        na_value="?",
-        shuffle=shuffle,
-    ).map(prepare_example, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)
+    dataset = (
+        tf.data.experimental.make_csv_dataset(
+            csv_file_path,
+            batch_size=batch_size,
+            column_names=CSV_HEADER,
+            column_defaults=COLUMN_DEFAULTS,
+            label_name=TARGET_FEATURE_NAME,
+            num_epochs=1,
+            header=False,
+            na_value="?",
+            shuffle=shuffle,
+        )
+        .map(prepare_example, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)
+        .map(encode_categorical)
+    )
     return dataset.cache()
 
 
@@ -253,7 +276,7 @@ def create_model_inputs():
             )
         else:
             inputs[feature_name] = layers.Input(
-                name=feature_name, shape=(), dtype="string"
+                name=feature_name, shape=(), dtype="float32"
             )
     return inputs
 
@@ -273,21 +296,12 @@ def encode_inputs(inputs, embedding_dims):
 
     for feature_name in inputs:
         if feature_name in CATEGORICAL_FEATURE_NAMES:
-            # Get the vocabulary of the categorical feature.
             vocabulary = CATEGORICAL_FEATURES_WITH_VOCABULARY[feature_name]
-
-            # Create a lookup to convert string values to an integer indices.
-            # Since we are not using a mask token nor expecting any out of vocabulary
-            # (oov) token, we set mask_token to None and  num_oov_indices to 0.
-            lookup = layers.StringLookup(
-                vocabulary=vocabulary,
-                mask_token=None,
-                num_oov_indices=0,
-                output_mode="int",
-            )
+            # Create a lookup to convert a string values to an integer indices.
+            # Since we are not using a mask token, nor expecting any out of vocabulary
+            # (oov) token, we set mask_token to None and num_oov_indices to 0.
 
             # Convert the string input values into integer indices.
-            encoded_feature = lookup(inputs[feature_name])
 
             # Create an embedding layer with the specified dimensions.
             embedding = layers.Embedding(
@@ -295,7 +309,7 @@ def encode_inputs(inputs, embedding_dims):
             )
 
             # Convert the index values to embedding representations.
-            encoded_categorical_feature = embedding(encoded_feature)
+            encoded_categorical_feature = embedding(inputs[feature_name])
             encoded_categorical_feature_list.append(encoded_categorical_feature)
 
         else:
