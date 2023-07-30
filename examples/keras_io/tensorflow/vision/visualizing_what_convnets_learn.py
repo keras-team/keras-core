@@ -22,9 +22,15 @@ pattern that the filter responds to.
 ## Setup
 """
 
+import os
+
+os.environ["KERAS_BACKEND"] = "tensorflow"
+
+import keras_core as keras
+
+
 import numpy as np
 import tensorflow as tf
-from tensorflow import keras
 
 # The dimensions of our input image
 img_width = 180
