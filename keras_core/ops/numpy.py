@@ -1557,7 +1557,7 @@ def digitize(x, bins):
         Output array of indices, of same shape as x.
 
     Examples:
-        >>> x = x = np.array([0.0, 1.0, 3.0, 1.6])
+        >>> x = np.array([0.0, 1.0, 3.0, 1.6])
         >>> bins = np.array([0.0, 3.0, 4.5, 7.0])
         >>> keras_core.ops.digitize(x, bins)
         array([1, 1, 2, 1])
