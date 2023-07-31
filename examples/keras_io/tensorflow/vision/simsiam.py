@@ -223,12 +223,16 @@ def get_encoder():
 
     # Projection head.
     x = layers.Dense(
-        PROJECT_DIM, use_bias=False, kernel_regularizer=regularizers.l2(WEIGHT_DECAY)
+        PROJECT_DIM,
+        use_bias=False,
+        kernel_regularizer=regularizers.l2(WEIGHT_DECAY),
     )(x)
     x = layers.BatchNormalization()(x)
     x = layers.ReLU()(x)
     x = layers.Dense(
-        PROJECT_DIM, use_bias=False, kernel_regularizer=regularizers.l2(WEIGHT_DECAY)
+        PROJECT_DIM,
+        use_bias=False,
+        kernel_regularizer=regularizers.l2(WEIGHT_DECAY),
     )(x)
     outputs = layers.BatchNormalization()(x)
     return keras.Model(inputs, outputs, name="encoder")
@@ -308,7 +312,8 @@ class SimSiam(keras.Model):
 
         # Compute gradients and update the parameters.
         learnable_params = (
-            self.encoder.trainable_variables + self.predictor.trainable_variables
+            self.encoder.trainable_variables
+            + self.predictor.trainable_variables
         )
         gradients = tape.gradient(loss, learnable_params)
         self.optimizer.apply_gradients(zip(gradients, learnable_params))
