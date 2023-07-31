@@ -40,16 +40,15 @@ fully-connected network having an
 [AutoEncoder](https://en.wikipedia.org/wiki/Autoencoder) like structure.
 4. We then train our encoder to maximize the cosine similarity between the two different
 versions of our dataset.
-
-This example requires TensorFlow 2.4 or higher.
 """
 
 """
 ## Setup
 """
 
-from tensorflow.keras import layers
-from tensorflow.keras import regularizers
+from keras_core import layers
+from keras_core import regularizers
+import keras_core as keras
 import tensorflow as tf
 
 import matplotlib.pyplot as plt
@@ -73,7 +72,7 @@ WEIGHT_DECAY = 0.0005
 ## Load the CIFAR-10 dataset
 """
 
-(x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()
+(x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
 print(f"Total training examples: {len(x_train)}")
 print(f"Total test examples: {len(x_test)}")
 
@@ -204,7 +203,7 @@ paper](https://arxiv.org/abs/2011.10566).
 """
 
 """shell
-wget -q https://git.io/JYx2x -O resnet_cifar10_v2.py
+wget -q https://shorturl.at/QS369 -O resnet_cifar10_v2.py
 """
 
 import resnet_cifar10_v2
@@ -232,11 +231,11 @@ def get_encoder():
         PROJECT_DIM, use_bias=False, kernel_regularizer=regularizers.l2(WEIGHT_DECAY)
     )(x)
     outputs = layers.BatchNormalization()(x)
-    return tf.keras.Model(inputs, outputs, name="encoder")
+    return keras.Model(inputs, outputs, name="encoder")
 
 
 def get_predictor():
-    model = tf.keras.Sequential(
+    model = keras.Sequential(
         [
             # Note the AutoEncoder-like structure.
             layers.Input((PROJECT_DIM,)),
@@ -279,16 +278,16 @@ def compute_loss(p, z):
 
 """
 We then define our training loop by overriding the `train_step()` function of the
-`tf.keras.Model` class.
+`keras.Model` class.
 """
 
 
-class SimSiam(tf.keras.Model):
+class SimSiam(keras.Model):
     def __init__(self, encoder, predictor):
         super().__init__()
         self.encoder = encoder
         self.predictor = predictor
-        self.loss_tracker = tf.keras.metrics.Mean(name="loss")
+        self.loss_tracker = keras.metrics.Mean(name="loss")
 
     @property
     def metrics(self):
@@ -329,18 +328,18 @@ this should at least be 100 epochs.
 # Create a cosine decay learning scheduler.
 num_training_samples = len(x_train)
 steps = EPOCHS * (num_training_samples // BATCH_SIZE)
-lr_decayed_fn = tf.keras.optimizers.schedules.CosineDecay(
+lr_decayed_fn = keras.optimizers.schedules.CosineDecay(
     initial_learning_rate=0.03, decay_steps=steps
 )
 
 # Create an early stopping callback.
-early_stopping = tf.keras.callbacks.EarlyStopping(
+early_stopping = keras.callbacks.EarlyStopping(
     monitor="loss", patience=5, restore_best_weights=True
 )
 
 # Compile model and start training.
 simsiam = SimSiam(get_encoder(), get_predictor())
-simsiam.compile(optimizer=tf.keras.optimizers.SGD(lr_decayed_fn, momentum=0.6))
+simsiam.compile(optimizer=keras.optimizers.SGD(lr_decayed_fn, momentum=0.6))
 history = simsiam.fit(ssl_ds, epochs=EPOCHS, callbacks=[early_stopping])
 
 # Visualize the training progress of the model.
@@ -391,7 +390,7 @@ train_ds = (
 test_ds = test_ds.batch(BATCH_SIZE).prefetch(AUTO)
 
 # Extract the backbone ResNet20.
-backbone = tf.keras.Model(
+backbone = keras.Model(
     simsiam.encoder.input, simsiam.encoder.get_layer("backbone_pool").output
 )
 
@@ -400,13 +399,13 @@ backbone.trainable = False
 inputs = layers.Input((CROP_TO, CROP_TO, 3))
 x = backbone(inputs, training=False)
 outputs = layers.Dense(10, activation="softmax")(x)
-linear_model = tf.keras.Model(inputs, outputs, name="linear_model")
+linear_model = keras.Model(inputs, outputs, name="linear_model")
 
 # Compile model and start training.
 linear_model.compile(
     loss="sparse_categorical_crossentropy",
     metrics=["accuracy"],
-    optimizer=tf.keras.optimizers.SGD(lr_decayed_fn, momentum=0.9),
+    optimizer=keras.optimizers.SGD(lr_decayed_fn, momentum=0.9),
 )
 history = linear_model.fit(
     train_ds, validation_data=test_ds, epochs=EPOCHS, callbacks=[early_stopping]
