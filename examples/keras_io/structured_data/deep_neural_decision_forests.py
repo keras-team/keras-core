@@ -47,7 +47,6 @@ import math
 
 
 _dtype = "float32"
-# keras.config.set_floatx(_dtype)
 
 """
 ## Prepare the data
