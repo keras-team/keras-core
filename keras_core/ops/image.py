@@ -350,7 +350,9 @@ def extract_patches(
 
     Examples:
 
-    >>> image = np.random.random((2, 20, 20, 3)).astype("float32") # batch of 2 RGB images
+    >>> image = np.random.random(
+    ...     (2, 20, 20, 3)
+    ... ).astype("float32") # batch of 2 RGB images
     >>> patches = keras_core.ops.image.extract_patches(image, (5, 5))
     >>> patches.shape
     (2, 4, 4, 75)

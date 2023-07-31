@@ -314,9 +314,7 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             and backend.backend() == "tensorflow"
             and dilation_rate > 1
         ):
-            pytest.skip(
-                "dilation_rate>1 with strides>1 not supported with TF"
-            )
+            pytest.skip("dilation_rate>1 with strides>1 not supported with TF")
         if data_format == "channels_first":
             image = np.random.uniform(size=(1, 3, 20, 20))
         else:
