@@ -33,10 +33,6 @@ and 9 categorical features.
 ## Setup
 """
 
-import os
-
-os.environ["KERAS_BACKEND"] = "tensorflow"
-
 import keras_core as keras
 from keras_core import layers
 from keras_core.layers import StringLookup
@@ -50,8 +46,8 @@ import pandas as pd
 import math
 
 
-_dtype = "float32"
-keras.config.set_floatx(_dtype)
+_dtype = 'float32'
+# keras.config.set_floatx(_dtype)
 
 """
 ## Prepare the data
@@ -171,33 +167,30 @@ for feature_name in CATEGORICAL_FEATURE_NAMES:
     # Create a lookup to convert a string values to an integer indices.
     # Since we are not using a mask token, nor expecting any out of vocabulary
     # (oov) token, we set mask_token to None and num_oov_indices to 0.
-    lookup = StringLookup(vocabulary=vocabulary, mask_token=None, num_oov_indices=0)
+    lookup = StringLookup(
+        vocabulary=vocabulary, mask_token=None, num_oov_indices=0
+    )
     lookup_dict[feature_name] = lookup
-
 
 def encode_categorical(batch_x, batch_y):
     for feature_name in CATEGORICAL_FEATURE_NAMES:
-        batch_x[feature_name] = lookup_dict[feature_name](batch_x[feature_name])
+        batch_x[feature_name]= lookup_dict[feature_name](batch_x[feature_name])
 
     return batch_x, batch_y
 
 
 def get_dataset_from_csv(csv_file_path, shuffle=False, batch_size=128):
-    dataset = (
-        tf_data.experimental.make_csv_dataset(
-            csv_file_path,
-            batch_size=batch_size,
-            column_names=CSV_HEADER,
-            column_defaults=COLUMN_DEFAULTS,
-            label_name=TARGET_FEATURE_NAME,
-            num_epochs=1,
-            header=False,
-            na_value="?",
-            shuffle=shuffle,
-        )
-        .map(lambda features, target: (features, target_label_lookup(target)))
-        .map(encode_categorical)
-    )
+    dataset = tf_data.experimental.make_csv_dataset(
+        csv_file_path,
+        batch_size=batch_size,
+        column_names=CSV_HEADER,
+        column_defaults=COLUMN_DEFAULTS,
+        label_name=TARGET_FEATURE_NAME,
+        num_epochs=1,
+        header=False,
+        na_value="?",
+        shuffle=shuffle,
+    ).map(lambda features, target: (features, target_label_lookup(target))).map(encode_categorical)
 
     return dataset.cache()
 
@@ -283,18 +276,17 @@ class NeuralDecisionTree(keras.Model):
         # Create a mask for the randomly selected features.
         num_used_features = int(num_features * used_features_rate)
         one_hot = np.eye(num_features)
-        sampled_feature_indicies = np.random.choice(
+        sampled_feature_indices = np.random.choice(
             np.arange(num_features), num_used_features, replace=False
         )
-        self.used_features_mask = one_hot[sampled_feature_indicies]
+        self.used_features_mask = ops.convert_to_tensor(one_hot[sampled_feature_indices], dtype=_dtype)
 
         # Initialize the weights of the classes in leaves.
         self.pi = self.add_weight(
-            initializer="random_normal",
+            initializer='random_normal',
             shape=[self.num_leaves, self.num_classes],
             dtype=_dtype,
-            trainable=True,
-        )
+            trainable=True,)
 
         # Initialize the stochastic routing layer.
         self.decision_fn = layers.Dense(
