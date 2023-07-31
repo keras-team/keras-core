@@ -46,7 +46,7 @@ import pandas as pd
 import math
 
 
-_dtype = 'float32'
+_dtype = "float32"
 # keras.config.set_floatx(_dtype)
 
 """
@@ -138,7 +138,9 @@ CATEGORICAL_FEATURE_NAMES = list(CATEGORICAL_FEATURES_WITH_VOCABULARY.keys())
 FEATURE_NAMES = NUMERIC_FEATURE_NAMES + CATEGORICAL_FEATURE_NAMES
 # A list of column default values for each feature.
 COLUMN_DEFAULTS = [
-    [0.0] if feature_name in NUMERIC_FEATURE_NAMES + IGNORE_COLUMN_NAMES else ["NA"]
+    [0.0]
+    if feature_name in NUMERIC_FEATURE_NAMES + IGNORE_COLUMN_NAMES
+    else ["NA"]
     for feature_name in CSV_HEADER
 ]
 # The name of the target feature.
@@ -172,25 +174,30 @@ for feature_name in CATEGORICAL_FEATURE_NAMES:
     )
     lookup_dict[feature_name] = lookup
 
+
 def encode_categorical(batch_x, batch_y):
     for feature_name in CATEGORICAL_FEATURE_NAMES:
-        batch_x[feature_name]= lookup_dict[feature_name](batch_x[feature_name])
+        batch_x[feature_name] = lookup_dict[feature_name](batch_x[feature_name])
 
     return batch_x, batch_y
 
 
 def get_dataset_from_csv(csv_file_path, shuffle=False, batch_size=128):
-    dataset = tf_data.experimental.make_csv_dataset(
-        csv_file_path,
-        batch_size=batch_size,
-        column_names=CSV_HEADER,
-        column_defaults=COLUMN_DEFAULTS,
-        label_name=TARGET_FEATURE_NAME,
-        num_epochs=1,
-        header=False,
-        na_value="?",
-        shuffle=shuffle,
-    ).map(lambda features, target: (features, target_label_lookup(target))).map(encode_categorical)
+    dataset = (
+        tf_data.experimental.make_csv_dataset(
+            csv_file_path,
+            batch_size=batch_size,
+            column_names=CSV_HEADER,
+            column_defaults=COLUMN_DEFAULTS,
+            label_name=TARGET_FEATURE_NAME,
+            num_epochs=1,
+            header=False,
+            na_value="?",
+            shuffle=shuffle,
+        )
+        .map(lambda features, target: (features, target_label_lookup(target)))
+        .map(encode_categorical)
+    )
 
     return dataset.cache()
 
@@ -279,14 +286,17 @@ class NeuralDecisionTree(keras.Model):
         sampled_feature_indices = np.random.choice(
             np.arange(num_features), num_used_features, replace=False
         )
-        self.used_features_mask = ops.convert_to_tensor(one_hot[sampled_feature_indices], dtype=_dtype)
+        self.used_features_mask = ops.convert_to_tensor(
+            one_hot[sampled_feature_indices], dtype=_dtype
+        )
 
         # Initialize the weights of the classes in leaves.
         self.pi = self.add_weight(
-            initializer='random_normal',
+            initializer="random_normal",
             shape=[self.num_leaves, self.num_classes],
             dtype=_dtype,
-            trainable=True,)
+            trainable=True,
+        )
 
         # Initialize the stochastic routing layer.
         self.decision_fn = layers.Dense(
@@ -315,7 +325,9 @@ class NeuralDecisionTree(keras.Model):
         end_idx = 2
         # Traverse the tree in breadth-first order.
         for level in range(self.depth):
-            mu = ops.reshape(mu, [batch_size, -1, 1])  # [batch_size, 2 ** level, 1]
+            mu = ops.reshape(
+                mu, [batch_size, -1, 1]
+            )  # [batch_size, 2 ** level, 1]
             mu = ops.tile(mu, (1, 1, 2))  # [batch_size, 2 ** level, 2]
             level_decisions = decisions[
                 :, begin_idx:end_idx, :
@@ -324,8 +336,12 @@ class NeuralDecisionTree(keras.Model):
             begin_idx = end_idx
             end_idx = begin_idx + 2 ** (level + 1)
 
-        mu = ops.reshape(mu, [batch_size, self.num_leaves])  # [batch_size, num_leaves]
-        probabilities = keras.activations.softmax(self.pi)  # [num_leaves, num_classes]
+        mu = ops.reshape(
+            mu, [batch_size, self.num_leaves]
+        )  # [batch_size, num_leaves]
+        probabilities = keras.activations.softmax(
+            self.pi
+        )  # [num_leaves, num_classes]
         outputs = ops.matmul(mu, probabilities)  # [batch_size, num_classes]
         return outputs
 
@@ -339,14 +355,18 @@ trained simultaneously. The output of the forest model is the average outputs of
 
 
 class NeuralDecisionForest(keras.Model):
-    def __init__(self, num_trees, depth, num_features, used_features_rate, num_classes):
+    def __init__(
+        self, num_trees, depth, num_features, used_features_rate, num_classes
+    ):
         super().__init__()
         self.ensemble = []
         # Initialize the ensemble by adding NeuralDecisionTree instances.
         # Each tree will have its own randomly selected input features to use.
         for _ in range(num_trees):
             self.ensemble.append(
-                NeuralDecisionTree(depth, num_features, used_features_rate, num_classes)
+                NeuralDecisionTree(
+                    depth, num_features, used_features_rate, num_classes
+                )
             )
 
     def call(self, inputs):
@@ -412,7 +432,9 @@ def create_tree_model():
     features = layers.BatchNormalization()(features)
     num_features = features.shape[1]
 
-    tree = NeuralDecisionTree(depth, num_features, used_features_rate, num_classes)
+    tree = NeuralDecisionTree(
+        depth, num_features, used_features_rate, num_classes
+    )
 
     outputs = tree(features)
     model = keras.Model(inputs=inputs, outputs=outputs)
