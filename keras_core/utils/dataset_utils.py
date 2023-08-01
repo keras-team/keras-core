@@ -531,39 +531,17 @@ def labels_to_dataset(labels, label_mode, num_classes):
       A `Dataset` instance.
     """
 
-    if backend() == "tensorflow":
-        label_ds = tf.data.Dataset.from_tensor_slices(labels)
-        if label_mode == "binary":
-            label_ds = label_ds.map(
-                lambda x: tf.expand_dims(tf.cast(x, "float32"), axis=-1),
-                num_parallel_calls=tf.data.AUTOTUNE,
-            )
-        elif label_mode == "categorical":
-            label_ds = label_ds.map(
-                lambda x: tf.one_hot(x, num_classes),
-                num_parallel_calls=tf.data.AUTOTUNE,
-            )
-
-    elif backend() == "torch":
-        from torch.utils.data import TensorDataset
-        import torch
-
-        print(labels)
-        label_ds = TensorDataset(torch.tensor(labels))
-        if label_mode == "binary":
-            label_temp = [
-                torch.unsqueeze(sample.type(torch.IntTensor), axis=-1)
-                for sample in label_ds
-            ]
-            label_ds = TensorDataset(torch.tensor(label_temp))
-        elif label_mode == "categorical":
-            label_temp = [
-                torch.nn.functional.one_hot(sample, num_classes)
-                for sample in label_ds
-            ]
-            label_ds = TensorDataset(torch.tensor(label_temp))
-    elif backend() == "jax":
-        NotImplementedError("Method for jax not yet Implemented.")
+    label_ds = tf.data.Dataset.from_tensor_slices(labels)
+    if label_mode == "binary":
+        label_ds = label_ds.map(
+            lambda x: tf.expand_dims(tf.cast(x, "float32"), axis=-1),
+            num_parallel_calls=tf.data.AUTOTUNE,
+        )
+    elif label_mode == "categorical":
+        label_ds = label_ds.map(
+            lambda x: tf.one_hot(x, num_classes),
+            num_parallel_calls=tf.data.AUTOTUNE,
+        )
 
     return label_ds
 

@@ -20,6 +20,7 @@ from keras_core.utils import dataset_utils
 from keras_core.utils import image_utils
 from keras_core.api_export import keras_core_export
 from keras_core import backend
+from keras_core.backend.config import backend as backend_config
 
 
 
@@ -256,6 +257,7 @@ def image_dataset_from_directory(
             interpolation=interpolation,
             crop_to_aspect_ratio=crop_to_aspect_ratio,
         )
+
         val_dataset = paths_and_labels_to_dataset(
             image_paths=image_paths_val,
             image_size=image_size,
@@ -346,11 +348,18 @@ def paths_and_labels_to_dataset(
 ):
 
     # TODO(fchollet): consider making num_parallel_calls settable
-    path_ds = tf.data.Dataset.from_tensor_slices(image_paths)
     args = (image_size, num_channels, interpolation, crop_to_aspect_ratio)
-    img_ds = path_ds.map(
-        lambda x: load_image(x, *args), num_parallel_calls=tf.data.AUTOTUNE
-    )
+    if backend_config() == 'tensorflow':
+        path_ds = tf.data.Dataset.from_tensor_slices(image_paths)
+        img_ds = path_ds.map(
+            lambda x: load_image(x, *args), num_parallel_calls=tf.data.AUTOTUNE
+        )
+
+    elif backend_config() == 'torch':
+        img_ds = [load_image(str(image_path), *args) for image_path in image_paths]
+        img_ds = tf.data.Dataset.from_tensor_slices(img_ds)
+        print(img_ds)
+
     if label_mode:
         label_ds = dataset_utils.labels_to_dataset(
             labels, label_mode, num_classes
@@ -374,7 +383,9 @@ def load_image(
     else:
         img = backend.resize(img, image_size, interpolation=interpolation)
 
-    from keras_core.backend.config import backend as backend_config
     if backend_config() == 'tensorflow':
         img.set_shape((image_size[0], image_size[1], num_channels))
-    return img
+        return img
+    elif backend_config() == 'torch':
+        print(img.shape)
+        return img.numpy()

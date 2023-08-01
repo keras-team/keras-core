@@ -1,4 +1,4 @@
-import tensorflow as tf
+from keras_core.utils.module_utils import tensorflow as tf
 import numpy as np
 
 RESIZE_INTERPOLATIONS = (
