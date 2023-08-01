@@ -10,7 +10,7 @@ def jax_draw_seed(seed):
     if isinstance(seed, jax.Array):
         return seed
     else:
-        return draw_seed(seed)
+        return jax.random.PRNGKey(draw_seed(seed))
 
 
 def normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
