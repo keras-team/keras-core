@@ -330,7 +330,7 @@ def diagonal(x, offset=0, axis1=0, axis2=1):
 def digitize(x, bins):
     x = convert_to_tensor(x)
     bins = convert_to_tensor(bins)
-    return torch.bucketize(x, bins, right=True)
+    return cast(torch.bucketize(x, bins, right=True), "int32")
 
 
 def dot(x, y):
