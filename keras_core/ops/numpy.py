@@ -1197,6 +1197,47 @@ class Bincount(Operation):
 
 @keras_core_export(["keras_core.ops.bincount", "keras_core.ops.numpy.bincount"])
 def bincount(x, weights=None, minlength=0):
+    """Count the number of occurrences of each value in a tensor of integers.
+
+    Args:
+        x: Input tensor.
+            It must be of dimension 1, and it must only contain non-negative
+            integer(s).
+        weights: Weight tensor.
+            It must have the same length as `x`. The default value is `None`.
+            If specified, `x` is weighted by it, i.e. if `n = x[i]`,
+            `out[n] += weight[i]` instead of the default behavior `out[n] += 1`.
+        minlength: An integer.
+            The default value is `0`. If specified, there will be at least
+            this number of bins in the output tensor. If greater than
+            `max(x) + 1`, each value of the output at an index higher than
+            `max(x)` is set to 0.
+
+    Returns:
+        1D tensor where each element gives the number of occurrence(s) of its
+        index value in x. Its length is the maximum between `max(x) + 1` and 
+        minlength.
+
+    Examples:
+        >>> x = []
+        >>> for i in range(4): x.extend(x.extend([i]*i))
+        >>> x = keras_core.ops.array(x)
+        >>> x.numpy()
+        array([1, 2, 2, 3, 3, 3, 4, 4, 4, 4])
+        >>> keras_core.ops.bincount(x_arr).numpy()
+        array([0, 1, 2, 3, 4], dtype=int32)
+        >>> keras_core.ops.bincount(keras_core.ops.array([-1]))
+        [...] INVALID_ARGUMENT: Input arr must be non-negative!
+        [...]
+        >>> weights = x / 2
+        >>> weights.numpy()
+        array([0.5, 1. , 1. , 1.5, 1.5, 1.5, 2. , 2. , 2. , 2. ])
+        >>> keras_core.ops.bincount(x, weights=weights).numpy()
+        array([0. , 0.5, 2. , 4.5, 8. ])
+        >>> minlength = (keras_core.ops.max(x_arr).numpy() + 1) + 2 # 7
+        >>> keras_core.ops.bincount(x, minlength=minlength).numpy()
+        array([0, 1, 2, 3, 4, 0, 0], dtype=int32)
+    """
     if any_symbolic_tensors((x,)):
         return Bincount(weights=weights, minlength=minlength).symbolic_call(x)
     return backend.numpy.bincount(x, weights=weights, minlength=minlength)
