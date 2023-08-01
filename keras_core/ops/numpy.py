@@ -1128,7 +1128,7 @@ def average(x, axis=None, weights=None):
     Args:
         x: Input tensor.
         axis: Integer along which to average `x`. The default, `axis=None`,
-            will average over all of the elements of the input tendor. If axis
+            will average over all of the elements of the input tensor. If axis
             is negative it counts from the last to the first axis.
         weights: Tensor of wieghts associated with the values in `x`. Each
             value in `x` contributes to the average according to its
