@@ -233,7 +233,9 @@ class AveragePoolingCorrectnessTest(testing.TestCase, parameterized.TestCase):
 
     @parameterized.parameters(
         (2, 1, "valid", "channels_last"),
+        (2, 1, "valid", "channels_first"),
         ((2,), (2,), "valid", "channels_last"),
+        ((2,), (2,), "valid", "channels_first"),
     )
     def test_average_pooling1d(self, pool_size, strides, padding, data_format):
         inputs = np.arange(24, dtype="float32").reshape((2, 3, 4))
@@ -279,9 +281,7 @@ class AveragePoolingCorrectnessTest(testing.TestCase, parameterized.TestCase):
 
     @parameterized.parameters(
         (2, 1, "valid", "channels_last"),
-        (2, 1, "valid", "channels_first"),
         ((2, 3), (2, 2), "valid", "channels_last"),
-        ((2, 3), (2, 2), "valid", "channels_first"),
     )
     def test_average_pooling2d(self, pool_size, strides, padding, data_format):
         inputs = np.arange(16, dtype="float32").reshape((1, 4, 4, 1))
