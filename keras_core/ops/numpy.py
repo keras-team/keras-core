@@ -10,9 +10,12 @@ amin
 append
 arange
 arccos
+arccosh
 arcsin
+arcsinh
 arctan
 arctan2
+arctanh
 argmax
 argmin
 argsort
@@ -27,6 +30,7 @@ conj
 conjugate
 copy
 cos
+cosh
 count_nonzero
 cross
 cumprod
@@ -102,6 +106,7 @@ roll
 round
 sign
 sin
+sinh
 size
 sort
 split
@@ -116,6 +121,7 @@ swapaxes
 take
 take_along_axis
 tan
+tanh
 tensordot
 tile
 trace
@@ -229,6 +235,22 @@ class Absolute(Operation):
 
 @keras_core_export(["keras_core.ops.absolute", "keras_core.ops.numpy.absolute"])
 def absolute(x):
+    """Compute the absolute value element-wise.
+
+    `keras_core.ops.abs` is a shorthand for this function.
+
+    Args:
+        x: Input tensor.
+
+    Returns:
+        An array containing the absolute value of each element in x.
+
+    Example:
+
+    >>> x = keras_core.ops.convert_to_tensor([-1.2, 1.2])
+    >>> keras_core.ops.absolute(x)
+    array([1.2 1.2], shape=(2,), dtype=float32)
+    """
     if any_symbolic_tensors((x,)):
         return Absolute().symbolic_call(x)
     return backend.numpy.absolute(x)
@@ -240,6 +262,7 @@ class Abs(Absolute):
 
 @keras_core_export(["keras_core.ops.abs", "keras_core.ops.numpy.abs"])
 def abs(x):
+    """Shorthand for `keras_core.ops.absolute`."""
     return absolute(x)
 
 
@@ -256,6 +279,32 @@ class Add(Operation):
 
 @keras_core_export(["keras_core.ops.add", "keras_core.ops.numpy.add"])
 def add(x1, x2):
+    """Add arguments element-wise.
+
+    Args:
+        x1: First input tensor.
+        x2: Second input tensor.
+
+    Returns:
+        The tensor containing the element-wise sum of `x1` and `x2`.
+
+    Examples:
+
+    >>> x1 = keras_core.ops.convert_to_tensor([1, 4])
+    >>> x2 = keras_core.ops.convert_to_tensor([5, 6])
+    >>> keras_core.ops.add(x1, x2)
+    array([ 6 10], shape=(2,), dtype=int32)
+
+    `keras_core.ops.add` also broadcasts shapes:
+    >>> x1 = keras_core.ops.convert_to_tensor(
+    ...     [[5, 4],
+    ...      [5, 6]]
+    ... )
+    >>> x2 = keras_core.ops.convert_to_tensor([5, 6])
+    >>> keras_core.ops.add(x1, x2)
+    array([[10 10]
+           [10 12]], shape=(2, 2), dtype=int32)
+    """
     if any_symbolic_tensors((x1, x2)):
         return Add().symbolic_call(x1, x2)
     return backend.numpy.add(x1, x2)
@@ -290,6 +339,37 @@ class All(Operation):
 
 @keras_core_export(["keras_core.ops.all", "keras_core.ops.numpy.all"])
 def all(x, axis=None, keepdims=False):
+    """Test whether all array elements along a given axis evaluate to `True`.
+
+    Args:
+        x: Input tensor.
+        axis: An integer or tuple of integers that represent the axis along
+            which a logical AND reduction is performed. The default
+            (`axis=None`) is to perform a logical AND over all the dimensions
+            of the input array. `axis` may be negative, in which case it counts
+            for the last to the first axis.
+        keepdims: If `True`, axes which are reduced are left in the result as
+            dimensions with size one. With this option, the result will
+            broadcast correctly against the input array. Default is `False`.
+
+    Returns:
+        The tensor containing the logical AND reduction over the `axis`.
+
+    Examples:
+
+    >>> x = keras_core.ops.convert_to_tensor([True, False])
+    >>> keras_core.ops.all(x)
+    array(False, shape=(), dtype=bool)
+
+    >>> x = keras_core.ops.convert_to_tensor([[True, False], [True, True]])
+    >>> keras_core.ops.all(x, axis=0)
+    array([ True False], shape=(2,), dtype=bool)
+
+    `keepdims=True` outputs a tensor with dimensions reduced to one.
+    >>> x = keras_core.ops.convert_to_tensor([[True, False], [True, True]])
+    >>> keras_core.ops.all(x, keepdims=True)
+    array([[False]], shape=(1, 1), dtype=bool)
+    """
     if any_symbolic_tensors((x,)):
         return All(axis=axis, keepdims=keepdims).symbolic_call(x)
     return backend.numpy.all(x, axis=axis, keepdims=keepdims)
@@ -324,6 +404,37 @@ class Any(Operation):
 
 @keras_core_export(["keras_core.ops.any", "keras_core.ops.numpy.any"])
 def any(x, axis=None, keepdims=False):
+    """Test whether any array element along a given axis evaluates to True.
+
+    Args:
+        x: Input tensor.
+        axis: An integer or tuple of integers that represent the axis along
+            which a logical OR reduction is performed. The default
+            (`axis=None`) is to perform a logical OR over all the dimensions
+            of the input array. `axis` may be negative, in which case it counts
+            for the last to the first axis.
+        keepdims: If `True`, axes which are reduced are left in the result as
+            dimensions with size one. With this option, the result will
+            broadcast correctly against the input array. Default is `False`.
+
+    Returns:
+        The tensor containing the logical OR reduction over the `axis`.
+
+    Examples:
+
+    >>> x = keras_core.ops.convert_to_tensor([True, False])
+    >>> keras_core.ops.any(x)
+    array(True, shape=(), dtype=bool)
+
+    >>> x = keras_core.ops.convert_to_tensor([[True, False], [True, True]])
+    >>> keras_core.ops.any(x, axis=0)
+    array([ True  True], shape=(2,), dtype=bool)
+
+    `keepdims=True` outputs a tensor with dimensions reduced to one.
+    >>> x = keras_core.ops.convert_to_tensor([[True, False], [True, True]])
+    >>> keras_core.ops.all(x, keepdims=True)
+    array([[False]], shape=(1, 1), dtype=bool)
+    """
     if any_symbolic_tensors((x,)):
         return Any(axis=axis, keepdims=keepdims).symbolic_call(x)
     return backend.numpy.any(x, axis=axis, keepdims=keepdims)
@@ -353,6 +464,37 @@ class Amax(Operation):
 
 @keras_core_export(["keras_core.ops.amax", "keras_core.ops.numpy.amax"])
 def amax(x, axis=None, keepdims=False):
+    """Returns the maximum of an array or maximum value along an axis.
+
+    Args:
+        x: Input tensor.
+        axis: Axis along which to compute the maximum.
+            By default (`axis=None`), find the maximum value in all the
+            dimensions of the input array.
+        keep_dims: If `True`, axes which are reduced are left in the result as
+            dimensions that are broadcast to the size of the original
+            input tensor. Defaults to `False`.
+
+    Returns:
+        An array with the maximum value. If `axis=None`, the result is a scalar
+        value representing the maximum element in the entire array. If `axis` is
+        given, the result is an array with the maximum values along
+        the specified axis.
+
+    Examples:
+
+    >>> x = keras_core.ops.convert_to_tensor([[1, 3, 5], [2, 3, 6]])
+    >>> keras_core.ops.amax(x)
+    array(6, dtype=int32)
+
+    >>> x = keras_core.ops.convert_to_tensor([[1, 6, 8], [1, 5, 2]])
+    >>> keras_core.ops.amax(x, axis=0)
+    array([1, 6, 8], dtype=int32)
+
+    >>> x = keras_core.ops.convert_to_tensor([[1, 6, 8], [1, 5, 2]])
+    >>> keras_core.ops.amax(x, axis=1, keepdims=True)
+    array([[8], [5]], dtype=int32)
+    """
     if any_symbolic_tensors((x,)):
         return Amax(axis=axis, keepdims=keepdims).symbolic_call(x)
     return backend.numpy.amax(x, axis=axis, keepdims=keepdims)
@@ -378,6 +520,37 @@ class Amin(Operation):
 
 @keras_core_export(["keras_core.ops.amin", "keras_core.ops.numpy.amin"])
 def amin(x, axis=None, keepdims=False):
+    """Returns the minimum of an array or minimum value along an axis.
+
+    Args:
+        x: Input tensor.
+        axis: Axis along which to compute the minimum.
+            By default (`axis=None`), find the minimum value in all the
+            dimensions of the input array.
+        keep_dims: If `True`, axes which are reduced are left in the result as
+            dimensions that are broadcast to the size of the original
+            input tensor. Defaults to `False`.
+
+    Returns:
+        An array with the minimum value. If `axis=None`, the result is a scalar
+        value representing the minimum element in the entire array. If `axis` is
+        given, the result is an array with the minimum values along
+        the specified axis.
+
+    Examples:
+
+    >>> x = keras_core.ops.convert_to_tensor([1, 3, 5, 2, 3, 6])
+    >>> keras_core.ops.amin(x)
+    array(1, dtype=int32)
+
+    >>> x = keras_core.ops.convert_to_tensor([[1, 6, 8], [7, 5, 3]])
+    >>> keras_core.ops.amin(x, axis=0)
+    array([1,5,3], dtype=int32)
+
+    >>> x = keras_core.ops.convert_to_tensor([[1, 6, 8], [7, 5, 3]])
+    >>> keras_core.ops.amin(x, axis=1, keepdims=True)
+    array([[1],[3]], dtype=int32)
+    """
     if any_symbolic_tensors((x,)):
         return Amin(axis=axis, keepdims=keepdims).symbolic_call(x)
     return backend.numpy.amin(x, axis=axis, keepdims=keepdims)
@@ -419,6 +592,38 @@ def append(
     x2,
     axis=None,
 ):
+    """Append tensor `x2` to the end of tensor `x1`.
+
+    Args:
+        x1: First input tensor.
+        x2: Second input tensor.
+        axis: Axis along which tensor `x2` is appended to tensor `x1`.
+            If `None`, both tensors are flattened before use.
+
+    Returns:
+        A tensor with the values of `x2` appended to `x1`.
+
+    Examples:
+
+    >>> x1 = keras_core.ops.convert_to_tensor([1, 2, 3])
+    >>> x2 = keras_core.ops.convert_to_tensor([[4, 5, 6], [7, 8, 9]])
+    >>> keras_core.ops.append(x1, x2)
+    array([1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=int32)
+
+    When `axis` is specified, `x1` and `x2` must have compatible shapes.
+    >>> x1 = keras_core.ops.convert_to_tensor([[1, 2, 3], [4, 5, 6]])
+    >>> x2 = keras_core.ops.convert_to_tensor([[7, 8, 9]])
+    >>> keras_core.ops.append(x1, x2, axis=0)
+    array([[1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9]], dtype=int32)
+    >>> x3 = keras_core.ops.convert_to_tensor([7, 8, 9])
+    >>> keras_core.ops.append(x1, x3, axis=0)
+    Traceback (most recent call last):
+        ...
+    TypeError: Cannot concatenate arrays with different numbers of
+    dimensions: got (2, 3), (3,).
+    """
     if any_symbolic_tensors((x1, x2)):
         return Append(axis=axis).symbolic_call(x1, x2)
     return backend.numpy.append(x1, x2, axis=axis)
@@ -437,6 +642,51 @@ class Arange(Operation):
 
 @keras_core_export(["keras_core.ops.arange", "keras_core.ops.numpy.arange"])
 def arange(start, stop=None, step=1, dtype=None):
+    """Return evenly spaced values within a given interval.
+
+    `arange` can be called with a varying number of positional arguments:
+    * `arange(stop)`: Values are generated within the half-open interval
+        `[0, stop)` (in other words, the interval including start but excluding
+        stop).
+    * `arange(start, stop)`: Values are generated within the half-open interval
+        `[start, stop)`.
+    * `arange(start, stop, step)`: Values are generated within the half-open
+        interval `[start, stop)`, with spacing between values given by step.
+
+    Args:
+        start: Integer or real, representing the start of the interval. The
+            interval includes this value.
+        stop: Integer or real, representing the end of the interval. The
+            interval does not include this value, except in some cases where
+            `step` is not an integer and floating point round-off affects the
+            lenght of `out`. Defaults to `None`.
+        step: Integer or real, represent the spacing between values. For any
+            output `out`, this is the distance between two adjacent values,
+            `out[i+1] - out[i]`. The default step size is 1. If `step` is
+            specified as a position argument, `start` must also be given.
+        dtype: The type of the output array. If `dtype` is not given, infer the
+            data type from the other input arguments.
+
+    Returns:
+        Tensor of evenly spaced values.
+        For floating point arguments, the length of the result is
+        `ceil((stop - start)/step)`. Because of floating point overflow, this
+        rule may result in the last element of out being greater than stop.
+
+    Examples:
+
+    >>> keras_core.ops.arange(3)
+    array([0, 1, 2], dtype=int32)
+
+    >>> keras_core.ops.arange(3.0)
+    array([0., 1., 2.], dtype=float32)
+
+    >>> keras_core.ops.arange(3, 7)
+    array([3, 4, 5, 6], dtype=int32)
+
+    >>> keras_core.ops.arange(3, 7, 2)
+    array([3, 5], dtype=int32)
+    """
     return backend.numpy.arange(start, stop, step=step, dtype=dtype)
 
 
@@ -450,9 +700,45 @@ class Arccos(Operation):
 
 @keras_core_export(["keras_core.ops.arccos", "keras_core.ops.numpy.arccos"])
 def arccos(x):
+    """Trigonometric inverse cosine, element-wise. The inverse of `cos` so that,
+    if `y = cos(x)`, then `x = arccos(y)`.
+
+    Arg:
+        x: Input tensor.
+
+    Returns:
+        Tensor of the angle of the ray intersecting the unit circle at the given
+        x-coordinate in radians [0, pi].
+
+    Example:
+    >>> x = keras_core.ops.convert_to_tensor([1, -1])
+    array([0., 3.1415927], dtype=float32)
+    """
     if any_symbolic_tensors((x,)):
         return Arccos().symbolic_call(x)
     return backend.numpy.arccos(x)
+
+
+class Arccosh(Operation):
+    def call(self, x):
+        return backend.numpy.arccosh(x)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape, dtype=x.dtype)
+
+
+def arccosh(x):
+    """Inverse hyperbolic cosine, element-wise.
+
+    Arguments:
+        x: Input tensor.
+
+    Returns:
+        Output tensor of same shape as x.
+    """
+    if any_symbolic_tensors((x,)):
+        return Arccosh().symbolic_call(x)
+    return backend.numpy.arccosh(x)
 
 
 class Arcsin(Operation):
@@ -465,9 +751,46 @@ class Arcsin(Operation):
 
 @keras_core_export(["keras_core.ops.arcsin", "keras_core.ops.numpy.arcsin"])
 def arcsin(x):
+    """Inverse sine, element-wise.
+
+    Arg:
+        x: Input tensor.
+
+    Returns:
+        Tensor of the inverse sine of each element in `x`, in radians and in
+        the closed interval `[-pi/2, pi/2]`.
+
+    Example:
+    >>> x = keras_core.ops.convert_to_tensor([1, -1, 0])
+    >>> keras_core.ops.arcsin(x)
+    array([ 1.5707964, -1.5707964,  0.], dtype=float32)
+    """
     if any_symbolic_tensors((x,)):
         return Arcsin().symbolic_call(x)
     return backend.numpy.arcsin(x)
+
+
+class Arcsinh(Operation):
+    def call(self, x):
+        return backend.numpy.arcsinh(x)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape, dtype=x.dtype)
+
+
+@keras_core_export(["keras_core.ops.arcsinh", "keras_core.ops.numpy.arcsinh"])
+def arcsinh(x):
+    """Inverse hyperbolic sine, element-wise.
+
+    Arguments:
+        x: Input tensor.
+
+    Returns:
+        Output tensor of same shape as x.
+    """
+    if any_symbolic_tensors((x,)):
+        return Arcsinh().symbolic_call(x)
+    return backend.numpy.arcsinh(x)
 
 
 class Arctan(Operation):
@@ -480,6 +803,20 @@ class Arctan(Operation):
 
 @keras_core_export(["keras_core.ops.arctan", "keras_core.ops.numpy.arctan"])
 def arctan(x):
+    """Trigonometric inverse tangent, element-wise.
+
+    Arg:
+        x: Input tensor.
+
+    Returns:
+        Tensor of the inverse tangent of each element in `x`, in the interval
+        `[-pi/2, pi/2]`.
+
+    Example:
+    >>> x = keras_core.ops.convert_to_tensor([0, 1])
+    >>> keras_core.ops.arctan(x)
+    array([0., 0.7853982], dtype=float32)
+    """
     if any_symbolic_tensors((x,)):
         return Arctan().symbolic_call(x)
     return backend.numpy.arctan(x)
@@ -498,9 +835,69 @@ class Arctan2(Operation):
 
 @keras_core_export(["keras_core.ops.arctan2", "keras_core.ops.numpy.arctan2"])
 def arctan2(x1, x2):
+    """Element-wise arc tangent of `x1/x2` choosing the quadrant correctly.
+
+    The quadrant (i.e., branch) is chosen so that `arctan2(x1, x2)` is the
+    signed angle in radians between the ray ending at the origin and passing
+    through the point `(1, 0)`, and the ray ending at the origin and passing
+    through the point `(x2, x1)`. (Note the role reversal: the "y-coordinate"
+    is the first function parameter, the "x-coordinate" is the second.) By IEEE
+    convention, this function is defined for `x2 = +/-0` and for either or both
+    of `x1` and `x2` `= +/-inf`.
+
+    Args:
+        x1: First input tensor.
+        x2: Second input tensor.
+
+    Returns:
+        Tensor of angles in radians, in the range `[-pi, pi]`.
+
+    Examples:
+    Consider four points in different quadrants:
+    >>> x = keras_core.ops.convert_to_tensor([-1, +1, +1, -1])
+    >>> y = keras_core.ops.convert_to_tensor([-1, -1, +1, +1])
+    >>> keras_core.ops.arctan2(y, x) * 180 / numpy.pi
+    array([-135., -45., 45., 135.], dtype=float32)
+
+    Note the order of the parameters. `arctan2` is defined also when x2=0 and
+    at several other points, obtaining values in the range `[-pi, pi]`:
+    >>> keras_core.ops.arctan2(
+    ...     keras_core.ops.array([1., -1.]),
+    ...     keras_core.ops.array([0., 0.]),
+    ... )
+    array([ 1.5707964, -1.5707964], dtype=float32)
+    >>> keras_core.ops.arctan2(
+    ...     keras_core.ops.array([0., 0., numpy.inf]),
+    ...     keras_core.ops.array([+0., -0., numpy.inf]),
+    ... )
+    array([0., 3.1415925, 0.7853982], dtype=float32)
+    """
     if any_symbolic_tensors((x1, x2)):
         return Arctan2().symbolic_call(x1, x2)
     return backend.numpy.arctan2(x1, x2)
+
+
+class Arctanh(Operation):
+    def call(self, x):
+        return backend.numpy.arctanh(x)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape, dtype=x.dtype)
+
+
+@keras_core_export(["keras_core.ops.arctanh", "keras_core.ops.numpy.arctanh"])
+def arctanh(x):
+    """Inverse hyperbolic tangent, element-wise.
+
+    Arguments:
+        x: Input tensor.
+
+    Returns:
+        Output tensor of same shape as x.
+    """
+    if any_symbolic_tensors((x,)):
+        return Arctanh().symbolic_call(x)
+    return backend.numpy.arctanh(x)
 
 
 class Argmax(Operation):
@@ -521,6 +918,29 @@ class Argmax(Operation):
 
 @keras_core_export(["keras_core.ops.argmax", "keras_core.ops.numpy.argmax"])
 def argmax(x, axis=None):
+    """Returns the indices of the maximum values along an axis.
+
+    Args:
+        x: Input tensor.
+        axis: By default, the index is into the flattened tensor, otherwise
+            along the specified axis.
+
+    Returns:
+        Tensor of indices. It has the same shape as `x`, with the dimension
+        along `axis` removed.
+
+    Example:
+    >>> x = keras_core.ops.arange(6).reshape(2, 3) + 10
+    >>> x
+    array([[10, 11, 12],
+           [13, 14, 15]], dtype=int32)
+    >>> keras_core.ops.argmax(x)
+    array(5, dtype=int32)
+    >>> keras_core.ops.argmax(x, axis=0)
+    array([1, 1, 1], dtype=int32)
+    >>> keras_core.ops.argmax(x, axis=1)
+    array([2, 2], dtype=int32)
+    """
     if any_symbolic_tensors((x,)):
         return Argmax(axis=axis).symbolic_call(x)
     return backend.numpy.argmax(x, axis=axis)
@@ -544,6 +964,29 @@ class Argmin(Operation):
 
 @keras_core_export(["keras_core.ops.argmin", "keras_core.ops.numpy.argmin"])
 def argmin(x, axis=None):
+    """Returns the indices of the minium values along an axis.
+
+    Args:
+        x: Input tensor.
+        axis: By default, the index is into the flattened tensor, otherwise
+            along the specified axis.
+
+    Returns:
+        Tensor of indices. It has the same shape as `x`, with the dimension
+        along `axis` removed.
+
+    Example:
+    >>> x = keras_core.ops.arange(6).reshape(2, 3) + 10
+    >>> x
+    array([[10, 11, 12],
+           [13, 14, 15]], dtype=int32)
+    >>> keras_core.ops.argmin(x)
+    array(0, dtype=int32)
+    >>> keras_core.ops.argmin(x, axis=0)
+    array([0, 0, 0], dtype=int32)
+    >>> keras_core.ops.argmin(x, axis=1)
+    array([0, 0], dtype=int32)
+    """
     if any_symbolic_tensors((x,)):
         return Argmin(axis=axis).symbolic_call(x)
     return backend.numpy.argmin(x, axis=axis)
@@ -565,6 +1008,37 @@ class Argsort(Operation):
 
 @keras_core_export(["keras_core.ops.argsort", "keras_core.ops.numpy.argsort"])
 def argsort(x, axis=-1):
+    """Returns the indices that would sort an tensor.
+
+    Args:
+        x: Input tensor.
+        axis: Axis along which to sort. Default is `-1` (the last axis). If
+        `None`, the flattened tensor is used.
+
+    Returns:
+        Tensor of indices that sort `x` along the specified `axis`.
+
+    Examples:
+    One dimensional array:
+    >>> x = keras_core.ops.array([3, 1, 2])
+    >>> keras_core.ops.argsort(x)
+    array([1, 2, 0], dtype=int32)
+
+    Two-dimensional array:
+    >>> x = keras_core.ops.array([[0, 3], [3, 2], [4, 5]])
+    >>> x
+    array([[0, 3],
+           [3, 2],
+           [4, 5]], dtype=int32)
+    >>> keras_core.ops.argsort(x, axis=0)
+    array([[0, 1],
+           [1, 0],
+           [2, 2]], dtype=int32)
+    >>> keras_core.ops.argsort(x, axis=1)
+    array([[0, 1],
+           [1, 0],
+           [0, 1]], dtype=int32)
+    """
     if any_symbolic_tensors((x,)):
         return Argsort(axis=axis).symbolic_call(x)
     return backend.numpy.argsort(x, axis=axis)
@@ -580,6 +1054,22 @@ class Array(Operation):
 
 @keras_core_export(["keras_core.ops.array", "keras_core.ops.numpy.array"])
 def array(x, dtype=None):
+    """Create a tensor.
+
+    Args:
+        x: Input tensor.
+        dtype: The desired data-type for the tensor.
+
+    Returns:
+        A tensor.
+
+    Examples:
+    >>> keras_core.ops.array([1, 2, 3])
+    array([1, 2, 3], dtype=int32)
+
+    >>> keras_core.ops.array([1, 2, 3], dtype="float32")
+    array([1., 2., 3.], dtype=float32)
+    """
     if any_symbolic_tensors((x,)):
         return Array().symbolic_call(x, dtype=dtype)
     return backend.numpy.array(x, dtype=dtype)
@@ -633,6 +1123,57 @@ class Average(Operation):
 
 @keras_core_export(["keras_core.ops.average", "keras_core.ops.numpy.average"])
 def average(x, axis=None, weights=None):
+    """Compute the weighted average along the specified axis.
+
+    Args:
+        x: Input tensor.
+        axis: Integer along which to average `x`. The default, `axis=None`,
+            will average over all of the elements of the input tendor. If axis
+            is negative it counts from the last to the first axis.
+        weights: Tensor of wieghts associated with the values in `x`. Each
+            value in `x` contributes to the average according to its
+            associated weight. The weights array can either be 1-D (in which
+            case its length must be the size of a along the given axis) or of
+            the same shape as `x`. If `weights=None` (default), then all data
+            in `x` are assumed to have a weight equal to one.
+
+            The 1-D calculation is: `avg = sum(a * weights) / sum(weights)`.
+            The only constraint on weights is that `sum(weights)` must not be 0.
+
+    Returns:
+        Return the average along the specified axis.
+
+    Examples:
+    >>> data = keras_core.ops.arange(1, 5)
+    >>> data
+    array([1, 2, 3, 4], dtype=int32)
+    >>> keras_core.ops.average(data)
+    array(2.5, dtype=float32)
+    >>> keras_core.ops.average(
+    ...     keras_core.ops.arange(1, 11),
+    ...     weights=keras_core.ops.arange(10, 0, -1)
+    ... )
+    array(4., dtype=float32)
+
+    >>> data = keras_core.ops.arange(6).reshape((3, 2))
+    >>> data
+    array([[0, 1],
+           [2, 3],
+           [4, 5]], dtype=int32)
+    >>> keras_core.ops.average(
+    ...     data,
+    ...     axis=1,
+    ...     weights=keras_core.ops.array([1./4, 3./4])
+    ... )
+    array([0.75, 2.75, 4.75], dtype=float32)
+    >>> keras_core.ops.average(
+    ...     data,
+    ...     weights=keras_core.ops.array([1./4, 3./4])
+    ... )
+    Traceback (most recent call last):
+        ...
+    ValueError: Axis must be specified when shapes of a and weights differ.
+    """
     if any_symbolic_tensors((x,)):
         return Average(axis=axis).symbolic_call(x, weights=weights)
     return backend.numpy.average(x, weights=weights, axis=axis)
@@ -820,6 +1361,29 @@ def cos(x):
     if any_symbolic_tensors((x,)):
         return Cos().symbolic_call(x)
     return backend.numpy.cos(x)
+
+
+class Cosh(Operation):
+    def call(self, x):
+        return backend.numpy.cosh(x)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape, dtype=x.dtype)
+
+
+@keras_core_export(["keras_core.ops.cosh", "keras_core.ops.numpy.cosh"])
+def cosh(x):
+    """Hyperbolic cosine, element-wise.
+
+    Arguments:
+        x: Input tensor.
+
+    Returns:
+        Output tensor of same shape as x.
+    """
+    if any_symbolic_tensors((x,)):
+        return Cosh().symbolic_call(x)
+    return backend.numpy.cosh(x)
 
 
 class CountNonzero(Operation):
@@ -2648,6 +3212,29 @@ def sin(x):
     return backend.numpy.sin(x)
 
 
+class Sinh(Operation):
+    def call(self, x):
+        return backend.numpy.sinh(x)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape, dtype=x.dtype)
+
+
+@keras_core_export(["keras_core.ops.sinh", "keras_core.ops.numpy.sinh"])
+def sinh(x):
+    """Hyperbolic sine, element-wise.
+
+    Arguments:
+        x: Input tensor.
+
+    Returns:
+        Output tensor of same shape as x.
+    """
+    if any_symbolic_tensors((x,)):
+        return Sinh().symbolic_call(x)
+    return backend.numpy.sinh(x)
+
+
 class Size(Operation):
     def call(self, x):
         return backend.numpy.size(x)
@@ -2907,6 +3494,29 @@ def tan(x):
     if any_symbolic_tensors((x,)):
         return Tan().symbolic_call(x)
     return backend.numpy.tan(x)
+
+
+class Tanh(Operation):
+    def call(self, x):
+        return backend.numpy.tanh(x)
+
+    def compute_output_spec(self, x):
+        return KerasTensor(x.shape, dtype=x.dtype)
+
+
+@keras_core_export(["keras_core.ops.tanh", "keras_core.ops.numpy.tanh"])
+def tanh(x):
+    """Hyperbolic tangent, element-wise.
+
+    Arguments:
+        x: Input tensor.
+
+    Returns:
+        Output tensor of same shape as x.
+    """
+    if any_symbolic_tensors((x,)):
+        return Tanh().symbolic_call(x)
+    return backend.numpy.tanh(x)
 
 
 class Tensordot(Operation):
