@@ -43,8 +43,6 @@ def segment_sum(data, segment_ids, num_segments=None, **kwargs):
 
 
 def segment_max(data, segment_ids, num_segments=None, **kwargs):
-    print(data.shape)
-    print(segment_ids.shape)
     data = convert_to_tensor(data)
     segment_ids = convert_to_tensor(segment_ids)
     num_repeats = torch.prod(
@@ -71,7 +69,6 @@ def segment_max(data, segment_ids, num_segments=None, **kwargs):
 
     # Add one more dimension to the result shape with the "+1".
     shape = (num_segments + 1,) + tuple(data.shape[1:])
-    print(shape)
 
     result = torch.zeros(*shape, device=get_device()).scatter_reduce(
         0, segment_ids, data.float(), "amax"
