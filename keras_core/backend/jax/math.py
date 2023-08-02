@@ -12,6 +12,7 @@ def segment_sum(data, segment_ids, num_segments=None, sorted=False):
         data, segment_ids, num_segments, indices_are_sorted=sorted
     )
 
+
 def segment_max(data, segment_ids, num_segments=None, sorted=False):
     if num_segments is None:
         raise ValueError(
