@@ -1,8 +1,25 @@
+# Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+"""Keras image dataset loading utilities."""
+
 import numpy as np
 
+from keras_core import backend
 from keras_core.api_export import keras_core_export
+from keras_core.backend.config import backend as backend_config
 from keras_core.utils import dataset_utils
-from keras_core.utils import image_utils
 from keras_core.utils.module_utils import tensorflow as tf
 
 ALLOWLIST_FORMATS = (".bmp", ".gif", ".jpeg", ".jpg", ".png")
@@ -29,6 +46,7 @@ def image_dataset_from_directory(
     interpolation="bilinear",
     follow_links=False,
     crop_to_aspect_ratio=False,
+    data_format="channels_last",
 ):
     """Generates a `tf.data.Dataset` from image files in a directory.
 
@@ -142,6 +160,7 @@ def image_dataset_from_directory(
     - if `color_mode` is `"rgba"`,
         there are 4 channels in the image tensors.
     """
+
     if labels not in ("inferred", None):
         if not isinstance(labels, (list, tuple)):
             raise ValueError(
@@ -178,24 +197,6 @@ def image_dataset_from_directory(
         raise ValueError(
             '`color_mode` must be one of {"rgb", "rgba", "grayscale"}. '
             f"Received: color_mode={color_mode}"
-        )
-
-    interpolation = interpolation.lower()
-    supported_interpolations = (
-        "bilinear",
-        "nearest",
-        "bicubic",
-        "area",
-        "lanczos3",
-        "lanczos5",
-        "gaussian",
-        "mitchellcubic",
-    )
-    if interpolation not in supported_interpolations:
-        raise ValueError(
-            "Argument `interpolation` should be one of "
-            f"{supported_interpolations}. "
-            f"Received: interpolation={interpolation}"
         )
 
     dataset_utils.check_validation_split_arg(
@@ -252,7 +253,9 @@ def image_dataset_from_directory(
             num_classes=len(class_names),
             interpolation=interpolation,
             crop_to_aspect_ratio=crop_to_aspect_ratio,
+            data_format=data_format,
         )
+
         val_dataset = paths_and_labels_to_dataset(
             image_paths=image_paths_val,
             image_size=image_size,
@@ -262,7 +265,11 @@ def image_dataset_from_directory(
             num_classes=len(class_names),
             interpolation=interpolation,
             crop_to_aspect_ratio=crop_to_aspect_ratio,
+            data_format=data_format,
         )
+
+        train_dataset = train_dataset.prefetch(tf.data.AUTOTUNE)
+        val_dataset = val_dataset.prefetch(tf.data.AUTOTUNE)
 
         if batch_size is not None:
             if shuffle:
@@ -278,9 +285,6 @@ def image_dataset_from_directory(
                     buffer_size=1024, seed=seed
                 )
 
-        train_dataset = train_dataset.prefetch(tf.data.AUTOTUNE)
-        val_dataset = val_dataset.prefetch(tf.data.AUTOTUNE)
-
         # Users may need to reference `class_names`.
         train_dataset.class_names = class_names
         val_dataset.class_names = class_names
@@ -288,6 +292,7 @@ def image_dataset_from_directory(
         # Include file paths for images as attribute.
         train_dataset.file_paths = image_paths_train
         val_dataset.file_paths = image_paths_val
+
         dataset = [train_dataset, val_dataset]
     else:
         image_paths, labels = dataset_utils.get_training_or_validation_split(
@@ -308,8 +313,9 @@ def image_dataset_from_directory(
             num_classes=len(class_names),
             interpolation=interpolation,
             crop_to_aspect_ratio=crop_to_aspect_ratio,
+            data_format=data_format,
         )
-
+        dataset = dataset.prefetch(tf.data.AUTOTUNE)
         if batch_size is not None:
             if shuffle:
                 # Shuffle locally at each iteration
@@ -319,13 +325,12 @@ def image_dataset_from_directory(
             if shuffle:
                 dataset = dataset.shuffle(buffer_size=1024, seed=seed)
 
-        dataset = dataset.prefetch(tf.data.AUTOTUNE)
-
         # Users may need to reference `class_names`.
         dataset.class_names = class_names
 
         # Include file paths for images as attribute.
         dataset.file_paths = image_paths
+
     return dataset
 
 
@@ -337,15 +342,29 @@ def paths_and_labels_to_dataset(
     label_mode,
     num_classes,
     interpolation,
+    data_format,
     crop_to_aspect_ratio=False,
 ):
-    """Constructs a dataset of images and labels."""
     # TODO(fchollet): consider making num_parallel_calls settable
-    path_ds = tf.data.Dataset.from_tensor_slices(image_paths)
-    args = (image_size, num_channels, interpolation, crop_to_aspect_ratio)
-    img_ds = path_ds.map(
-        lambda x: load_image(x, *args), num_parallel_calls=tf.data.AUTOTUNE
+    args = (
+        image_size,
+        num_channels,
+        interpolation,
+        data_format,
+        crop_to_aspect_ratio,
     )
+    if backend_config() == "tensorflow":
+        path_ds = tf.data.Dataset.from_tensor_slices(image_paths)
+        img_ds = path_ds.map(
+            lambda x: load_image(x, *args), num_parallel_calls=tf.data.AUTOTUNE
+        )
+
+    elif backend_config() == "torch":
+        img_ds = [
+            load_image(str(image_path), *args) for image_path in image_paths
+        ]
+        img_ds = tf.data.Dataset.from_tensor_slices(img_ds)
+
     if label_mode:
         label_ds = dataset_utils.labels_to_dataset(
             labels, label_mode, num_classes
@@ -355,23 +374,29 @@ def paths_and_labels_to_dataset(
 
 
 def load_image(
-    path, image_size, num_channels, interpolation, crop_to_aspect_ratio=False
+    path,
+    image_size,
+    num_channels,
+    interpolation,
+    data_format,
+    crop_to_aspect_ratio=False,
 ):
     """Load an image from a path and resize it."""
-    img = tf.io.read_file(path)
-    img = tf.image.decode_image(
+    img = backend.read_file(path)
+    img = backend.decode_image(
         img, channels=num_channels, expand_animations=False
     )
     if crop_to_aspect_ratio:
-        from keras_core.backend import tensorflow as tf_backend
-
-        img = image_utils.smart_resize(
+        img = backend.smart_resize(img, image_size, interpolation=interpolation)
+    else:
+        img = backend.resize(
             img,
             image_size,
             interpolation=interpolation,
-            backend_module=tf_backend,
+            data_format=data_format,
         )
-    else:
-        img = tf.image.resize(img, image_size, method=interpolation)
-    img.set_shape((image_size[0], image_size[1], num_channels))
-    return img
+    if backend_config() == "tensorflow":
+        img.set_shape((image_size[0], image_size[1], num_channels))
+        return img
+    elif backend_config() == "torch":
+        return img.numpy()

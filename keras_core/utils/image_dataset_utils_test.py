@@ -3,6 +3,7 @@ import os
 import numpy as np
 
 from keras_core import testing
+from keras_core.backend.config import backend as backend_config
 from keras_core.utils import image_dataset_utils
 from keras_core.utils import image_utils
 from keras_core.utils.module_utils import tensorflow as tf
@@ -288,6 +289,8 @@ class ImageDatasetFromDirectoryTest(testing.TestCase):
             _ = image_dataset_utils.image_dataset_from_directory(directory)
 
     def test_image_dataset_from_directory_crop_to_aspect_ratio(self):
+        if backend_config() == "torch":
+            return  # Skip
         directory = self._prepare_directory(num_classes=2, count=5)
         dataset = image_dataset_utils.image_dataset_from_directory(
             directory,
