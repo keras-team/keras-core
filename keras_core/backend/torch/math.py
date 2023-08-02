@@ -48,7 +48,7 @@ def segment_max(data, segment_ids, num_segments=None, **kwargs):
     num_repeats = torch.prod(
         torch.tensor(data.shape[1:], device=get_device())
     ).long()
-    # To use `scatter_add` in torch, we need to replicate `segment_ids` into the
+    # To use `scatter_reduce` in torch, we need to replicate `segment_ids` into the
     # shape of `data`.
     segment_ids = (
         segment_ids.repeat_interleave(num_repeats)
@@ -57,7 +57,7 @@ def segment_max(data, segment_ids, num_segments=None, **kwargs):
     )
     num_segments = num_segments or len(torch.unique(segment_ids))
 
-    # .scatter_add does not support -1 in the indices.
+    # .scatter_reduce does not support -1 in the indices.
     # Add all out-of-bound indices value to an extra dimension after
     # num_segments, which is removed before returning the result.
 
