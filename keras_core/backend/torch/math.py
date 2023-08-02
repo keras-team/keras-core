@@ -48,8 +48,8 @@ def segment_max(data, segment_ids, num_segments=None, **kwargs):
     num_repeats = torch.prod(
         torch.tensor(data.shape[1:], device=get_device())
     ).long()
-    # To use `scatter_reduce` in torch, we need to replicate `segment_ids` into the
-    # shape of `data`.
+    # To use `scatter_reduce` in torch, we need to replicate `segment_ids` into
+    # the shape of `data`.
     segment_ids = (
         segment_ids.repeat_interleave(num_repeats)
         .view(*data.shape)
