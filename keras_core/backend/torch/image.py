@@ -52,18 +52,6 @@ def resize(
         )
     size = tuple(size)
     image = convert_to_tensor(image)
-    if data_format == "channels_last":
-        if image.ndim == 4:
-            image = image.permute((0, 3, 1, 2))
-        elif image.ndim == 3:
-            image = image.permute((2, 0, 1))
-        else:
-            raise ValueError(
-                "Invalid input rank: expected rank 3 (single image) "
-                "or rank 4 (batch of images). Received input with shape: "
-                f"image.shape={image.shape}"
-            )
-
     resized = torchvision.transforms.functional.resize(
         img=image,
         size=size,
@@ -75,32 +63,40 @@ def resize(
             resized = resized.permute((0, 2, 3, 1))
         elif len(image.shape) == 3:
             resized = resized.permute((1, 2, 0))
-    return resized
+        else:
+            raise ValueError(
+                "Invalid input rank: expected rank 3 (single image) "
+                "or rank 4 (batch of images). Received input with shape: "
+                f"image.shape={image.shape}"
+            )
+    return resized.type(torch.float32)
 
 
 def decode_image(img, channels, expand_animations=False):
     from torchvision.io import decode_image
-    if channels != None:
+
+    if channels is not None:
         NotImplementedError(
-            'Channel selection' 
-            'not supported in pytorch backend'
-            )
+            "Channel selection" "not supported in pytorch backend"
+        )
     if expand_animations:
-         NotImplementedError('Not supported for pytorch backend')
-        
+        NotImplementedError("Not supported for pytorch backend")
+
     return decode_image(img)
+
 
 def read_file(path):
     from torchvision.io import read_file
+
     return read_file(path)
 
 
 def smart_resize(img, image_size, interpolation):
-    NotImplementedError(
-        'Smart resize is not yet implemented for torch backend'
-        )
+    raise NotImplementedError(
+        "Smart resize is not yet implemented for torch backend"
+    )
 
-  
+
 AFFINE_TRANSFORM_INTERPOLATIONS = (
     "nearest",
     "bilinear",

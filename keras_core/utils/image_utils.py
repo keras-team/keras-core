@@ -446,6 +446,7 @@ def smart_resize(
         return np.array(img)
     return img
 
+
 def get_interpolation(interpolation):
     interpolation = interpolation.lower()
     if interpolation not in PIL_INTERPOLATION_METHODS:

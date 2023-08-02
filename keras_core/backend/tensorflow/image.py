@@ -1,5 +1,6 @@
-from keras_core.utils.module_utils import tensorflow as tf
 import numpy as np
+
+from keras_core.utils.module_utils import tensorflow as tf
 
 RESIZE_INTERPOLATIONS = (
     "bilinear",
@@ -56,8 +57,10 @@ def decode_image(img, channels, expand_animations=False):
         img, channels=channels, expand_animations=expand_animations
     )
 
+
 def read_file(path):
     return tf.io.read_file(path)
+
 
 AFFINE_TRANSFORM_INTERPOLATIONS = (
     "nearest",
@@ -70,6 +73,7 @@ AFFINE_TRANSFORM_FILL_MODES = (
     # "mirror", not supported by TF
     "reflect",
 )
+
 
 def smart_resize(x, size, interpolation="bilinear"):
     """Resize images to a target size without aspect ratio distortion.
@@ -193,6 +197,7 @@ def smart_resize(x, size, interpolation="bilinear"):
     if isinstance(x, np.ndarray):
         return img.numpy()
     return img
+
 
 def affine_transform(
     image,
