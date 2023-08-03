@@ -2,9 +2,9 @@ import numpy as np
 
 from keras_core import backend
 from keras_core.api_export import keras_core_export
+from keras_core.layers.preprocessing.tf_data_layer import TFDataLayer
 from keras_core.ops.image import affine_transform
 from keras_core.random.seed_generator import SeedGenerator
-from keras_core.layers.preprocessing.tf_data_layer import TFDataLayer
 
 
 @keras_core_export("keras_core.layers.RandomRotation")
@@ -76,16 +76,19 @@ class RandomRotation(TFDataLayer):
         "The `value_range` argument should be a list of two numbers. "
     )
 
+    _SUPPORTED_FILL_MODE = ("reflect", "wrap", "constant", "nearest")
+    _SUPPORTED_INTERPOLATION = ("nearest", "bilinear")
+
     def __init__(
-            self,
-            factor,
-            fill_mode="reflect",
-            interpolation="bilinear",
-            seed=None,
-            fill_value=0.0,
-            value_range=(0, 255),
-            data_format=None,
-            **kwargs,
+        self,
+        factor,
+        fill_mode="reflect",
+        interpolation="bilinear",
+        seed=None,
+        fill_value=0.0,
+        value_range=(0, 255),
+        data_format=None,
+        **kwargs,
     ):
         super().__init__(**kwargs)
         self.seed = seed
@@ -100,6 +103,17 @@ class RandomRotation(TFDataLayer):
         self.supports_jit = False
         self._convert_input_args = False
         self._allow_non_tensor_positional_args = True
+
+        if self.fill_mode not in self._SUPPORTED_FILL_MODE:
+            raise NotImplementedError(
+                f"Unknown `fill_mode` {fill_mode}. Expected of one "
+                f"{self._SUPPORTED_FILL_MODE}."
+            )
+        if self.interpolation not in self._SUPPORTED_INTERPOLATION:
+            raise NotImplementedError(
+                f"Unknown `interpolation` {interpolation}. Expected of one "
+                f"{self._SUPPORTED_INTERPOLATION}."
+            )
 
     def _set_value_range(self, value_range):
         if not isinstance(value_range, (tuple, list)):
@@ -140,11 +154,11 @@ class RandomRotation(TFDataLayer):
             )
 
     """
-    Assume an angle ø, then rotation matrix is defined by 
+    Assume an angle ø, then rotation matrix is defined by
     | cos(ø)   -sin(ø)  x_offset |
     | sin(ø)    cos(ø)  y_offset |
     |   0         0         1    |
-    
+
     This function is returning the 8 elements barring the final 1 as a 1D array
     """
 
@@ -168,45 +182,55 @@ class RandomRotation(TFDataLayer):
                 image_height = inputs.shape[1]
                 image_width = inputs.shape[2]
 
-        lower = self._factor[0] * 2.0 * backend.convert_to_tensor(np.pi)
-        upper = self._factor[1] * 2.0 * backend.convert_to_tensor(np.pi)
+        lower = self._factor[0] * 2.0 * self.backend.convert_to_tensor(np.pi)
+        upper = self._factor[1] * 2.0 * self.backend.convert_to_tensor(np.pi)
 
-        angle = backend.random.uniform(shape=(batch_size,), minval=lower, maxval=upper, dtype=np.float32)
+        seed_generator = self._get_seed_generator(self.backend._backend)
+        angle = self.backend.random.uniform(
+            shape=(batch_size,),
+            minval=lower,
+            maxval=upper,
+            dtype=np.float32,
+            seed=seed_generator,
+        )
 
-        cos_theta = backend.numpy.cos(angle)
-        sin_theta = backend.numpy.sin(angle)
+        cos_theta = self.backend.numpy.cos(angle)
+        sin_theta = self.backend.numpy.sin(angle)
 
         x_offset = (
             (image_width - 1)
-            - (
-                cos_theta * (image_width - 1)
-                - sin_theta * (image_height - 1)
-            )
+            - (cos_theta * (image_width - 1) - sin_theta * (image_height - 1))
         ) / 2.0
 
         y_offset = (
             (image_height - 1)
-            - (
-                sin_theta * (image_width - 1)
-                + cos_theta * (image_height - 1)
-            )
+            - (sin_theta * (image_width - 1) + cos_theta * (image_height - 1))
         ) / 2.0
 
-        return backend.numpy.concatenate([
-            backend.numpy.cos(angle)[:, None],
-            -backend.numpy.sin(angle)[:, None],
-            x_offset[:, None],
-            backend.numpy.sin(angle)[:, None],
-            backend.numpy.cos(angle)[:, None],
-            y_offset[:, None],
-            backend.numpy.zeros((batch_size, 2), dtype=np.float32),
-        ], axis=1)
+        return self.backend.numpy.concatenate(
+            [
+                self.backend.numpy.cos(angle)[:, None],
+                -self.backend.numpy.sin(angle)[:, None],
+                x_offset[:, None],
+                self.backend.numpy.sin(angle)[:, None],
+                self.backend.numpy.cos(angle)[:, None],
+                y_offset[:, None],
+                self.backend.numpy.zeros((batch_size, 2), dtype=np.float32),
+            ],
+            axis=1,
+        )
 
     def call(self, inputs, training=True):
         if training:
             rotation_matrix = self.get_rotation_matrix(inputs)
-            transformed_image = affine_transform(image=inputs, transform=rotation_matrix, interpolation=self.interpolation,
-                                    fill_mode=self.fill_mode, fill_value=self.fill_value, data_format=self.data_format)
+            transformed_image = affine_transform(
+                image=inputs,
+                transform=rotation_matrix,
+                interpolation=self.interpolation,
+                fill_mode=self.fill_mode,
+                fill_value=self.fill_value,
+                data_format=self.data_format,
+            )
             return transformed_image
         else:
             return inputs
