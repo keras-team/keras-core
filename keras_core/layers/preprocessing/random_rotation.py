@@ -188,7 +188,6 @@ class RandomRotation(TFDataLayer):
             shape=(batch_size,),
             minval=lower,
             maxval=upper,
-            dtype=np.float32,
             seed=seed_generator,
         )
 
