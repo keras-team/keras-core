@@ -101,8 +101,6 @@ class RandomRotation(TFDataLayer):
         self.fill_value = fill_value
 
         self.supports_jit = False
-        self._convert_input_args = False
-        self._allow_non_tensor_positional_args = True
 
         if self.fill_mode not in self._SUPPORTED_FILL_MODE:
             raise NotImplementedError(
@@ -162,7 +160,7 @@ class RandomRotation(TFDataLayer):
     This function is returning the 8 elements barring the final 1 as a 1D array
     """
 
-    def get_rotation_matrix(self, inputs):
+    def _get_rotation_matrix(self, inputs):
         input_shape = len(inputs.shape)
         if input_shape == 4:
             if self.data_format == "channels_last":
@@ -207,7 +205,7 @@ class RandomRotation(TFDataLayer):
             - (sin_theta * (image_width - 1) + cos_theta * (image_height - 1))
         ) / 2.0
 
-        return self.backend.numpy.concatenate(
+        outputs = self.backend.numpy.concatenate(
             [
                 self.backend.numpy.cos(angle)[:, None],
                 -self.backend.numpy.sin(angle)[:, None],
@@ -219,10 +217,14 @@ class RandomRotation(TFDataLayer):
             ],
             axis=1,
         )
+        if input_shape == 3:
+            outputs = self.backend.numpy.squeeze(outputs, axis=0)
+        return outputs
 
     def call(self, inputs, training=True):
+        inputs = self.backend.cast(inputs, self.compute_dtype)
         if training:
-            rotation_matrix = self.get_rotation_matrix(inputs)
+            rotation_matrix = self._get_rotation_matrix(inputs)
             transformed_image = affine_transform(
                 image=inputs,
                 transform=rotation_matrix,
