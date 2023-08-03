@@ -1,13 +1,13 @@
-import keras_core  # isort: skip, keep it on top for torch test
+import keras_core as keras # isort: skip, keep it on top for torch test
 
 import numpy as np
-from tensorflow import keras
+from tensorflow import tf_keras
 
 NUM_CLASSES = 10
 
 
 def build_mnist_data(num_classes):
-    (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
+    (x_train, y_train), (x_test, y_test) = tf_keras.datasets.mnist.load_data()
 
     # Scale images to the [0, 1] range
     x_train = x_train.astype("float32") / 255
@@ -17,8 +17,8 @@ def build_mnist_data(num_classes):
     x_test = np.expand_dims(x_test, -1)
 
     # convert class vectors to binary class matrices
-    y_train = keras.utils.to_categorical(y_train, num_classes)
-    y_test = keras.utils.to_categorical(y_test, num_classes)
+    y_train = tf_keras.utils.to_categorical(y_train, num_classes)
+    y_test = tf_keras.utils.to_categorical(y_test, num_classes)
 
     print("x_train shape:", x_train.shape)
     print(x_train.shape[0], "train samples")
@@ -77,8 +77,8 @@ def eval_model(model, x, y):
 
 def numerical_test():
     x_train, y_train, x_test, y_test = build_mnist_data(NUM_CLASSES)
-    keras_model = build_keras_model(keras, NUM_CLASSES)
-    keras_core_model = build_keras_model(keras_core, NUM_CLASSES)
+    keras_model = build_keras_model(tf_keras, NUM_CLASSES)
+    keras_core_model = build_keras_model(keras, NUM_CLASSES)
 
     # Make sure both model have same weights before training
     weights = [weight.numpy() for weight in keras_model.weights]
@@ -99,6 +99,6 @@ def numerical_test():
 
 
 if __name__ == "__main__":
+    tf_keras.utils.set_random_seed(1337)
     keras.utils.set_random_seed(1337)
-    keras_core.utils.set_random_seed(1337)
     numerical_test()
