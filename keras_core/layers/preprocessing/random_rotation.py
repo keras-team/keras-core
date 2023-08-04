@@ -211,7 +211,7 @@ class RandomRotation(TFDataLayer):
                 self.backend.numpy.sin(angle)[:, None],
                 self.backend.numpy.cos(angle)[:, None],
                 y_offset[:, None],
-                self.backend.numpy.zeros((batch_size, 2), dtype=np.float32),
+                self.backend.numpy.zeros((batch_size, 2)),
             ],
             axis=1,
         )
