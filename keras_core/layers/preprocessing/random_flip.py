@@ -44,7 +44,6 @@ class RandomFlip(TFDataLayer):
         self.seed = seed
         self.generator = SeedGenerator(seed)
         self.mode = mode
-        self.supports_jit = False
         self._convert_input_args = False
         self._allow_non_tensor_positional_args = True
 

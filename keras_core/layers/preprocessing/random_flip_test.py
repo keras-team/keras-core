@@ -67,6 +67,28 @@ class RandomFlipTest(testing.TestCase, parameterized.TestCase):
             run_training_check=False,
         )
 
+    def test_support_jit(self):
+        if backend.backend() not in ("tensorflow", "jax"):
+            self.skipTest(
+                "only tensorflow and jax support jit compilation for RandomFlip"
+            )
+        input_data = np.random.random(size=(2, 4, 4, 3)) * 255
+        layer = layers.RandomFlip()
+        if backend.backend() == "jax":
+            import jax
+
+            @jax.jit
+            def call(input_data):
+                return layer.call(input_data)
+
+        elif backend.backend() == "tensorflow":
+
+            @tf.function(jit_compile=True)
+            def call(input_data):
+                return layer.call(input_data)
+
+        call(input_data)
+
     def test_tf_data_compatibility(self):
         layer = layers.RandomFlip("vertical", seed=42)
         input_data = np.array([[[2, 3, 4]], [[5, 6, 7]]])
