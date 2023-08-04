@@ -3,7 +3,6 @@ import numpy as np
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.preprocessing.tf_data_layer import TFDataLayer
-from keras_core.ops.image import affine_transform
 from keras_core.random.seed_generator import SeedGenerator
 
 
@@ -224,7 +223,7 @@ class RandomRotation(TFDataLayer):
         inputs = self.backend.cast(inputs, self.compute_dtype)
         if training:
             rotation_matrix = self._get_rotation_matrix(inputs)
-            transformed_image = affine_transform(
+            transformed_image = self.backend.image.affine_transform(
                 image=inputs,
                 transform=rotation_matrix,
                 interpolation=self.interpolation,
