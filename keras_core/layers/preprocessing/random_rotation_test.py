@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from absl.testing import parameterized
 
-from keras_core import layers
+from keras_core import layers, backend
 from keras_core import testing
 
 
@@ -40,7 +40,7 @@ class RandomRotationTest(testing.TestCase, parameterized.TestCase):
             ]
         ).reshape((1, 5, 5, 1))
 
-        self.assertAllClose(expected_output, actual_output)
+        self.assertAllClose(backend.convert_to_tensor(expected_output), actual_output)
 
     def test_training_false(self):
         input_image = np.reshape(np.arange(0, 25), (1, 5, 5, 1))
