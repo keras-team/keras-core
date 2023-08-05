@@ -1,0 +1,8 @@
+{
+    "app_id": "application-0-oeotu",
+    "config_version": 20210101,
+    "name": "Application-0",
+    "location": "DE-FF",
+    "provider_region": "gcp-europe-west1",
+    "deployment_model": "LOCAL"
+}
