@@ -78,7 +78,6 @@ def resize(
     return resized
 
 
-
 AFFINE_TRANSFORM_INTERPOLATIONS = (
     "nearest",
     "bilinear",
