@@ -18,8 +18,9 @@ import numpy as np
 
 from keras_core import backend
 from keras_core.api_export import keras_core_export
-from keras_core.backend.config import backend as backend_config
+from keras_core.backend.config import standardize_data_format
 from keras_core.utils import dataset_utils
+from keras_core.utils import image_utils
 from keras_core.utils.module_utils import tensorflow as tf
 
 ALLOWLIST_FORMATS = (".bmp", ".gif", ".jpeg", ".jpg", ".png")
@@ -46,7 +47,7 @@ def image_dataset_from_directory(
     interpolation="bilinear",
     follow_links=False,
     crop_to_aspect_ratio=False,
-    data_format="channels_last",
+    data_format=None,
 ):
     """Generates a `tf.data.Dataset` from image files in a directory.
 
@@ -129,6 +130,8 @@ def image_dataset_from_directory(
             (of size `image_size`) that matches the target aspect ratio. By
             default (`crop_to_aspect_ratio=False`), aspect ratio may not be
             preserved.
+        data_format: If None uses keras_core.config.image_data_format() otherwise
+            either 'channel_last' or 'channel_first'
 
     Returns:
 
@@ -220,6 +223,8 @@ def image_dataset_from_directory(
             'When passing `label_mode="binary"`, there must be exactly 2 '
             f"class_names. Received: class_names={class_names}"
         )
+
+    data_format = standardize_data_format(data_format=data_format)
 
     if subset == "both":
         (
@@ -345,26 +350,13 @@ def paths_and_labels_to_dataset(
     data_format,
     crop_to_aspect_ratio=False,
 ):
+    """Constructs a dataset of images and labels."""
     # TODO(fchollet): consider making num_parallel_calls settable
-    args = (
-        image_size,
-        num_channels,
-        interpolation,
-        data_format,
-        crop_to_aspect_ratio,
+    path_ds = tf.data.Dataset.from_tensor_slices(image_paths)
+    args = (image_size, num_channels, interpolation, data_format, crop_to_aspect_ratio)
+    img_ds = path_ds.map(
+        lambda x: load_image(x, *args), num_parallel_calls=tf.data.AUTOTUNE
     )
-    if backend_config() == "tensorflow":
-        path_ds = tf.data.Dataset.from_tensor_slices(image_paths)
-        img_ds = path_ds.map(
-            lambda x: load_image(x, *args), num_parallel_calls=tf.data.AUTOTUNE
-        )
-
-    elif backend_config() == "torch":
-        img_ds = [
-            load_image(str(image_path), *args) for image_path in image_paths
-        ]
-        img_ds = tf.data.Dataset.from_tensor_slices(img_ds)
-
     if label_mode:
         label_ds = dataset_utils.labels_to_dataset(
             labels, label_mode, num_classes
@@ -382,21 +374,21 @@ def load_image(
     crop_to_aspect_ratio=False,
 ):
     """Load an image from a path and resize it."""
-    img = backend.read_file(path)
-    img = backend.decode_image(
+    img = tf.io.read_file(path)
+    img = tf.image.decode_image(
         img, channels=num_channels, expand_animations=False
     )
     if crop_to_aspect_ratio:
-        img = backend.smart_resize(img, image_size, interpolation=interpolation)
-    else:
-        img = backend.resize(
+        from keras_core.backend import tensorflow as tf_backend
+
+        img = image_utils.smart_resize(
             img,
             image_size,
             interpolation=interpolation,
             data_format=data_format,
+            backend_module=tf_backend,
         )
-    if backend_config() == "tensorflow":
-        img.set_shape((image_size[0], image_size[1], num_channels))
-        return img
-    elif backend_config() == "torch":
-        return img.numpy()
+    else:
+        img = tf.image.resize(img, image_size, method=interpolation)
+    img.set_shape((image_size[0], image_size[1], num_channels))
+    return img
