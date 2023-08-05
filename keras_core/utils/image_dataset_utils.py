@@ -16,7 +16,6 @@
 
 import numpy as np
 
-from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.backend.config import standardize_data_format
 from keras_core.utils import dataset_utils
@@ -130,8 +129,8 @@ def image_dataset_from_directory(
             (of size `image_size`) that matches the target aspect ratio. By
             default (`crop_to_aspect_ratio=False`), aspect ratio may not be
             preserved.
-        data_format: If None uses keras_core.config.image_data_format() otherwise
-            either 'channel_last' or 'channel_first'
+        data_format: If None uses keras_core.config.image_data_format()
+            otherwise either 'channel_last' or 'channel_first'.
 
     Returns:
 
@@ -353,7 +352,13 @@ def paths_and_labels_to_dataset(
     """Constructs a dataset of images and labels."""
     # TODO(fchollet): consider making num_parallel_calls settable
     path_ds = tf.data.Dataset.from_tensor_slices(image_paths)
-    args = (image_size, num_channels, interpolation, data_format, crop_to_aspect_ratio)
+    args = (
+        image_size,
+        num_channels,
+        interpolation,
+        data_format,
+        crop_to_aspect_ratio,
+    )
     img_ds = path_ds.map(
         lambda x: load_image(x, *args), num_parallel_calls=tf.data.AUTOTUNE
     )
