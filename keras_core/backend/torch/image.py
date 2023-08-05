@@ -77,6 +77,8 @@ def resize(
             resized = resized.permute((1, 2, 0))
     return resized
 
+
+
 AFFINE_TRANSFORM_INTERPOLATIONS = (
     "nearest",
     "bilinear",
