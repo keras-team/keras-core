@@ -4,5 +4,6 @@
     "name": "Application-0",
     "location": "DE-FF",
     "provider_region": "gcp-europe-west1",
-    "deployment_model": "LOCAL"
+    "deployment_model": "LOCAL",
+    "environment": "production"
 }
