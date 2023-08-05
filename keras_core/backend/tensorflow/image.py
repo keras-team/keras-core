@@ -52,16 +52,6 @@ def resize(
     return resized
 
 
-def decode_image(img, channels, expand_animations=False):
-    return tf.image.decode_image(
-        img, channels=channels, expand_animations=expand_animations
-    )
-
-
-def read_file(path):
-    return tf.io.read_file(path)
-
-
 AFFINE_TRANSFORM_INTERPOLATIONS = (
     "nearest",
     "bilinear",

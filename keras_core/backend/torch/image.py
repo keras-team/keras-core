@@ -77,32 +77,6 @@ def resize(
             resized = resized.permute((1, 2, 0))
     return resized
 
-
-def decode_image(img, channels, expand_animations=False):
-    from torchvision.io import decode_image
-
-    if channels is not None:
-        NotImplementedError(
-            "Channel selection" "not supported in pytorch backend"
-        )
-    if expand_animations:
-        NotImplementedError("Not supported for pytorch backend")
-
-    return decode_image(img)
-
-
-def read_file(path):
-    from torchvision.io import read_file
-
-    return read_file(path)
-
-
-def smart_resize(img, image_size, interpolation):
-    raise NotImplementedError(
-        "Smart resize is not yet implemented for torch backend"
-    )
-
-
 AFFINE_TRANSFORM_INTERPOLATIONS = (
     "nearest",
     "bilinear",
