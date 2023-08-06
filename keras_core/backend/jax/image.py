@@ -23,7 +23,7 @@ def resize(
 ):
     if interpolation not in RESIZE_INTERPOLATIONS:
         raise ValueError(
-            "Invalid value for argument `interpolation`. Expected of one "
+            "Invalid value for argument `interpolation`. Expected one of "
             f"{RESIZE_INTERPOLATIONS}. Received: interpolation={interpolation}"
         )
     if not len(size) == 2:
@@ -76,13 +76,13 @@ def affine_transform(
 ):
     if interpolation not in AFFINE_TRANSFORM_INTERPOLATIONS.keys():
         raise ValueError(
-            "Invalid value for argument `interpolation`. Expected of one "
+            "Invalid value for argument `interpolation`. Expected one of "
             f"{set(AFFINE_TRANSFORM_INTERPOLATIONS.keys())}. Received: "
             f"interpolation={interpolation}"
         )
     if fill_mode not in AFFINE_TRANSFORM_FILL_MODES.keys():
         raise ValueError(
-            "Invalid value for argument `fill_mode`. Expected of one "
+            "Invalid value for argument `fill_mode`. Expected one of "
             f"{set(AFFINE_TRANSFORM_FILL_MODES.keys())}. "
             f"Received: fill_mode={fill_mode}"
         )
@@ -162,3 +162,30 @@ def affine_transform(
     if need_squeeze:
         affined = jnp.squeeze(affined, axis=0)
     return affined
+
+
+MAP_COORDINATES_MODES = {
+    "constant",
+    "nearest",
+    "wrap",
+    "mirror",
+    "reflect",
+}
+
+
+def map_coordinates(input, coordinates, order, mode="constant", cval=0.0):
+    if mode not in MAP_COORDINATES_MODES:
+        raise ValueError(
+            "Invalid value for argument `mode`. Expected one of "
+            f"{set(MAP_COORDINATES_MODES.keys())}. Received: "
+            f"mode={mode}"
+        )
+    if order not in range(2):
+        raise ValueError(
+            "Invalid value for argument `order`. Expected one of "
+            f"{[0, 1]}. Received: "
+            f"mode={mode}"
+        )
+    return jax.scipy.ndimage.map_coordinates(
+        input, coordinates, order, mode, cval
+    )

@@ -166,3 +166,30 @@ def affine_transform(
     if need_squeeze:
         affined = np.squeeze(affined, axis=0)
     return affined
+
+
+MAP_COORDINATES_MODES = {
+    "constant",
+    "nearest",
+    "wrap",
+    "mirror",
+    "reflect",
+}
+
+
+def map_coordinates(input, coordinates, order, mode="constant", cval=0.0):
+    if mode not in MAP_COORDINATES_MODES:
+        raise ValueError(
+            "Invalid value for argument `mode`. Expected one of "
+            f"{set(MAP_COORDINATES_MODES.keys())}. Received: "
+            f"mode={mode}"
+        )
+    if order not in range(2):
+        raise ValueError(
+            "Invalid value for argument `order`. Expected one of "
+            f"{[0, 1]}. Received: "
+            f"mode={mode}"
+        )
+    return scipy.ndimage.map_coordinates(
+        input, coordinates, order, mode, cval
+    )
