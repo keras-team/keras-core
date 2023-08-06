@@ -318,7 +318,6 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         if data_format == "channels_first":
             image = np.random.uniform(size=(1, 3, 20, 20))
         else:
-<<<<<<< HEAD
             image = np.random.uniform(size=(1, 20, 20, 3))
         patch_h, patch_w = size[0], size[1]
         if strides is None:
@@ -351,8 +350,6 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(
             patches_ref.numpy(), backend.convert_to_numpy(patches_out), atol=0.3
         )
-=======
-            self.assertAllClose(ref_out, out, atol=0.3)
 
     @parameterized.parameters(
         [
@@ -404,4 +401,3 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         out = kimage.map_coordinates(data[:, ::2], idx)
         self.assertAllClose(out, [[0, 0], [0, 4], [0, 7]])
         self.assertAllClose(out, ndimage.shift(data[:, ::2], (1, 1)))
->>>>>>> 3d05626 (Adds ndimage.map_coordinates for jax and pytorch)
