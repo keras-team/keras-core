@@ -3,7 +3,10 @@ import copy
 import tree
 
 from keras_core.api_export import keras_core_export
+from keras_core.backend.common import global_state
 from keras_core.layers.core.input_layer import InputLayer
+from keras_core.legacy.saving import saving_utils
+from keras_core.legacy.saving import serialization as legacy_serialization
 from keras_core.models.functional import Functional
 from keras_core.models.model import Model
 from keras_core.saving import serialization_lib
@@ -183,9 +186,9 @@ class Sequential(Model):
             # end of each iteration `inputs` is set to `outputs` to prepare for
             # the next layer.
             kwargs = {}
-            if layer._call_has_mask_arg():
+            if layer._call_has_mask_arg:
                 kwargs["mask"] = mask
-            if layer._call_has_training_arg() and training is not None:
+            if layer._call_has_training_arg and training is not None:
                 kwargs["training"] = training
             outputs = layer(inputs, **kwargs)
             inputs = outputs
@@ -258,13 +261,15 @@ class Sequential(Model):
         return True
 
     def get_config(self):
+        serialize_fn = serialization_lib.serialize_keras_object
+        if global_state.get_global_attribute("use_legacy_config", False):
+            # Legacy format serialization used for H5 and SavedModel formats
+            serialize_fn = legacy_serialization.serialize_keras_object
         layer_configs = []
         for layer in super().layers:
             # `super().layers` include the InputLayer if available (it is
             # filtered out of `self.layers`).
-            layer_configs.append(
-                serialization_lib.serialize_keras_object(layer)
-            )
+            layer_configs.append(serialize_fn(layer))
         config = Model.get_config(self)
         config["name"] = self.name
         config["layers"] = copy.deepcopy(layer_configs)
@@ -283,10 +288,18 @@ class Sequential(Model):
             layer_configs = config
         model = cls(name=name)
         for layer_config in layer_configs:
-            layer = serialization_lib.deserialize_keras_object(
-                layer_config,
-                custom_objects=custom_objects,
-            )
+            if "module" not in layer_config:
+                # Legacy format deserialization (no "module" key)
+                # used for H5 and SavedModel formats
+                layer = saving_utils.model_from_config(
+                    layer_config,
+                    custom_objects=custom_objects,
+                )
+            else:
+                layer = serialization_lib.deserialize_keras_object(
+                    layer_config,
+                    custom_objects=custom_objects,
+                )
             model.add(layer)
         if (
             not model._functional

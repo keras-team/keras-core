@@ -45,20 +45,22 @@ class SafeModeScope:
 
     def __enter__(self):
         self.original_value = in_safe_mode()
-        global_state.set_global_setting("safe_mode_saving", self.safe_mode)
+        global_state.set_global_attribute("safe_mode_saving", self.safe_mode)
 
     def __exit__(self, *args, **kwargs):
-        global_state.set_global_setting("safe_mode_saving", self.original_value)
+        global_state.set_global_attribute(
+            "safe_mode_saving", self.original_value
+        )
 
 
 @keras_core_export("keras_core.config.enable_unsafe_deserialization")
 def enable_unsafe_deserialization():
     """Disables safe mode globally, allowing deserialization of lambdas."""
-    global_state.set_global_setting("safe_mode_saving", False)
+    global_state.set_global_attribute("safe_mode_saving", False)
 
 
 def in_safe_mode():
-    return global_state.get_global_setting("safe_mode_saving")
+    return global_state.get_global_attribute("safe_mode_saving")
 
 
 class ObjectSharingScope:
@@ -112,7 +114,12 @@ def record_object_after_deserialization(obj, obj_id):
     id_to_obj_map[obj_id] = obj
 
 
-@keras_core_export("keras_core.saving.serialize_keras_object")
+@keras_core_export(
+    [
+        "keras_core.saving.serialize_keras_object",
+        "keras_core.utils.serialize_keras_object",
+    ]
+)
 def serialize_keras_object(obj):
     """Retrieve the config dict by serializing the Keras object.
 
@@ -368,7 +375,10 @@ def serialize_dict(obj):
 
 
 @keras_core_export(
-    "keras_core.saving.deserialize_keras_object",
+    [
+        "keras_core.saving.deserialize_keras_object",
+        "keras_core.utils.deserialize_keras_object",
+    ]
 )
 def deserialize_keras_object(
     config, custom_objects=None, safe_mode=True, **kwargs

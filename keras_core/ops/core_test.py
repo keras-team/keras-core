@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from keras_core import layers
 from keras_core import losses
@@ -46,6 +47,34 @@ class CoreOpsStaticShapeTest(testing.TestCase):
         self.assertEqual(
             core.slice_update(inputs, start_indices, updates).shape, (4, 4, 4)
         )
+
+    def test_fori_loop(self):
+        def body_fun(i, x):
+            return x + i
+
+        initial_value = KerasTensor((3, 5, 7))
+        result = core.fori_loop(0, 10, body_fun, initial_value)
+        self.assertEqual(result.shape, (3, 5, 7))
+
+    def test_unstack(self):
+        x = KerasTensor((2, 3, 4))
+        axis = 1
+        out = core.unstack(x, axis=axis)
+        self.assertEqual(len(out), 3)
+        for o in out:
+            self.assertEqual(o.shape, (2, 4))
+
+        x = KerasTensor((2, None, None))
+        axis, num = 1, 3
+        out = core.unstack(x, num=num, axis=axis)
+        self.assertEqual(len(out), 3)
+        for o in out:
+            self.assertEqual(o.shape, (2, None))
+
+        with self.assertRaisesRegex(
+            ValueError, r"Cannot infer argument `num` from shape"
+        ):
+            core.unstack(x, axis=axis)
 
 
 class CoreOpsCorrectnessTest(testing.TestCase):
@@ -162,7 +191,7 @@ class CoreOpsCorrectnessTest(testing.TestCase):
     def test_slice_update(self):
         # Test 1D.
         inputs = np.array([0, 0, 0, 0, 0, 0, 0, 0])
-        start_indices = [1]
+        start_indices = np.array([1])
         updates = np.array([9, 10, 11, 12])
         self.assertAllClose(
             core.slice_update(inputs, start_indices, updates),
@@ -204,6 +233,15 @@ class CoreOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(x, np.ones((2, 3)) * 6)
         self.assertAllClose(y, np.ones((3, 2)) * 6)
 
+    def test_fori_loop(self):
+        def body_fun(i, x):
+            return x + i
+
+        initial_value = np.array(0)
+        result = core.fori_loop(0, 10, body_fun, initial_value)
+        self.assertAllClose(result, 45)
+
+    @pytest.mark.requires_trainable_backend
     def test_stop_gradient(self):
         class ExampleLayer(layers.Layer):
             def __init__(self):
@@ -245,3 +283,50 @@ class CoreOpsCorrectnessTest(testing.TestCase):
 
         with self.assertRaises(ValueError):
             ops.convert_to_numpy(KerasTensor((2,)))
+
+    def test_cond(self):
+        t = ops.cond(True, lambda: 0, lambda: 1)
+        self.assertEqual(t, 0)
+        f = ops.cond(False, lambda: 0, lambda: 1)
+        self.assertEqual(f, 1)
+
+        for val in [True, False]:
+            out = ops.cond(
+                val,
+                lambda: KerasTensor((16, 3)),
+                lambda: KerasTensor((16, 3)),
+            )
+            self.assertEqual((16, 3), out.shape)
+
+        out = ops.cond(
+            KerasTensor((), dtype="bool"),
+            lambda: ops.ones((1, 3)),
+            lambda: ops.zeros((1, 3)),
+        )
+        self.assertEqual((1, 3), out.shape)
+
+        out = ops.cond(
+            KerasTensor((), dtype="bool"),
+            lambda: KerasTensor((3,)),
+            lambda: KerasTensor((3,)),
+        )
+        self.assertEqual((3,), out.shape)
+
+        with self.assertRaises(ValueError):
+            ops.cond(
+                KerasTensor((), dtype="bool"),
+                lambda: KerasTensor((3,)),
+                lambda: KerasTensor((4,)),
+            )
+
+    def test_unstack(self):
+        rng = np.random.default_rng(0)
+        x = rng.uniform(size=(2, 3, 4))
+        x_tensor = ops.convert_to_tensor(x)
+        axis = 1
+        out = ops.unstack(x_tensor, axis=axis)
+        out_ex = [x[:, i, :] for i in range(x.shape[axis])]
+        self.assertEqual(len(out), len(out_ex))
+        for o, o_e in zip(out, out_ex):
+            o = ops.convert_to_numpy(o)
+            self.assertAllClose(o, o_e)

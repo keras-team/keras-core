@@ -4,7 +4,7 @@ Author: [fchollet](https://twitter.com/fchollet)
 Date created: 2023/07/11
 Last modified: 2023/07/11
 Description: Guide to multi-GPU/TPU training for Keras models with JAX.
-Accelerator: GPU or TPU
+Accelerator: GPU
 """
 """
 ## Introduction
@@ -174,7 +174,8 @@ optimizer.build(model.trainable_variables)
 # Keras provides a pure functional forward pass: model.stateless_call
 def compute_loss(trainable_variables, non_trainable_variables, x, y):
     y_pred, updated_non_trainable_variables = model.stateless_call(
-        trainable_variables, non_trainable_variables, x)
+        trainable_variables, non_trainable_variables, x
+    )
     loss_value = loss(y, y_pred)
     return loss_value, updated_non_trainable_variables
 
@@ -186,7 +187,11 @@ compute_gradients = jax.value_and_grad(compute_loss, has_aux=True)
 # Training step, Keras provides a pure functional optimizer.stateless_apply
 @jax.jit
 def train_step(train_state, x, y):
-    trainable_variables, non_trainable_variables, optimizer_variables = train_state
+    (
+        trainable_variables,
+        non_trainable_variables,
+        optimizer_variables,
+    ) = train_state
     (loss_value, non_trainable_variables), grads = compute_gradients(
         trainable_variables, non_trainable_variables, x, y
     )
@@ -195,19 +200,27 @@ def train_step(train_state, x, y):
         optimizer_variables, grads, trainable_variables
     )
 
-    return loss_value, (trainable_variables, non_trainable_variables, optimizer_variables)
+    return loss_value, (
+        trainable_variables,
+        non_trainable_variables,
+        optimizer_variables,
+    )
 
 
 # Replicate the model and optimizer variable on all devices
 def get_replicated_train_state(devices):
     # All variables will be replicated on all devices
-    var_mesh = Mesh(devices, axis_names=('_'))
+    var_mesh = Mesh(devices, axis_names=("_"))
     # In NamedSharding, axes not mentioned are replicated (all axes here)
     var_replication = NamedSharding(var_mesh, P())
 
     # Apply the distribution settings to the model variables
-    trainable_variables = jax.device_put(model.trainable_variables, var_replication)
-    non_trainable_variables = jax.device_put(model.non_trainable_variables, var_replication)
+    trainable_variables = jax.device_put(
+        model.trainable_variables, var_replication
+    )
+    non_trainable_variables = jax.device_put(
+        model.non_trainable_variables, var_replication
+    )
     optimizer_variables = jax.device_put(optimizer.variables, var_replication)
 
     # Combine all state in a tuple
@@ -219,14 +232,19 @@ print(f"Running on {num_devices} devices: {jax.local_devices()}")
 devices = mesh_utils.create_device_mesh((num_devices,))
 
 # Data will be split along the batch axis
-data_mesh = Mesh(devices, axis_names=('batch',)) # naming axes of the mesh
-data_sharding = NamedSharding(data_mesh, P('batch',)) # naming axes of the sharded partition
+data_mesh = Mesh(devices, axis_names=("batch",))  # naming axes of the mesh
+data_sharding = NamedSharding(
+    data_mesh,
+    P(
+        "batch",
+    ),
+)  # naming axes of the sharded partition
 
 # Display data sharding
 x, y = next(iter(train_data))
 sharded_x = jax.device_put(x.numpy(), data_sharding)
 print("Data sharding")
-jax.debug.visualize_array_sharding(jax.numpy.reshape(sharded_x, [-1, 28*28]))
+jax.debug.visualize_array_sharding(jax.numpy.reshape(sharded_x, [-1, 28 * 28]))
 
 train_state = get_replicated_train_state(devices)
 

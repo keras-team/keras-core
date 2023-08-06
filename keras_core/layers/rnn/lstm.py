@@ -491,6 +491,13 @@ class LSTM(RNN):
             **kwargs,
         )
         self.input_spec = InputSpec(ndim=3)
+        if backend.backend() == "tensorflow" and backend.cudnn_ok(
+            cell.activation,
+            cell.recurrent_activation,
+            self.unroll,
+            cell.use_bias,
+        ):
+            self.supports_jit = False
 
     def inner_loop(self, sequences, initial_state, mask, training=False):
         if tree.is_nested(mask):
@@ -502,7 +509,7 @@ class LSTM(RNN):
                 # implementation of the inner LSTM loop. In the case of
                 # TF for instance, it will leverage cuDNN when feasible, and
                 # it will raise NotImplementedError otherwise.
-                return backend.lstm(
+                out = backend.lstm(
                     sequences,
                     initial_state[0],
                     initial_state[1],
@@ -516,6 +523,11 @@ class LSTM(RNN):
                     go_backwards=self.go_backwards,
                     unroll=self.unroll,
                 )
+                # We disable jit_compile for the model in this case,
+                # since cuDNN ops aren't XLA compatible.
+                if backend.backend() == "tensorflow":
+                    self.supports_jit = False
+                return out
             except NotImplementedError:
                 pass
         return super().inner_loop(

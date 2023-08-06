@@ -34,7 +34,7 @@ def enable_traceback_filtering():
     `keras_core.config.disable_traceback_filtering()`, you can re-enable it via
     `keras_core.config.enable_traceback_filtering()`.
     """
-    global_state.set_global_setting("traceback_filtering", True)
+    global_state.set_global_attribute("traceback_filtering", True)
 
 
 @keras_core_export("keras_core.config.disable_traceback_filtering")
@@ -55,7 +55,7 @@ def disable_traceback_filtering():
     `keras_core.config.disable_traceback_filtering()`, you can re-enable it via
     `keras_core.config.enable_traceback_filtering()`.
     """
-    global_state.set_global_setting("traceback_filtering", False)
+    global_state.set_global_attribute("traceback_filtering", False)
 
 
 @keras_core_export("keras_core.config.is_traceback_filtering_enabled")
@@ -80,7 +80,7 @@ def is_traceback_filtering_enabled():
         Boolean, `True` if traceback filtering is enabled,
         and `False` otherwise.
     """
-    return global_state.get_global_setting("traceback_filtering", True)
+    return global_state.get_global_attribute("traceback_filtering", True)
 
 
 def include_frame(fname):
@@ -230,6 +230,8 @@ def format_argument_value(value):
             tensor_cls = "jnp.ndarray"
         elif backend.backend() == "torch":
             tensor_cls = "torch.Tensor"
+        elif backend.backend() == "numpy":
+            tensor_cls = "np.ndarray"
         else:
             tensor_cls = "array"
 

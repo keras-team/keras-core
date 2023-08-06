@@ -19,7 +19,7 @@ def enable_interactive_logging():
     This provides the best experience when using Keras in an interactive
     environment such as a shell or a notebook.
     """
-    global_state.set_global_setting("interactive_logging", True)
+    global_state.set_global_attribute("interactive_logging", True)
 
 
 @keras_core_export(
@@ -35,7 +35,7 @@ def disable_interactive_logging():
     This is the best option when using Keras in a non-interactive
     way, such as running a training or inference job on a server.
     """
-    global_state.set_global_setting("interactive_logging", False)
+    global_state.set_global_attribute("interactive_logging", False)
 
 
 @keras_core_export(
@@ -55,7 +55,38 @@ def is_interactive_logging_enabled():
         Boolean, `True` if interactive logging is enabled,
         and `False` otherwise.
     """
-    return global_state.get_global_setting("interactive_logging", True)
+    return global_state.get_global_attribute("interactive_logging", True)
+
+
+def set_logging_verbosity(level):
+    """Sets the verbosity level for logging.
+
+    Supported log levels are as follows:
+
+    - `"FATAL"` (least verbose)
+    - `"ERROR"`
+    - `"WARNING"`
+    - `"INFO"`
+    - `"DEBUG"` (most verbose)
+
+    Args:
+        level: A string corresponding to the level of verbosity for logging.
+    """
+    valid_levels = {
+        "FATAL": logging.FATAL,
+        "ERROR": logging.ERROR,
+        "WARNING": logging.WARNING,
+        "INFO": logging.INFO,
+        "DEBUG": logging.DEBUG,
+    }
+    verbosity = valid_levels.get(level)
+    if verbosity is None:
+        raise ValueError(
+            "Please pass a valid level for logging verbosity. "
+            f"Expected one of: {set(valid_levels.keys())}. "
+            f"Received: {level}"
+        )
+    logging.set_verbosity(verbosity)
 
 
 def print_msg(message, line_break=True):

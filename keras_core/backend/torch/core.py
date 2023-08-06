@@ -48,11 +48,10 @@ def get_device():
 
 
 def to_torch_dtype(dtype):
-    dtype = standardize_dtype(dtype)
-    dtype = TORCH_DTYPES.get(dtype, None)
-    if dtype is None:
+    standardized_dtype = TORCH_DTYPES.get(standardize_dtype(dtype), None)
+    if standardized_dtype is None:
         raise ValueError(f"Unsupported dtype for PyTorch: {dtype}")
-    return dtype
+    return standardized_dtype
 
 
 class Variable(KerasVariable):
@@ -228,7 +227,7 @@ def compute_output_spec(fn, *args, **kwargs):
                 )
                 return fn(*eager_args, **eager_kwargs)
 
-    with StatelessScope():
+    with StatelessScope(), torch.no_grad():
         outputs = symbolic_call(fn, args, kwargs, fill_value=83)
 
         none_in_shape = any(map(has_none_shape, tree.flatten((args, kwargs))))
@@ -342,7 +341,18 @@ def while_loop(
     return loop_vars
 
 
+def fori_loop(lower, upper, body_fun, init_val):
+    val = init_val
+    for i in range(lower, upper):
+        val = body_fun(i, val)
+    return val
+
+
 def stop_gradient(variable):
     # We can't use `.requires_grad_(False)` here since it only
     # works when the tensor is a leaf node in the graph.
     return variable.detach()
+
+
+def unstack(x, num=None, axis=0):
+    return x.unbind(axis)

@@ -14,9 +14,9 @@ class LazyModule:
         if self._available is None:
             try:
                 self.initialize()
+                self._available = True
             except ImportError:
                 self._available = False
-            self._available = True
         return self._available
 
     def initialize(self):
@@ -29,10 +29,13 @@ class LazyModule:
             )
 
     def __getattr__(self, name):
+        if name == "_api_export_path":
+            raise AttributeError
         if self.module is None:
             self.initialize()
         return getattr(self.module, name)
 
 
 tensorflow = LazyModule("tensorflow")
-gfile = LazyModule("tensorflow.io.gfile")
+gfile = LazyModule("tensorflow.io.gfile", pip_name="tensorflow")
+tensorflow_io = LazyModule("tensorflow_io")

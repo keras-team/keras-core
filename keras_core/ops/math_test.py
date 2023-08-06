@@ -20,6 +20,17 @@ class MathOpsDynamicShapeTest(testing.TestCase):
         outputs = kmath.segment_sum(data, segment_ids, num_segments=5)
         self.assertEqual(outputs.shape, (5, 4))
 
+    def test_segment_max(self):
+        data = KerasTensor((None, 4), dtype="float32")
+        segment_ids = KerasTensor((10,), dtype="int32")
+        outputs = kmath.segment_max(data, segment_ids)
+        self.assertEqual(outputs.shape, (None, 4))
+
+        data = KerasTensor((None, 4), dtype="float32")
+        segment_ids = KerasTensor((10,), dtype="int32")
+        outputs = kmath.segment_max(data, segment_ids, num_segments=5)
+        self.assertEqual(outputs.shape, (5, 4))
+
     def test_top_k(self):
         x = KerasTensor((None, 2, 3))
         values, indices = kmath.top_k(x, k=1)
@@ -54,6 +65,24 @@ class MathOpsDynamicShapeTest(testing.TestCase):
         self.assertEqual(q.shape, qref_shape)
         self.assertEqual(r.shape, rref_shape)
 
+    def test_fft(self):
+        real = KerasTensor((None, 4, 3), dtype="float32")
+        imag = KerasTensor((None, 4, 3), dtype="float32")
+        real_output, imag_output = kmath.fft((real, imag))
+        ref = np.fft.fft(np.ones((2, 4, 3)))
+        ref_shape = (None,) + ref.shape[1:]
+        self.assertEqual(real_output.shape, ref_shape)
+        self.assertEqual(imag_output.shape, ref_shape)
+
+    def test_fft2(self):
+        real = KerasTensor((None, 4, 3), dtype="float32")
+        imag = KerasTensor((None, 4, 3), dtype="float32")
+        real_output, imag_output = kmath.fft2((real, imag))
+        ref = np.fft.fft2(np.ones((2, 4, 3)))
+        ref_shape = (None,) + ref.shape[1:]
+        self.assertEqual(real_output.shape, ref_shape)
+        self.assertEqual(imag_output.shape, ref_shape)
+
 
 class MathOpsStaticShapeTest(testing.TestCase):
     @pytest.mark.skipif(
@@ -70,6 +99,22 @@ class MathOpsStaticShapeTest(testing.TestCase):
         data = KerasTensor((10, 4), dtype="float32")
         segment_ids = KerasTensor((10,), dtype="int32")
         outputs = kmath.segment_sum(data, segment_ids, num_segments=5)
+        self.assertEqual(outputs.shape, (5, 4))
+
+    @pytest.mark.skipif(
+        backend.backend() == "jax",
+        reason="JAX does not support `num_segments=None`.",
+    )
+    def test_segment_max(self):
+        data = KerasTensor((10, 4), dtype="float32")
+        segment_ids = KerasTensor((10,), dtype="int32")
+        outputs = kmath.segment_max(data, segment_ids)
+        self.assertEqual(outputs.shape, (None, 4))
+
+    def test_segment_max_explicit_num_segments(self):
+        data = KerasTensor((10, 4), dtype="float32")
+        segment_ids = KerasTensor((10,), dtype="int32")
+        outputs = kmath.segment_max(data, segment_ids, num_segments=5)
         self.assertEqual(outputs.shape, (5, 4))
 
     def test_topk(self):
@@ -99,6 +144,22 @@ class MathOpsStaticShapeTest(testing.TestCase):
         qref, rref = np.linalg.qr(np.ones((4, 3)), mode="complete")
         self.assertEqual(q.shape, qref.shape)
         self.assertEqual(r.shape, rref.shape)
+
+    def test_fft(self):
+        real = KerasTensor((2, 4, 3), dtype="float32")
+        imag = KerasTensor((2, 4, 3), dtype="float32")
+        real_output, imag_output = kmath.fft((real, imag))
+        ref = np.fft.fft(np.ones((2, 4, 3)))
+        self.assertEqual(real_output.shape, ref.shape)
+        self.assertEqual(imag_output.shape, ref.shape)
+
+    def test_fft2(self):
+        real = KerasTensor((2, 4, 3), dtype="float32")
+        imag = KerasTensor((2, 4, 3), dtype="float32")
+        real_output, imag_output = kmath.fft2((real, imag))
+        ref = np.fft.fft2(np.ones((2, 4, 3)))
+        self.assertEqual(real_output.shape, ref.shape)
+        self.assertEqual(imag_output.shape, ref.shape)
 
 
 class MathOpsCorrectnessTest(testing.TestCase):
@@ -146,6 +207,53 @@ class MathOpsCorrectnessTest(testing.TestCase):
         outputs = kmath.segment_sum(data, segment_ids, num_segments=4)
         expected = tf.math.unsorted_segment_sum(
             data, segment_ids, num_segments=4
+        )
+        self.assertAllClose(outputs, expected)
+
+    @pytest.mark.skipif(
+        backend.backend() == "jax",
+        reason="JAX does not support `num_segments=None`.",
+    )
+    def test_segment_max(self):
+        # Test 1D case.
+        data = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=np.float32)
+        segment_ids = np.array([0, 0, 1, 1, 1, 2, 2, 2], dtype=np.int32)
+        outputs = kmath.segment_max(data, segment_ids)
+        expected = tf.math.segment_max(data, segment_ids)
+        self.assertAllClose(outputs, expected)
+
+        # Test N-D case.
+        data = np.random.rand(9, 3, 3)
+        segment_ids = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2], dtype=np.int32)
+        outputs = kmath.segment_max(data, segment_ids)
+        expected = tf.math.segment_max(data, segment_ids)
+        self.assertAllClose(outputs, expected)
+
+    def test_segment_max_explicit_num_segments(self):
+        # Test 1D case.
+        data = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=np.float32)
+        segment_ids = np.array([0, 0, 1, 1, 1, 2, 2, 2], dtype=np.int32)
+        outputs = kmath.segment_max(data, segment_ids, num_segments=3)
+        expected = tf.math.unsorted_segment_max(
+            data, segment_ids, num_segments=3
+        )
+        self.assertAllClose(outputs, expected)
+
+        # Test 1D with -1 case.
+        data = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=np.float32)
+        segment_ids = np.array([0, 0, 1, 1, -1, 2, 2, -1], dtype=np.int32)
+        outputs = kmath.segment_max(data, segment_ids, num_segments=3)
+        expected = tf.math.unsorted_segment_max(
+            data, segment_ids, num_segments=3
+        )
+        self.assertAllClose(outputs, expected)
+
+        # Test N-D case.
+        data = np.random.rand(9, 3, 3)
+        segment_ids = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2], dtype=np.int32)
+        outputs = kmath.segment_max(data, segment_ids, num_segments=3)
+        expected = tf.math.unsorted_segment_max(
+            data, segment_ids, num_segments=3
         )
         self.assertAllClose(outputs, expected)
 
@@ -226,3 +334,27 @@ class MathOpsCorrectnessTest(testing.TestCase):
         qref, rref = np.linalg.qr(x, mode="complete")
         self.assertAllClose(qref, q)
         self.assertAllClose(rref, r)
+
+    def test_fft(self):
+        real = np.random.random((2, 4, 3))
+        imag = np.random.random((2, 4, 3))
+        complex_arr = real + 1j * imag
+
+        real_output, imag_output = kmath.fft((real, imag))
+        ref = np.fft.fft(complex_arr)
+        real_ref = np.real(ref)
+        imag_ref = np.imag(ref)
+        self.assertAllClose(real_ref, real_output)
+        self.assertAllClose(imag_ref, imag_output)
+
+    def test_fft2(self):
+        real = np.random.random((2, 4, 3))
+        imag = np.random.random((2, 4, 3))
+        complex_arr = real + 1j * imag
+
+        real_output, imag_output = kmath.fft2((real, imag))
+        ref = np.fft.fft2(complex_arr)
+        real_ref = np.real(ref)
+        imag_ref = np.imag(ref)
+        self.assertAllClose(real_ref, real_output)
+        self.assertAllClose(imag_ref, imag_output)

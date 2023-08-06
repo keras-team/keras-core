@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from keras_core import constraints
 from keras_core import layers
@@ -7,6 +8,7 @@ from keras_core import testing
 
 
 class GroupNormalizationTest(testing.TestCase):
+    @pytest.mark.requires_trainable_backend
     def test_groupnorm(self):
         self.run_layer_test(
             layers.GroupNormalization,
@@ -110,5 +112,23 @@ class GroupNormalizationTest(testing.TestCase):
         self.assertAllClose(
             layer_with_2_groups(inputs),
             expected_output_2_groups,
+            atol=1e-3,
+        )
+
+    def test_broadcasting_2d_channels_first(self):
+        x = np.arange(16).reshape((1, 4, 2, 2)).astype("float32")
+        x = layers.GroupNormalization(groups=2, axis=1)(x)
+        self.assertAllClose(
+            x,
+            np.array(
+                [
+                    [
+                        [[-1.5274, -1.0910], [-0.6546, -0.2182]],
+                        [[0.2182, 0.6546], [1.0910, 1.5274]],
+                        [[-1.5274, -1.0910], [-0.6546, -0.2182]],
+                        [[0.2182, 0.6546], [1.0910, 1.5274]],
+                    ]
+                ]
+            ),
             atol=1e-3,
         )
