@@ -84,8 +84,16 @@ def arccos(x):
     return np.arccos(x)
 
 
+def arccosh(x):
+    return np.arccosh(x)
+
+
 def arcsin(x):
     return np.arcsin(x)
+
+
+def arcsinh(x):
+    return np.arcsinh(x)
 
 
 def arctan(x):
@@ -94,6 +102,10 @@ def arctan(x):
 
 def arctan2(x1, x2):
     return np.arctan2(x1, x2)
+
+
+def arctanh(x):
+    return np.arctanh(x)
 
 
 def argmax(x, axis=None):
@@ -157,6 +169,10 @@ def cos(x):
     return np.cos(x)
 
 
+def cosh(x):
+    return np.cosh(x)
+
+
 def count_nonzero(x, axis=None):
     axis = tuple(axis) if isinstance(axis, list) else axis
     return np.count_nonzero(x, axis=axis)
@@ -197,6 +213,10 @@ def diagonal(x, offset=0, axis1=0, axis2=1):
         axis1=axis1,
         axis2=axis2,
     )
+
+
+def digitize(x, bins):
+    return np.digitize(x, bins)
 
 
 def dot(x, y):
@@ -438,6 +458,10 @@ def sin(x):
     return np.sin(x)
 
 
+def sinh(x):
+    return np.sinh(x)
+
+
 def size(x):
     return np.size(x)
 
@@ -478,6 +502,10 @@ def take_along_axis(x, indices, axis=None):
 
 def tan(x):
     return np.tan(x)
+
+
+def tanh(x):
+    return np.tanh(x)
 
 
 def tensordot(x1, x2, axes=2):

@@ -250,8 +250,9 @@ class Layer(BackendLayer, Operation):
         self._losses = []
         self._loss_ids = set()
 
+        self._call_signature = inspect.signature(self.call)
         call_signature_parameters = [
-            p.name for p in inspect.signature(self.call).parameters.values()
+            p.name for p in self._call_signature.parameters.values()
         ]
         self._call_has_training_arg = "training" in call_signature_parameters
         self._call_has_mask_arg = "mask" in call_signature_parameters
@@ -623,9 +624,6 @@ class Layer(BackendLayer, Operation):
         # 1. Convert any array arguments to tensors of correct dtype.
         def maybe_convert(x):
             if backend.is_tensor(x):
-                # Handle Torch device placement.
-                if backend.backend() == "torch":
-                    x = backend.convert_to_tensor(x)
                 if (
                     self.autocast
                     and backend.is_float_dtype(x.dtype)
@@ -645,7 +643,13 @@ class Layer(BackendLayer, Operation):
                 return backend.convert_to_tensor(x, dtype=self.compute_dtype)
             return x
 
-        if self._convert_input_args:
+        # Used to avoid expensive `tree` operations in the most common case.
+        if (
+            kwargs
+            or len(args) != 1
+            or not backend.is_tensor(args[0])
+            or backend.standardize_dtype(args[0].dtype) != self.compute_dtype
+        ) and self._convert_input_args:
             args = tree.map_structure(maybe_convert, args)
             kwargs = tree.map_structure(maybe_convert, kwargs)
 
@@ -664,7 +668,7 @@ class Layer(BackendLayer, Operation):
                     )
 
         # Caches info about `call()` signature, args, kwargs.
-        call_spec = CallSpec(self.call, args, kwargs)
+        call_spec = CallSpec(self._call_signature, args, kwargs)
 
         ############################################
         # 3. Check input spec for 1st positional arg.
@@ -875,7 +879,7 @@ class Layer(BackendLayer, Operation):
             return super().compute_output_spec(*args, **kwargs)
         else:
             # Use compute_output_shape() to return the right output spec
-            call_spec = CallSpec(self.call, args, kwargs)
+            call_spec = CallSpec(self._call_signature, args, kwargs)
             shapes_dict = get_shapes_dict(call_spec)
             shapes_dict = update_shapes_dict_for_target_fn(
                 self.compute_output_shape,
@@ -1271,19 +1275,17 @@ def is_backend_tensor_or_symbolic(x):
 
 
 class CallSpec:
-    def __init__(self, call_fn, args, kwargs):
-        sig = inspect.signature(call_fn)
-
+    def __init__(self, signature, args, kwargs):
         # `training` and `mask` are special kwargs that are always available in
         # a layer, if user specifies them in their call without adding to spec,
         # we remove them to be able to bind variables. User is not using
         # `training` anyway so we can ignore.
         # TODO: If necessary use workaround for `mask`
-        if "training" in kwargs and "training" not in sig.parameters:
+        if "training" in kwargs and "training" not in signature.parameters:
             kwargs.pop("training")
-            bound_args = sig.bind(*args, **kwargs)
+            bound_args = signature.bind(*args, **kwargs)
         else:
-            bound_args = sig.bind(*args, **kwargs)
+            bound_args = signature.bind(*args, **kwargs)
         self.user_arguments_dict = {
             k: v for k, v in bound_args.arguments.items()
         }
@@ -1351,7 +1353,7 @@ def get_shapes_dict(call_spec):
     """
     shapes_dict = {}
     for k, v in call_spec.tensor_arguments_dict.items():
-        if k == "mask" or k.startswith("mask_"):
+        if k == "mask" or k.endswith("_mask"):
             # Do not include mask tensors in shapes dict
             continue
         if k == "kwargs" or k == "args":
