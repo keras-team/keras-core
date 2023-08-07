@@ -1,4 +1,4 @@
-from keras_core.utils.module_utils import tensorflow as tf
+import tensorflow as tf
 
 RESIZE_INTERPOLATIONS = (
     "bilinear",
