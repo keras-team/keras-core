@@ -24,3 +24,4 @@ from keras_core.utils.text_dataset_utils import text_dataset_from_directory
 from keras_core.utils.timeseries_dataset_utils import (
     timeseries_dataset_from_array,
 )
+from keras_core.utils.layer_utils import validate_string_arg
