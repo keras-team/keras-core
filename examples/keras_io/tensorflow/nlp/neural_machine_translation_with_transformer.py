@@ -351,6 +351,10 @@ class TransformerDecoder(layers.Layer):
         return self.layernorm_3(out_2 + proj_output)
 
     def get_causal_attention_mask(self, inputs):
+        # due to a bug in jax.tile(), abstract/jit symbols don't work
+        # if we disable jax jit here with
+        #    jax.ensure_compile_time_eval():
+        # to jax backed will also work
         input_shape = ops.shape(inputs)
         batch_size, sequence_length = input_shape[0], input_shape[1]
         i = ops.arange(sequence_length)[:, None]
@@ -440,7 +444,8 @@ def decode_sequence(input_sentence):
         tokenized_target_sentence = spa_vectorization([decoded_sentence])[:, :-1]
         predictions = transformer([tokenized_input_sentence, tokenized_target_sentence])
 
-        sampled_token_index = np.argmax(predictions[0, i, :])
+        # ops.argmax(predictions[0, i, :]) is not a concrete value for jax here
+        sampled_token_index = ops.convert_to_numpy(ops.argmax(predictions[0, i, :])).item(0)
         sampled_token = spa_index_lookup[sampled_token_index]
         decoded_sentence += " " + sampled_token
 
