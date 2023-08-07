@@ -55,7 +55,9 @@ def save_model(model, filepath, overwrite=True, **kwargs):
     include_optimizer = kwargs.pop("include_optimizer", True)
     save_format = kwargs.pop("save_format", False)
     if save_format:
-        if str(filepath).endswith((".h5", ".hdf5")) or str(filepath).endswith(".keras"):
+        if str(filepath).endswith((".h5", ".hdf5")) or str(filepath).endswith(
+            ".keras"
+        ):
             logging.warning(
                 "The `save_format` argument is deprecated in Keras Core. "
                 "We recommend removing this argument as it can be inferred "
