@@ -3,6 +3,7 @@ from tensorflow.python.ops.numpy_ops import np_config
 
 from keras_core import backend
 from keras_core import testing
+from keras_core.backend.common import standardize_dtype
 from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.ops import numpy as knp
 
@@ -660,6 +661,17 @@ class NumpyTwoInputOpsStaticShapeTest(testing.TestCase):
             y = KerasTensor([2, 3, 4])
             knp.logical_xor(x, y)
 
+    def test_digitize(self):
+        x = KerasTensor((2, 3))
+        bins = KerasTensor((3,))
+        self.assertEqual(knp.digitize(x, bins).shape, (2, 3))
+        self.assertTrue(knp.digitize(x, bins).dtype == "int32")
+
+        with self.assertRaises(ValueError):
+            x = KerasTensor([2, 3])
+            bins = KerasTensor([2, 3, 4])
+            knp.digitize(x, bins)
+
 
 class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
     def test_mean(self):
@@ -754,13 +766,25 @@ class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
         x = KerasTensor([None, 3])
         self.assertEqual(knp.arccos(x).shape, (None, 3))
 
+    def test_arccosh(self):
+        x = KerasTensor([None, 3])
+        self.assertEqual(knp.arccosh(x).shape, (None, 3))
+
     def test_arcsin(self):
         x = KerasTensor([None, 3])
         self.assertEqual(knp.arcsin(x).shape, (None, 3))
 
+    def test_arcsinh(self):
+        x = KerasTensor([None, 3])
+        self.assertEqual(knp.arcsinh(x).shape, (None, 3))
+
     def test_arctan(self):
         x = KerasTensor([None, 3])
         self.assertEqual(knp.arctan(x).shape, (None, 3))
+
+    def test_arctanh(self):
+        x = KerasTensor([None, 3])
+        self.assertEqual(knp.arctanh(x).shape, (None, 3))
 
     def test_argmax(self):
         x = KerasTensor([None, 3])
@@ -854,6 +878,10 @@ class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
     def test_cos(self):
         x = KerasTensor([None, 3])
         self.assertEqual(knp.cos(x).shape, (None, 3))
+
+    def test_cosh(self):
+        x = KerasTensor([None, 3])
+        self.assertEqual(knp.cosh(x).shape, (None, 3))
 
     def test_count_nonzero(self):
         x = KerasTensor([None, 3])
@@ -1095,6 +1123,10 @@ class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
         x = KerasTensor([None, 3])
         self.assertEqual(knp.sin(x).shape, (None, 3))
 
+    def test_sinh(self):
+        x = KerasTensor([None, 3])
+        self.assertEqual(knp.sinh(x).shape, (None, 3))
+
     def test_size(self):
         x = KerasTensor([None, 3])
         self.assertEqual(knp.size(x).shape, ())
@@ -1136,6 +1168,10 @@ class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
     def test_tan(self):
         x = KerasTensor([None, 3])
         self.assertEqual(knp.tan(x).shape, (None, 3))
+
+    def test_tanh(self):
+        x = KerasTensor([None, 3])
+        self.assertEqual(knp.tanh(x).shape, (None, 3))
 
     def test_tile(self):
         x = KerasTensor([None, 3])
@@ -1227,13 +1263,25 @@ class NumpyOneInputOpsStaticShapeTest(testing.TestCase):
         x = KerasTensor([2, 3])
         self.assertEqual(knp.arccos(x).shape, (2, 3))
 
+    def test_arccosh(self):
+        x = KerasTensor([2, 3])
+        self.assertEqual(knp.arccosh(x).shape, (2, 3))
+
     def test_arcsin(self):
         x = KerasTensor([2, 3])
         self.assertEqual(knp.arcsin(x).shape, (2, 3))
 
+    def test_arcsinh(self):
+        x = KerasTensor([2, 3])
+        self.assertEqual(knp.arcsinh(x).shape, (2, 3))
+
     def test_arctan(self):
         x = KerasTensor([2, 3])
         self.assertEqual(knp.arctan(x).shape, (2, 3))
+
+    def test_arctanh(self):
+        x = KerasTensor([2, 3])
+        self.assertEqual(knp.arctanh(x).shape, (2, 3))
 
     def test_argmax(self):
         x = KerasTensor([2, 3])
@@ -1296,6 +1344,10 @@ class NumpyOneInputOpsStaticShapeTest(testing.TestCase):
     def test_cos(self):
         x = KerasTensor([2, 3])
         self.assertEqual(knp.cos(x).shape, (2, 3))
+
+    def test_cosh(self):
+        x = KerasTensor([2, 3])
+        self.assertEqual(knp.cosh(x).shape, (2, 3))
 
     def test_count_nonzero(self):
         x = KerasTensor([2, 3])
@@ -1532,6 +1584,10 @@ class NumpyOneInputOpsStaticShapeTest(testing.TestCase):
         x = KerasTensor([2, 3])
         self.assertEqual(knp.sin(x).shape, (2, 3))
 
+    def test_sinh(self):
+        x = KerasTensor([2, 3])
+        self.assertEqual(knp.sinh(x).shape, (2, 3))
+
     def test_size(self):
         x = KerasTensor([2, 3])
         self.assertEqual(knp.size(x).shape, ())
@@ -1578,6 +1634,10 @@ class NumpyOneInputOpsStaticShapeTest(testing.TestCase):
     def test_tan(self):
         x = KerasTensor([2, 3])
         self.assertEqual(knp.tan(x).shape, (2, 3))
+
+    def test_tanh(self):
+        x = KerasTensor([2, 3])
+        self.assertEqual(knp.tanh(x).shape, (2, 3))
 
     def test_tile(self):
         x = KerasTensor([2, 3])
@@ -2092,13 +2152,47 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         self.assertAllClose(knp.where(x > 1, x, y), np.where(x > 1, x, y))
         self.assertAllClose(knp.Where()(x > 1, x, y), np.where(x > 1, x, y))
 
+    def test_digitize(self):
+        x = np.array([0.0, 1.0, 3.0, 1.6])
+        bins = np.array([0.0, 3.0, 4.5, 7.0])
+        self.assertAllClose(knp.digitize(x, bins), np.digitize(x, bins))
+        self.assertAllClose(knp.Digitize()(x, bins), np.digitize(x, bins))
+        self.assertTrue(
+            standardize_dtype(knp.digitize(x, bins).dtype) == "int32"
+        )
+        self.assertTrue(
+            standardize_dtype(knp.Digitize()(x, bins).dtype) == "int32"
+        )
+
+        x = np.array([0.2, 6.4, 3.0, 1.6])
+        bins = np.array([0.0, 1.0, 2.5, 4.0, 10.0])
+        self.assertAllClose(knp.digitize(x, bins), np.digitize(x, bins))
+        self.assertAllClose(knp.Digitize()(x, bins), np.digitize(x, bins))
+        self.assertTrue(
+            standardize_dtype(knp.digitize(x, bins).dtype) == "int32"
+        )
+        self.assertTrue(
+            standardize_dtype(knp.Digitize()(x, bins).dtype) == "int32"
+        )
+
+        x = np.array([1, 4, 10, 15])
+        bins = np.array([4, 10, 14, 15])
+        self.assertAllClose(knp.digitize(x, bins), np.digitize(x, bins))
+        self.assertAllClose(knp.Digitize()(x, bins), np.digitize(x, bins))
+        self.assertTrue(
+            standardize_dtype(knp.digitize(x, bins).dtype) == "int32"
+        )
+        self.assertTrue(
+            standardize_dtype(knp.Digitize()(x, bins).dtype) == "int32"
+        )
+
 
 class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
     def test_mean(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         self.assertAllClose(knp.mean(x), np.mean(x))
-        self.assertAllClose(knp.mean(x, axis=1), np.mean(x, axis=1))
         self.assertAllClose(knp.mean(x, axis=()), np.mean(x, axis=()))
+        self.assertAllClose(knp.mean(x, axis=1), np.mean(x, axis=1))
         self.assertAllClose(knp.mean(x, axis=(1,)), np.mean(x, axis=(1,)))
         self.assertAllClose(
             knp.mean(x, axis=1, keepdims=True),
@@ -2115,7 +2209,9 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
     def test_all(self):
         x = np.array([[True, False, True], [True, True, True]])
         self.assertAllClose(knp.all(x), np.all(x))
+        self.assertAllClose(knp.all(x, axis=()), np.all(x, axis=()))
         self.assertAllClose(knp.all(x, axis=1), np.all(x, axis=1))
+        self.assertAllClose(knp.all(x, axis=(1,)), np.all(x, axis=(1,)))
         self.assertAllClose(
             knp.all(x, axis=1, keepdims=True),
             np.all(x, axis=1, keepdims=True),
@@ -2131,7 +2227,9 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
     def test_any(self):
         x = np.array([[True, False, True], [True, True, True]])
         self.assertAllClose(knp.any(x), np.any(x))
+        self.assertAllClose(knp.any(x, axis=()), np.any(x, axis=()))
         self.assertAllClose(knp.any(x, axis=1), np.any(x, axis=1))
+        self.assertAllClose(knp.any(x, axis=(1,)), np.any(x, axis=(1,)))
         self.assertAllClose(
             knp.any(x, axis=1, keepdims=True),
             np.any(x, axis=1, keepdims=True),
@@ -2147,7 +2245,9 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
     def test_var(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         self.assertAllClose(knp.var(x), np.var(x))
+        self.assertAllClose(knp.var(x, axis=()), np.var(x, axis=()))
         self.assertAllClose(knp.var(x, axis=1), np.var(x, axis=1))
+        self.assertAllClose(knp.var(x, axis=(1,)), np.var(x, axis=(1,)))
         self.assertAllClose(
             knp.var(x, axis=1, keepdims=True),
             np.var(x, axis=1, keepdims=True),
@@ -2163,9 +2263,9 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
     def test_sum(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         self.assertAllClose(knp.sum(x), np.sum(x))
+        self.assertAllClose(knp.sum(x, axis=()), np.sum(x, axis=()))
         self.assertAllClose(knp.sum(x, axis=1), np.sum(x, axis=1))
         self.assertAllClose(knp.sum(x, axis=(1,)), np.sum(x, axis=(1,)))
-        self.assertAllClose(knp.sum(x, axis=()), np.sum(x, axis=()))
         self.assertAllClose(
             knp.sum(x, axis=1, keepdims=True),
             np.sum(x, axis=1, keepdims=True),
@@ -2181,7 +2281,9 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
     def test_amax(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         self.assertAllClose(knp.amax(x), np.amax(x))
+        self.assertAllClose(knp.amax(x, axis=()), np.amax(x, axis=()))
         self.assertAllClose(knp.amax(x, axis=1), np.amax(x, axis=1))
+        self.assertAllClose(knp.amax(x, axis=(1,)), np.amax(x, axis=(1,)))
         self.assertAllClose(
             knp.amax(x, axis=1, keepdims=True),
             np.amax(x, axis=1, keepdims=True),
@@ -2197,7 +2299,9 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
     def test_amin(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         self.assertAllClose(knp.amin(x), np.amin(x))
+        self.assertAllClose(knp.amin(x, axis=()), np.amin(x, axis=()))
         self.assertAllClose(knp.amin(x, axis=1), np.amin(x, axis=1))
+        self.assertAllClose(knp.amin(x, axis=(1,)), np.amin(x, axis=(1,)))
         self.assertAllClose(
             knp.amin(x, axis=1, keepdims=True),
             np.amin(x, axis=1, keepdims=True),
@@ -2256,17 +2360,41 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
             np.transpose(x, axes=(1, 0, 3, 2, 4)),
         )
 
-    def test_arcos(self):
+    def test_arccos(self):
         x = np.array([[1, 0.5, -0.7], [0.9, 0.2, -1]])
         self.assertAllClose(knp.arccos(x), np.arccos(x))
 
         self.assertAllClose(knp.Arccos()(x), np.arccos(x))
+
+    def test_arccosh(self):
+        x = np.array([[1, 0.5, -0.7], [0.9, 0.2, -1]])
+        self.assertAllClose(knp.arccosh(x), np.arccosh(x))
+
+        self.assertAllClose(knp.Arccosh()(x), np.arccosh(x))
 
     def test_arcsin(self):
         x = np.array([[1, 0.5, -0.7], [0.9, 0.2, -1]])
         self.assertAllClose(knp.arcsin(x), np.arcsin(x))
 
         self.assertAllClose(knp.Arcsin()(x), np.arcsin(x))
+
+    def test_arcsinh(self):
+        x = np.array([[1, 0.5, -0.7], [0.9, 0.2, -1]])
+        self.assertAllClose(knp.arcsinh(x), np.arcsinh(x))
+
+        self.assertAllClose(knp.Arcsinh()(x), np.arcsinh(x))
+
+    def test_arctan(self):
+        x = np.array([[1, 0.5, -0.7], [0.9, 0.2, -1]])
+        self.assertAllClose(knp.arctan(x), np.arctan(x))
+
+        self.assertAllClose(knp.Arctan()(x), np.arctan(x))
+
+    def test_arctanh(self):
+        x = np.array([[1, 0.5, -0.7], [0.9, 0.2, -1]])
+        self.assertAllClose(knp.arctanh(x), np.arctanh(x))
+
+        self.assertAllClose(knp.Arctanh()(x), np.arctanh(x))
 
     def test_argmax(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
@@ -2312,7 +2440,9 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         weights = np.ones([2, 3])
         weights_1d = np.ones([3])
         self.assertAllClose(knp.average(x), np.average(x))
+        self.assertAllClose(knp.average(x, axis=()), np.average(x, axis=()))
         self.assertAllClose(knp.average(x, axis=1), np.average(x, axis=1))
+        self.assertAllClose(knp.average(x, axis=(1,)), np.average(x, axis=(1,)))
         self.assertAllClose(
             knp.average(x, axis=1, weights=weights),
             np.average(x, axis=1, weights=weights),
@@ -2421,12 +2551,24 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(knp.cos(x), np.cos(x))
         self.assertAllClose(knp.Cos()(x), np.cos(x))
 
+    def test_cosh(self):
+        x = np.array([[1, 2, 3], [3, 2, 1]])
+        self.assertAllClose(knp.cosh(x), np.cosh(x))
+        self.assertAllClose(knp.Cosh()(x), np.cosh(x))
+
     def test_count_nonzero(self):
         x = np.array([[0, 2, 3], [3, 2, 0]])
         self.assertAllClose(knp.count_nonzero(x), np.count_nonzero(x))
         self.assertAllClose(
+            knp.count_nonzero(x, axis=()), np.count_nonzero(x, axis=())
+        )
+        self.assertAllClose(
             knp.count_nonzero(x, axis=1),
             np.count_nonzero(x, axis=1),
+        )
+        self.assertAllClose(
+            knp.count_nonzero(x, axis=(1,)),
+            np.count_nonzero(x, axis=(1,)),
         )
 
         self.assertAllClose(
@@ -2652,6 +2794,14 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         # test max with initial
         self.assertAllClose(knp.max(x, initial=4), 4)
 
+        # test empty tensor
+        x = np.array([[]])
+        self.assertAllClose(knp.max(x, initial=1), np.max(x, initial=1))
+        self.assertAllClose(
+            knp.max(x, initial=1, keepdims=True),
+            np.max(x, initial=1, keepdims=True),
+        )
+
     def test_min(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         self.assertAllClose(knp.min(x), np.min(x))
@@ -2665,6 +2815,14 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
 
         # test min with initial
         self.assertAllClose(knp.min(x, initial=0), 0)
+
+        # test empty tensor
+        x = np.array([[]])
+        self.assertAllClose(knp.min(x, initial=1), np.min(x, initial=1))
+        self.assertAllClose(
+            knp.min(x, initial=1, keepdims=True),
+            np.min(x, initial=1, keepdims=True),
+        )
 
     def test_meshgrid(self):
         x = np.array([1, 2, 3])
@@ -2790,7 +2948,9 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
     def test_prod(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         self.assertAllClose(knp.prod(x), np.prod(x))
+        self.assertAllClose(knp.prod(x, axis=()), np.prod(x, axis=()))
         self.assertAllClose(knp.prod(x, axis=1), np.prod(x, axis=1))
+        self.assertAllClose(knp.prod(x, axis=(1,)), np.prod(x, axis=(1,)))
         self.assertAllClose(
             knp.prod(x, axis=1, keepdims=True),
             np.prod(x, axis=1, keepdims=True),
@@ -2861,6 +3021,11 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         x = np.array([[1, -2, 3], [-3, 2, -1]])
         self.assertAllClose(knp.sin(x), np.sin(x))
         self.assertAllClose(knp.Sin()(x), np.sin(x))
+
+    def test_sinh(self):
+        x = np.array([[1, -2, 3], [-3, 2, -1]])
+        self.assertAllClose(knp.sinh(x), np.sinh(x))
+        self.assertAllClose(knp.Sinh()(x), np.sinh(x))
 
     def test_size(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
@@ -2955,6 +3120,11 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         x = np.array([[1, -2, 3], [-3, 2, -1]])
         self.assertAllClose(knp.tan(x), np.tan(x))
         self.assertAllClose(knp.Tan()(x), np.tan(x))
+
+    def test_tanh(self):
+        x = np.array([[1, -2, 3], [-3, 2, -1]])
+        self.assertAllClose(knp.tanh(x), np.tanh(x))
+        self.assertAllClose(knp.Tanh()(x), np.tanh(x))
 
     def test_tile(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
