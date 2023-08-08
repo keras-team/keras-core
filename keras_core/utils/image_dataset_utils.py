@@ -184,6 +184,24 @@ def image_dataset_from_directory(
             '`color_mode` must be one of {"rgb", "rgba", "grayscale"}. '
             f"Received: color_mode={color_mode}"
         )
+    
+    interpolation = interpolation.lower()
+    supported_interpolations = (
+        "bilinear",
+        "nearest",
+        "bicubic",
+        "area",
+        "lanczos3",
+        "lanczos5",
+        "gaussian",
+        "mitchellcubic",
+    )
+    if interpolation not in supported_interpolations:
+        raise ValueError(
+            "Argument `interpolation` should be one of "
+            f"{supported_interpolations}. "
+            f"Received: interpolation={interpolation}"
+        )
 
     dataset_utils.check_validation_split_arg(
         validation_split, subset, shuffle, seed
