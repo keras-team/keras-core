@@ -30,6 +30,18 @@ with TensorFlow 2.3 or higher.
 """
 ## Setup
 """
+# We set the backend to TensorFlow. The code works with
+# both `tensorflow` and `torch`. It does not work with JAX
+# due to the behavior of `jax.numpy.tile` in a jit scope
+# (used in `causal_attention_mask()`: `tile` in JAX does
+# not support a dynamic `reps` argument.
+# You can make the code work in JAX by wrapping the
+# inside of the `causal_attention_mask` function in
+# a decorator to prevent jit compilation:
+# `with jax.ensure_compile_time_eval():`.
+import os
+os.environ['KERAS_BACKEND'] = 'tensorflow'
+
 import keras_core as keras
 from keras_core import layers
 from keras_core import ops
