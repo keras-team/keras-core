@@ -179,8 +179,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Whether to install the generated wheel file.",
     )
+    parser.add_argument(
+        "--root_path",
+        action="store_const",
+        help="Path to `keras_core` source parent,
+        default=pathlib.Path(__file__).parent.resolve()
     args = parser.parse_args()
-    root_path = pathlib.Path(__file__).parent.resolve()
-    whl_path = build(root_path)
+    whl_path = build(args.root_path)
     if whl_path and args.install:
         install_whl(whl_path)
