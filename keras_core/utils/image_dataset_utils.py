@@ -184,7 +184,7 @@ def image_dataset_from_directory(
             '`color_mode` must be one of {"rgb", "rgba", "grayscale"}. '
             f"Received: color_mode={color_mode}"
         )
-    
+
     interpolation = interpolation.lower()
     supported_interpolations = (
         "bilinear",
@@ -274,7 +274,6 @@ def image_dataset_from_directory(
             data_format=data_format,
         )
 
-
         if batch_size is not None:
             if shuffle:
                 # Shuffle locally at each iteration
@@ -322,7 +321,7 @@ def image_dataset_from_directory(
             crop_to_aspect_ratio=crop_to_aspect_ratio,
             data_format=data_format,
         )
-        
+
         if batch_size is not None:
             if shuffle:
                 # Shuffle locally at each iteration
