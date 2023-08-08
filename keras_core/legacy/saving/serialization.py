@@ -1,7 +1,7 @@
 """Legacy serialization logic for Keras models."""
-import json
 import contextlib
 import inspect
+import json
 import threading
 import weakref
 
@@ -486,7 +486,9 @@ def deserialize_keras_object(
 
             # TODO(nkovela): Replace during Keras 3.0 release
             # Replace keras refs with keras_core
-            cls_config = _find_replace_nested_dict(cls_config, "keras.", "keras_core.")
+            cls_config = _find_replace_nested_dict(
+                cls_config, "keras.", "keras_core."
+            )
 
             if "custom_objects" in arg_spec.args:
                 deserialized_obj = cls.from_config(

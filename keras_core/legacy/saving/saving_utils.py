@@ -1,5 +1,6 @@
-import threading
 import json
+import threading
+
 import tree
 from absl import logging
 
@@ -110,13 +111,17 @@ def compile_args_from_training_config(training_config, custom_objects=None):
     with object_registration.CustomObjectScope(custom_objects):
         optimizer_config = training_config["optimizer_config"]
         optimizer = optimizers.deserialize(optimizer_config)
-        optimizer = _resolve_compile_arguments_compat(optimizer, optimizer_config, optimizers)
+        # Ensure backwards compatibility for optimizers in legacy H5 files
+        optimizer = _resolve_compile_arguments_compat(
+            optimizer, optimizer_config, optimizers
+        )
 
         # Recover losses.
         loss = None
         loss_config = training_config.get("loss", None)
         if loss_config is not None:
             loss = _deserialize_nested_config(losses.deserialize, loss_config)
+            # Ensure backwards compatibility for losses in legacy H5 files
             loss = _resolve_compile_arguments_compat(loss, loss_config, losses)
 
         # Recover metrics.
@@ -126,7 +131,10 @@ def compile_args_from_training_config(training_config, custom_objects=None):
             metrics = _deserialize_nested_config(
                 _deserialize_metric, metrics_config
             )
-            metrics = _resolve_compile_arguments_compat(metrics, metrics_config, metrics_module)
+            # Ensure backwards compatibility for metrics in legacy H5 files
+            metrics = _resolve_compile_arguments_compat(
+                metrics, metrics_config, metrics_module
+            )
 
         # Recover weighted metrics.
         weighted_metrics = None
@@ -197,17 +205,26 @@ def _deserialize_metric(metric_config):
         return metric_config
     return metrics_module.deserialize(metric_config)
 
+
 def _find_replace_nested_dict(config, find, replace):
     dict_str = json.dumps(config)
     dict_str = dict_str.replace(find, replace)
     config = json.loads(dict_str)
     return config
 
+
 def _resolve_compile_arguments_compat(obj, obj_config, module):
-    """Resolves backwards compatiblity issues with training config arguments."""
+    """Resolves backwards compatiblity issues with training config arguments.
+
+    This helper function accepts built-in Keras modules such as optimizers,
+    losses, and metrics to ensure an object being deserialized is compatible
+    with Keras Core built-ins. For legacy H5 files saved within Keras Core,
+    this does nothing.
+    """
     if isinstance(obj, str) and obj not in module.ALL_OBJECTS_DICT:
-            obj = module.get(obj_config["config"]["name"])
+        obj = module.get(obj_config["config"]["name"])
     return obj
+
 
 def try_build_compiled_arguments(model):
     try:

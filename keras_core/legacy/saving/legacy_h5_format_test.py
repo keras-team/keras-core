@@ -156,7 +156,9 @@ class LegacyH5BackwardsCompatTest(testing.TestCase):
         tf_keras_model = tf.keras.Sequential()
         tf_keras_model.add(tf.keras.layers.Dense(2, input_shape=(3,)))
         tf_keras_model.add(tf.keras.layers.RepeatVector(3))
-        tf_keras_model.add(tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(3)))
+        tf_keras_model.add(
+            tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(3))
+        )
         tf_keras_model.compile(optimizer="rmsprop", loss="mse")
 
         ref_input = np.random.random((1, 3))
