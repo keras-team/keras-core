@@ -90,8 +90,6 @@ class Sigmoid(Operation):
 def sigmoid(x):
     """Sigmoid activation function.
 
-
-
     It is defined as `f(x) = 1 / (1 + exp(-x))`.
 
     Args:
