@@ -32,6 +32,18 @@ I recommend reading the book.
 ## Setup
 """
 
+# We set the backend to TensorFlow. The code works with
+# both `tensorflow` and `torch`. It does not work with JAX
+# due to the behavior of `jax.numpy.tile` in a jit scope
+# (used in `TransformerDecoder.get_causal_attention_mask()`:
+# `tile` in JAX does not support a dynamic `reps` argument.
+# You can make the code work in JAX by wrapping the
+# inside of the `get_causal_attention_mask` method in
+# a decorator to prevent jit compilation:
+# `with jax.ensure_compile_time_eval():`.
+import os
+os["KERAS_BACKEND"] = "tensorflow"
+
 import pathlib
 import random
 import string
@@ -351,10 +363,6 @@ class TransformerDecoder(layers.Layer):
         return self.layernorm_3(out_2 + proj_output)
 
     def get_causal_attention_mask(self, inputs):
-        # due to a bug in jax.tile(), abstract/jit symbols don't work
-        # if we disable jax jit here with
-        #    jax.ensure_compile_time_eval():
-        # to jax backed will also work
         input_shape = ops.shape(inputs)
         batch_size, sequence_length = input_shape[0], input_shape[1]
         i = ops.arange(sequence_length)[:, None]
