@@ -4,7 +4,6 @@ import string
 
 import numpy as np
 
-from keras_core import backend
 from keras_core import constraints
 from keras_core import initializers
 from keras_core import ops
