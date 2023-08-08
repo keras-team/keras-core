@@ -32,12 +32,12 @@ def relu(x):
     Returns:
         A tensor with the same shape as `x`.
 
-    Examples:
+    Example:
 
-        >>> x = np.array([-1, 0, 1])
-        >>> x_relu = keras_core.ops.relu(x)
-        >>> print(x_relu)
-        array([0, 0, 1], shape=(3,), dtype=int64)
+    >>> x = np.array([-1., 0., 1.])
+    >>> x_relu = keras_core.ops.relu(x)
+    >>> print(x_relu)
+    array([0., 0., 1.], shape=(3,), dtype=float64)
 
     """
     if any_symbolic_tensors((x,)):
@@ -67,10 +67,10 @@ def relu6(x):
 
     Example:
 
-        >>> x = np.array([-1, 0, 1, 6, 7])
-        >>> x_relu6 = keras_core.ops.relu6(x)
-        >>> print(x_relu6)
-        array([0, 0, 1, 6, 6], shape=(5,), dtype=int64)
+    >>> x = np.array([-1., 0., 1., 6., 7.])
+    >>> x_relu6 = keras_core.ops.relu6(x)
+    >>> print(x_relu6)
+    array([0., 0., 1., 6., 6.], shape=(5,), dtype=float64)
 
     """
     if any_symbolic_tensors((x,)):
@@ -100,10 +100,10 @@ def sigmoid(x):
 
     Example:
 
-        >>> x = np.array([-1, 0, 1])
-        >>> x_sigmoid = keras_core.ops.sigmoid(x)
-        >>> print(x_sigmoid)
-        array([0.26894143, 0.5, 0.7310586 ], dtype=float32)
+    >>> x = np.array([-1., 0., 1.])
+    >>> x_sigmoid = keras_core.ops.sigmoid(x)
+    >>> print(x_sigmoid)
+    array([0.26894143, 0.5, 0.7310586 ], dtype=float64)
 
     """
     if any_symbolic_tensors((x,)):
@@ -134,10 +134,10 @@ def softplus(x):
 
     Example:
 
-        >>> x = np.array([-1, 0, 1])
-        >>> x_softplus = keras_core.ops.softplus(x)
-        >>> print(x_softplus)
-        array([0.31326166, 0.6931472 , 1.3132616 ], shape=(3,), dtype=float32)
+    >>> x = np.array([-1., 0., 1.])
+    >>> x_softplus = keras_core.ops.softplus(x)
+    >>> print(x_softplus)
+    array([0.31326166, 0.6931472 , 1.3132616 ], shape=(3,), dtype=float64)
 
     """
     if any_symbolic_tensors((x,)):
@@ -167,10 +167,10 @@ def softsign(x):
 
     Example:
 
-        >>> x = np.array([-1, 0, 1])
-        >>> x_softsign = keras_core.ops.softsign(x)
-        >>> print(x_softsign)
-        array([-0.5,  0. ,  0.5], shape=(3,), dtype=float64)
+    >>> x = np.array([-1., 0., 1.])
+    >>> x_softsign = keras_core.ops.softsign(x)
+    >>> print(x_softsign)
+    array([-0.5, 0., 0.5], shape=(3,), dtype=float64)
 
     """
     if any_symbolic_tensors((x,)):
@@ -200,10 +200,10 @@ def silu(x):
 
     Example:
 
-        >>> x = np.array([-1, 0, 1])
-        >>> x_silu = keras_core.ops.silu(x)
-        >>> print(x_silu)
-        array([-0.26894143, 0., 0.7310586], shape=(3,), dtype=float32)
+    >>> x = np.array([-1., 0., 1.])
+    >>> x_silu = keras_core.ops.silu(x)
+    >>> print(x_silu)
+    array([-0.26894143, 0., 0.7310586], shape=(3,), dtype=float64)
 
     """
     if any_symbolic_tensors((x,)):
@@ -253,10 +253,10 @@ def log_sigmoid(x):
 
     Example:
 
-        >>> x = np.array([-1, 0, 1])
-        >>> x_log_sigmoid = keras_core.ops.log_sigmoid(x)
-        >>> print(x_log_sigmoid)
-        array([-1.3132616, -0.6931472, -0.3132616], shape=(3,), dtype=float32)
+    >>> x = np.array([-1., 0., 1.])
+    >>> x_log_sigmoid = keras_core.ops.log_sigmoid(x)
+    >>> print(x_log_sigmoid)
+    array([-1.3132616, -0.6931472, -0.3132616], shape=(3,), dtype=float64)
 
     """
     if any_symbolic_tensors((x,)):
@@ -296,10 +296,10 @@ def leaky_relu(x, negative_slope=0.2):
 
     Example:
 
-        >>> x = np.array([-1, 0, 1])
-        >>> x_leaky_relu = keras_core.ops.leaky_relu(x)
-        >>> print(x_leaky_relu)
-        array([-0.2,  0. ,  1. ], shape=(3,), dtype=float32)
+    >>> x = np.array([-1., 0., 1.])
+    >>> x_leaky_relu = keras_core.ops.leaky_relu(x)
+    >>> print(x_leaky_relu)
+    array([-0.2,  0. ,  1. ], shape=(3,), dtype=float64)
 
     """
     if any_symbolic_tensors((x,)):
@@ -335,10 +335,11 @@ def hard_sigmoid(x):
         A tensor with the same shape as `x`.
 
     Example:
-        >>> x = np.array([-1, 0, 1])
-        >>> x_hard_sigmoid = keras_core.ops.hard_sigmoid(x)
-        >>> print(x_hard_sigmoid)
-        array([0.3, 0.5, 0.7], shape=(3,), dtype=float32)
+
+    >>> x = np.array([-1., 0., 1.])
+    >>> x_hard_sigmoid = keras_core.ops.hard_sigmoid(x)
+    >>> print(x_hard_sigmoid)
+    array([0.3, 0.5, 0.7], shape=(3,), dtype=float64)
 
     """
     if any_symbolic_tensors((x,)):
@@ -374,10 +375,11 @@ def elu(x, alpha=1.0):
         A tensor with the same shape as `x`.
 
     Example:
-        >>> x = np.array([-1, 0, 1])
-        >>> x_elu = keras_core.ops.elu(x)
-        >>> print(x_elu)
-        array([-0.63212055, 0., 1.], shape=(3,), dtype=float32)
+
+    >>> x = np.array([-1., 0., 1.])
+    >>> x_elu = keras_core.ops.elu(x)
+    >>> print(x_elu)
+    array([-0.63212055, 0., 1.], shape=(3,), dtype=float64)
 
     """
     if any_symbolic_tensors((x,)):
@@ -401,6 +403,19 @@ def selu(x):
 
     `f(x) =  scale * alpha * (exp(x) - 1.) for x < 0`,
     `f(x) = scale * x for x >= 0`.
+
+    Args:
+        x: Input tensor.
+
+    Returns:
+        A tensor with the same shape as `x`.
+
+    Example:
+
+    >>> x = np.array([-1., 0., 1.])
+    >>> x_selu = keras_core.ops.selu(x)
+    >>> print(x_selu)
+    array([-1.11133055, 0., 1.05070098], shape=(3,), dtype=float64)
 
     """
     if any_symbolic_tensors((x,)):
