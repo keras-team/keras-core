@@ -126,9 +126,7 @@ def create_legacy_directory():
                             f"keras_core.{legacy_submodule}",
                             f"keras_core._tf_keras.{legacy_submodule}",
                         )
-                    legacy_contents = (
-                        core_api_contents + "\n" + legacy_contents
-                    )
+                    legacy_contents = core_api_contents + "\n" + legacy_contents
                 with open(tf_keras_fpath, "w") as f:
                     f.write(legacy_contents)
 
@@ -136,7 +134,7 @@ def create_legacy_directory():
     shutil.rmtree(os.path.join(package, "_legacy"))
 
 
-def export_version_string():
+def build_and_save_output(root_path):
     # Make sure to export the __version__ string
     from keras_core.src.version import __version__  # noqa: E402
 
@@ -145,8 +143,6 @@ def export_version_string():
     with open(os.path.join(package, "__init__.py"), "w") as f:
         f.write(init_contents + "\n\n" + f'__version__ = "{__version__}"\n')
 
-
-def build_and_save_output(root_path):
     # Build the package
     os.system("python3 -m build")
 
@@ -175,7 +171,6 @@ def build(root_path):
         copy_source_to_build_directory(root_path)
         run_namex_conversion()
         create_legacy_directory()
-        export_version_string()
         build_and_save_output(root_path)
     finally:
         # Clean up: remove the build directory (no longer needed)
