@@ -108,7 +108,9 @@ class HashedCrossing(Layer):
 
     def compute_output_shape(self, input_shape):
         self._check_at_least_two_inputs(input_shape)
-        return tf_utils.compute_shape_for_encode_categorical(input_shape[0])
+        return tf_utils.compute_shape_for_encode_categorical(
+            input_shape[0], self.output_mode, self.num_bins
+        )
 
     def call(self, inputs):
         self._check_at_least_two_inputs(inputs)
