@@ -134,15 +134,15 @@ def create_legacy_directory():
     shutil.rmtree(os.path.join(package, "_legacy"))
 
 
-def build_and_save_output(root_path):
+def export_version_string(__version__):
     # Make sure to export the __version__ string
-    from keras_core.src.version import __version__  # noqa: E402
-
     with open(os.path.join(package, "__init__.py")) as f:
         init_contents = f.read()
     with open(os.path.join(package, "__init__.py"), "w") as f:
         f.write(init_contents + "\n\n" + f'__version__ = "{__version__}"\n')
 
+
+def build_and_save_output(root_path, __version__):
     # Build the package
     os.system("python3 -m build")
 
@@ -171,7 +171,10 @@ def build(root_path):
         copy_source_to_build_directory(root_path)
         run_namex_conversion()
         create_legacy_directory()
-        build_and_save_output(root_path)
+        from keras_core.src.version import __version__  # noqa: E402
+
+        export_version_string(__version__)
+        build_and_save_output(root_path, __version__)
     finally:
         # Clean up: remove the build directory (no longer needed)
         shutil.rmtree(build_directory)
