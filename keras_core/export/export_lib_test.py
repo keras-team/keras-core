@@ -7,21 +7,23 @@ import pytest
 from absl.testing import parameterized
 
 from keras_core import testing
+from keras_core import layers
+from keras_core import models
+from keras_core import utils
 from keras_core.export import export_lib
 
 
 def get_model():
-    layers = [
-        keras_core.layers.Dense(10, activation="relu"),
-        keras_core.layers.BatchNormalization(),
-        keras_core.layers.Dense(1, activation="sigmoid"),
+    layer_list = [
+        layers.Dense(10, activation="relu"),
+        layers.BatchNormalization(),
+        layers.Dense(1, activation="sigmoid"),
     ]
-    model = keras_core.Sequential(layers, input_shape=(10,))
+    model = models.Sequential(layer_list)
     return model
 
 
 class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
-    @test_combinations.run_with_all_model_types
     def test_standard_model_export(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
         model = get_model()
@@ -34,7 +36,6 @@ class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
             ref_output, revived_model.serve(ref_input).numpy(), atol=1e-6
         )
 
-    @test_combinations.run_with_all_model_types
     def test_low_level_model_export(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
 
@@ -93,7 +94,7 @@ class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
     def test_layer_export(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_layer")
 
-        layer = keras_core.layers.BatchNormalization()
+        layer = layers.BatchNormalization()
         ref_input = tf.random.normal((3, 10))
         ref_output = layer(ref_input).numpy()  # Build layer (important)
 
@@ -117,11 +118,11 @@ class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
 
     def test_multi_input_output_functional_model(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
-        x1 = keras_core.Input((2,))
-        x2 = keras_core.Input((2,))
-        y1 = keras_core.layers.Dense(3)(x1)
-        y2 = keras_core.layers.Dense(3)(x2)
-        model = keras_core.Model([x1, x2], [y1, y2])
+        x1 = layers.Input((2,))
+        x2 = layers.Input((2,))
+        y1 = layers.Dense(3)(x1)
+        y2 = layers.Dense(3)(x2)
+        model = models.Model([x1, x2], [y1, y2])
 
         ref_inputs = [tf.random.normal((3, 2)), tf.random.normal((3, 2))]
         ref_outputs = model(ref_inputs)
@@ -158,7 +159,7 @@ class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
         )
 
         # Now test dict inputs
-        model = keras_core.Model({"x1": x1, "x2": x2}, [y1, y2])
+        model = models.Model({"x1": x1, "x2": x2}, [y1, y2])
 
         ref_inputs = {
             "x1": tf.random.normal((3, 2)),
@@ -199,13 +200,13 @@ class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
 
     def test_model_with_lookup_table(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
-        text_vectorization = keras_core.layers.TextVectorization()
+        text_vectorization = layers.TextVectorization()
         text_vectorization.adapt(["one two", "three four", "five six"])
-        model = keras_core.Sequential(
+        model = models.Sequential(
             [
                 text_vectorization,
-                keras_core.layers.Embedding(10, 32),
-                keras_core.layers.Dense(1),
+                layers.Embedding(10, 32),
+                layers.Dense(1),
             ]
         )
         ref_input = tf.convert_to_tensor(["one two three four"])
@@ -219,10 +220,10 @@ class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
 
     def test_track_multiple_layers(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
-        layer_1 = keras_core.layers.Dense(2)
+        layer_1 = layers.Dense(2)
         ref_input_1 = tf.random.normal((3, 4))
         ref_output_1 = layer_1(ref_input_1).numpy()
-        layer_2 = keras_core.layers.Dense(3)
+        layer_2 = layers.Dense(3)
         ref_input_2 = tf.random.normal((3, 5))
         ref_output_2 = layer_2(ref_input_2).numpy()
 
@@ -263,7 +264,7 @@ class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
     def test_non_standard_layer_signature(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_layer")
 
-        layer = keras_core.layers.MultiHeadAttention(2, 2)
+        layer = layers.MultiHeadAttention(2, 2)
         x1 = tf.random.normal((3, 2, 2))
         x2 = tf.random.normal((3, 2, 2))
         ref_output = layer(x1, x2).numpy()  # Build layer (important)
@@ -294,11 +295,11 @@ class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
     def test_variable_collection(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
 
-        model = keras_core.Sequential(
+        model = models.Sequential(
             [
-                keras_core.Input((10,)),
-                keras_core.layers.Dense(2),
-                keras_core.layers.Dense(2),
+                layers.Input((10,)),
+                layers.Dense(2),
+                layers.Dense(2),
             ]
         )
 
@@ -327,15 +328,15 @@ class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
 
         # Model has not been built
-        model = keras_core.Sequential([keras_core.layers.Dense(2)])
+        model = models.Sequential([layers.Dense(2)])
         with self.assertRaisesRegex(ValueError, "It must be built"):
             export_lib.export_model(model, temp_filepath)
 
         # Subclassed model has not been called
-        class MyModel(keras_core.Model):
+        class MyModel(models.Model):
             def __init__(self, **kwargs):
                 super().__init__(**kwargs)
-                self.dense = keras_core.layers.Dense(2)
+                self.dense = layers.Dense(2)
 
             def build(self, input_shape):
                 self.dense.build(input_shape)
@@ -351,7 +352,7 @@ class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
 
     def test_export_archive_errors(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
-        model = keras_core.Sequential([keras_core.layers.Dense(2)])
+        model = models.Sequential([layers.Dense(2)])
         model(tf.random.normal((2, 3)))
 
         # Endpoint name reuse
@@ -423,7 +424,7 @@ class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
 
         # Case where there are legitimately no assets.
-        model = keras_core.Sequential([keras_core.layers.Flatten()])
+        model = models.Sequential([layers.Flatten()])
         model(tf.random.normal((2, 3)))
         export_archive = export_lib.ExportArchive()
         export_archive.add_endpoint(
@@ -438,7 +439,6 @@ class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
         )
         export_archive.write_out(temp_filepath)
 
-    @test_combinations.run_with_all_model_types
     def test_model_export_method(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
         model = get_model()
@@ -452,9 +452,7 @@ class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
         )
 
 
-@test_utils.run_v2_only
 class TestReloadedLayer(tf.test.TestCase, parameterized.TestCase):
-    @test_combinations.run_with_all_model_types
     def test_reloading_export_archive(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
         model = get_model()
@@ -476,7 +474,7 @@ class TestReloadedLayer(tf.test.TestCase, parameterized.TestCase):
         )
 
         # Test fine-tuning
-        new_model = keras_core.Sequential([reloaded_layer])
+        new_model = models.Sequential([reloaded_layer])
         new_model.compile(optimizer="rmsprop", loss="mse")
         x = tf.random.normal((32, 10))
         y = tf.random.normal((32, 1))
@@ -495,7 +493,6 @@ class TestReloadedLayer(tf.test.TestCase, parameterized.TestCase):
             reloaded_layer(ref_input).numpy(), new_output, atol=1e-7
         )
 
-    @test_combinations.run_with_all_model_types
     def test_reloading_default_saved_model(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
         model = get_model()
@@ -524,12 +521,12 @@ class TestReloadedLayer(tf.test.TestCase, parameterized.TestCase):
 
     def test_call_training(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
-        keras_core.utils.set_random_seed(1337)
-        model = keras_core.Sequential(
+        utils.set_random_seed(1337)
+        model = models.Sequential(
             [
-                keras_core.Input((10,)),
-                keras_core.layers.Dense(10),
-                keras_core.layers.Dropout(0.99999),
+                layers.Input((10,)),
+                layers.Dense(10),
+                layers.Dropout(0.99999),
             ]
         )
         export_archive = export_lib.ExportArchive()
@@ -559,7 +556,6 @@ class TestReloadedLayer(tf.test.TestCase, parameterized.TestCase):
         self.assertAllClose(np.mean(training_output), 0.0, atol=1e-7)
         self.assertNotAllClose(np.mean(inference_output), 0.0, atol=1e-7)
 
-    @test_combinations.run_with_all_model_types
     def test_serialization(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
         model = get_model()
@@ -577,10 +573,10 @@ class TestReloadedLayer(tf.test.TestCase, parameterized.TestCase):
         )
 
         # Test whole model saving with reloaded layer inside
-        model = keras_core.Sequential([reloaded_layer])
+        model = models.Sequential([reloaded_layer])
         temp_model_filepath = os.path.join(self.get_temp_dir(), "m.keras")
         model.save(temp_model_filepath, save_format="keras_v3")
-        reloaded_model = keras_core.models.load_model(
+        reloaded_model = models.Models.load_model(
             temp_model_filepath,
             custom_objects={"ReloadedLayer": export_lib.ReloadedLayer},
         )
@@ -591,7 +587,7 @@ class TestReloadedLayer(tf.test.TestCase, parameterized.TestCase):
     def test_errors(self):
         # Test missing call endpoint
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
-        model = keras_core.Sequential([keras_core.Input((2,)), keras_core.layers.Dense(3)])
+        model = models.Sequential([layers.Input((2,)), layers.Dense(3)])
         export_lib.export_model(model, temp_filepath)
         with self.assertRaisesRegex(ValueError, "The endpoint 'wrong'"):
             export_lib.ReloadedLayer(temp_filepath, call_endpoint="wrong")

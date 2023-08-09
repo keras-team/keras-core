@@ -173,7 +173,7 @@ class ExportArchive(tf.__internal__.tracking.AutoTrackable):
         a Functional model with 2 inputs):
 
         ```python
-        model = keras.Model(inputs=[x1, x2], outputs=outputs)
+        model = keras_core.Model(inputs=[x1, x2], outputs=outputs)
 
         export_archive = ExportArchive()
         export_archive.track(model)
@@ -192,7 +192,7 @@ class ExportArchive(tf.__internal__.tracking.AutoTrackable):
         This also works with dictionary inputs:
 
         ```python
-        model = keras.Model(inputs={"x1": x1, "x2": x2}, outputs=outputs)
+        model = keras_core.Model(inputs={"x1": x1, "x2": x2}, outputs=outputs)
 
         export_archive = ExportArchive()
         export_archive.track(model)
@@ -370,20 +370,20 @@ class ExportArchive(tf.__internal__.tracking.AutoTrackable):
         # Next, track lookup tables.
         # Hopefully, one day this will be automated at the tf.function level.
         self._misc_assets = []
-        from keras.layers.preprocessing.index_lookup import IndexLookup
+        from keras_core.layers import IntegerLookup
 
         if hasattr(self, "_tracked"):
             for root in self._tracked:
                 descendants = tf.train.TrackableView(root).descendants()
                 for trackable in descendants:
-                    if isinstance(trackable, IndexLookup):
+                    if isinstance(trackable, IntegerLookup):
                         self._misc_assets.append(trackable)
 
 
 def export_model(model, filepath):
     export_archive = ExportArchive()
     export_archive.track(model)
-    if isinstance(model, (functional.Functional, sequential.Sequential)):
+    if isinstance(model, (Functional, Sequential)):
         input_signature = tf.nest.map_structure(_make_tensor_spec, model.inputs)
         if isinstance(input_signature, list) and len(input_signature) > 1:
             input_signature = [input_signature]
