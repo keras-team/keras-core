@@ -3,7 +3,7 @@
 import tensorflow as tf
 
 from keras_core.api_export import keras_core_export
-
+from keras_core import backend
 from keras_core.layers import Layer
 from keras_core.models import Functional
 from keras_core.models import Sequential
@@ -296,7 +296,13 @@ class ExportArchive(tf.__internal__.tracking.AutoTrackable):
                 "Expected `variables` to be a list/tuple/set. "
                 f"Received instead object of type '{type(variables)}'."
             )
-        if not all(isinstance(v, tf.Variable) for v in variables):
+        # Ensure that all variables added are either tf.Variables
+        # or Variables created by Keras Core with the TF backend.
+        if not all(isinstance(v, tf.Variable) for v in variables) and not (
+                all(isinstance(v, (tf.Variable, backend.Variable)) for v in variables) and (
+                    backend.backend()=="tensorflow"
+                )
+            ):
             raise ValueError(
                 "Expected all elements in `variables` to be "
                 "`tf.Variable` instances. Found instead the following types: "
