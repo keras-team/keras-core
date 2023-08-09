@@ -6,6 +6,7 @@ import tensorflow as tf
 import pytest
 from absl.testing import parameterized
 
+from keras_core import backend
 from keras_core import testing
 from keras_core import layers
 from keras_core import models
@@ -23,6 +24,10 @@ def get_model():
     return model
 
 
+@pytest.mark.skipif(
+    backend.backend() != "tensorflow",
+    reason="Export only currently supports the TF backend.",
+)
 class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
     def test_standard_model_export(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
@@ -452,6 +457,10 @@ class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
         )
 
 
+@pytest.mark.skipif(
+    backend.backend() != "tensorflow",
+    reason="Export only currently supports the TF backend.",
+)
 class TestReloadedLayer(tf.test.TestCase, parameterized.TestCase):
     def test_reloading_export_archive(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
