@@ -58,7 +58,7 @@ def model_from_config(config, custom_objects=None):
     if axis is not None and isinstance(axis, list) and len(axis) == 1:
         config["config"]["axis"] = int(axis[0])
 
-    # TODO(nkovela): Replace during Keras 3.0 release
+    # TODO(nkovela): Swap find and replace args during Keras 3.0 release
     # Replace keras refs with keras_core
     config = _find_replace_nested_dict(config, "keras.", "keras_core.")
 
