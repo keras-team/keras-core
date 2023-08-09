@@ -484,7 +484,7 @@ def deserialize_keras_object(
             arg_spec = inspect.getfullargspec(cls.from_config)
             custom_objects = custom_objects or {}
 
-            # TODO(nkovela): Replace during Keras 3.0 release
+            # TODO(nkovela): Swap find and replace args during Keras 3.0 release
             # Replace keras refs with keras_core
             cls_config = _find_replace_nested_dict(
                 cls_config, "keras.", "keras_core."
