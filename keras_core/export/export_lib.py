@@ -412,7 +412,7 @@ def export_model(model, filepath):
     export_archive.write_out(filepath)
 
 
-class ReloadedLayer(Layer):
+class TFSMLayer(Layer):
     """Reload a Keras model/layer that was saved via SavedModel / ExportArchive.
 
     Arguments:
@@ -427,7 +427,7 @@ class ReloadedLayer(Layer):
 
     ```python
     model.export("path/to/artifact")
-    reloaded_layer = ReloadedLayer("path/to/artifact")
+    reloaded_layer = TFSMLayer("path/to/artifact")
     outputs = reloaded_layer(inputs)
     ```
 
@@ -442,13 +442,13 @@ class ReloadedLayer(Layer):
     * Only call endpoints with a single `inputs` tensor argument
     (which may optionally be a dict/tuple/list of tensors) are supported.
     For endpoints with multiple separate input tensor arguments, consider
-    subclassing `ReloadedLayer` and implementing a `call()` method with a
+    subclassing `TFSMLayer` and implementing a `call()` method with a
     custom signature.
     * If you need training-time behavior to differ from inference-time behavior
     (i.e. if you need the reloaded object to support a `training=True` argument
     in `__call__()`), make sure that the training-time call function is
     saved as a standalone endpoint in the artifact, and provide its name
-    to the `ReloadedLayer` via the `call_training_endpoint` argument.
+    to the `TFSMLayer` via the `call_training_endpoint` argument.
     """
 
     def __init__(

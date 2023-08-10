@@ -463,7 +463,7 @@ class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
     backend.backend() != "tensorflow",
     reason="Export only currently supports the TF backend.",
 )
-class TestReloadedLayer(tf.test.TestCase, parameterized.TestCase):
+class TestTFSMLayer(tf.test.TestCase, parameterized.TestCase):
     def test_reloading_export_archive(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
         model = get_model()
@@ -471,7 +471,7 @@ class TestReloadedLayer(tf.test.TestCase, parameterized.TestCase):
         ref_output = model(ref_input).numpy()
 
         export_lib.export_model(model, temp_filepath)
-        reloaded_layer = export_lib.ReloadedLayer(temp_filepath)
+        reloaded_layer = export_lib.TFSMLayer(temp_filepath)
         self.assertAllClose(
             reloaded_layer(ref_input).numpy(), ref_output, atol=1e-7
         )
@@ -494,7 +494,7 @@ class TestReloadedLayer(tf.test.TestCase, parameterized.TestCase):
         ref_output = model(ref_input).numpy()
 
         tf.saved_model.save(model, temp_filepath)
-        reloaded_layer = export_lib.ReloadedLayer(
+        reloaded_layer = export_lib.TFSMLayer(
             temp_filepath, call_endpoint="serving_default"
         )
         # The output is a dict, due to the nature of SavedModel saving.
@@ -536,7 +536,7 @@ class TestReloadedLayer(tf.test.TestCase, parameterized.TestCase):
             input_signature=[tf.TensorSpec(shape=(None, 10), dtype=tf.float32)],
         )
         export_archive.write_out(temp_filepath)
-        reloaded_layer = export_lib.ReloadedLayer(
+        reloaded_layer = export_lib.TFSMLayer(
             temp_filepath,
             call_endpoint="call_inference",
             call_training_endpoint="call_training",
@@ -557,11 +557,11 @@ class TestReloadedLayer(tf.test.TestCase, parameterized.TestCase):
         ref_output = model(ref_input).numpy()
 
         export_lib.export_model(model, temp_filepath)
-        reloaded_layer = export_lib.ReloadedLayer(temp_filepath)
+        reloaded_layer = export_lib.TFSMLayer(temp_filepath)
 
         # Test reinstantiation from config
         config = reloaded_layer.get_config()
-        rereloaded_layer = export_lib.ReloadedLayer.from_config(config)
+        rereloaded_layer = export_lib.TFSMLayer.from_config(config)
         self.assertAllClose(
             rereloaded_layer(ref_input).numpy(), ref_output, atol=1e-7
         )
@@ -572,7 +572,7 @@ class TestReloadedLayer(tf.test.TestCase, parameterized.TestCase):
         model.save(temp_model_filepath, save_format="keras_v3")
         reloaded_model = saving_lib.load_model(
             temp_model_filepath,
-            custom_objects={"ReloadedLayer": export_lib.ReloadedLayer},
+            custom_objects={"TFSMLayer": export_lib.TFSMLayer},
         )
         self.assertAllClose(
             reloaded_model(ref_input).numpy(), ref_output, atol=1e-7
@@ -584,11 +584,11 @@ class TestReloadedLayer(tf.test.TestCase, parameterized.TestCase):
         model = models.Sequential([layers.Input((2,)), layers.Dense(3)])
         export_lib.export_model(model, temp_filepath)
         with self.assertRaisesRegex(ValueError, "The endpoint 'wrong'"):
-            export_lib.ReloadedLayer(temp_filepath, call_endpoint="wrong")
+            export_lib.TFSMLayer(temp_filepath, call_endpoint="wrong")
 
         # Test missing call training endpoint
         with self.assertRaisesRegex(ValueError, "The endpoint 'wrong'"):
-            export_lib.ReloadedLayer(
+            export_lib.TFSMLayer(
                 temp_filepath,
                 call_endpoint="serve",
                 call_training_endpoint="wrong",
