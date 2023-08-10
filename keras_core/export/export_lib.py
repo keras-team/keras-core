@@ -5,8 +5,8 @@ from keras_core.api_export import keras_core_export
 from keras_core.layers import Layer
 from keras_core.models import Functional
 from keras_core.models import Sequential
-from keras_core.module_utils import tensorflow as tf
 from keras_core.utils import io_utils
+from keras_core.utils.module_utils import tensorflow as tf
 
 
 @keras_core_export("keras_core.export.ExportArchive")
