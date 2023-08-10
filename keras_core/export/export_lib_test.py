@@ -11,6 +11,7 @@ from keras_core import testing
 from keras_core import layers
 from keras_core import models
 from keras_core import utils
+from keras_core.saving import saving_lib
 from keras_core.export import export_lib
 
 
@@ -585,7 +586,7 @@ class TestReloadedLayer(tf.test.TestCase, parameterized.TestCase):
         model = models.Sequential([reloaded_layer])
         temp_model_filepath = os.path.join(self.get_temp_dir(), "m.keras")
         model.save(temp_model_filepath, save_format="keras_v3")
-        reloaded_model = models.Models.load_model(
+        reloaded_model = saving_lib.load_model(
             temp_model_filepath,
             custom_objects={"ReloadedLayer": export_lib.ReloadedLayer},
         )

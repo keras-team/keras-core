@@ -501,20 +501,14 @@ class ReloadedLayer(Layer):
             all_fns.append(self.call_training_endpoint_fn)
         tvs, ntvs = _list_variables_used_by_fns(all_fns)
         for v in tvs:
-            self._add_existing_weight(v, trainable=True)
+            self._add_existing_weight(v)
         for v in ntvs:
-            self._add_existing_weight(v, trainable=False)
+            self._add_existing_weight(v)
         self.built = True
 
-    def _add_existing_weight(self, weight, trainable):
-        """Calls add_weight() to register but not create an existing weight."""
-        self.add_weight(
-            name=weight.name,
-            shape=weight.shape,
-            dtype=weight.dtype,
-            trainable=trainable,
-            getter=lambda *_, **__: weight,
-        )
+    def _add_existing_weight(self, weight):
+        """Tracks an existing weight."""
+        self._track_variable(weight)
 
     def call(self, inputs, training=False, **kwargs):
         if training:
