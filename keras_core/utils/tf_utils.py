@@ -110,14 +110,3 @@ def encode_categorical_inputs(
     else:
         return tf.multiply(bincounts, idf_weights)
 
-
-def compute_shape_for_encode_categorical(shape, output_mode, depth):
-    """Computes the output shape of `encode_categorical_inputs`."""
-    if output_mode == "int":
-        return tf.TensorShape(shape)
-    if not shape:
-        return tf.TensorShape([depth])
-    if output_mode == "one_hot" and shape[-1] != 1:
-        return tf.TensorShape(shape + [depth])
-    else:
-        return tf.TensorShape(shape[:-1] + [depth])

@@ -1,5 +1,5 @@
 import numpy as np
-
+from keras_core import backend
 from keras_core.utils.module_utils import tensorflow as tf
 
 
@@ -37,26 +37,17 @@ def validate_string_arg(
         )
 
 
-def listify_tensors(x):
-    """Convert any tensors or numpy arrays to lists for config serialization."""
-    if tf.is_tensor(x):
-        x = x.numpy()
-    if isinstance(x, np.ndarray):
-        x = x.tolist()
-    return x
-
-
 def ensure_tensor(inputs, dtype=None):
     """Ensures the input is a Tensor, SparseTensor or RaggedTensor."""
-    if not isinstance(inputs, (tf.Tensor, tf.RaggedTensor, tf.SparseTensor)):
-        inputs = tf.convert_to_tensor(inputs, dtype)
+    if isinstance(inputs, (list, np.ndarray)):
+        inputs = backend.convert_to_tensor(inputs, dtype)
     if dtype is not None and inputs.dtype != dtype:
-        inputs = tf.cast(inputs, dtype)
+        inputs = backend.cast(inputs, dtype)
     return inputs
 
 
 def is_ragged(tensor):
     """Returns true if `tensor` is a ragged tensor or ragged tensor value."""
     return isinstance(
-        tensor, (tf.RaggedTensor, tf.compat.v1.ragged.RaggedTensorValue)
+        tensor, tf.RaggedTensor
     )

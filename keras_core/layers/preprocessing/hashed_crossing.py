@@ -107,10 +107,32 @@ class HashedCrossing(Layer):
         self.supports_jit = False
 
     def compute_output_shape(self, input_shape):
-        self._check_at_least_two_inputs(input_shape)
-        return tf_utils.compute_shape_for_encode_categorical(
-            input_shape[0], self.output_mode, self.num_bins
-        )
+        if (
+            not len(input_shape) == 2
+            or not isinstance(input_shape[0], tuple)
+            or not isinstance(input_shape[1], tuple)
+        ):
+            raise ValueError(
+                "Expected as input a list/tuple of 2 tensors. "
+                f"Received input_shape={input_shape}"
+            )
+        if input_shape[0][-1] != input_shape[1][-1]:
+            raise ValueError(
+                "Expected the two input tensors to have identical shapes. "
+                f"Received input_shape={input_shape}"
+            )
+
+        if not input_shape:
+            if self.output_mode == "int":
+                return ()
+            return (self.num_bins,)
+        if self.output_mode == "int":
+            return input_shape[0]
+
+        if self.output_mode == "one_hot" and input_shape[0][-1] != 1:
+            output_shape = tuple(input_shape[0]) + (self.num_bins,)
+        output_shape = tuple(input_shape[0])[:-1] + (self.num_bins,)
+        return output_shape
 
     def call(self, inputs):
         self._check_at_least_two_inputs(inputs)
@@ -154,17 +176,6 @@ class HashedCrossing(Layer):
             outputs = backend.convert_to_tensor(outputs)
         return outputs
 
-    def compute_output_signature(self, input_specs):
-        input_shapes = [x.shape.as_list() for x in input_specs]
-        output_shape = self.compute_output_shape(input_shapes)
-        if self.sparse or any(
-            isinstance(x, tf.SparseTensorSpec) for x in input_specs
-        ):
-            return tf.SparseTensorSpec(
-                shape=output_shape, dtype=self.compute_dtype
-            )
-        return tf.TensorSpec(shape=output_shape, dtype=self.compute_dtype)
-
     def get_config(self):
         return {
             "num_bins": self.num_bins,
@@ -191,8 +202,8 @@ class HashedCrossing(Layer):
         rank = len(first_shape)
         if rank > 2 or (rank == 2 and first_shape[-1] != 1):
             raise ValueError(
-                "All `HashedCrossing` inputs should have shape `[]`, "
-                "`[batch_size]` or `[batch_size, 1]`. "
+                "All `HashedCrossing` inputs should have shape `()`, "
+                "`(batch_size)` or `(batch_size, 1)`. "
                 f"Received: inputs={inputs}"
             )
         if not all(x.shape.as_list() == first_shape for x in inputs[1:]):
