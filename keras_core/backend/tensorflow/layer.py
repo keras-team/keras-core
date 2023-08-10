@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from keras_core.backend.tensorflow import utils as tf_utils
+from keras_core.backend.tensorflow import tf_utils
 
 
 class TFLayer(tf.__internal__.tracking.AutoTrackable):
