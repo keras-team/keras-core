@@ -110,6 +110,7 @@ def encode_categorical_inputs(
     else:
         return tf.multiply(bincounts, idf_weights)
 
+
 def get_tensor_spec(t, dynamic_batch=False, name=None):
     """Returns a `TensorSpec` given a single `Tensor` or `TensorSpec`."""
     if isinstance(t, tf.TypeSpec):
