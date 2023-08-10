@@ -378,12 +378,17 @@ class ExportArchive(tf.__internal__.tracking.AutoTrackable):
         # Hopefully, one day this will be automated at the tf.function level.
         self._misc_assets = []
         from keras_core.layers import IntegerLookup
+        from keras_core.layers import StringLookup
+        from keras_core.layers import TextVectorization
 
         if hasattr(self, "_tracked"):
             for root in self._tracked:
                 descendants = tf.train.TrackableView(root).descendants()
                 for trackable in descendants:
-                    if isinstance(trackable, IntegerLookup):
+                    if isinstance(
+                        trackable,
+                        (IntegerLookup, StringLookup, TextVectorization),
+                    ):
                         self._misc_assets.append(trackable)
 
 
