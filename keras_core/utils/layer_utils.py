@@ -44,10 +44,3 @@ def ensure_tensor(inputs, dtype=None):
     if dtype is not None and inputs.dtype != dtype:
         inputs = backend.cast(inputs, dtype)
     return inputs
-
-
-def is_ragged(tensor):
-    """Returns true if `tensor` is a ragged tensor or ragged tensor value."""
-    return isinstance(
-        tensor, tf.RaggedTensor
-    )
