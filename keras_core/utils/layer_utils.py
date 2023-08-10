@@ -40,7 +40,7 @@ def validate_string_arg(
 def ensure_tensor(inputs, dtype=None):
     """Ensures the input is a Tensor, SparseTensor or RaggedTensor."""
     if isinstance(inputs, (list, np.ndarray)):
-        inputs = backend.convert_to_tensor(inputs, dtype)
+        inputs = tf.convert_to_tensor(inputs, dtype)
     if dtype is not None and inputs.dtype != dtype:
-        inputs = backend.cast(inputs, dtype)
+        inputs = tf.cast(inputs, dtype)
     return inputs
