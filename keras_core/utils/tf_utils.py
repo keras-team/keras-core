@@ -109,4 +109,3 @@ def encode_categorical_inputs(
         )
     else:
         return tf.multiply(bincounts, idf_weights)
-
