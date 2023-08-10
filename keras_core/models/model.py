@@ -475,8 +475,8 @@ class Model(Trainer, Layer):
         ```
 
         If you would like to customize your serving endpoints, you can
-        use the lower-level `keras_core.export.ExportArchive` class. The `export()`
-        method relies on `ExportArchive` internally.
+        use the lower-level `keras_core.export.ExportArchive` class. The
+        `export()` method relies on `ExportArchive` internally.
         """
         from keras_core.export import export_lib
 

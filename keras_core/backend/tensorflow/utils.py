@@ -1,10 +1,11 @@
 import tensorflow as tf
 
+
 def get_tensor_spec(t, dynamic_batch=False, name=None):
     """Returns a `TensorSpec` given a single `Tensor` or `TensorSpec`."""
     if isinstance(t, tf.TypeSpec):
         spec = t
-    elif isinstance(tensor, tf.__internal__.CompositeTensor):
+    elif isinstance(t, tf.__internal__.CompositeTensor):
         # Check for ExtensionTypes
         spec = t._type_spec
     elif hasattr(t, "shape") and hasattr(t, "dtype"):
