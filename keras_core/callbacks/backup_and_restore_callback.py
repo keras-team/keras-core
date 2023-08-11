@@ -1,5 +1,10 @@
+import os
+
 from keras_core.api_export import keras_core_export
 from keras_core.callbacks.callback import Callback
+from keras_core.saving import load_model
+from keras_core.utils import file_utils
+from keras_core.utils import io_utils
 
 
 @keras_core_export("keras_core.callbacks.BackupAndRestoreCallback")
@@ -9,10 +14,10 @@ class BackupAndRestoreCallback(Callback):
 
     BackupAndRestore callback is intended to recover training from an
     interruption that has happened in the middle of a Model.fit execution,
-    by backing up the training states in a temporary checkpoint file (with
-    the help of a tf.train.CheckpointManager), at the end of each epoch. Each
-    backup overwrites the previously written checkpoint file, so at any given
-    time there is at most one such checkpoint file for backup/restoring purpose.
+    by backing up the training states in a temporary checkpoint file at the
+    end of each epoch. Each backup overwrites the previously written
+    checkpoint file, so at any given time there is at most one such
+    checkpoint file for backup/restoring purpose.
 
     If training restarts before completion, the training state (which
     includes the Model weights and epoch number) is restored to the most
@@ -47,15 +52,18 @@ class BackupAndRestoreCallback(Callback):
     """
 
     def __int__(
-        self,
-        backup_dir,
-        save_freq="epoch",
-        delete_checkpoint=True,
-        save_before_preemption=False,
+            self,
+            backup_dir,
+            save_freq="epoch",
+            delete_checkpoint=True,
+            save_before_preemption=False,
     ):
+        super().__init__()
         self.save_freq = save_freq
         self.delete_checkpoint = delete_checkpoint
         self.save_before_preemption = save_before_preemption
+        self._current_epoch = 0
+        self._last_batch_seen = 0
 
         if not backup_dir:
             raise ValueError("Empty `backup_dir` argument passed")
@@ -66,7 +74,131 @@ class BackupAndRestoreCallback(Callback):
                 "Either `save_freq` or `save_before_preemption` " "must be set."
             )
 
+        if self.save_freq != "epoch" and not isinstance(self.save_freq, int):
+            raise ValueError(
+                f"Unrecognized save_freq: {self.save_freq}. "
+                "Expected save_freq are 'epoch' or integer values"
+            )
+
+    def on_train_begin(self, logs=None):
+        """
+        Get training state from temporary file and restore it
+        """
+        super().on_train_begin()
+        self._model = load_model(filepath=self.backup_dir)
+
+    def on_train_end(self, logs=None):
+        """
+        Delete training state stored
+        """
+        if self._check_checkpoints_exists(self.backup_dir):
+            self._cleanup_checkpoint()
+
     def on_epoch_begin(self, epoch, logs=None):
-        self.model
+        if self.delete_checkpoint:
+            self._cleanup_checkpoint()
+        self._current_epoch = epoch
 
+    def on_epoch_end(self, epoch, logs=None):
+        super().on_epoch_end(epoch)
+        if self.save_freq == "epoch":
+            self._save_model(epoch=epoch, batch=None, logs=logs)
 
+    def on_train_batch_end(self, batch, logs=None):
+        super().on_epoch_end(batch)
+        if self._should_save_on_batch(batch):
+            self._save_model(epoch=self._current_epoch, batch=batch, logs=logs)
+
+    def _save_model(self, epoch, batch, logs):
+        """Saves the model.
+
+        Args:
+            epoch: the epoch this iteration is in.
+            batch: the batch this iteration is in. `None` if the `save_freq`
+                is set to `"epoch"`.
+            logs: the `logs` dict passed in to `on_batch_end` or `on_epoch_end`.
+        """
+        logs = logs or {}
+
+        filepath = self._get_file_path(epoch, batch, logs)
+        # Create host directory if it doesn't exist.
+        dirname = os.path.dirname(filepath)
+        if dirname and not file_utils.exists(dirname):
+            file_utils.makedirs(dirname)
+
+        try:
+            self._model.save(filepath, overwrite=True)
+            if self.verbose > 0:
+                io_utils.print_msg(
+                    f"\nEpoch {epoch + 1}: saving model to {filepath}"
+                )
+        except IsADirectoryError:  # h5py 3.x
+            raise IOError(
+                "Please specify a non-directory filepath for "
+                "ModelCheckpoint. Filepath used is an existing "
+                f"directory: {filepath}"
+            )
+        except IOError as e:  # h5py 2.x
+            # `e.errno` appears to be `None` so checking the content of
+            # `e.args[0]`.
+            if "is a directory" in str(e.args[0]).lower():
+                raise IOError(
+                    "Please specify a non-directory filepath for "
+                    "ModelCheckpoint. Filepath used is an existing "
+                    f"directory: f{filepath}"
+                )
+            # Re-throw the error for any other causes.
+            raise e
+
+    def _get_file_path(self, epoch, batch, logs):
+        """Returns the file path for checkpoint."""
+
+        try:
+            # `filepath` may contain placeholders such as
+            # `{epoch:02d}`,`{batch:02d}` and `{mape:.2f}`. A mismatch between
+            # logged metrics and the path's placeholders can cause formatting to
+            # fail.
+            if batch is None or "batch" in logs:
+                file_path = self.filepath.format(epoch=epoch + 1, **logs)
+            else:
+                file_path = self.filepath.format(
+                    epoch=epoch + 1, batch=batch + 1, **logs
+                )
+        except KeyError as e:
+            raise KeyError(
+                f'Failed to format this callback filepath: "{self.filepath}". '
+                f"Reason: {e}"
+            )
+        return file_path
+
+    def _should_save_on_batch(self, batch):
+        """Handles batch-level saving logic, supports steps_per_execution."""
+        if self.save_freq == "epoch":
+            return False
+        if batch <= self._last_batch_seen:  # New epoch.
+            add_batches = batch + 1  # batches are zero-indexed.
+        else:
+            add_batches = batch - self._last_batch_seen
+        self._batches_seen_since_last_saving += add_batches
+        self._last_batch_seen = batch
+
+        if self._batches_seen_since_last_saving >= self.save_freq:
+            self._batches_seen_since_last_saving = 0
+            return True
+        return False
+
+    def _cleanup_checkpoint(self):
+        """
+        Delete other checkpoint files (if present) in the directory
+        """
+        if self._check_checkpoints_exists(filepath=self.backup_dir):
+            for filename in os.scandir(self.backup_dir):
+                file_path = os.path.join(self.backup_dir, filename)
+                try:
+                    if os.path.isfile(file_path) or os.path.islink(file_path):
+                        os.unlink(file_path)
+                except Exception as e:
+                    print('Failed to delete %s. Reason: %s' % (file_path, e))
+
+    def _check_checkpoints_exists(self, filepath):
+        return file_utils.exists(filepath)

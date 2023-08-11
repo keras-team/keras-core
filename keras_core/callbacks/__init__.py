@@ -14,3 +14,6 @@ from keras_core.callbacks.reduce_lr_on_plateau import ReduceLROnPlateau
 from keras_core.callbacks.remote_monitor import RemoteMonitor
 from keras_core.callbacks.tensorboard import TensorBoard
 from keras_core.callbacks.terminate_on_nan import TerminateOnNaN
+from keras_core.callbacks.backup_and_restore_callback import (
+    BackupAndRestoreCallback,
+)
