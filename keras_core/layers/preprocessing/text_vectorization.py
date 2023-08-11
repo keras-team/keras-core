@@ -250,6 +250,14 @@ class TextVectorization(Layer):
         self._allow_non_tensor_positional_args = True
         self.supports_jit = False
 
+    @property
+    def compute_dtype(self):
+        return "string"
+
+    @property
+    def variable_dtype(self):
+        return "string"
+
     def compute_output_shape(self, input_shape):
         return tuple(self.layer.compute_output_shape(input_shape))
 
