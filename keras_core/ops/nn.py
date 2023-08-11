@@ -186,7 +186,14 @@ class Silu(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
-@keras_core_export(["keras_core.ops.silu", "keras_core.ops.nn.silu"])
+@keras_core_export(
+    [
+        "keras_core.ops.silu",
+        "keras_core.ops.nn.silu",
+        "keras_core.ops.swish",
+        "keras_core.ops.nn.swish",
+    ]
+)
 def silu(x):
     """Sigmoid-weighted linear unit activation function.
 
@@ -209,21 +216,6 @@ def silu(x):
     if any_symbolic_tensors((x,)):
         return Silu().symbolic_call(x)
     return backend.nn.silu(x)
-
-
-class Swish(Operation):
-    def call(self, x):
-        return backend.nn.swish(x)
-
-    def compute_output_spec(self, x):
-        return KerasTensor(x.shape, dtype=x.dtype)
-
-
-@keras_core_export(["keras_core.ops.swish", "keras_core.ops.nn.swish"])
-def swish(x):
-    if any_symbolic_tensors((x,)):
-        return Swish().symbolic_call(x)
-    return backend.nn.swish(x)
 
 
 class LogSigmoid(Operation):

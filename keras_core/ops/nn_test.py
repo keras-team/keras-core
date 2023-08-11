@@ -34,10 +34,6 @@ class NNOpsDynamicShapeTest(testing.TestCase, parameterized.TestCase):
         x = KerasTensor([None, 2, 3])
         self.assertEqual(knn.silu(x).shape, (None, 2, 3))
 
-    def test_swish(self):
-        x = KerasTensor([None, 2, 3])
-        self.assertEqual(knn.swish(x).shape, (None, 2, 3))
-
     def test_log_sigmoid(self):
         x = KerasTensor([None, 2, 3])
         self.assertEqual(knn.log_sigmoid(x).shape, (None, 2, 3))
@@ -327,10 +323,6 @@ class NNOpsStaticShapeTest(testing.TestCase):
     def test_silu(self):
         x = KerasTensor([1, 2, 3])
         self.assertEqual(knn.silu(x).shape, (1, 2, 3))
-
-    def test_swish(self):
-        x = KerasTensor([1, 2, 3])
-        self.assertEqual(knn.swish(x).shape, (1, 2, 3))
 
     def test_log_sigmoid(self):
         x = KerasTensor([1, 2, 3])
@@ -631,12 +623,6 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(
             knn.silu(x),
             [-0.26894143, 0, 0.7310586, 1.7615942, 2.8577223],
-        )
-
-    def test_swish(self):
-        x = np.array([-1, 0, 1, 2, 3], dtype=np.float32)
-        self.assertAllClose(
-            knn.swish(x), [-0.26894143, 0.0, 0.7310586, 1.7615943, 2.8577223]
         )
 
     def test_log_sigmoid(self):

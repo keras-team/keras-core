@@ -41,10 +41,6 @@ def silu(x, beta=1.0):
     return tf.nn.silu(x, beta=beta)
 
 
-def swish(x):
-    return x * sigmoid(x)
-
-
 def log_sigmoid(x):
     return tf.math.log_sigmoid(x)
 

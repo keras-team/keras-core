@@ -51,11 +51,6 @@ def silu(x, beta=1.0):
     return x * sigmoid(beta * x)
 
 
-def swish(x):
-    x = convert_to_tensor(x)
-    return silu(x, beta=1)
-
-
 def log_sigmoid(x):
     x = convert_to_tensor(x)
     return tnn.logsigmoid(x)

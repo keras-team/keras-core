@@ -48,11 +48,6 @@ def silu(x):
     return jnn.silu(x)
 
 
-def swish(x):
-    x = convert_to_tensor(x)
-    return jnn.swish(x)
-
-
 def log_sigmoid(x):
     x = convert_to_tensor(x)
     return jnn.log_sigmoid(x)
