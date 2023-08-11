@@ -1,8 +1,8 @@
 import os
 
+import keras_core.saving
 from keras_core.api_export import keras_core_export
 from keras_core.callbacks.callback import Callback
-from keras_core.saving import load_model
 from keras_core.utils import file_utils
 from keras_core.utils import io_utils
 
@@ -51,18 +51,18 @@ class BackupAndRestoreCallback(Callback):
 
     """
 
-    def __int__(
-            self,
-            backup_dir,
-            save_freq="epoch",
-            delete_checkpoint=True,
-            save_before_preemption=False,
+    def __init__(
+        self,
+        backup_dir,
+        save_freq="epoch",
+        delete_checkpoint=True,
+        save_before_preemption=False,
     ):
         super().__init__()
+        self._current_epoch = 0
         self.save_freq = save_freq
         self.delete_checkpoint = delete_checkpoint
         self.save_before_preemption = save_before_preemption
-        self._current_epoch = 0
         self._last_batch_seen = 0
 
         if not backup_dir:
@@ -85,7 +85,7 @@ class BackupAndRestoreCallback(Callback):
         Get training state from temporary file and restore it
         """
         super().on_train_begin()
-        self._model = load_model(filepath=self.backup_dir)
+        self.set_model(keras_core.saving.load_model(filepath=self.backup_dir))
 
     def on_train_end(self, logs=None):
         """
@@ -192,13 +192,7 @@ class BackupAndRestoreCallback(Callback):
         Delete other checkpoint files (if present) in the directory
         """
         if self._check_checkpoints_exists(filepath=self.backup_dir):
-            for filename in os.scandir(self.backup_dir):
-                file_path = os.path.join(self.backup_dir, filename)
-                try:
-                    if os.path.isfile(file_path) or os.path.islink(file_path):
-                        os.unlink(file_path)
-                except Exception as e:
-                    print('Failed to delete %s. Reason: %s' % (file_path, e))
+            file_utils.rmtree(self.backup_dir)
 
     def _check_checkpoints_exists(self, filepath):
         return file_utils.exists(filepath)
