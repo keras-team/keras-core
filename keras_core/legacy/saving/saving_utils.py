@@ -62,12 +62,13 @@ def model_from_config(config, custom_objects=None):
     # Replace keras refs with keras_core
     config = _find_replace_nested_dict(config, "keras.", "keras_core.")
 
-    return serialization.deserialize_keras_object(
-        config,
-        module_objects=MODULE_OBJECTS.ALL_OBJECTS,
-        custom_objects=custom_objects,
-        printable_module_name="layer",
-    )
+    with serialization.SharedObjectLoadingScope():
+        return serialization.deserialize_keras_object(
+            config,
+            module_objects=MODULE_OBJECTS.ALL_OBJECTS,
+            custom_objects=custom_objects,
+            printable_module_name="layer",
+        )
 
 
 def model_metadata(model, include_optimizer=True, require_config=True):
@@ -76,7 +77,8 @@ def model_metadata(model, include_optimizer=True, require_config=True):
 
     model_config = {"class_name": model.__class__.__name__}
     try:
-        model_config["config"] = model.get_config()
+        with serialization.SharedObjectSavingScope():
+            model_config["config"] = model.get_config()
     except NotImplementedError as e:
         if require_config:
             raise e
