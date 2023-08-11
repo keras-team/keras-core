@@ -4,7 +4,6 @@ import os
 import numpy as np
 import pytest
 import tensorflow as tf
-from absl.testing import parameterized
 
 from keras_core import backend
 from keras_core import layers
@@ -29,7 +28,7 @@ def get_model():
     backend.backend() != "tensorflow",
     reason="Export only currently supports the TF backend.",
 )
-class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
+class ExportArchiveTest(testing.TestCase):
     def test_standard_model_export(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
         model = get_model()
@@ -205,6 +204,7 @@ class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
         )
 
     def test_model_with_lookup_table(self):
+        tf.debugging.disable_traceback_filtering()
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
         text_vectorization = layers.TextVectorization()
         text_vectorization.adapt(["one two", "three four", "five six"])
@@ -463,7 +463,7 @@ class ExportArchiveTest(testing.TestCase, parameterized.TestCase):
     backend.backend() != "tensorflow",
     reason="Export only currently supports the TF backend.",
 )
-class TestTFSMLayer(tf.test.TestCase, parameterized.TestCase):
+class TestTFSMLayer(testing.TestCase):
     def test_reloading_export_archive(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
         model = get_model()
