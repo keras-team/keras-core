@@ -1,7 +1,3 @@
-import random as python_random
-
-import numpy as np
-
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.backend.common import global_state
@@ -52,49 +48,57 @@ class SeedGenerator:
         else:
             self.backend = backend
 
-        self._initial_seed = seed
         if seed is None:
-            seed = make_default_seed()
+            rng, seed = backend.random.make_default_seed()
+        else:
+            rng, seed = backend.random.make_initial_seed(seed)
 
-        if not isinstance(seed, int):
-            raise ValueError(
-                "Argument `seed` must be an integer. " f"Received: seed={seed}"
-            )
+        if backend.backend() == "tensorflow":
+            seed_dtype = "int32"
+        else:
+            seed_dtype = "uint32"
 
-        def seed_initializer(*args, **kwargs):
-            dtype = kwargs.get("dtype", None)
-            return self.backend.convert_to_tensor([seed, 0], dtype=dtype)
-
+        self._initial_seed = seed
+        self._rng = rng
         self.state = self.backend.Variable(
-            seed_initializer,
-            shape=(2,),
-            dtype="uint32",
+            self.backend.convert_to_tensor(seed),
+            shape=tuple(seed.shape),
+            dtype=seed_dtype,
             trainable=False,
             name="seed_generator_state",
         )
 
-    def next(self, ordered=True):
-        seed_state = self.state
-        # Use * 1 to create a copy
-        new_seed_value = seed_state.value * 1
-        if ordered:
-            increment = self.backend.convert_to_tensor(
-                np.array([0, 1]), dtype="uint32"
-            )
-            self.state.assign(seed_state + increment)
+    def next(self):
+        if backend.backend() == "torch":
+            seed_sub_state = self._rng.get_state()
+            self.state.assign(seed_sub_state)
+            return self._rng
         else:
-            # This produces a sequence of near-unique numbers
-            # between 0 and 1M
-            self.state.assign((seed_state + 1) * 5387 % 933199)
-        return new_seed_value
+            seed_state = self.backend.convert_to_tensor(self.state)
+            seed_state, seed_sub_state = self.backend.random.get_next_state(
+                seed_state
+            )
+            self.state.assign(seed_sub_state)
+            return seed_sub_state
 
 
-def global_seed_generator():
+def global_seed_generator(seed):
     gen = global_state.get_global_attribute("global_seed_generator")
     if gen is None:
-        gen = SeedGenerator()
-        global_state.set_global_attribute("global_seed_generator", gen)
+        gen = global_state.set_global_attribute("global_seed_generator", seed)
     return gen
+
+
+def draw_seed(seed):
+    if seed is None:
+        gen = global_state.get_global_attribute("global_seed_generator")
+        if gen is None:
+            rng = SeedGenerator(seed)
+            return global_seed_generator(rng)
+        else:
+            return gen.next()
+    else:
+        return SeedGenerator(seed).next()
 
 
 @keras_core_export("keras_core.random.global_rng_state")
@@ -103,49 +107,9 @@ def global_rng_state():
 
     Returns:
         A `KerasVariable` with shape `(2,)` and dtype `uint32`.
-
-    This is the global state used by unseeded (`seed=None`) Keras
-    random ops, e.g. `keras_core.random.normal(shape=(), seed=None)`.
-
-    In JAX, if you're using unseeded random ops, be mindful that
-    their outputs will be unchanged across different calls of
-    a traced function (e.g. a `jax.jit`-transformed function) since
-    traced functions in JAX are fully stateless. To get
-    different outputs across different calls, you will need to pass the
-    global RNG state in and out of the function boundary, like this:
-
-    ```python
-    @jax.jit
-    def random_numbers(seed):
-        rng_state = keras_core.random.global_rng_state()
-        rng_state.assign(seed)
-        x = keras_core.random.normal((), seed=None)
-        y = keras_core.random.normal((), seed=None)
-        return x, y, rng_state.value
-
-    seed = jax.numpy.array([0, 0])
-    x, y, seed = random_numbers(seed)
-    new_x, new_y, seed = random_numbers(seed)
-    ```
     """
-    return global_seed_generator().state
 
-
-def make_default_seed():
-    return python_random.randint(1, int(1e9))
-
-
-def draw_seed(seed):
-    from keras_core.backend import convert_to_tensor
-
-    if isinstance(seed, SeedGenerator):
-        return seed.next()
-    elif isinstance(seed, int):
-        return convert_to_tensor([seed, 0], dtype="uint32")
-    elif seed is None:
-        return global_seed_generator().next(ordered=False)
-    raise ValueError(
-        "Argument `seed` must be either an integer "
-        "or an instance of `SeedGenerator`. "
-        f"Received: seed={seed} (of type {type(seed)})"
-    )
+    gen = global_state.get_global_attribute("global_seed_generator")
+    if gen:
+        return gen.state()
+    return None
