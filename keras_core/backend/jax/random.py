@@ -3,14 +3,33 @@ import jax
 from keras_core.backend.config import floatx
 from keras_core.random.seed_generator import SeedGenerator
 from keras_core.random.seed_generator import draw_seed
-from keras_core.random.seed_generator import make_default_seed
 
 
 def jax_draw_seed(seed):
-    if isinstance(seed, jax.Array):
-        return seed
+    if isinstance(seed, SeedGenerator):
+        return seed.next()
     else:
         return draw_seed(seed)
+
+
+def make_default_seed():
+    return None, jax.random.PRNGKey(42)
+
+
+def make_initial_seed(seed):
+    if isinstance(seed, (tuple, list, jax.Array)):
+        raise ValueError(
+            f"Initial seed should be a scalar value. Received seed={seed}."
+        )
+    if seed < 0:
+        raise ValueError(
+            f"Seed should be a non-negative number. Received seed={seed}."
+        )
+    return None, jax.random.PRNGKey(seed=seed)
+
+
+def get_next_state(seed):
+    return jax.random.split(seed, 2)
 
 
 def normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
