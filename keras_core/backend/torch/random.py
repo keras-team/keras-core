@@ -7,18 +7,44 @@ from keras_core.backend.torch.core import get_device
 from keras_core.backend.torch.core import to_torch_dtype
 from keras_core.random.seed_generator import SeedGenerator
 from keras_core.random.seed_generator import draw_seed
-from keras_core.random.seed_generator import make_default_seed
 
 
 def torch_seed_generator(seed):
-    first_seed, second_seed = draw_seed(seed)
+    if isinstance(seed, torch.Generator):
+        return seed
+    elif isinstance(seed, SeedGenerator):
+        return seed.next()
+    else:
+        return draw_seed(seed)
+
+
+def make_default_seed():
     device = get_device()
     if device == "meta":
         # Generator is not supported by the meta device.
         return None
-    generator = torch.Generator(device=get_device())
-    generator.manual_seed(int(first_seed + second_seed))
-    return generator
+
+    torch_seed_gen = torch.Generator(device=get_device())
+    torch_seed_gen.manual_seed(42)
+    return torch_seed_gen, torch_seed_gen.get_state()
+
+
+def make_initial_seed(seed):
+    if isinstance(seed, (tuple, list, torch.Tensor)):
+        raise ValueError(
+            f"Initial seed should be a scalar value. Received seed={seed}."
+        )
+    if seed < 0:
+        raise ValueError(
+            f"Seed should be a non-negative number. Received seed={seed}."
+        )
+    device = get_device()
+    if device == "meta":
+        # Generator is not supported by the meta device.
+        return None
+    torch_seed_gen = torch.Generator(device=get_device())
+    torch_seed_gen.manual_seed(seed)
+    return torch_seed_gen, torch_seed_gen.get_state()
 
 
 def normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
