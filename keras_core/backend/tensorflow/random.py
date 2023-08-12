@@ -4,12 +4,37 @@ from keras_core.backend.common import standardize_dtype
 from keras_core.backend.config import floatx
 from keras_core.random.seed_generator import SeedGenerator
 from keras_core.random.seed_generator import draw_seed
-from keras_core.random.seed_generator import make_default_seed
 
 
 def tf_draw_seed(seed):
-    # TF ops only accept int32/64 seeds but our base seed is uint32.
-    return tf.cast(draw_seed(seed), dtype="int32")
+    if isinstance(seed, SeedGenerator):
+        return seed.next()
+    else:
+        return draw_seed(seed)
+
+
+def make_default_seed():
+    rng = tf.random.Generator.from_seed(42)
+    seed = tf.cast(rng.make_seeds(2)[0], tf.int32)
+    return rng, seed
+
+
+def make_initial_seed(seed):
+    if isinstance(seed, (tuple, list, tf.Tensor)):
+        raise ValueError(
+            f"Initial seed should be a scalar value. Received seed={seed}."
+        )
+    if seed < 0:
+        raise ValueError(
+            f"Seed should be a non-negative number. Received seed={seed}."
+        )
+    rng = tf.random.Generator.from_seed(seed)
+    seed = tf.cast(rng.make_seeds(2)[0], tf.int32)
+    return rng, seed
+
+
+def get_next_state(seed):
+    return tf.random.split(seed, 2)
 
 
 def normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
