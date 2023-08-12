@@ -429,7 +429,7 @@ class Gelu(Operation):
 
 @keras_core_export(["keras_core.ops.gelu", "keras_core.ops.nn.gelu"])
 def gelu(x, approximate=True):
-    """Gaussian Error Linear Unit (GELU).
+    """Gaussian Error Linear Unit (GELU) activation function.
 
     If `approximate` is `True`, it is defined as:
     `f(x) = 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x^3)))`
