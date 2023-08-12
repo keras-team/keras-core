@@ -704,7 +704,7 @@ def arccos(x):
     """Trigonometric inverse cosine, element-wise. The inverse of `cos` so that,
     if `y = cos(x)`, then `x = arccos(y)`.
 
-    Arg:
+    Args:
         x: Input tensor.
 
     Returns:
@@ -754,7 +754,7 @@ class Arcsin(Operation):
 def arcsin(x):
     """Inverse sine, element-wise.
 
-    Arg:
+    Args:
         x: Input tensor.
 
     Returns:
@@ -806,7 +806,7 @@ class Arctan(Operation):
 def arctan(x):
     """Trigonometric inverse tangent, element-wise.
 
-    Arg:
+    Args:
         x: Input tensor.
 
     Returns:
@@ -1009,7 +1009,7 @@ class Argsort(Operation):
 
 @keras_core_export(["keras_core.ops.argsort", "keras_core.ops.numpy.argsort"])
 def argsort(x, axis=-1):
-    """Returns the indices that would sort an tensor.
+    """Returns the indices that would sort a tensor.
 
     Args:
         x: Input tensor.
@@ -1258,6 +1258,22 @@ class BroadcastTo(Operation):
     ]
 )
 def broadcast_to(x, shape):
+    """Broadcast a tensor to a new shape.
+
+    Args:
+        x: The tensor to broadcast.
+        shape: The shape of the desired tensor. A single integer `i` is interpreted as `(i,)`.
+
+    Returns:
+        A tensor with the desired shape.
+
+    Examples:
+    >>> x = keras_core.ops.array([1, 2, 3])
+    >>> keras_core.ops.broadcast_to(x, (3, 3))
+    array([[1, 2, 3],
+           [1, 2, 3],
+           [1, 2, 3]])
+    """
     if any_symbolic_tensors((x,)):
         return BroadcastTo(shape=shape).symbolic_call(x)
     return backend.numpy.broadcast_to(x, shape)
@@ -1273,6 +1289,16 @@ class Ceil(Operation):
 
 @keras_core_export(["keras_core.ops.ceil", "keras_core.ops.numpy.ceil"])
 def ceil(x):
+    """Return the ceiling of the input, element-wise.
+
+    The ceil of the scalar `x` is the smallest integer `i`, such that `i >= x`.
+
+    Args:
+        x: Input tensor.
+
+    Returns:
+        The ceiling of each element in `x`.
+    """
     if any_symbolic_tensors((x,)):
         return Ceil().symbolic_call(x)
     return backend.numpy.ceil(x)
@@ -1293,6 +1319,20 @@ class Clip(Operation):
 
 @keras_core_export(["keras_core.ops.clip", "keras_core.ops.numpy.clip"])
 def clip(x, x_min, x_max):
+    """Clip (limit) the values in a tensor.
+
+    Given an interval, values outside the interval are clipped to the interval edges.
+    For example, if an interval of `[0, 1]` is specified, values smaller than 0
+    become 0, and values larger than 1 become 1.
+
+    Args:
+        x: Input tensor.
+        x_min: Minimum value.
+        x_max: Maximum value.
+
+    Returns:
+        The clipped tensor.
+    """
     if any_symbolic_tensors((x,)):
         return Clip(x_min, x_max).symbolic_call(x)
     return backend.numpy.clip(x, x_min, x_max)
@@ -1337,6 +1377,15 @@ class Concatenate(Operation):
     ]
 )
 def concatenate(xs, axis=0):
+    """Join a sequence of tensors along an existing axis.
+
+    Args:
+        xs: The sequence of tensors to concatenate.
+        axis: The axis along which the tensors will be joined. Defaults to 0.
+
+    Returns:
+        The concatenated tensor.
+    """
     if any_symbolic_tensors(xs):
         return Concatenate(axis=axis).symbolic_call(xs)
     return backend.numpy.concatenate(xs, axis=axis)
@@ -1354,6 +1403,18 @@ class Conjugate(Operation):
     ["keras_core.ops.conjugate", "keras_core.ops.numpy.conjugate"]
 )
 def conjugate(x):
+    """Returns the complex conjugate, element-wise.
+    The complex conjugate of a complex number is obtained by changing the sign
+    of its imaginary part.
+
+    `keras_core.ops.conj` is a shorthand for this function.
+
+    Args:
+        x: Input tensor.
+
+    Returns:
+        The complex conjugate of each element in `x`.
+    """
     if any_symbolic_tensors((x,)):
         return Conjugate().symbolic_call(x)
     return backend.numpy.conjugate(x)
@@ -1365,6 +1426,7 @@ class Conj(Conjugate):
 
 @keras_core_export(["keras_core.ops.conj", "keras_core.ops.numpy.conj"])
 def conj(x):
+    """Shorthand for `keras_core.ops.conjugate`."""
     return conjugate(x)
 
 
@@ -1378,6 +1440,14 @@ class Copy(Operation):
 
 @keras_core_export(["keras_core.ops.copy", "keras_core.ops.numpy.copy"])
 def copy(x):
+    """Returns a copy of `x`.
+
+    Args:
+        x: Input tensor.
+
+    Returns:
+        A copy of `x`.
+    """
     if any_symbolic_tensors((x,)):
         return Copy().symbolic_call(x)
     return backend.numpy.copy(x)
@@ -1393,6 +1463,14 @@ class Cos(Operation):
 
 @keras_core_export(["keras_core.ops.cos", "keras_core.ops.numpy.cos"])
 def cos(x):
+    """Cosine, element-wise.
+
+    Args:
+        x: Input tensor.
+
+    Returns:
+        The corresponding cosine values.
+    """
     if any_symbolic_tensors((x,)):
         return Cos().symbolic_call(x)
     return backend.numpy.cos(x)
@@ -1446,6 +1524,27 @@ class CountNonzero(Operation):
     ]
 )
 def count_nonzero(x, axis=None):
+    """Counts the number of non-zero values in `x` along the given `axis`.
+    If no axis is specified then all non-zeros in the tensor are counted.
+
+    Args:
+        x: Input tensor.
+        axis: Axis or tuple of axes along which to count the number of non-zeros.
+            Defaults to None.
+
+    Returns:
+        int or tensor of ints.
+
+    Examples:
+    >>> x = keras_core.ops.array([[0, 1, 7, 0],
+    ...                [3, 0, 2, 19]])
+    >>> keras_core.ops.count_nonzero(x)
+    5
+    >>> keras_core.ops.count_nonzero(x, axis=0)
+    array([1, 1, 2, 1], dtype=int64)
+    >>> keras_core.ops.count_nonzero(x, axis=1)
+    array([2, 3], dtype=int64)
+    """
     if any_symbolic_tensors((x,)):
         return CountNonzero(axis=axis).symbolic_call(x)
     return backend.numpy.count_nonzero(x, axis=axis)
@@ -1500,6 +1599,32 @@ class Cross(Operation):
 
 @keras_core_export(["keras_core.ops.cross", "keras_core.ops.numpy.cross"])
 def cross(x1, x2, axisa=-1, axisb=-1, axisc=-1, axis=None):
+    """Returns the cross product of two (arrays of) vectors.
+
+    The cross product of `x1` and `x2` in :math:`R^3` is a vector perpendicular to
+    both `x1` and `x2`. If `x1` and `x2` are arrays of vectors, the vectors are defined
+    by the last axis of `x1` and `x2` by default, and these axes can have dimensions 2 or 3.
+    Where the dimension of either `x1` or `x2` is 2, the third component of the input vector
+    is assumed to be zero and the cross product calculated accordingly.
+    In cases where both input vectors have dimension 2, the z-component of the cross product is returned.
+
+    Args:
+        x1: Components of the first vector(s).
+        x2: Components of the second vector(s).
+        axisa: Axis of `x1` that defines the vector(s). Defaults to -1.
+        axisb: Axis of `x2` that defines the vector(s). Defaults to -1.
+        axisc: Axis of `x` along which the cross product vector(s).
+            Ignored if both input vectors have dimension 2, as the return is scalar. By default, the last axis.
+        axis: If defined, the axis of a, b and c that defines the vector(s) and cross product(s).
+            Overrides axisa, axisb and axisc.
+
+    Note:
+        Torch backend does not support two dimensional vectors, or the arguments `axisa`, `axisb` and `axisc`.
+        Use `axis` instead.
+
+    Returns:
+        Vector cross product(s).
+    """
     if any_symbolic_tensors((x1, x2)):
         return Cross(
             axisa=axisa, axisb=axisb, axisc=axisc, axis=axis
@@ -1534,6 +1659,15 @@ class Cumprod(Operation):
 
 @keras_core_export(["keras_core.ops.cumprod", "keras_core.ops.numpy.cumprod"])
 def cumprod(x, axis=None):
+    """Return the cumulative product of elements along a given axis.
+
+    Args:
+        x: Input tensor.
+        axis: Axis along which the cumulative product is computed. By default the input is flattened.
+
+    Returns:
+        Output tensor.
+    """
     if any_symbolic_tensors((x,)):
         return Cumprod(axis=axis).symbolic_call(x)
     return backend.numpy.cumprod(x, axis=axis)
@@ -1559,6 +1693,15 @@ class Cumsum(Operation):
 
 @keras_core_export(["keras_core.ops.cumsum", "keras_core.ops.numpy.cumsum"])
 def cumsum(x, axis=None):
+    """Returns the cumulative sum of elements along a given axis.
+
+    Args:
+        x: Input tensor.
+        axis: Axis along which the cumulative sum is computed. By default the input is flattened.
+
+    Returns:
+        Output tensor.
+    """
     if any_symbolic_tensors((x,)):
         return Cumsum(axis=axis).symbolic_call(x)
     return backend.numpy.cumsum(x, axis=axis)
@@ -1603,6 +1746,37 @@ class Diag(Operation):
 
 @keras_core_export(["keras_core.ops.diag", "keras_core.ops.numpy.diag"])
 def diag(x, k=0):
+    """Extract a diagonal or construct a diagonal array.
+
+    Args:
+        x: Input tensor. If `x` is 2-D, returns the k-th diagonal of `x`.
+           If `x` is 1-D, return a 2-D tensor with `x` on the k-th diagonal.
+        k: The diagonal to consider. Defaults to 0. Use k > 0 for diagonals above the main diagonal,
+            and k < 0 for diagonals below the main diagonal.
+
+    Returns:
+        The extracted diagonal or constructed diagonal tensor.
+
+    Examples:
+    >>> from keras_core import ops
+    >>> x = ops.arange(9).reshape((3, 3))
+    >>> x
+    array([[0, 1, 2],
+           [3, 4, 5],
+           [6, 7, 8]])
+
+    >>> ops.diag(x)
+    array([0, 4, 8])
+    >>> ops.diag(x, k=1)
+    array([1, 5])
+    >>> ops.diag(x, k=-1)
+    array([3, 7])
+
+    >>> ops.diag(ops.diag(x)))
+    array([[0, 0, 0],
+           [0, 4, 0],
+           [0, 0, 8]])
+    """
     if any_symbolic_tensors((x,)):
         return Diag(k=k).symbolic_call(x)
     return backend.numpy.diag(x, k=k)
@@ -1652,6 +1826,48 @@ class Diagonal(Operation):
 
 @keras_core_export(["keras_core.ops.diagonal", "keras_core.ops.numpy.diagonal"])
 def diagonal(x, offset=0, axis1=0, axis2=1):
+    """Return specified diagonals.
+
+    If `x` is 2-D, returns the diagonal of `x` with the given offset, i.e., the
+    collection of elements of the form `x[i, i+offset]`.
+
+    If `x` has more than two dimensions, the axes specified by `axis1` and `axis2` are
+    used to determine the 2-D sub-array whose diagonal is returned.
+
+    The shape of the resulting array can be determined by removing `axis1` and `axis2`
+    and appending an index to the right equal to the size of the resulting diagonals.
+
+    Args:
+        x: Input tensor.
+        offset: Offset of the diagonal from the main diagonal. Can be positive or negative.
+            Defaults to 0 (main diagonal).
+        axis1: Axis to be used as the first axis of the 2-D sub-arrays. Defaults to 0 (first axis).
+        axis2: Axis to be used as the second axis of the 2-D sub-arrays. Defaults to 1 (second axis).
+
+    Returns:
+        Tensor of diagonals.
+
+    Examples:
+    >>> from keras_core import ops
+    >>> x = ops.arange(4).reshape((2, 2))
+    >>> x
+    array([[0, 1],
+           [2, 3]])
+    >>> x.diagonal()
+    array([0, 3])
+    >>> x.diagonal(1)
+    array([1])
+
+    >>> x = ops.arange(8).reshape((2, 2, 2))
+    >>> x
+    array([[[0, 1],
+            [2, 3]],
+           [[4, 5],
+            [6, 7]]])
+    >>> x.diagonal(0, 0, 1)
+    array([[0, 6],
+           [1, 7]])
+    """
     if any_symbolic_tensors((x,)):
         return Diagonal(
             offset=offset,
@@ -1742,6 +1958,25 @@ class Dot(Operation):
 
 @keras_core_export(["keras_core.ops.dot", "keras_core.ops.numpy.dot"])
 def dot(x1, x2):
+    """Dot product of two tensors.
+
+    - If both `x1` and `x2` are 1-D tensors, it is inner product of vectors (without complex conjugation).
+    - If both `x1` and `x2` are 2-D tensors, it is matrix multiplication.
+    - If either `x1` or `x2` is 0-D (scalar), it is equivalent to `x1 * x2`.
+    - If `x1` is an N-D tensor and `x2` is a 1-D tensor, it is a sum product over the last axis of `x1` and `x2`.
+    - If `x1` is an N-D tensor and `x2` is an M-D tensor (where `M>=2`), it is a sum product over the last
+      axis of `x1` and the second-to-last axis of `x2`: `dot(x1, x2)[i,j,k,m] = sum(a[i,j,:] * b[k,:,m])`.
+
+    Args:
+        x1: First argument.
+        x2: Second argument.
+
+    Note:
+        Torch backend does not accept 0-D tensors as arguments.
+
+    Returns:
+        Dot product of `x1` and `x2`.
+    """
     if any_symbolic_tensors((x1, x2)):
         return Dot().symbolic_call(x1, x2)
     return backend.numpy.dot(x1, x2)
@@ -1922,6 +2157,85 @@ class Einsum(Operation):
 
 @keras_core_export(["keras_core.ops.einsum", "keras_core.ops.numpy.einsum"])
 def einsum(subscripts, *operands):
+    """Evaluates the Einstein summation convention on the operands.
+
+    Args:
+        subscripts: Specifies the subscripts for summation as comma separated list of subscript
+            labels. An implicit (classical Einstein summation) calculation is performed unless the
+            explicit indicator `->` is included as well as subscript labels of the precise output form.
+        operands: The operands to compute the Einstein sum of.
+
+    Returns:
+        The calculation based on the Einstein summation convention.
+
+    Example:
+    >>> from keras_core import ops
+    >>> a = ops.arange(25).reshape(5, 5)
+    >>> b = ops.arange(5)
+    >>> c = ops.arange(6).reshape(2, 3)
+
+    Trace of a matrix:
+
+    >>> ops.einsum("ii", a)
+    60
+    >>> ops.einsum(a, [0, 0])
+    60
+    >>> ops.trace(a)
+    60
+
+    Extract the diagonal:
+
+    >>> ops.einsum("ii -> i", a)
+    array([ 0,  6, 12, 18, 24])
+    >>> ops.einsum(a, [0, 0], [0])
+    array([ 0,  6, 12, 18, 24])
+    >>> ops.diag(a)
+    array([ 0,  6, 12, 18, 24])
+
+    Sum over an axis:
+
+    >>> ops.einsum("ij -> i", a)
+    array([ 10,  35,  60,  85, 110])
+    >>> ops.einsum(a, [0, 1], [0])
+    array([ 10,  35,  60,  85, 110])
+    >>> ops.sum(a, axis=1)
+    array([ 10,  35,  60,  85, 110])
+
+    For higher dimensional tensors summing a single axis can be done with ellipsis:
+
+    >>> ops.einsum("...j -> ...", a)
+    array([ 10,  35,  60,  85, 110])
+    >>> np.einsum(a, [..., 1], [...])
+    array([ 10,  35,  60,  85, 110])
+
+    Compute a matrix transpose or reorder any number of axes:
+
+    >>> ops.einsum("ji", c)
+    array([[0, 3],
+           [1, 4],
+           [2, 5]])
+    >>> ops.einsum("ij -> ji", c)
+    array([[0, 3],
+           [1, 4],
+           [2, 5]])
+    >>> ops.einsum(c, [1, 0])
+    array([[0, 3],
+           [1, 4],
+           [2, 5]])
+    >>> ops.transpose(c)
+    array([[0, 3],
+           [1, 4],
+           [2, 5]])
+
+    Matrix vector multiplication:
+
+    >>> ops.einsum("ij, j", a, b)
+    array([ 30,  80, 130, 180, 230])
+    >>> ops.einsum(a, [0, 1], b, [1])
+    array([ 30,  80, 130, 180, 230])
+    >>> ops.einsum("...j, j", a, b)
+    array([ 30,  80, 130, 180, 230])
+    """
     if any_symbolic_tensors(operands):
         return Einsum(subscripts).symbolic_call(*operands)
     return backend.numpy.einsum(subscripts, *operands)
