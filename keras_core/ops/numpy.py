@@ -472,7 +472,7 @@ def amax(x, axis=None, keepdims=False):
         axis: Axis along which to compute the maximum.
             By default (`axis=None`), find the maximum value in all the
             dimensions of the input array.
-        keep_dims: If `True`, axes which are reduced are left in the result as
+        keepdims: If `True`, axes which are reduced are left in the result as
             dimensions that are broadcast to the size of the original
             input tensor. Defaults to `False`.
 
@@ -528,7 +528,7 @@ def amin(x, axis=None, keepdims=False):
         axis: Axis along which to compute the minimum.
             By default (`axis=None`), find the minimum value in all the
             dimensions of the input array.
-        keep_dims: If `True`, axes which are reduced are left in the result as
+        keepdims: If `True`, axes which are reduced are left in the result as
             dimensions that are broadcast to the size of the original
             input tensor. Defaults to `False`.
 
@@ -1014,7 +1014,7 @@ def argsort(x, axis=-1):
     Args:
         x: Input tensor.
         axis: Axis along which to sort. Default is `-1` (the last axis). If
-        `None`, the flattened tensor is used.
+            `None`, the flattened tensor is used.
 
     Returns:
         Tensor of indices that sort `x` along the specified `axis`.
@@ -1262,7 +1262,8 @@ def broadcast_to(x, shape):
 
     Args:
         x: The tensor to broadcast.
-        shape: The shape of the desired tensor. A single integer `i` is interpreted as `(i,)`.
+        shape: The shape of the desired tensor. A single integer `i` is
+            interpreted as `(i,)`.
 
     Returns:
         A tensor with the desired shape.
@@ -1291,7 +1292,8 @@ class Ceil(Operation):
 def ceil(x):
     """Return the ceiling of the input, element-wise.
 
-    The ceil of the scalar `x` is the smallest integer `i`, such that `i >= x`.
+    The ceil of the scalar `x` is the smallest integer `i`, such that
+        `i >= x`.
 
     Args:
         x: Input tensor.
@@ -1321,9 +1323,9 @@ class Clip(Operation):
 def clip(x, x_min, x_max):
     """Clip (limit) the values in a tensor.
 
-    Given an interval, values outside the interval are clipped to the interval edges.
-    For example, if an interval of `[0, 1]` is specified, values smaller than 0
-    become 0, and values larger than 1 become 1.
+    Given an interval, values outside the interval are clipped to the
+    interval edges. For example, if an interval of `[0, 1]` is specified,
+    values smaller than 0 become 0, and values larger than 1 become 1.
 
     Args:
         x: Input tensor.
@@ -1529,8 +1531,8 @@ def count_nonzero(x, axis=None):
 
     Args:
         x: Input tensor.
-        axis: Axis or tuple of axes along which to count the number of non-zeros.
-            Defaults to None.
+        axis: Axis or tuple of axes along which to count the number of
+            non-zeros. Defaults to None.
 
     Returns:
         int or tensor of ints.
@@ -1601,12 +1603,17 @@ class Cross(Operation):
 def cross(x1, x2, axisa=-1, axisb=-1, axisc=-1, axis=None):
     """Returns the cross product of two (arrays of) vectors.
 
-    The cross product of `x1` and `x2` in :math:`R^3` is a vector perpendicular to
-    both `x1` and `x2`. If `x1` and `x2` are arrays of vectors, the vectors are defined
-    by the last axis of `x1` and `x2` by default, and these axes can have dimensions 2 or 3.
-    Where the dimension of either `x1` or `x2` is 2, the third component of the input vector
-    is assumed to be zero and the cross product calculated accordingly.
-    In cases where both input vectors have dimension 2, the z-component of the cross product is returned.
+    The cross product of `x1` and `x2` in :math:`R^3` is a vector
+    perpendicular to both `x1` and `x2`. If `x1` and `x2` are arrays of
+    vectors, the vectors are defined by the last axis of `x1` and `x2`
+    by default, and these axes can have dimensions 2 or 3.
+
+    Where the dimension of either `x1` or `x2` is 2, the third component of
+    the input vector is assumed to be zero and the cross product calculated
+    accordingly.
+
+    In cases where both input vectors have dimension 2, the z-component of
+    the cross product is returned.
 
     Args:
         x1: Components of the first vector(s).
@@ -1614,13 +1621,14 @@ def cross(x1, x2, axisa=-1, axisb=-1, axisc=-1, axis=None):
         axisa: Axis of `x1` that defines the vector(s). Defaults to -1.
         axisb: Axis of `x2` that defines the vector(s). Defaults to -1.
         axisc: Axis of `x` along which the cross product vector(s).
-            Ignored if both input vectors have dimension 2, as the return is scalar. By default, the last axis.
-        axis: If defined, the axis of a, b and c that defines the vector(s) and cross product(s).
-            Overrides axisa, axisb and axisc.
+            Ignored if both input vectors have dimension 2, as the return is
+            scalar. By default, the last axis.
+        axis: If defined, the axis of a, b and c that defines the vector(s)
+            and cross product(s). Overrides axisa, axisb and axisc.
 
     Note:
-        Torch backend does not support two dimensional vectors, or the arguments `axisa`, `axisb` and `axisc`.
-        Use `axis` instead.
+        Torch backend does not support two dimensional vectors, or the
+        arguments `axisa`, `axisb` and `axisc`. Use `axis` instead.
 
     Returns:
         Vector cross product(s).
@@ -1663,7 +1671,8 @@ def cumprod(x, axis=None):
 
     Args:
         x: Input tensor.
-        axis: Axis along which the cumulative product is computed. By default the input is flattened.
+        axis: Axis along which the cumulative product is computed.
+            By default the input is flattened.
 
     Returns:
         Output tensor.
@@ -1697,7 +1706,8 @@ def cumsum(x, axis=None):
 
     Args:
         x: Input tensor.
-        axis: Axis along which the cumulative sum is computed. By default the input is flattened.
+        axis: Axis along which the cumulative sum is computed.
+            By default the input is flattened.
 
     Returns:
         Output tensor.
@@ -1750,9 +1760,10 @@ def diag(x, k=0):
 
     Args:
         x: Input tensor. If `x` is 2-D, returns the k-th diagonal of `x`.
-           If `x` is 1-D, return a 2-D tensor with `x` on the k-th diagonal.
-        k: The diagonal to consider. Defaults to 0. Use k > 0 for diagonals above the main diagonal,
-            and k < 0 for diagonals below the main diagonal.
+            If `x` is 1-D, return a 2-D tensor with `x` on the k-th diagonal.
+        k: The diagonal to consider. Defaults to 0. Use k > 0 for diagonals
+            above the main diagonal, and k < 0 for diagonals below
+            the main diagonal.
 
     Returns:
         The extracted diagonal or constructed diagonal tensor.
@@ -1831,18 +1842,22 @@ def diagonal(x, offset=0, axis1=0, axis2=1):
     If `x` is 2-D, returns the diagonal of `x` with the given offset, i.e., the
     collection of elements of the form `x[i, i+offset]`.
 
-    If `x` has more than two dimensions, the axes specified by `axis1` and `axis2` are
-    used to determine the 2-D sub-array whose diagonal is returned.
+    If `x` has more than two dimensions, the axes specified by `axis1`
+    and `axis2` are used to determine the 2-D sub-array whose diagonal
+    is returned.
 
-    The shape of the resulting array can be determined by removing `axis1` and `axis2`
-    and appending an index to the right equal to the size of the resulting diagonals.
+    The shape of the resulting array can be determined by removing `axis1`
+    and `axis2` and appending an index to the right equal to the size of
+    the resulting diagonals.
 
     Args:
         x: Input tensor.
-        offset: Offset of the diagonal from the main diagonal. Can be positive or negative.
-            Defaults to 0 (main diagonal).
-        axis1: Axis to be used as the first axis of the 2-D sub-arrays. Defaults to 0 (first axis).
-        axis2: Axis to be used as the second axis of the 2-D sub-arrays. Defaults to 1 (second axis).
+        offset: Offset of the diagonal from the main diagonal.
+            Can be positive or negative. Defaults to 0 (main diagonal).
+        axis1: Axis to be used as the first axis of the 2-D sub-arrays.
+            Defaults to 0 (first axis).
+        axis2: Axis to be used as the second axis of the 2-D sub-arrays.
+            Defaults to 1 (second axis).
 
     Returns:
         Tensor of diagonals.
@@ -1960,12 +1975,15 @@ class Dot(Operation):
 def dot(x1, x2):
     """Dot product of two tensors.
 
-    - If both `x1` and `x2` are 1-D tensors, it is inner product of vectors (without complex conjugation).
+    - If both `x1` and `x2` are 1-D tensors, it is inner product of vectors
+      (without complex conjugation).
     - If both `x1` and `x2` are 2-D tensors, it is matrix multiplication.
     - If either `x1` or `x2` is 0-D (scalar), it is equivalent to `x1 * x2`.
-    - If `x1` is an N-D tensor and `x2` is a 1-D tensor, it is a sum product over the last axis of `x1` and `x2`.
-    - If `x1` is an N-D tensor and `x2` is an M-D tensor (where `M>=2`), it is a sum product over the last
-      axis of `x1` and the second-to-last axis of `x2`: `dot(x1, x2)[i,j,k,m] = sum(a[i,j,:] * b[k,:,m])`.
+    - If `x1` is an N-D tensor and `x2` is a 1-D tensor, it is a sum product
+      over the last axis of `x1` and `x2`.
+    - If `x1` is an N-D tensor and `x2` is an M-D tensor (where `M>=2`),
+      it is a sum product over the last axis of `x1` and the second-to-last
+      axis of `x2`: `dot(x1, x2)[i,j,k,m] = sum(a[i,j,:] * b[k,:,m])`.
 
     Args:
         x1: First argument.
@@ -2160,9 +2178,11 @@ def einsum(subscripts, *operands):
     """Evaluates the Einstein summation convention on the operands.
 
     Args:
-        subscripts: Specifies the subscripts for summation as comma separated list of subscript
-            labels. An implicit (classical Einstein summation) calculation is performed unless the
-            explicit indicator `->` is included as well as subscript labels of the precise output form.
+        subscripts: Specifies the subscripts for summation as comma separated
+            list of subscript labels. An implicit (classical Einstein
+            summation) calculation is performed unless the explicit indicator
+            `->` is included as well as subscript labels of the precise
+            output form.
         operands: The operands to compute the Einstein sum of.
 
     Returns:
@@ -2201,7 +2221,8 @@ def einsum(subscripts, *operands):
     >>> ops.sum(a, axis=1)
     array([ 10,  35,  60,  85, 110])
 
-    For higher dimensional tensors summing a single axis can be done with ellipsis:
+    For higher dimensional tensors summing a single axis can be done
+    with ellipsis:
 
     >>> ops.einsum("...j -> ...", a)
     array([ 10,  35,  60,  85, 110])
@@ -2349,7 +2370,8 @@ def expand_dims(x, axis):
 
     Args:
         x: Input tensor.
-        axis: Position in the expanded axes where the new axis (or axes) is placed.
+        axis: Position in the expanded axes where the new axis
+            (or axes) is placed.
 
     Returns:
         Output tensor with the number of dimensions increased.
@@ -2402,8 +2424,11 @@ def flip(x, axis=None):
 
     Args:
         x: Input tensor.
-        axis: Axis or axes along which to flip the tensor. The default, `axis=None`, will
-            flip over all of the axes of the input tensor.
+        axis: Axis or axes along which to flip the tensor. The default,
+            `axis=None`, will flip over all of the axes of the input tensor.
+
+    Returns:
+        Output tensor with entries of axis reversed.
     """
     if any_symbolic_tensors((x,)):
         return Flip(axis=axis).symbolic_call(x)
@@ -2422,7 +2447,7 @@ class Floor(Operation):
 def floor(x):
     """Return the floor of the input, element-wise.
 
-    The floor of the scalar *x* is the largest integer *i*, such that *i* <= *x*.
+    The floor of the scalar `x` is the largest integer `i`, such that `i <= x`.
 
     Args:
         x: Input tensor.
@@ -2649,7 +2674,8 @@ class Hstack(Operation):
 def hstack(xs):
     """Stack tensors in sequence horizontally (column wise).
 
-    This is equivalent to concatenation along the first axis for 1-D tensors, and along the second axis for all other tensors.
+    This is equivalent to concatenation along the first axis for 1-D tensors,
+    and along the second axis for all other tensors.
 
     Args:
         xs: Sequence of tensors.
@@ -2674,7 +2700,8 @@ class Identity(Operation):
 def identity(n, dtype="float32"):
     """Return the identity tensor.
 
-    The identity tensor is a square tensor with ones on the main diagonal and zeros elsewhere.
+    The identity tensor is a square tensor with ones on the main diagonal and
+    zeros elsewhere.
 
     Args:
         n: Number of rows (and columns) in the *n x n* output tensor.
@@ -2722,7 +2749,8 @@ class Isclose(Operation):
 
 @keras_core_export(["keras_core.ops.isclose", "keras_core.ops.numpy.isclose"])
 def isclose(x1, x2):
-    """Return a boolean tensor with elements representing whether two tensors are element-wise almost equal.
+    """Return a boolean tensor with elements representing whether two tensors
+    are element-wise almost equal.
 
     Args:
         x1: First input tensor.
@@ -2746,10 +2774,12 @@ class Isfinite(Operation):
 
 @keras_core_export(["keras_core.ops.isfinite", "keras_core.ops.numpy.isfinite"])
 def isfinite(x):
-    """Return a boolean tensor with elements representing whether each element is finite.
+    """Return a boolean tensor with elements representing whether each
+    element is finite.
 
-    Real values are finite when they are not NaN, not positive infinity, and not negative infinity.
-    Complex values are finite when both their real and imaginary parts are finite.
+    Real values are finite when they are not NaN, not positive infinity, and
+    not negative infinity. Complex values are finite when both their real
+    and imaginary parts are finite.
 
     Args:
         x: Input tensor.
@@ -2772,7 +2802,8 @@ class Isinf(Operation):
 
 @keras_core_export(["keras_core.ops.isinf", "keras_core.ops.numpy.isinf"])
 def isinf(x):
-    """Test element-wise for positive or negative infinity and return result as a boolean tensor.
+    """Test element-wise for positive or negative infinity and return result
+    as a boolean tensor.
 
     Args:
         x: Input tensor.
@@ -2920,28 +2951,33 @@ def linspace(
 ):
     """Return evenly spaced numbers over a specified interval.
 
-    Returns `num` evenly spaced samples, calculated over the interval [`start`, `stop`].
+    Returns `num` evenly spaced samples, calculated over the interval
+    [`start`, `stop`].
 
     The endpoint of the interval can optionally be excluded.
 
     Args:
         start: The starting value of the sequence.
-        stop: The end value of the sequence, unless `endpoint` is set to False.
-            In that case, the sequence consists of all but the last of `num + 1` evenly
-            spaced samples, so that `stop` is excluded.  Note that the step size changes
-            when `endpoint` is False.
-        num: Number of samples to generate. Default is 50. Must be non-negative.
-        endpoint: If True, `stop` is the last sample. Otherwise, it is not included. Default is True.
-        retstep: If True, return (`samples`, `step`), where `step` is the spacing between samples.
+        stop: The end value of the sequence, unless `endpoint` is set to
+            False. In that case, the sequence consists of all but the last
+            of `num + 1` evenly spaced samples, so that `stop` is excluded.
+            Note that the step size changes when `endpoint` is False.
+        num: Number of samples to generate. Default is 50. Must be
+            non-negative.
+        endpoint: If True, `stop` is the last sample. Otherwise, it is
+            not included. Default is True.
+        retstep: If True, return (`samples`, `step`), where `step` is the
+            spacing between samples.
         dtype: The type of the output tensor.
-        axis: The axis in the result to store the samples. Relevant only if start or stop are array-like.
-            Default is 0.
+        axis: The axis in the result to store the samples. Relevant only if
+            start or stop are array-like. Default is 0.
 
     Note:
         Torch backend does not support `axis` argument.
 
     Returns:
-        A tensor of evenly spaced numbers. If `retstep` is True, returns (*samples*, *step*)
+        A tensor of evenly spaced numbers.
+        If `retstep` is True, returns `(samples, step)`
     """
     if any_symbolic_tensors((start, stop)):
         return Linspace(num, endpoint, retstep, dtype, axis)(start, stop)
@@ -3012,7 +3048,8 @@ class Log1p(Operation):
 
 @keras_core_export(["keras_core.ops.log1p", "keras_core.ops.numpy.log1p"])
 def log1p(x):
-    """Returns the natural logarithm of one plus the input tensor, element-wise.
+    """Returns the natural logarithm of one plus the input tensor,
+    element-wise.
 
     Calculates `log(1 + x)`.
 
@@ -3074,7 +3111,8 @@ def logaddexp(x1, x2):
         x2: Input tensor.
 
     Returns:
-        Output tensor, element-wise logarithm of the sum of exponentiations of the inputs.
+        Output tensor, element-wise logarithm of the sum of exponentiations
+        of the inputs.
     """
     if any_symbolic_tensors((x1, x2)):
         return Logaddexp().symbolic_call(x1, x2)
@@ -3223,18 +3261,22 @@ class Logspace(Operation):
 def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
     """Returns numbers spaced evenly on a log scale.
 
-    In linear space, the sequence starts at `base ** start` and ends with `base ** stop` (see `endpoint` below).
+    In linear space, the sequence starts at `base ** start` and ends with
+    `base ** stop` (see `endpoint` below).
 
     Args:
         start: The starting value of the sequence.
         stop: The final value of the sequence, unless `endpoint` is False.
-            In that case, `num + 1` values are spaced over the interval in log-space, of which all
-            but the last (a sequence of length `num`) are returned.
+            In that case, `num + 1` values are spaced over the interval in
+            log-space, of which all but the last (a sequence of length `num`)
+            are returned.
         num: Number of samples to generate. Default is 50.
-        endpoint: If True, `stop` is the last sample. Otherwise, it is not included. Default is True.
+        endpoint: If True, `stop` is the last sample. Otherwise, it is not
+            included. Default is True.
         base: The base of the log space. Default is 10
         dtype: The type of the output tensor.
-        axis: The axis in the result to store the samples. Relevant only if start or stop are array-like.
+        axis: The axis in the result to store the samples. Relevant only
+            if start or stop are array-like.
 
     Note:
         Torch backend does not support `axis` argument.
@@ -3292,10 +3334,11 @@ def matmul(x1, x2):
     """Matrix product of two tensors.
 
     - If both tensors are 1-dimensional, the dot product (scalar) is returned.
-    - If either tensor is N-D, N > 2, it is treated as a stack of matrices residing
-      in the last two indexes and broadcast accordingly.
-    - If the first tensor is 1-D, it is promoted to a matrix by prepending a 1
-      to its dimensions. After matrix multiplication the prepended 1 is removed.
+    - If either tensor is N-D, N > 2, it is treated as a stack of matrices
+      residing in the last two indexes and broadcast accordingly.
+    - If the first tensor is 1-D, it is promoted to a matrix by prepending
+      a 1 to its dimensions. After matrix multiplication the prepended
+      1 is removed.
     - If the second tensor is 1-D, it is promoted to a matrix by appending a 1
       to its dimensions. After matrix multiplication the appended 1 is removed.
 
@@ -3342,9 +3385,10 @@ def max(x, axis=None, keepdims=False, initial=None):
 
     Args:
         x: Input tensor.
-        axis: Axis or axes along which to operate. By default, flattened input is used.
-        keepdims: If this is set to True, the axes which are reduced are left in the result as
-            dimensions with size one. Default is False.
+        axis: Axis or axes along which to operate. By default, flattened input
+            is used.
+        keepdims: If this is set to True, the axes which are reduced are left
+            in the result as dimensions with size one. Default is False.
         initial: The minimum value of an output element. Default is None.
 
     Returns:
@@ -3420,14 +3464,15 @@ class Meshgrid(Operation):
 def meshgrid(*x, indexing="xy"):
     """Creates grids of coordinates from coordinate vectors.
 
-    Given `N` 1-D tensors `T0, T1, ..., TN-1` as inputs with corresponding lengths
-    `S0, S1, ..., SN-1`, this creates an `N` N-dimensional tensors `G0, G1, ..., GN-1`
-    each with shape `(S0, ..., SN-1)` where the output `Gi` is constructed by expanding
-    `Ti` to the result shape.
+    Given `N` 1-D tensors `T0, T1, ..., TN-1` as inputs with corresponding
+    lengths `S0, S1, ..., SN-1`, this creates an `N` N-dimensional tensors
+    `G0, G1, ..., GN-1` each with shape `(S0, ..., SN-1)` where the output
+    `Gi` is constructed by expanding `Ti` to the result shape.
 
     Args:
         x: 1-D tensors representing the coordinates of a grid.
-        indexing: Cartesian (`"xy"`, default) or matrix (`"ij"`) indexing of output.
+        indexing: Cartesian (`"xy"`, default) or matrix (`"ij"`) indexing
+            of output.
 
     Returns:
         Sequence of N tensors.
@@ -3479,9 +3524,10 @@ def min(x, axis=None, keepdims=False, initial=None):
 
     Args:
         x: Input tensor.
-        axis: Axis or axes along which to operate. By default, flattened input is used.
-        keepdims: If this is set to True, the axes which are reduced are left in the result as
-            dimensions with size one. Default is False.
+        axis: Axis or axes along which to operate. By default, flattened input
+            is used.
+        keepdims: If this is set to True, the axes which are reduced are left
+            in the result as dimensions with size one. Default is False.
         initial: The maximum value of an output element. Default is None.
 
     Returns:
@@ -3721,7 +3767,8 @@ class OnesLike(Operation):
     ["keras_core.ops.ones_like", "keras_core.ops.numpy.ones_like"]
 )
 def ones_like(x, dtype=None):
-    """Return a tensor of ones with the same shape and type as the given tensor.
+    """Return a tensor of ones with the same shape and type as the
+    given tensor.
 
     Args:
         x: Input tensor.
@@ -3752,7 +3799,8 @@ class ZerosLike(Operation):
     ]
 )
 def zeros_like(x, dtype=None):
-    """Return a tensor of zeros with the same shape and type as the given tensor.
+    """Return a tensor of zeros with the same shape and type as the
+    given tensor.
 
     Args:
         x: Input tensor.
@@ -3859,19 +3907,26 @@ def pad(x, pad_width, mode="constant"):
     Args:
         x: Tensor to pad.
         pad_width: Number of values padded to the edges of each axis.
-            `((before_1, after_1), ...(before_N, after_N))` unique pad widths for each axis.
-            `((before, after),)` yields same before and after pad for each axis.
-            `(pad,)` or `int` is a shortcut for before = after = pad width for all axes.
-        mode: One of `"constant"`, `"edge"`, `"linear_ramp"`, `"maximum"`, `"mean"`,
-            `"median"`, `"minimum"`, `"reflect"`, `"symmetric"`, `"wrap"`, `"empty"`,
+            `((before_1, after_1), ...(before_N, after_N))` unique pad
+            widths for each axis.
+            `((before, after),)` yields same before and after pad for
+            each axis.
+            `(pad,)` or `int` is a shortcut for before = after = pad
+            width for all axes.
+        mode: One of `"constant"`, `"edge"`, `"linear_ramp"`,
+            `"maximum"`, `"mean"`, `"median"`, `"minimum"`,
+            `"reflect"`, `"symmetric"`, `"wrap"`, `"empty"`,
             `"circular"`. Default is `"constant"`.
 
     Note:
-        Torch backend only supports modes `"constant"`, `"reflect"`, `"symmetric"` and `"circular"`.
+        Torch backend only supports modes `"constant"`, `"reflect"`,
+        `"symmetric"` and `"circular"`.
+
         Only Torch backend supports `"circular"` mode.
 
     Note:
-        Tensorflow backend only supports modes `"constant"`, `"reflect"` and `"symmetric"`.
+        Tensorflow backend only supports modes `"constant"`, `"reflect"`
+        and `"symmetric"`.
 
     Returns:
         Padded tensor.
@@ -3912,10 +3967,11 @@ def prod(x, axis=None, keepdims=False, dtype=None):
 
     Args:
         x: Input tensor.
-        axis: Axis or axes along which a product is performed. The default, `axis=None`,
-            will compute the product of all elements in the input tensor.
-        keepdims: If this is set to True, the axes which are reduced are left in the
-            result as dimensions with size one.
+        axis: Axis or axes along which a product is performed. The default,
+            `axis=None`, will compute the product of all elements
+            in the input tensor.
+        keepdims: If this is set to True, the axes which are reduce
+            are left in the result as dimensions with size one.
         dtype: Data type of the returned tensor.
 
     Returns:
@@ -4051,8 +4107,8 @@ def repeat(x, repeats, axis=None):
     Args:
         x: Input tensor.
         repeats: The number of repetitions for each element.
-        axis: The axis along which to repeat values. By default, use the flattened
-            input array, and return a flat output array.
+        axis: The axis along which to repeat values. By default, use
+            the flattened input array, and return a flat output array.
 
     Returns:
         Output tensor.
@@ -4084,8 +4140,8 @@ def reshape(x, new_shape):
     Args:
         x: Input tensor.
         new_shape: The new shape should be compatible with the original shape.
-            One shape dimension can be -1 in which case the value is inferred from
-            the length of the array and remaining dimensions.
+            One shape dimension can be -1 in which case the value is
+            inferred from the length of the array and remaining dimensions.
 
     Returns:
         The reshaped tensor.
@@ -4117,8 +4173,9 @@ def roll(x, shift, axis=None):
     Args:
         x: Input tensor.
         shift: The number of places by which elements are shifted.
-        axis: The axis along which elements are shifted. By default, the array is
-            flattened before shifting, after which the original shape is restored.
+        axis: The axis along which elements are shifted. By default, the
+            array is flattened before shifting, after which the original
+            shape is restored.
 
     Returns:
         Output tensor.
@@ -4262,12 +4319,13 @@ class Sort(Operation):
 
 @keras_core_export(["keras_core.ops.sort", "keras_core.ops.numpy.sort"])
 def sort(x, axis=-1):
-    """Sorts the elements of the input tensor along a given axis in ascending order.
+    """Sorts the elements of the input tensor along a given axis in
+    ascending order.
 
     Args:
         x: Input tensor.
-        axis: Axis along which to sort. If None, the tensor is flattened before sorting.
-            Default is the last axis.
+        axis: Axis along which to sort. If None, the tensor is flattened
+            before sorting. Default is the last axis.
 
     Returns:
         Sorted tensor.
@@ -4326,15 +4384,18 @@ def split(x, indices_or_sections, axis=0):
 
     Args:
         x: Input tensor.
-        indices_or_sections: Either an integer indicating the number of sections along `axis`
-            or a list of integers indicating the indices along `axis` at which the tensor is split.
-        indices_or_sections: If an integer, N, the tensor will be split into N equal sections along
-            `axis`. If a 1-D array of sorted integers, the entries indicate indices at which the
-            tensor will be split along `axis`.
+        indices_or_sections: Either an integer indicating the number of
+            sections along `axis` or a list of integers indicating the indices
+            along `axis` at which the tensor is split.
+        indices_or_sections: If an integer, N, the tensor will be split into N
+            equal sections along `axis`. If a 1-D array of sorted integers,
+            the entries indicate indices at which the tensor will be split
+            along `axis`.
         axis: Axis along which to split. Default is 0.
 
     Note:
-        A split does not have to result in equal division when using Torch backend.
+        A split does not have to result in equal division when using
+        Torch backend.
 
     Returns:
         A list of tensors.
@@ -4377,7 +4438,8 @@ class Stack(Operation):
 def stack(x, axis=0):
     """Join a sequence of tensors along a new axis.
 
-    The `axis` parameter specifies the index of the new axis in the dimensions of the result.
+    The `axis` parameter specifies the index of the new axis in the
+    dimensions of the result.
 
     Args:
         x: A sequence of tensors.
@@ -4415,8 +4477,9 @@ def std(x, axis=None, keepdims=False):
 
     Args:
         x: Input tensor.
-        axis: Axis along which to compute standard deviation. Default is to compute the
-            standard deviation of the flattened tensor.
+        axis: Axis along which to compute standard deviation.
+            Default is to compute the standard deviation of the
+            flattened tensor.
         keepdims: If this is set to True, the axes which are reduced are left
             in the result as dimensions with size one.
 
@@ -4658,10 +4721,12 @@ def tensordot(x1, x2, axes=2):
     Args:
         x1: First tensor.
         x2: Second tensor.
-        axes: - If an integer, N, sum over the last N axes of `x1` and the first N
-                axes of `x2` in order. The sizes of the corresponding axes must match.
-              - Or, a list of axes to be summed over, first sequence applying to `x1`,
-                second to `x2`. Both sequences must be of the same length.
+        axes: - If an integer, N, sum over the last N axes of `x1` and the
+                first N axes of `x2` in order. The sizes of the corresponding
+                axes must match.
+              - Or, a list of axes to be summed over, first sequence applying
+                to `x1`, second to `x2`. Both sequences must be of the
+                same length.
 
     Returns:
         The tensor dot product of the inputs.
@@ -4698,11 +4763,14 @@ class Tile(Operation):
 
 @keras_core_export(["keras_core.ops.tile", "keras_core.ops.numpy.tile"])
 def tile(x, repeats):
-    """Construct a tensor by repeating `x` the number of times given by `repeats`.
+    """Construct a tensor by repeating `x` the number of times given by
+    `repeats`.
 
-    If `repeats` has length `d`, the result will have dimension of `max(d, x.ndim)`.
+    If `repeats` has length `d`, the result will have dimension of
+    `max(d, x.ndim)`.
 
-    If `x.ndim < d`, `x` is promoted to be d-dimensional by prepending new axes.
+    If `x.ndim < d`, `x` is promoted to be d-dimensional by prepending
+    new axes.
 
     If `x.ndim > d`, `repeats` is promoted to `x.ndim` by prepending 1's to it.
 
@@ -4748,20 +4816,25 @@ def trace(x, offset=0, axis1=0, axis2=1):
     returned, i.e., the sum of elements `x[i, i+offset]` for all i.
 
     If a has more than two dimensions, then the axes specified by `axis1`
-    and `axis2` are used to determine the 2-D sub-arrays whose traces are returned.
-    The shape of the resulting array is the same as that of `x` with `axis1`
+    and `axis2` are used to determine the 2-D sub-arrays whose traces are
+    returned.
+
+    The shape of the resulting tensor is the same as that of `x` with `axis1`
     and `axis2` removed.
 
     Args:
         x: Input tensor.
-        offset: Offset of the diagonal from the main diagonal. Can be both positive and negative.
-            Defaults to 0.
-        axis1: Axis to be used as the first axis of the 2-D sub-arrays. Defaults to 0 (first axis).
-        axis2: Axis to be used as the second axis of the 2-D sub-arrays. Defaults to 1 (second axis).
+        offset: Offset of the diagonal from the main diagonal. Can be
+            both positive and negative. Defaults to 0.
+        axis1: Axis to be used as the first axis of the 2-D sub-arrays.
+            Defaults to 0 (first axis).
+        axis2: Axis to be used as the second axis of the 2-D sub-arrays.
+            Defaults to 1 (second axis).
 
     Returns:
-        If `x` is 2-D, the sum of the diagonal is returned. If `x` has larger dimensions, then
-        a tensor of sums along diagonals is returned.
+        If `x` is 2-D, the sum of the diagonal is returned. If `x` has
+        larger dimensions, then a tensor of sums along diagonals is
+        returned.
     """
     if any_symbolic_tensors((x,)):
         return Trace(offset, axis1, axis2).symbolic_call(x)
@@ -4780,14 +4853,15 @@ class Tri(Operation):
 
 @keras_core_export(["keras_core.ops.tri", "keras_core.ops.numpy.tri"])
 def tri(N, M=None, k=0, dtype="float32"):
-    """Return a tensor with ones at and below the given diagonal and zeros elsewhere.
+    """Return a tensor with ones at and below the given diagonal and zeros
+    elsewhere.
 
     Args:
         N: Number of rows in the tensor.
         M: Number of columns in the tensor.
         k: The sub-diagonal at and below which the array is filled.
-           k = 0 is the main diagonal, while k < 0 is below it, and k > 0 is above.
-           The default is 0.
+            k = 0 is the main diagonal, while k < 0 is below it, and
+            k > 0 is above. The default is 0.
         dtype: Data type of the returned tensor. The default is "float32".
 
     Returns:
@@ -4813,12 +4887,13 @@ class Tril(Operation):
 def tril(x, k=0):
     """Return lower triangle of a tensor.
 
-    For tensors with `ndim` exceeding 2, `tril` will apply to the final two axes.
+    For tensors with `ndim` exceeding 2, `tril` will apply to the
+    final two axes.
 
     Args:
         x: Input tensor.
-        k: Diagonal above which to zero elements. Defaults to 0, the main diagonal.
-           k < 0 is below it, and k > 0 is above it.
+        k: Diagonal above which to zero elements. Defaults to 0, the
+            main diagonal. k < 0 is below it, and k > 0 is above it.
 
     Returns:
         Lower triangle of `x`, of same shape and data type as `x`.
@@ -4844,12 +4919,13 @@ class Triu(Operation):
 def triu(x, k=0):
     """Return upper triangle of a tensor.
 
-    For tensors with `ndim` exceeding 2, `triu` will apply to the final two axes.
+    For tensors with `ndim` exceeding 2, `triu` will apply to the
+    final two axes.
 
     Args:
         x: Input tensor.
-        k: Diagonal below which to zero elements. Defaults to 0, the main diagonal.
-            k < 0 is below it, and k > 0 is above it.
+        k: Diagonal below which to zero elements. Defaults to 0, the
+            main diagonal. k < 0 is below it, and k > 0 is above it.
 
     Returns:
         Upper triangle of `x`, of same shape and data type as `x`.
@@ -4871,14 +4947,14 @@ class Vdot(Operation):
 def vdot(x1, x2):
     """Return the dot product of two vectors.
 
-    If the first argument is complex, the complex conjugate of the first argument
-    is used for the calculation of the dot product.
+    If the first argument is complex, the complex conjugate of the first
+    argument is used for the calculation of the dot product.
 
     Multidimensional tensors are flattened before the dot product is taken.
 
     Args:
-        x1: First input tensor. If complex, its complex conjugate is taken before
-            calculation of the dot product.
+        x1: First input tensor. If complex, its complex conjugate is taken
+            before calculation of the dot product.
         x2: Second input tensor.
 
     Returns:
@@ -5196,7 +5272,8 @@ def squeeze(x, axis=None):
         axis: Select a subset of the entries of length one in the shape.
 
     Returns:
-        The input tensor with all or a subset of the dimensions of length 1 removed.
+        The input tensor with all or a subset of the dimensions of
+        length 1 removed.
     """
     if any_symbolic_tensors((x,)):
         return Squeeze().symbolic_call(x, axis=axis)
@@ -5270,10 +5347,10 @@ def mean(x, axis=None, keepdims=False):
 
     Args:
         x: Input tensor.
-        axis: Axis or axes along which the means are computed. The default is to
-            compute the mean of the flattened tensor.
-        keepdims: If this is set to True, the axes which are reduced are left in
-            the result as dimensions with size one.
+        axis: Axis or axes along which the means are computed. The default
+            is to compute the mean of the flattened tensor.
+        keepdims: If this is set to True, the axes which are reduced are left
+            in the result as dimensions with size one.
 
     Returns:
         Output tensor containing the mean values.
@@ -5307,10 +5384,10 @@ def var(x, axis=None, keepdims=False):
 
     Args:
         x: Input tensor.
-        axis: Axis or axes along which the variance is computed. The default is to
-            compute the variance of the flattened tensor.
-        keepdims: If this is set to True, the axes which are reduced are left in
-            the result as dimensions with size one.
+        axis: Axis or axes along which the variance is computed. The default
+            is to compute the variance of the flattened tensor.
+        keepdims: If this is set to True, the axes which are reduced are left
+            in the result as dimensions with size one.
 
     Returns:
         Output tensor containing the variance.
@@ -5346,8 +5423,8 @@ def sum(x, axis=None, keepdims=False):
         x: Input tensor.
         axis: Axis or axes along which the sum is computed. The default is to
             compute the sum of the flattened tensor.
-        keepdims: If this is set to True, the axes which are reduced are left in
-            the result as dimensions with size one.
+        keepdims: If this is set to True, the axes which are reduced are left
+            in the result as dimensions with size one.
 
     Returns:
         Output tensor containing the sum.
@@ -5418,9 +5495,9 @@ def eye(N, M=None, k=0, dtype="float32"):
     Args:
         N: Number of rows in the output.
         M: Number of columns in the output. If None, defaults to N.
-        k: Index of the diagonal: 0 (the default) refers to the main diagonal, a
-            positive value refers to an upper diagonal, and a negative value to a
-            lower diagonal.
+        k: Index of the diagonal: 0 (the default) refers to the main
+            diagonal, a positive value refers to an upper diagonal,
+            and a negative value to a lower diagonal.
         dtype: Data type of the returned tensor.
 
     Returns:
