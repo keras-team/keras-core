@@ -66,7 +66,7 @@ class RandomCrop(TFDataLayer):
 
     def call(self, inputs, training=True):
         inputs = self.backend.cast(inputs, self.compute_dtype)
-        input_shape = self.backend.shape(inputs)
+        input_shape = inputs.shape
         is_batched = len(input_shape) > 3
         if not is_batched:
             inputs = self.backend.numpy.expand_dims(inputs, axis=0)
