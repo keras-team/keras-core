@@ -450,3 +450,59 @@ def fft2(a):
     if any_symbolic_tensors(a):
         return FFT2().symbolic_call(a)
     return backend.math.fft2(a)
+
+
+class RFFT(Operation):
+    def __init__(self, n=None):
+        super().__init__()
+        self.n = n
+
+    def compute_output_spec(self, x):
+        # We are calculating 1D RFFT. Hence, rank >= 1.
+        if len(x.shape) < 1:
+            raise ValueError(
+                f"Input should have rank >= 1. "
+                f"Received: input.shape = {x.shape}"
+            )
+
+        if self.n is not None:
+            new_shape = self.n // 2 + 1
+        else:
+            new_shape = x.shape[-1] // 2 + 1
+
+        return (
+            KerasTensor(shape=new_shape, dtype=x.dtype),
+            KerasTensor(shape=new_shape, dtype=x.dtype),
+        )
+
+    def call(self, x):
+        return backend.math.rfft(x, n=self.n)
+
+
+@keras_core_export("keras_core.ops.rfft")
+def rfft(x, n=None):
+    """Computes the Real-valued fast Fourier transform along the last axis of
+    the input.
+
+    Args:
+        x: Input tensor.
+        n: An integer representing the number of the fft length. If `n` is
+            `None`, then `n` will the length of the last axis of `x`. Defaults
+            to `None`.
+
+    Returns:
+        A tuple containing two tensors - the real and imaginary parts of the
+        output.
+
+    Examples:
+
+    >>> x = keras_core.ops.convert_to_tensor([0.0, 1.0, 2.0, 3.0, 4.0])
+    >>> rfft(x)
+    (array([10. , -2.5, -2.5]), array([0.        , 3.4409548 , 0.81229924]))
+
+    >>> rfft(x, 3)
+    (array([ 3. , -1.5]), array([0.       , 0.8660254]))
+    """
+    if any_symbolic_tensors((x,)):
+        return RFFT(n).symbolic_call(x)
+    return backend.math.rfft(x, n)

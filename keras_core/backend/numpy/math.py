@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.fft
 
 from keras_core.backend.jax.math import fft as jax_fft
 from keras_core.backend.jax.math import fft2 as jax_fft2
@@ -114,3 +115,8 @@ def fft(a):
 def fft2(a):
     real, imag = jax_fft2(a)
     return np.array(real), np.array(imag)
+
+
+def rfft(x, n=None):
+    complex_output = scipy.fft.rfft(x, n=n, axis=-1, norm="backward")
+    return np.real(complex_output), np.imag(complex_output)
