@@ -82,23 +82,22 @@ class SeedGenerator:
             return seed_sub_state
 
 
-def global_seed_generator(seed):
+def global_seed_generator():
     gen = global_state.get_global_attribute("global_seed_generator")
-    if gen is None:
-        gen = global_state.set_global_attribute("global_seed_generator", seed)
-    return gen
+    if gen is not None:
+        return gen.next()
+    else:
+        rng = SeedGenerator(seed=None)
+        global_state.set_global_attribute("global_seed_generator", rng)
+        return rng.next()
 
 
 def draw_seed(seed):
     if seed is None:
-        gen = global_state.get_global_attribute("global_seed_generator")
-        if gen is None:
-            rng = SeedGenerator(seed)
-            return global_seed_generator(rng)
-        else:
-            return gen.next()
+        return global_seed_generator()
     else:
-        return SeedGenerator(seed).next()
+        rng, seed = backend.random.make_initial_seed(seed)
+        return rng if backend.backend() == "torch" else seed
 
 
 @keras_core_export("keras_core.random.global_rng_state")
