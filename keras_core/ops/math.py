@@ -486,9 +486,9 @@ def rfft(x, n=None):
 
     Args:
         x: Input tensor.
-        n: An integer representing the number of the fft length. If `n` is
-            `None`, then `n` will the length of the last axis of `x`. Defaults
-            to `None`.
+        n: An integer representing the number of the fft length. If not
+            specified, it is inferred from the length of the last axis of `x`.
+            Defaults to `None`.
 
     Returns:
         A tuple containing two tensors - the real and imaginary parts of the
