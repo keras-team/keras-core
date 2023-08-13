@@ -10,7 +10,6 @@ from keras_core.legacy.saving import serialization as legacy_serialization
 from keras_core.models.functional import Functional
 from keras_core.models.model import Model
 from keras_core.saving import serialization_lib
-from keras_core.utils import tracking
 
 
 @keras_core_export(["keras_core.Sequential", "keras_core.models.Sequential"])
@@ -60,7 +59,6 @@ class Sequential(Model):
     ```
     """
 
-    @tracking.no_automatic_dependency_tracking
     def __init__(self, layers=None, trainable=True, name=None):
         super().__init__(trainable=trainable, name=name)
         self._functional = None
