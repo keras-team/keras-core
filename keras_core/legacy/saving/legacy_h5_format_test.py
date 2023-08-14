@@ -8,9 +8,7 @@ import keras_core
 from keras_core import layers
 from keras_core import models
 from keras_core import testing
-from keras_core import backend
 from keras_core.legacy.saving import legacy_h5_format
-from keras_core.legacy.saving import serialization
 from keras_core.saving import object_registration
 from keras_core.saving import serialization_lib
 
@@ -153,7 +151,9 @@ class LegacyH5WholeModelTest(testing.TestCase):
         ref_output = model(x)
 
         temp_filepath = os.path.join(self.get_temp_dir(), "model.h5")
-        legacy_h5_format.save_model_to_hdf5(model, temp_filepath, include_optimizer=False)
+        legacy_h5_format.save_model_to_hdf5(
+            model, temp_filepath, include_optimizer=False
+        )
         loaded = legacy_h5_format.load_model_from_hdf5(temp_filepath)
         output = loaded(x)
 
@@ -205,12 +205,18 @@ class LegacyH5WholeModelTest(testing.TestCase):
 
             def get_config(self):
                 config = super().get_config()
-                config["sublayers"] = serialization_lib.serialize_keras_object(self.sublayers)
+                config["sublayers"] = serialization_lib.serialize_keras_object(
+                    self.sublayers
+                )
                 return config
 
             @classmethod
             def from_config(cls, config):
-                config["sublayers"] = serialization_lib.deserialize_keras_object(config["sublayers"])
+                config[
+                    "sublayers"
+                ] = serialization_lib.deserialize_keras_object(
+                    config["sublayers"]
+                )
                 return cls(**config)
 
         @object_registration.register_keras_serializable(package="Foo")
@@ -224,7 +230,7 @@ class LegacyH5WholeModelTest(testing.TestCase):
             ]
         )
         model = models.Sequential([layer])
-        with self.subTest("testJSON"):
+        with self.subTest("test_JSON"):
             from keras_core.models.model import model_from_json
 
             model_json = model.to_json()
@@ -240,7 +246,7 @@ class LegacyH5WholeModelTest(testing.TestCase):
             self.assertIsInstance(loaded_layer.sublayers[1], RegisteredSubLayer)
             self.assertEqual(loaded_layer.sublayers[1].name, "MySubLayer")
 
-        with self.subTest("testH5"):
+        with self.subTest("test_H5"):
             temp_filepath = os.path.join(self.get_temp_dir(), "model.h5")
             legacy_h5_format.save_model_to_hdf5(model, temp_filepath)
             loaded_model = legacy_h5_format.load_model_from_hdf5(
