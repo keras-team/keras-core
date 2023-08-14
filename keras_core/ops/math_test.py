@@ -1,10 +1,58 @@
 import numpy as np
 import pytest
+import scipy.signal
+from absl.testing import parameterized
 
 from keras_core import backend
 from keras_core import testing
 from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.ops import math as kmath
+
+
+def _stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
+    dtype = backend.standardize_dtype(x.dtype)
+    if not dtype.startswith("float"):
+        raise TypeError(
+            "Invalid input type. Expected `float32` or `float64`. "
+            f"Received: input type={x.dtype}"
+        )
+    if fft_length < frame_length:
+        raise ValueError(
+            "`fft_length` must equal or larger than `frame_length`. "
+            f"Received: frame_length={frame_length}, "
+            f"fft_length={fft_length}"
+        )
+    # pure numpy version of stft
+    rank = len(x.shape)
+    if center:
+        pad_width = [(0, 0) for _ in range(rank)]
+        pad_width[-1] = (fft_length // 2, fft_length // 2)
+        if backend.backend() != "torch" or rank < 3:
+            x = np.pad(x, pad_width, mode="reflect")
+        else:
+            # torch not support reflect padding for N-D cases when N >= 3
+            x = np.pad(x, pad_width, mode="constant")
+    if isinstance(window, str):
+        window = scipy.signal.get_window(window, frame_length)
+    win = np.array(window, dtype=x.dtype)
+    l_pad = (fft_length - frame_length) // 2
+    r_pad = fft_length - frame_length - l_pad
+    win = np.pad(win, [[l_pad, r_pad]])
+
+    # frame
+    *batch_shape, _ = x.shape
+    batch_shape = list(batch_shape)
+    shape = x.shape[:-1] + (
+        (x.shape[-1] - (fft_length - frame_step)) // frame_step,
+        fft_length,
+    )
+    strides = x.strides[:-1] + (frame_step * x.strides[-1], x.strides[-1])
+    x = np.lib.stride_tricks.as_strided(x, shape=shape, strides=strides)
+    x = np.reshape(x, (*batch_shape, *x.shape[-2:]))
+
+    x = np.multiply(x, win)
+    x = np.fft.rfft(x, fft_length)
+    return np.real(x), np.imag(x)
 
 
 class MathOpsDynamicShapeTest(testing.TestCase):
@@ -64,6 +112,22 @@ class MathOpsDynamicShapeTest(testing.TestCase):
         self.assertEqual(q.shape, qref_shape)
         self.assertEqual(r.shape, rref_shape)
 
+    def test_frame(self):
+        # Defined dimension
+        x = KerasTensor((None, 32), dtype="float32")
+        frame_length = 3
+        frame_step = 2
+        outputs = kmath.frame(x, frame_length, frame_step)
+        num_frames = 1 + (x.shape[-1] - frame_length) // frame_step
+        self.assertEqual(outputs.shape, (None, num_frames, frame_length))
+
+        # Undefined dimension
+        x = KerasTensor((None, None), dtype="float32")
+        frame_length = 3
+        frame_step = 2
+        outputs = kmath.frame(x, frame_length, frame_step)
+        self.assertEqual(outputs.shape, (None, None, frame_length))
+
     def test_fft(self):
         real = KerasTensor((None, 4, 3), dtype="float32")
         imag = KerasTensor((None, 4, 3), dtype="float32")
@@ -81,6 +145,30 @@ class MathOpsDynamicShapeTest(testing.TestCase):
         ref_shape = (None,) + ref.shape[1:]
         self.assertEqual(real_output.shape, ref_shape)
         self.assertEqual(imag_output.shape, ref_shape)
+
+    def test_rfft(self):
+        x = KerasTensor((None, 4, 3), dtype="float32")
+        real_output, imag_output = kmath.rfft(x)
+        ref = np.fft.rfft(np.ones((2, 4, 3)))
+        ref_shape = (None,) + ref.shape[1:]
+        self.assertEqual(real_output.shape, ref_shape)
+        self.assertEqual(imag_output.shape, ref_shape)
+
+    def test_stft(self):
+        x = KerasTensor((None, 32), dtype="float32")
+        frame_length = 10
+        frame_step = 3
+        fft_length = 15
+        real_output, imag_output = kmath.stft(
+            x, frame_length, frame_step, fft_length
+        )
+        real_ref, imag_ref = _stft(
+            np.ones((2, 32)), frame_length, frame_step, fft_length
+        )
+        real_ref_shape = (None,) + real_ref.shape[1:]
+        imag_ref_shape = (None,) + imag_ref.shape[1:]
+        self.assertEqual(real_output.shape, real_ref_shape)
+        self.assertEqual(imag_output.shape, imag_ref_shape)
 
 
 class MathOpsStaticShapeTest(testing.TestCase):
@@ -144,6 +232,14 @@ class MathOpsStaticShapeTest(testing.TestCase):
         self.assertEqual(q.shape, qref.shape)
         self.assertEqual(r.shape, rref.shape)
 
+    def test_frame(self):
+        x = KerasTensor((10, 16), dtype="float32")
+        frame_length = 3
+        frame_step = 2
+        outputs = kmath.frame(x, frame_length, frame_step)
+        num_frames = 1 + (x.shape[-1] - frame_length) // frame_step
+        self.assertEqual(outputs.shape, (10, num_frames, frame_length))
+
     def test_fft(self):
         real = KerasTensor((2, 4, 3), dtype="float32")
         imag = KerasTensor((2, 4, 3), dtype="float32")
@@ -160,8 +256,29 @@ class MathOpsStaticShapeTest(testing.TestCase):
         self.assertEqual(real_output.shape, ref.shape)
         self.assertEqual(imag_output.shape, ref.shape)
 
+    def test_rfft(self):
+        x = KerasTensor((2, 4, 3), dtype="float32")
+        real_output, imag_output = kmath.rfft(x)
+        ref = np.fft.rfft(np.ones((2, 4, 3)))
+        self.assertEqual(real_output.shape, ref.shape)
+        self.assertEqual(imag_output.shape, ref.shape)
 
-class MathOpsCorrectnessTest(testing.TestCase):
+    def test_stft(self):
+        x = KerasTensor((2, 32), dtype="float32")
+        frame_length = 10
+        frame_step = 3
+        fft_length = 15
+        real_output, imag_output = kmath.stft(
+            x, frame_length, frame_step, fft_length
+        )
+        real_ref, imag_ref = _stft(
+            np.ones((2, 32)), frame_length, frame_step, fft_length
+        )
+        self.assertEqual(real_output.shape, real_ref.shape)
+        self.assertEqual(imag_output.shape, imag_ref.shape)
+
+
+class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
     @pytest.mark.skipif(
         backend.backend() == "jax",
         reason="JAX does not support `num_segments=None`.",
@@ -371,6 +488,35 @@ class MathOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(qref, q)
         self.assertAllClose(rref, r)
 
+    def test_frame(self):
+        # Test 1D case.
+        x = np.random.random((10,))
+        frame_length = 3
+        frame_step = 2
+        output = kmath.frame(x, frame_length, frame_step)
+
+        num_frames = 1 + (x.shape[-1] - frame_length) // frame_step
+        expected = np.zeros(shape=(num_frames, frame_length))
+        pos = 0
+        for i in range(num_frames):
+            expected[i] = x[pos : pos + frame_length]
+            pos += frame_step
+        self.assertAllClose(output, expected)
+
+        # Test N-D case.
+        x = np.random.random((4, 8))
+        frame_length = 3
+        frame_step = 2
+        output = kmath.frame(x, frame_length, frame_step)
+
+        num_frames = 1 + (x.shape[-1] - frame_length) // frame_step
+        expected = np.zeros(shape=(4, num_frames, frame_length))
+        pos = 0
+        for i in range(num_frames):
+            expected[:, i] = x[:, pos : pos + frame_length]
+            pos += frame_step
+        self.assertAllClose(output, expected)
+
     def test_fft(self):
         real = np.random.random((2, 4, 3))
         imag = np.random.random((2, 4, 3))
@@ -392,5 +538,57 @@ class MathOpsCorrectnessTest(testing.TestCase):
         ref = np.fft.fft2(complex_arr)
         real_ref = np.real(ref)
         imag_ref = np.imag(ref)
+        self.assertAllClose(real_ref, real_output)
+        self.assertAllClose(imag_ref, imag_output)
+
+    @parameterized.parameters([(None,), (3,), (15,)])
+    def test_rfft(self, n):
+        # Test 1D.
+        x = np.random.random((10,))
+        real_output, imag_output = kmath.rfft(x, n=n)
+        ref = np.fft.rfft(x, n=n)
+        real_ref = np.real(ref)
+        imag_ref = np.imag(ref)
+        self.assertAllClose(real_ref, real_output)
+        self.assertAllClose(imag_ref, imag_output)
+
+        # Test N-D case.
+        x = np.random.random((2, 3, 10))
+        real_output, imag_output = kmath.rfft(x, n=n)
+        ref = np.fft.rfft(x, n=n)
+        real_ref = np.real(ref)
+        imag_ref = np.imag(ref)
+        self.assertAllClose(real_ref, real_output)
+        self.assertAllClose(imag_ref, imag_output)
+
+    @parameterized.parameters(
+        [
+            (32, 8, 32, "hann", True),
+            (8, 8, 16, "hann", True),
+            (3, 3, 5, "hann", True),
+            (32, 8, 32, "hamming", True),
+            (32, 8, 32, "hann", False),
+        ]
+    )
+    def test_stft(self, frame_length, frame_step, fft_length, window, center):
+        # Test 1D case.
+        x = np.random.random((32,))
+        real_output, imag_output = kmath.stft(
+            x, frame_length, frame_step, fft_length, window, center
+        )
+        real_ref, imag_ref = _stft(
+            x, frame_length, frame_step, fft_length, window, center
+        )
+        self.assertAllClose(real_ref, real_output)
+        self.assertAllClose(imag_ref, imag_output)
+
+        # Test N-D case.
+        x = np.random.random((2, 3, 32))
+        real_output, imag_output = kmath.stft(
+            x, frame_length, frame_step, fft_length, window, center
+        )
+        real_ref, imag_ref = _stft(
+            x, frame_length, frame_step, fft_length, window, center
+        )
         self.assertAllClose(real_ref, real_output)
         self.assertAllClose(imag_ref, imag_output)

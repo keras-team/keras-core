@@ -1,5 +1,4 @@
 import numpy as np
-import scipy.fft
 
 from keras_core.backend.jax.math import fft as jax_fft
 from keras_core.backend.jax.math import fft2 as jax_fft2
@@ -107,6 +106,21 @@ def qr(x, mode="reduced"):
     return np.linalg.qr(x, mode=mode)
 
 
+def frame(x, frame_length, frame_step):
+    *batch_shape, _ = x.shape
+    batch_shape = list(batch_shape)
+    shape = x.shape[:-1] + (
+        (x.shape[-1] - (frame_length - frame_step)) // frame_step,
+        frame_length,
+    )
+    strides = x.strides[:-1] + (
+        frame_step * x.strides[-1],
+        x.strides[-1],
+    )
+    x = np.lib.stride_tricks.as_strided(x, shape=shape, strides=strides)
+    return np.reshape(x, (*batch_shape, *x.shape[-2:]))
+
+
 def fft(a):
     real, imag = jax_fft(a)
     return np.array(real), np.array(imag)
@@ -118,5 +132,5 @@ def fft2(a):
 
 
 def rfft(x, n=None):
-    complex_output = scipy.fft.rfft(x, n=n, axis=-1, norm="backward")
+    complex_output = np.fft.rfft(x, n=n, axis=-1, norm="backward")
     return np.real(complex_output), np.imag(complex_output)

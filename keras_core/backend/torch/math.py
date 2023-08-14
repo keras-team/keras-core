@@ -121,6 +121,13 @@ def qr(x, mode="reduced"):
     return torch.linalg.qr(x, mode=mode)
 
 
+def frame(x, frame_length, frame_step):
+    x = convert_to_tensor(x)
+    return torch.unfold_copy(
+        x, dimension=-1, size=frame_length, step=frame_step
+    )
+
+
 def _get_complex_tensor_from_tuple(a):
     if not isinstance(a, (tuple, list)) or len(a) != 2:
         raise ValueError(
@@ -163,5 +170,6 @@ def fft2(a):
 
 
 def rfft(x, n=None):
+    x = convert_to_tensor(x)
     complex_output = torch.fft.rfft(x, n=n, dim=-1, norm="backward")
     return complex_output.real, complex_output.imag

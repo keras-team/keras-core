@@ -47,6 +47,16 @@ def qr(x, mode="reduced"):
     return tf.linalg.qr(x, full_matrices=True)
 
 
+def frame(x, frame_length, frame_step):
+    return tf.signal.frame(
+        x,
+        frame_length=frame_length,
+        frame_step=frame_step,
+        axis=-1,
+        pad_end=False,
+    )
+
+
 def _get_complex_tensor_from_tuple(a):
     if not isinstance(a, (tuple, list)) or len(a) != 2:
         raise ValueError(

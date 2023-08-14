@@ -1,3 +1,5 @@
+import math
+
 import jax
 import jax.numpy as jnp
 
@@ -54,6 +56,20 @@ def qr(x, mode="reduced"):
             f"Received: mode={mode}"
         )
     return jax.numpy.linalg.qr(x, mode=mode)
+
+
+def frame(x, frame_length, frame_step):
+    *batch_shape, signal_length = x.shape
+    batch_shape = list(batch_shape)
+    x = jax.numpy.reshape(x, (math.prod(batch_shape), signal_length, 1))
+    x = jax.lax.conv_general_dilated_patches(
+        x,
+        (frame_length,),
+        (frame_step,),
+        "VALID",
+        dimension_numbers=("NTC", "OIT", "NTC"),
+    )
+    return jax.numpy.reshape(x, (*batch_shape, *x.shape[-2:]))
 
 
 def _get_complex_tensor_from_tuple(a):
