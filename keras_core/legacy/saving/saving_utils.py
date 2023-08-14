@@ -76,8 +76,7 @@ def model_metadata(model, include_optimizer=True, require_config=True):
 
     model_config = {"class_name": model.__class__.__name__}
     try:
-        with serialization.SharedObjectSavingScope():
-            model_config["config"] = model.get_config()
+        model_config["config"] = model.get_config()
     except NotImplementedError as e:
         if require_config:
             raise e
