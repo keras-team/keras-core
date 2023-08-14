@@ -148,9 +148,13 @@ AUTOTUNE = tf_data.AUTOTUNE
 tfds.disable_progress_bar()
 
 data, dataset_info = tfds.load(
-    "cats_vs_dogs", with_info=True, as_supervised=True
+    "cats_vs_dogs",
+    with_info=True,
+    as_supervised=True
 )
-train_steps_per_epoch = dataset_info.splits["train"].num_examples // BATCH_SIZE
+train_steps_per_epoch = (
+    dataset_info.splits["train"].num_examples // BATCH_SIZE
+)
 train_dataset = data["train"]
 
 num_classes = dataset_info.features["label"].num_classes
@@ -517,7 +521,6 @@ keras_cv.visualization.plot_image_gallery(
 `model.fit()`, which accepts a tuple of `(images, labels)`.
 """
 
-
 def unpackage_dict(inputs):
     return inputs["images"], inputs["labels"]
 
@@ -536,7 +539,6 @@ instead of a single learning rate. While we won't go into detail on the
 Cosine decay with warmup schedule used here, [you can read more about it
 here](https://scorrea92.medium.com/cosine-learning-rate-decay-e8b50aa455b).
 """
-
 
 def lr_warmup_cosine_decay(
     global_step,
@@ -564,7 +566,7 @@ def lr_warmup_cosine_decay(
         )
     )
 
-    warmup_lr = target_lr * (global_step / warmup_steps)
+    warmup_lr = (target_lr * (global_step / warmup_steps))
 
     if hold > 0:
         learning_rate = ops.where(
@@ -577,7 +579,9 @@ def lr_warmup_cosine_decay(
     return learning_rate
 
 
-class WarmUpCosineDecay(schedules.LearningRateSchedule):
+class WarmUpCosineDecay(
+    schedules.LearningRateSchedule
+):
     def __init__(
         self, warmup_steps, total_steps, hold, start_lr=0.0, target_lr=1e-2
     ):
@@ -599,7 +603,6 @@ class WarmUpCosineDecay(schedules.LearningRateSchedule):
         )
 
         return ops.where(step > self.total_steps, 0.0, lr)
-
 
 """![WarmUpCosineDecay schedule](https://i.imgur.com/YCr5pII.png)
 

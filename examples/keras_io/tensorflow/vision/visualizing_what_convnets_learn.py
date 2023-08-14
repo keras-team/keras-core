@@ -184,8 +184,7 @@ for i in range(n):
     for j in range(n):
         img = all_imgs[i * n + j]
         stitched_filters[
-            (cropped_width + margin) * i : (cropped_width + margin) * i
-            + cropped_width,
+            (cropped_width + margin) * i : (cropped_width + margin) * i + cropped_width,
             (cropped_height + margin) * j : (cropped_height + margin) * j
             + cropped_height,
             :,

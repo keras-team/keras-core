@@ -40,8 +40,7 @@ with TensorFlow 2.3 or higher.
 # a decorator to prevent jit compilation:
 # `with jax.ensure_compile_time_eval():`.
 import os
-
-os.environ["KERAS_BACKEND"] = "tensorflow"
+os.environ['KERAS_BACKEND'] = 'tensorflow'
 
 import keras_core as keras
 from keras_core import layers
@@ -97,9 +96,7 @@ class TransformerBlock(layers.Layer):
         input_shape = ops.shape(inputs)
         batch_size = input_shape[0]
         seq_len = input_shape[1]
-        causal_mask = causal_attention_mask(
-            batch_size, seq_len, seq_len, "bool"
-        )
+        causal_mask = causal_attention_mask(batch_size, seq_len, seq_len, "bool")
         attention_output = self.att(inputs, inputs, attention_mask=causal_mask)
         attention_output = self.dropout1(attention_output)
         out1 = self.layernorm1(inputs + attention_output)
@@ -119,9 +116,7 @@ Create two separate embedding layers: one for tokens and one for token index
 class TokenAndPositionEmbedding(layers.Layer):
     def __init__(self, maxlen, vocab_size, embed_dim):
         super().__init__()
-        self.token_emb = layers.Embedding(
-            input_dim=vocab_size, output_dim=embed_dim
-        )
+        self.token_emb = layers.Embedding(input_dim=vocab_size, output_dim=embed_dim)
         self.pos_emb = layers.Embedding(input_dim=maxlen, output_dim=embed_dim)
 
     def call(self, x):
@@ -139,9 +134,7 @@ vocab_size = 20000  # Only consider the top 20k words
 maxlen = 80  # Max sequence size
 embed_dim = 256  # Embedding size for each token
 num_heads = 2  # Number of attention heads
-feed_forward_dim = (
-    256  # Hidden layer size in feed forward network inside transformer
-)
+feed_forward_dim = 256  # Hidden layer size in feed forward network inside transformer
 
 
 def create_model():
@@ -202,9 +195,7 @@ def custom_standardization(input_string):
     """Remove html line-break tags and handle punctuation"""
     lowercased = tf_strings.lower(input_string)
     stripped_html = tf_strings.regex_replace(lowercased, "<br />", " ")
-    return tf_strings.regex_replace(
-        stripped_html, f"([{string.punctuation}])", r" \1"
-    )
+    return tf_strings.regex_replace(stripped_html, f"([{string.punctuation}])", r" \1")
 
 
 # Create a vectorization layer and adapt it to the text
@@ -231,9 +222,7 @@ def prepare_lm_inputs_labels(text):
     return x, y
 
 
-text_ds = text_ds.map(
-    prepare_lm_inputs_labels, num_parallel_calls=tf_data.AUTOTUNE
-)
+text_ds = text_ds.map(prepare_lm_inputs_labels, num_parallel_calls=tf_data.AUTOTUNE)
 text_ds = text_ds.prefetch(tf_data.AUTOTUNE)
 
 

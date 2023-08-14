@@ -42,7 +42,6 @@ I recommend reading the book.
 # a decorator to prevent jit compilation:
 # `with jax.ensure_compile_time_eval():`.
 import os
-
 os["KERAS_BACKEND"] = "tensorflow"
 
 import pathlib
@@ -143,9 +142,7 @@ batch_size = 64
 
 def custom_standardization(input_string):
     lowercase = tf_strings.lower(input_string)
-    return tf_strings.regex_replace(
-        lowercase, "[%s]" % re.escape(strip_chars), ""
-    )
+    return tf_strings.regex_replace(lowercase, "[%s]" % re.escape(strip_chars), "")
 
 
 eng_vectorization = TextVectorization(
@@ -178,7 +175,6 @@ that is to say, the words 0 to N used to predict word N+1 (and beyond) in the ta
 - `target` is the target sentence offset by one step:
 it provides the next words in the target sentence -- what the model will try to predict.
 """
-
 
 def format_dataset(eng, spa):
     eng = eng_vectorization(eng)
@@ -236,7 +232,6 @@ sure that it only uses information from target tokens 0 to N when predicting tok
 result in a model that cannot be used at inference time).
 """
 import keras_core.ops as ops
-
 
 class TransformerEncoder(layers.Layer):
     def __init__(self, embed_dim, dense_dim, num_heads, **kwargs):
@@ -400,19 +395,13 @@ embed_dim = 256
 latent_dim = 2048
 num_heads = 8
 
-encoder_inputs = keras.Input(
-    shape=(None,), dtype="int64", name="encoder_inputs"
-)
+encoder_inputs = keras.Input(shape=(None,), dtype="int64", name="encoder_inputs")
 x = PositionalEmbedding(sequence_length, vocab_size, embed_dim)(encoder_inputs)
 encoder_outputs = TransformerEncoder(embed_dim, latent_dim, num_heads)(x)
 encoder = keras.Model(encoder_inputs, encoder_outputs)
 
-decoder_inputs = keras.Input(
-    shape=(None,), dtype="int64", name="decoder_inputs"
-)
-encoded_seq_inputs = keras.Input(
-    shape=(None, embed_dim), name="decoder_state_inputs"
-)
+decoder_inputs = keras.Input(shape=(None,), dtype="int64", name="decoder_inputs")
+encoded_seq_inputs = keras.Input(shape=(None, embed_dim), name="decoder_state_inputs")
 x = PositionalEmbedding(sequence_length, vocab_size, embed_dim)(decoder_inputs)
 x = TransformerDecoder(embed_dim, latent_dim, num_heads)(x, encoded_seq_inputs)
 x = layers.Dropout(0.5)(x)
@@ -460,17 +449,11 @@ def decode_sequence(input_sentence):
     tokenized_input_sentence = eng_vectorization([input_sentence])
     decoded_sentence = "[start]"
     for i in range(max_decoded_sentence_length):
-        tokenized_target_sentence = spa_vectorization([decoded_sentence])[
-            :, :-1
-        ]
-        predictions = transformer(
-            [tokenized_input_sentence, tokenized_target_sentence]
-        )
+        tokenized_target_sentence = spa_vectorization([decoded_sentence])[:, :-1]
+        predictions = transformer([tokenized_input_sentence, tokenized_target_sentence])
 
         # ops.argmax(predictions[0, i, :]) is not a concrete value for jax here
-        sampled_token_index = ops.convert_to_numpy(
-            ops.argmax(predictions[0, i, :])
-        ).item(0)
+        sampled_token_index = ops.convert_to_numpy(ops.argmax(predictions[0, i, :])).item(0)
         sampled_token = spa_index_lookup[sampled_token_index]
         decoded_sentence += " " + sampled_token
 

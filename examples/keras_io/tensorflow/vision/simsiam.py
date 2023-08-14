@@ -47,8 +47,7 @@ versions of our dataset.
 """
 
 import os
-
-os.environ["KERAS_BACKEND"] = "tensorflow"
+os.environ['KERAS_BACKEND'] = 'tensorflow'
 
 from keras_core import layers
 from keras_core import regularizers
