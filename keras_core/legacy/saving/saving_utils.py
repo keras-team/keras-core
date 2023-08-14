@@ -62,13 +62,12 @@ def model_from_config(config, custom_objects=None):
     # Replace keras refs with keras_core
     config = _find_replace_nested_dict(config, "keras.", "keras_core.")
 
-    with serialization.SharedObjectLoadingScope():
-        return serialization.deserialize_keras_object(
-            config,
-            module_objects=MODULE_OBJECTS.ALL_OBJECTS,
-            custom_objects=custom_objects,
-            printable_module_name="layer",
-        )
+    return serialization.deserialize_keras_object(
+        config,
+        module_objects=MODULE_OBJECTS.ALL_OBJECTS,
+        custom_objects=custom_objects,
+        printable_module_name="layer",
+    )
 
 
 def model_metadata(model, include_optimizer=True, require_config=True):

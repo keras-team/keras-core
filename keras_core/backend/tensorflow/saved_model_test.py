@@ -97,6 +97,8 @@ class SavedModelTest(testing.TestCase):
             rtol=1e-4,
             atol=1e-4,
         )
+<<<<<<< HEAD
+=======
 
     def test_custom_model_and_layer(self):
         @object_registration.register_keras_serializable(package="my_package")
@@ -178,3 +180,4 @@ class SavedModelTest(testing.TestCase):
         restored_model = tf.saved_model.load(path)
         output = restored_model.call(*inp)
         self.assertAllClose(expected, output, rtol=1e-4, atol=1e-4)
+>>>>>>> refs/remotes/origin/main
