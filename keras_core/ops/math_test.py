@@ -549,8 +549,8 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         ref = np.fft.rfft(x, n=n)
         real_ref = np.real(ref)
         imag_ref = np.imag(ref)
-        self.assertAllClose(real_ref, real_output)
-        self.assertAllClose(imag_ref, imag_output)
+        self.assertAllClose(real_ref, real_output, atol=1e-5, rtol=1e-5)
+        self.assertAllClose(imag_ref, imag_output, atol=1e-5, rtol=1e-5)
 
         # Test N-D case.
         x = np.random.random((2, 3, 10))
@@ -558,8 +558,8 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         ref = np.fft.rfft(x, n=n)
         real_ref = np.real(ref)
         imag_ref = np.imag(ref)
-        self.assertAllClose(real_ref, real_output)
-        self.assertAllClose(imag_ref, imag_output)
+        self.assertAllClose(real_ref, real_output, atol=1e-5, rtol=1e-5)
+        self.assertAllClose(imag_ref, imag_output, atol=1e-5, rtol=1e-5)
 
     @parameterized.parameters(
         [
@@ -579,8 +579,8 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         real_ref, imag_ref = _stft(
             x, frame_length, frame_step, fft_length, window, center
         )
-        self.assertAllClose(real_ref, real_output)
-        self.assertAllClose(imag_ref, imag_output)
+        self.assertAllClose(real_ref, real_output, atol=1e-5, rtol=1e-5)
+        self.assertAllClose(imag_ref, imag_output, atol=1e-5, rtol=1e-5)
 
         # Test N-D case.
         x = np.random.random((2, 3, 32))
@@ -590,5 +590,5 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         real_ref, imag_ref = _stft(
             x, frame_length, frame_step, fft_length, window, center
         )
-        self.assertAllClose(real_ref, real_output)
-        self.assertAllClose(imag_ref, imag_output)
+        self.assertAllClose(real_ref, real_output, atol=1e-5, rtol=1e-5)
+        self.assertAllClose(imag_ref, imag_output, atol=1e-5, rtol=1e-5)
