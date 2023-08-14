@@ -1,6 +1,6 @@
-import jax
-
 import random as python_random
+
+import jax
 
 from keras_core.backend.config import floatx
 from keras_core.random.seed_generator import SeedGenerator

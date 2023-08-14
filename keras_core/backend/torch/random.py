@@ -1,3 +1,5 @@
+import random as python_random
+
 import torch
 import torch.nn.functional as tnn
 
@@ -25,7 +27,8 @@ def make_default_seed():
         return None
 
     torch_seed_gen = torch.Generator(device=get_device())
-    torch_seed_gen.manual_seed(42)
+    random_seed = python_random.randint(1, int(1e9))
+    torch_seed_gen.manual_seed(random_seed)
     return torch_seed_gen, torch_seed_gen.get_state()
 
 
@@ -45,6 +48,10 @@ def make_initial_seed(seed):
     torch_seed_gen = torch.Generator(device=get_device())
     torch_seed_gen.manual_seed(seed)
     return torch_seed_gen, torch_seed_gen.get_state()
+
+
+def get_next_seed_state(rng):
+    return rng, rng.get_state()
 
 
 def normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):

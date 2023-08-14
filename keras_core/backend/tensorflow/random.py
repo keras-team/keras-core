@@ -1,3 +1,5 @@
+import random as python_random
+
 import tensorflow as tf
 
 from keras_core.backend.common import standardize_dtype
@@ -14,7 +16,8 @@ def tf_draw_seed(seed):
 
 
 def make_default_seed():
-    rng = tf.random.Generator.from_seed(42)
+    random_seed = python_random.randint(1, int(1e9))
+    rng = tf.random.Generator.from_seed(random_seed)
     seed = tf.cast(rng.make_seeds(2)[0], tf.int32)
     return rng, seed
 
@@ -33,7 +36,7 @@ def make_initial_seed(seed):
     return rng, seed
 
 
-def get_next_state(seed):
+def get_next_seed_state(seed):
     return tf.random.split(seed, 2)
 
 
