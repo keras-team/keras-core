@@ -525,10 +525,10 @@ class RFFT(Operation):
             )
 
         if self.n is not None:
-            new_last_axis = self.n // 2 + 1
+            new_last_dimension = self.n // 2 + 1
         else:
-            new_last_axis = x.shape[-1] // 2 + 1
-        new_shape = x.shape[:-1] + (new_last_axis,)
+            new_last_dimension = x.shape[-1] // 2 + 1
+        new_shape = x.shape[:-1] + (new_last_dimension,)
 
         return (
             KerasTensor(shape=new_shape, dtype=x.dtype),
@@ -541,7 +541,7 @@ class RFFT(Operation):
 
 @keras_core_export("keras_core.ops.rfft")
 def rfft(x, n=None):
-    """Computes the Real-valued fast Fourier transform along the last axis of
+    """Computes the real-valued fast Fourier transform along the last axis of
     the input.
 
     Args:
@@ -570,7 +570,7 @@ def rfft(x, n=None):
 
 def _stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
     dtype = backend.standardize_dtype(x.dtype)
-    if not dtype.startswith("float"):
+    if dtype not in {"float32", "float64"}:
         raise TypeError(
             "Invalid input type. Expected `float32` or `float64`. "
             f"Received: input type={x.dtype}"
@@ -645,8 +645,8 @@ class STFT(Operation):
 
 @keras_core_export("keras_core.ops.stft")
 def stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
-    """Computes the Real-valued fast Fourier transform along the last axis of
-    the input.
+    """Computes the short-time Fourier transform along the last axis of the
+    input.
 
     Args:
         x: Input tensor.

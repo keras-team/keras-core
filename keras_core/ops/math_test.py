@@ -11,7 +11,7 @@ from keras_core.ops import math as kmath
 
 def _stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
     dtype = backend.standardize_dtype(x.dtype)
-    if not dtype.startswith("float"):
+    if dtype not in {"float32", "float64"}:
         raise TypeError(
             "Invalid input type. Expected `float32` or `float64`. "
             f"Received: input type={x.dtype}"
