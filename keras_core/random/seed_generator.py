@@ -61,7 +61,7 @@ class SeedGenerator:
         self._initial_seed = seed
         self._rng = rng
         self.state = self.backend.Variable(
-            self.backend.convert_to_tensor(seed),
+            seed,
             shape=tuple(seed.shape),
             dtype=seed_dtype,
             trainable=False,
@@ -70,13 +70,14 @@ class SeedGenerator:
 
     def next(self):
         if backend.backend() == "torch":
-            seed_sub_state = self._rng.get_state()
+            rng, seed_sub_state = self.backend.random.get_next_seed_state(
+                self._rng
+            )
             self.state.assign(seed_sub_state)
-            return self._rng
+            return rng
         else:
-            seed_state = self.backend.convert_to_tensor(self.state)
-            seed_state, seed_sub_state = self.backend.random.get_next_state(
-                seed_state
+            _, seed_sub_state = self.backend.random.get_next_seed_state(
+                self.state
             )
             self.state.assign(seed_sub_state)
             return seed_sub_state
@@ -87,9 +88,13 @@ def global_seed_generator():
     if gen is not None:
         return gen.next()
     else:
-        rng = SeedGenerator(seed=None)
-        global_state.set_global_attribute("global_seed_generator", rng)
-        return rng.next()
+        return init_global_seed_generator()
+
+
+def init_global_seed_generator():
+    rng = SeedGenerator(seed=None)
+    global_state.set_global_attribute("global_seed_generator", rng)
+    return rng.next()
 
 
 def draw_seed(seed):
@@ -110,5 +115,5 @@ def global_rng_state():
 
     gen = global_state.get_global_attribute("global_seed_generator")
     if gen:
-        return gen.state()
+        return gen.state
     return None
