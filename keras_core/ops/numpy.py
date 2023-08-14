@@ -701,8 +701,9 @@ class Arccos(Operation):
 
 @keras_core_export(["keras_core.ops.arccos", "keras_core.ops.numpy.arccos"])
 def arccos(x):
-    """Trigonometric inverse cosine, element-wise. The inverse of `cos` so that,
-    if `y = cos(x)`, then `x = arccos(y)`.
+    """Trigonometric inverse cosine, element-wise.
+
+    The inverse of `cos` so that, if `y = cos(x)`, then `x = arccos(y)`.
 
     Args:
         x: Input tensor.
@@ -1406,6 +1407,7 @@ class Conjugate(Operation):
 )
 def conjugate(x):
     """Returns the complex conjugate, element-wise.
+
     The complex conjugate of a complex number is obtained by changing the sign
     of its imaginary part.
 
@@ -1527,6 +1529,7 @@ class CountNonzero(Operation):
 )
 def count_nonzero(x, axis=None):
     """Counts the number of non-zero values in `x` along the given `axis`.
+
     If no axis is specified then all non-zeros in the tensor are counted.
 
     Args:
@@ -1538,8 +1541,7 @@ def count_nonzero(x, axis=None):
         int or tensor of ints.
 
     Examples:
-    >>> x = keras_core.ops.array([[0, 1, 7, 0],
-    ...                [3, 0, 2, 19]])
+    >>> x = keras_core.ops.array([[0, 1, 7, 0], [3, 0, 2, 19]])
     >>> keras_core.ops.count_nonzero(x)
     5
     >>> keras_core.ops.count_nonzero(x, axis=0)
@@ -1603,7 +1605,7 @@ class Cross(Operation):
 def cross(x1, x2, axisa=-1, axisb=-1, axisc=-1, axis=None):
     """Returns the cross product of two (arrays of) vectors.
 
-    The cross product of `x1` and `x2` in :math:`R^3` is a vector
+    The cross product of `x1` and `x2` in R^3 is a vector
     perpendicular to both `x1` and `x2`. If `x1` and `x2` are arrays of
     vectors, the vectors are defined by the last axis of `x1` and `x2`
     by default, and these axes can have dimensions 2 or 3.
@@ -1620,11 +1622,12 @@ def cross(x1, x2, axisa=-1, axisb=-1, axisc=-1, axis=None):
         x2: Components of the second vector(s).
         axisa: Axis of `x1` that defines the vector(s). Defaults to -1.
         axisb: Axis of `x2` that defines the vector(s). Defaults to -1.
-        axisc: Axis of `x` along which the cross product vector(s).
+        axisc: Axis of the result containing the cross product vector(s).
             Ignored if both input vectors have dimension 2, as the return is
             scalar. By default, the last axis.
-        axis: If defined, the axis of a, b and c that defines the vector(s)
-            and cross product(s). Overrides axisa, axisb and axisc.
+        axis: If defined, the axis of `x1`, `x2` and the result that
+            defines the vector(s) and cross product(s). Overrides `axisa`,
+            `axisb` and `axisc`.
 
     Note:
         Torch backend does not support two dimensional vectors, or the
@@ -1761,8 +1764,8 @@ def diag(x, k=0):
     Args:
         x: Input tensor. If `x` is 2-D, returns the k-th diagonal of `x`.
             If `x` is 1-D, return a 2-D tensor with `x` on the k-th diagonal.
-        k: The diagonal to consider. Defaults to 0. Use k > 0 for diagonals
-            above the main diagonal, and k < 0 for diagonals below
+        k: The diagonal to consider. Defaults to 0. Use `k` > 0 for diagonals
+            above the main diagonal, and `k` < 0 for diagonals below
             the main diagonal.
 
     Returns:
@@ -2297,7 +2300,7 @@ class Equal(Operation):
 
 @keras_core_export(["keras_core.ops.equal", "keras_core.ops.numpy.equal"])
 def equal(x1, x2):
-    """Returns (x1 == x2) element-wise.
+    """Returns `(x1 == x2)` element-wise.
 
     Args:
         x1: Tensor to compare.
@@ -2704,7 +2707,7 @@ def identity(n, dtype="float32"):
     zeros elsewhere.
 
     Args:
-        n: Number of rows (and columns) in the *n x n* output tensor.
+        n: Number of rows (and columns) in the `n x n` output tensor.
         dtype: Data type of the output tensor.
 
     Returns:
@@ -2749,8 +2752,7 @@ class Isclose(Operation):
 
 @keras_core_export(["keras_core.ops.isclose", "keras_core.ops.numpy.isclose"])
 def isclose(x1, x2):
-    """Return a boolean tensor with elements representing whether two tensors
-    are element-wise almost equal.
+    """Return whether two tensors are element-wise almost equal.
 
     Args:
         x1: First input tensor.
@@ -2774,8 +2776,7 @@ class Isfinite(Operation):
 
 @keras_core_export(["keras_core.ops.isfinite", "keras_core.ops.numpy.isfinite"])
 def isfinite(x):
-    """Return a boolean tensor with elements representing whether each
-    element is finite.
+    """Return whether a tensor is finite, element-wise.
 
     Real values are finite when they are not NaN, not positive infinity, and
     not negative infinity. Complex values are finite when both their real
@@ -2802,8 +2803,7 @@ class Isinf(Operation):
 
 @keras_core_export(["keras_core.ops.isinf", "keras_core.ops.numpy.isinf"])
 def isinf(x):
-    """Test element-wise for positive or negative infinity and return result
-    as a boolean tensor.
+    """Test element-wise for positive or negative infinity.
 
     Args:
         x: Input tensor.
@@ -2952,7 +2952,7 @@ def linspace(
     """Return evenly spaced numbers over a specified interval.
 
     Returns `num` evenly spaced samples, calculated over the interval
-    [`start`, `stop`].
+    `[start, stop]`.
 
     The endpoint of the interval can optionally be excluded.
 
@@ -3048,8 +3048,7 @@ class Log1p(Operation):
 
 @keras_core_export(["keras_core.ops.log1p", "keras_core.ops.numpy.log1p"])
 def log1p(x):
-    """Returns the natural logarithm of one plus the input tensor,
-    element-wise.
+    """Returns the natural logarithm of one plus the `x`, element-wise.
 
     Calculates `log(1 + x)`.
 
@@ -3138,6 +3137,7 @@ class LogicalAnd(Operation):
 )
 def logical_and(x1, x2):
     """Computes the element-wise logical AND of the given input tensors.
+
     Zeros are treated as False and non-zeros are treated as True.
 
     Args:
@@ -3168,6 +3168,7 @@ class LogicalNot(Operation):
 )
 def logical_not(x):
     """Computes the element-wise NOT of the given input tensor.
+
     Zeros are treated as False and non-zeros are treated as True.
 
     Args:
@@ -3200,6 +3201,7 @@ class LogicalOr(Operation):
 )
 def logical_or(x1, x2):
     """Computes the element-wise logical OR of the given input tensors.
+
     Zeros are treated as False and non-zeros are treated as True.
 
     Args:
@@ -3767,8 +3769,7 @@ class OnesLike(Operation):
     ["keras_core.ops.ones_like", "keras_core.ops.numpy.ones_like"]
 )
 def ones_like(x, dtype=None):
-    """Return a tensor of ones with the same shape and type as the
-    given tensor.
+    """Return a tensor of ones with the same shape and type of `x`.
 
     Args:
         x: Input tensor.
@@ -3799,8 +3800,7 @@ class ZerosLike(Operation):
     ]
 )
 def zeros_like(x, dtype=None):
-    """Return a tensor of zeros with the same shape and type as the
-    given tensor.
+    """Return a tensor of zeros with the same shape and type as `x`.
 
     Args:
         x: Input tensor.
@@ -3837,7 +3837,7 @@ class Outer(Operation):
 def outer(x1, x2):
     """Compute the outer product of two vectors.
 
-    Given two vectors `x1` and `x2`, the outer product is::
+    Given two vectors `x1` and `x2`, the outer product is:
 
         out[i, j] = x1[i] * x2[j]
 
@@ -4319,8 +4319,7 @@ class Sort(Operation):
 
 @keras_core_export(["keras_core.ops.sort", "keras_core.ops.numpy.sort"])
 def sort(x, axis=-1):
-    """Sorts the elements of the input tensor along a given axis in
-    ascending order.
+    """Sorts the elements of `x` along a given axis in ascending order.
 
     Args:
         x: Input tensor.
@@ -4608,8 +4607,7 @@ class TakeAlongAxis(Operation):
     ]
 )
 def take_along_axis(x, indices, axis=None):
-    """Select values from `x` at the 1-dimensional indices from `indices` along
-    the given axis.
+    """Select values from `x` at the 1-D `indices` along the given axis.
 
     Args:
         x: Source tensor.
@@ -4763,8 +4761,7 @@ class Tile(Operation):
 
 @keras_core_export(["keras_core.ops.tile", "keras_core.ops.numpy.tile"])
 def tile(x, repeats):
-    """Construct a tensor by repeating `x` the number of times given by
-    `repeats`.
+    """Repeat `x` the number of times given by `repeats`.
 
     If `repeats` has length `d`, the result will have dimension of
     `max(d, x.ndim)`.
@@ -4853,8 +4850,7 @@ class Tri(Operation):
 
 @keras_core_export(["keras_core.ops.tri", "keras_core.ops.numpy.tri"])
 def tri(N, M=None, k=0, dtype="float32"):
-    """Return a tensor with ones at and below the given diagonal and zeros
-    elsewhere.
+    """Return a tensor with ones at and below a diagonal and zeros elsewhere.
 
     Args:
         N: Number of rows in the tensor.
