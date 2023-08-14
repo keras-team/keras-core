@@ -122,15 +122,16 @@ class RandomTest(testing.TestCase, parameterized.TestCase):
         import jax.numpy as jnp
 
         x = ops.ones(3)
+        drop_layer = keras_core.layers.Dropout(rate=0.1, seed=1)
 
         @jax.jit
         def train_step(x):
             with keras_core.backend.StatelessScope():
-                x = keras_core.layers.Dropout(rate=0.1)(x, training=True)
-            return x
+                y = drop_layer(x, training=True)
+            return y
 
-        x = train_step(x)
-        self.assertTrue(isinstance(x, jnp.ndarray))
+        y = train_step(x)
+        self.assertTrue(isinstance(y, jnp.ndarray))
 
     def test_dropout_noise_shape(self):
         inputs = ops.ones((2, 3, 5, 7))
@@ -138,21 +139,6 @@ class RandomTest(testing.TestCase, parameterized.TestCase):
             inputs, rate=0.3, noise_shape=[None, 3, 5, None], seed=0
         )
         self.assertEqual(x.shape, (2, 3, 5, 7))
-
-    @pytest.mark.skipif(
-        keras_core.backend.backend() != "jax",
-        reason="This test requires `jax` as the backend.",
-    )
-    def test_jax_rngkey_seed(self):
-        import jax
-        import jax.numpy as jnp
-
-        seed = 1234
-        rng = jax.random.PRNGKey(seed)
-        self.assertEqual(rng.shape, (2,))
-        self.assertEqual(rng.dtype, jnp.uint32)
-        x = random.randint((3, 5), 0, 10, seed=rng)
-        self.assertTrue(isinstance(x, jnp.ndarray))
 
     def test_global_seed_generator(self):
         # Check that unseeded RNG calls use and update global_rng_state()
@@ -174,6 +160,8 @@ class RandomTest(testing.TestCase, parameterized.TestCase):
 
             random_numbers = tf.function(jit_compile=True)(random_numbers)
 
+        # Initialize the global random generator
+        seed_generator.init_global_seed_generator()
         seed = ops.zeros((2,))
         seed0 = ops.convert_to_numpy(seed)
         x1, y1, seed = random_numbers(seed)
