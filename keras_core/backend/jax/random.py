@@ -1,5 +1,7 @@
 import jax
 
+import random as python_random
+
 from keras_core.backend.config import floatx
 from keras_core.random.seed_generator import SeedGenerator
 from keras_core.random.seed_generator import draw_seed
@@ -13,7 +15,8 @@ def jax_draw_seed(seed):
 
 
 def make_default_seed():
-    return None, jax.random.PRNGKey(42)
+    random_seed = python_random.randint(1, int(1e9))
+    return None, jax.random.PRNGKey(seed=random_seed)
 
 
 def make_initial_seed(seed):
@@ -28,8 +31,10 @@ def make_initial_seed(seed):
     return None, jax.random.PRNGKey(seed=seed)
 
 
-def get_next_state(seed):
-    return jax.random.split(seed, 2)
+def get_next_seed_state(seed):
+    # JAX complains about the PRNG dtype if we don't cast it
+    # TODO: Figure out the underlying problem
+    return jax.random.split(jax.numpy.array(seed, jax.numpy.uint32), 2)
 
 
 def normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
