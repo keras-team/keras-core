@@ -32,13 +32,6 @@ def _stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
         else:
             # torch not support reflect padding for N-D cases when N >= 3
             x = np.pad(x, pad_width, mode="constant")
-    if isinstance(window, str):
-        window = scipy.signal.get_window(window, frame_length)
-    win = np.array(window, dtype=x.dtype)
-    l_pad = (fft_length - frame_length) // 2
-    r_pad = fft_length - frame_length - l_pad
-    win = np.pad(win, [[l_pad, r_pad]])
-
     # frame
     *batch_shape, _ = x.shape
     batch_shape = list(batch_shape)
@@ -49,7 +42,20 @@ def _stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
     strides = x.strides[:-1] + (frame_step * x.strides[-1], x.strides[-1])
     x = np.lib.stride_tricks.as_strided(x, shape=shape, strides=strides)
     x = np.reshape(x, (*batch_shape, *x.shape[-2:]))
-
+    if window is not None:
+        if isinstance(window, str):
+            window = scipy.signal.get_window(window, frame_length)
+        win = np.array(window, dtype=x.dtype)
+        if len(win.shape) != 1 or win.shape[-1] != frame_length:
+            raise ValueError(
+                "The shape of `window` must be equal to [frame_length]."
+                f"Received: window shape={win.shape}"
+            )
+        l_pad = (fft_length - frame_length) // 2
+        r_pad = fft_length - frame_length - l_pad
+        win = np.pad(win, [[l_pad, r_pad]])
+    else:
+        win = np.ones((frame_length,), dtype=x.dtype)
     x = np.multiply(x, win)
     x = np.fft.rfft(x, fft_length)
     return np.real(x), np.imag(x)
@@ -568,6 +574,8 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             (3, 3, 5, "hann", True),
             (32, 8, 32, "hamming", True),
             (32, 8, 32, "hann", False),
+            (32, 8, 32, np.ones((32,)), True),
+            (32, 8, 32, None, True),
         ]
     )
     def test_stft(self, frame_length, frame_step, fft_length, window, center):

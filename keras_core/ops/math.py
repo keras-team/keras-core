@@ -591,13 +591,21 @@ def _stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
         else:
             # torch not support reflect padding for N-D cases when N >= 3
             x = backend.numpy.pad(x, pad_width, mode="constant")
-    if isinstance(window, str):
-        window = scipy.signal.get_window(window, frame_length)
-    win = backend.core.convert_to_tensor(window, dtype=x.dtype)
-    l_pad = (fft_length - frame_length) // 2
-    r_pad = fft_length - frame_length - l_pad
-    win = backend.numpy.pad(win, [[l_pad, r_pad]])
     x = backend.math.frame(x, fft_length, frame_step)
+    if window is not None:
+        if isinstance(window, str):
+            window = scipy.signal.get_window(window, frame_length)
+        win = backend.core.convert_to_tensor(window, dtype=x.dtype)
+        if len(win.shape) != 1 or win.shape[-1] != frame_length:
+            raise ValueError(
+                "The shape of `window` must be equal to [frame_length]."
+                f"Received: window shape={win.shape}"
+            )
+        l_pad = (fft_length - frame_length) // 2
+        r_pad = fft_length - frame_length - l_pad
+        win = backend.numpy.pad(win, [[l_pad, r_pad]])
+    else:
+        win = backend.numpy.ones((frame_length,), dtype=x.dtype)
     x = backend.numpy.multiply(x, win)
     return backend.math.rfft(x, fft_length)
 
@@ -659,8 +667,8 @@ def stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
             values, which are DFT-even by default. See
             `scipy.signal.get_window` for a list of windows and required
             parameters. If `window` is a tensor, it will be used directly as
-            the window and its length must be `frame_length`. Defaults to
-            `hann`.
+            the window and its length must be `frame_length`. If `window` is
+            `None`, no windowing is used. Defaults to `"hann"`.
         center: Whether to pad `x` on both sides so that the t-th frame is
             centered at time `t * frame_step`. Otherwise, the t-th frame begins
             at time `t * frame_step`. Defaults to `True`.
