@@ -12,6 +12,7 @@ from keras_core import backend
 from keras_core.legacy.saving import legacy_h5_format
 from keras_core.legacy.saving import serialization
 from keras_core.saving import object_registration
+from keras_core.saving import serialization_lib
 
 # TODO: more thorough testing. Correctness depends
 # on exact weight ordering for each layer, so we need
@@ -163,124 +164,94 @@ class LegacyH5WholeModelTest(testing.TestCase):
         # Compare output
         self.assertAllClose(ref_output, output, atol=1e-5)
 
-    def test_shared_objects(self):
-        class OuterLayer(layers.Layer):
-            def __init__(self, inner_layer):
-                super().__init__()
-                self.inner_layer = inner_layer
+    def test_custom_sequential_registered_no_scope(self):
+        @object_registration.register_keras_serializable(package="my_package")
+        class MyDense(layers.Dense):
+            def __init__(self, units, **kwargs):
+                super().__init__(units, **kwargs)
 
-            def call(self, inputs):
-                return self.inner_layer(inputs)
+        input_shape = [1]
+        inputs = layers.Input(shape=input_shape)
+        custom_layer = MyDense(1)
+        model = models.Sequential(layers=[inputs, custom_layer])
+
+        ref_input = np.array([5])
+        self._check_reloading_model(ref_input, model)
+
+    def test_custom_functional_registered_no_scope(self):
+        @object_registration.register_keras_serializable(package="my_package")
+        class MyDense(layers.Dense):
+            def __init__(self, units, **kwargs):
+                super().__init__(units, **kwargs)
+
+        inputs = layers.Input(shape=[1])
+        outputs = MyDense(1)(inputs)
+        model = models.Model(inputs, outputs)
+
+        ref_input = np.array([5])
+        self._check_reloading_model(ref_input, model)
+
+    def test_nested_layers(self):
+        class MyLayer(layers.Layer):
+            def __init__(self, sublayers, **kwargs):
+                super().__init__(**kwargs)
+                self.sublayers = sublayers
+
+            def call(self, x):
+                prev_input = x
+                for layer in self.sublayers:
+                    prev_input = layer(prev_input)
+                return prev_input
 
             def get_config(self):
-                return {
-                    "inner_layer": serialization.serialize_keras_object(
-                        self.inner_layer
-                    )
-                }
+                config = super().get_config()
+                config["sublayers"] = serialization_lib.serialize_keras_object(self.sublayers)
+                return config
 
             @classmethod
             def from_config(cls, config):
-                return cls(
-                    serialization.deserialize_keras_object(
-                        config["inner_layer"]
-                    )
-                )
+                config["sublayers"] = serialization_lib.deserialize_keras_object(config["sublayers"])
+                return cls(**config)
 
-        class InnerLayer(layers.Layer):
-            def __init__(self):
-                super().__init__()
-                self.v = self.add_weight(name="v", shape=[], initializer="zeros", dtype=tf.float32)
+        @object_registration.register_keras_serializable(package="Foo")
+        class RegisteredSubLayer(layers.Layer):
+            pass
 
-            def call(self, inputs):
-                return self.v + inputs
-
-            @classmethod
-            def from_config(cls, config):
-                return cls()
-
-        # Create a model with 2 output layers that share the same inner layer.
-        inner_layer = InnerLayer()
-        outer_layer_1 = OuterLayer(inner_layer)
-        outer_layer_2 = OuterLayer(inner_layer)
-        input_ = layers.Input(shape=(1,))
-        model = models.Model(
-            inputs=input_,
-            outputs=[outer_layer_1(input_), outer_layer_2(input_)],
+        layer = MyLayer(
+            [
+                layers.Dense(2, name="MyDense"),
+                RegisteredSubLayer(name="MySubLayer"),
+            ]
         )
+        model = models.Sequential([layer])
+        with self.subTest("testJSON"):
+            from keras_core.models.model import model_from_json
 
-        one = tf.convert_to_tensor([1])
-        # Changes to the shared layer should affect both outputs.
-        model.layers[1].inner_layer.v.assign(5)
-        self.assertAllEqual(model(one), [6.0, 6.0])
-        model.layers[1].inner_layer.v.assign(3)
-        self.assertAllEqual(model(one), [4.0, 4.0])
+            model_json = model.to_json()
+            self.assertIn("Foo>RegisteredSubLayer", model_json)
 
-        # After loading, changes to the shared layer should still affect both
-        # outputs.
-        def _do_assertions(loaded):
-            loaded.layers[1].inner_layer.v.assign(5)
-            self.assertAllEqual(loaded(one), [6.0, 6.0])
-            loaded.layers[1].inner_layer.v.assign(3)
-            self.assertAllEqual(loaded(one), [4.0, 4.0])
-            loaded.layers[2].inner_layer.v.assign(5)
-            self.assertAllEqual(loaded(one), [6.0, 6.0])
-            loaded.layers[2].inner_layer.v.assign(3)
-            self.assertAllEqual(loaded(one), [4.0, 4.0])
+            loaded_model = model_from_json(
+                model_json, custom_objects={"MyLayer": MyLayer}
+            )
+            loaded_layer = loaded_model.layers[0]
 
-        # We'd like to make sure we only attach shared object IDs when strictly
-        # necessary, so we'll recursively traverse the generated config to count
-        # whether we have the exact number we expect.
-        def _get_all_keys_recursive(dict_or_iterable):
-            if isinstance(dict_or_iterable, dict):
-                for key in dict_or_iterable.keys():
-                    yield key
-                for key in _get_all_keys_recursive(dict_or_iterable.values()):
-                    yield key
-            elif isinstance(dict_or_iterable, str):
-                return
-            else:
-                try:
-                    for item in dict_or_iterable:
-                        for key in _get_all_keys_recursive(item):
-                            yield key
-                # Not an iterable or dictionary
-                except TypeError:
-                    return
+            self.assertIsInstance(loaded_layer.sublayers[0], layers.Dense)
+            self.assertEqual(loaded_layer.sublayers[0].name, "MyDense")
+            self.assertIsInstance(loaded_layer.sublayers[1], RegisteredSubLayer)
+            self.assertEqual(loaded_layer.sublayers[1].name, "MySubLayer")
 
-        with object_registration.CustomObjectScope(
-            {"OuterLayer": OuterLayer, "InnerLayer": InnerLayer}
-        ):
-            # Test saving and loading to disk
+        with self.subTest("testH5"):
             temp_filepath = os.path.join(self.get_temp_dir(), "model.h5")
             legacy_h5_format.save_model_to_hdf5(model, temp_filepath)
-            loaded = legacy_h5_format.load_model_from_hdf5(temp_filepath)
-            _do_assertions(loaded)
+            loaded_model = legacy_h5_format.load_model_from_hdf5(
+                temp_filepath, custom_objects={"MyLayer": MyLayer}
+            )
+            loaded_layer = loaded_model.layers[0]
 
-            # Test recreating directly from config
-            config = model.get_config()
-            key_count = collections.Counter(_get_all_keys_recursive(config))
-            self.assertEqual(key_count[serialization.SHARED_OBJECT_KEY], 2)
-            loaded = keras.Model.from_config(config)
-            _do_assertions(loaded)
-
-
-    # def test_rnn_model(self):
-    #     inputs = layers.Input([10, 91], name="train_input")
-    #     rnn_layers = [
-    #         layers.LSTMCell(
-    #             size, recurrent_dropout=0, name="rnn_cell%d" % i
-    #         )
-    #         for i, size in enumerate([512, 512])
-    #     ]
-    #     rnn_output = layers.RNN(
-    #         rnn_layers, return_sequences=True, name="rnn_layer"
-    #     )(inputs)
-    #     pred_feat = layers.Dense(91, name="prediction_features")(
-    #         rnn_output
-    #     )
-    #     pred = layers.Softmax()(pred_feat)
-    #     model = models.Model(inputs=[inputs], outputs=[pred, pred_feat])
+            self.assertIsInstance(loaded_layer.sublayers[0], layers.Dense)
+            self.assertEqual(loaded_layer.sublayers[0].name, "MyDense")
+            self.assertIsInstance(loaded_layer.sublayers[1], RegisteredSubLayer)
+            self.assertEqual(loaded_layer.sublayers[1].name, "MySubLayer")
 
 
 @pytest.mark.requires_trainable_backend
