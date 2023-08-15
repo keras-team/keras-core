@@ -51,10 +51,10 @@ class Function(Operation):
         self._inputs = tree.flatten(inputs)
         self._outputs = tree.flatten(outputs)
 
-        (nodes, nodes_by_depth, operations, operations_by_depth) = map_graph(
+        (network_nodes, nodes_by_depth, operations, operations_by_depth) = map_graph(
             self._inputs, self._outputs
         )
-        self._nodes = nodes
+        self.network_nodes = network_nodes
         self._nodes_by_depth = nodes_by_depth
         self._operations = operations
         self._operations_by_depth = operations_by_depth
@@ -180,7 +180,7 @@ def map_graph(inputs, outputs):
 
     Returns:
         A tuple `(nodes, nodes_by_depth, operations, operations_by_depth)`.
-        - nodes: list of Node instances.
+        - network_nodes : dict mapping the unique node keys to the Node instances.
         - nodes_by_depth: dict mapping ints (depth) to lists of node instances.
         - operations: list of Operation instances.
         - operations_by_depth: dict mapping ints (depth) to lists of Operation
