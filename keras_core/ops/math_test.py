@@ -10,8 +10,8 @@ from keras_core.ops import math as kmath
 
 
 def _stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
-    dtype = backend.standardize_dtype(x.dtype)
-    if dtype not in {"float32", "float64"}:
+    # pure numpy version of stft
+    if backend.standardize_dtype(x.dtype) not in {"float32", "float64"}:
         raise TypeError(
             "Invalid input type. Expected `float32` or `float64`. "
             f"Received: input type={x.dtype}"
@@ -22,16 +22,16 @@ def _stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
             f"Received: frame_length={frame_length}, "
             f"fft_length={fft_length}"
         )
-    # pure numpy version of stft
-    rank = len(x.shape)
+
     if center:
-        pad_width = [(0, 0) for _ in range(rank)]
+        pad_width = [(0, 0) for _ in range(len(x.shape))]
         pad_width[-1] = (fft_length // 2, fft_length // 2)
-        if backend.backend() != "torch" or rank < 3:
+        if backend.backend() != "torch" or len(x.shape) < 3:
             x = np.pad(x, pad_width, mode="reflect")
         else:
             # torch not support reflect padding for N-D cases when N >= 3
             x = np.pad(x, pad_width, mode="constant")
+
     # frame
     *batch_shape, _ = x.shape
     batch_shape = list(batch_shape)
@@ -42,6 +42,7 @@ def _stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
     strides = x.strides[:-1] + (frame_step * x.strides[-1], x.strides[-1])
     x = np.lib.stride_tricks.as_strided(x, shape=shape, strides=strides)
     x = np.reshape(x, (*batch_shape, *x.shape[-2:]))
+
     if window is not None:
         if isinstance(window, str):
             window = scipy.signal.get_window(window, frame_length)
@@ -54,9 +55,8 @@ def _stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
         l_pad = (fft_length - frame_length) // 2
         r_pad = fft_length - frame_length - l_pad
         win = np.pad(win, [[l_pad, r_pad]])
-    else:
-        win = np.ones((frame_length,), dtype=x.dtype)
-    x = np.multiply(x, win)
+        x = np.multiply(x, win)
+
     x = np.fft.rfft(x, fft_length)
     return np.real(x), np.imag(x)
 
@@ -551,7 +551,7 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
     def test_rfft(self, n):
         # Test 1D.
         x = np.random.random((10,))
-        real_output, imag_output = kmath.rfft(x, n=n)
+        real_output, imag_output = kmath.rfft(x, fft_length=n)
         ref = np.fft.rfft(x, n=n)
         real_ref = np.real(ref)
         imag_ref = np.imag(ref)
@@ -560,7 +560,7 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
 
         # Test N-D case.
         x = np.random.random((2, 3, 10))
-        real_output, imag_output = kmath.rfft(x, n=n)
+        real_output, imag_output = kmath.rfft(x, fft_length=n)
         ref = np.fft.rfft(x, n=n)
         real_ref = np.real(ref)
         imag_ref = np.imag(ref)
@@ -571,7 +571,7 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         [
             (32, 8, 32, "hann", True),
             (8, 8, 16, "hann", True),
-            (3, 3, 5, "hann", True),
+            (4, 4, 7, "hann", True),
             (32, 8, 32, "hamming", True),
             (32, 8, 32, "hann", False),
             (32, 8, 32, np.ones((32,)), True),

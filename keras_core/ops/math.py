@@ -1,7 +1,5 @@
 """Commonly used math operations not included in NumPy."""
 
-import scipy.signal
-
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.backend import KerasTensor
@@ -345,8 +343,11 @@ class Frame(Operation):
 
 @keras_core_export("keras_core.ops.frame")
 def frame(x, frame_length, frame_step):
-    """Expands x's last axis dimension into frames of frame_length and
-    frame_step.
+    """Expands the dimension of the last axis into frames of `frame_length`.
+
+    Slides a window of size `frame_length` over the last axis of the input
+    with a stride of `frame_step`, replacing the last axis with
+    `[num_frames, frame_length]` frames.
 
     If the dimension along the last axis is N, the number of frames can be
     computed by:
@@ -540,13 +541,24 @@ class RFFT(Operation):
 
 
 @keras_core_export("keras_core.ops.rfft")
-def rfft(x, n=None):
-    """Computes the real-valued fast Fourier transform along the last axis of
-    the input.
+def rfft(x, fft_length=None):
+    """Real-valued Fast Fourier Transform along the last axis of the input.
+
+    Computes the 1D Discrete Fourier Transform of a real-valued signal over the
+    inner-most dimension of input.
+
+    Since the Discrete Fourier Transform of a real-valued signal is
+    Hermitian-symmetric, RFFT only returns the `fft_length / 2 + 1` unique
+    components of the FFT: the zero-frequency term, followed by the
+    `fft_length / 2` positive-frequency terms.
+
+    Along the axis RFFT is computed on, if `fft_length` is smaller than the
+    corresponding dimension of the input, the dimension is cropped. If it is
+    larger, the dimension is padded with zeros.
 
     Args:
         x: Input tensor.
-        n: An integer representing the number of the fft length. If not
+        fft_length: An integer representing the number of the fft length. If not
             specified, it is inferred from the length of the last axis of `x`.
             Defaults to `None`.
 
@@ -558,55 +570,13 @@ def rfft(x, n=None):
 
     >>> x = keras_core.ops.convert_to_tensor([0.0, 1.0, 2.0, 3.0, 4.0])
     >>> rfft(x)
-    (array([10. , -2.5, -2.5]), array([0.        , 3.4409548 , 0.81229924]))
+    (array([10.0, -2.5, -2.5]), array([0.0, 3.4409548, 0.81229924]))
 
     >>> rfft(x, 3)
-    (array([ 3. , -1.5]), array([0.       , 0.8660254]))
+    (array([3.0, -1.5]), array([0.0, 0.8660254]))
     """
     if any_symbolic_tensors((x,)):
-        return RFFT(n).symbolic_call(x)
-    return backend.math.rfft(x, n)
-
-
-def _stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
-    dtype = backend.standardize_dtype(x.dtype)
-    if dtype not in {"float32", "float64"}:
-        raise TypeError(
-            "Invalid input type. Expected `float32` or `float64`. "
-            f"Received: input type={x.dtype}"
-        )
-    if fft_length < frame_length:
-        raise ValueError(
-            "`fft_length` must equal or larger than `frame_length`. "
-            f"Received: frame_length={frame_length}, "
-            f"fft_length={fft_length}"
-        )
-    x = backend.core.convert_to_tensor(x)
-    rank = len(x.shape)
-    if center:
-        pad_width = [(0, 0) for _ in range(rank)]
-        pad_width[-1] = (fft_length // 2, fft_length // 2)
-        if backend.backend() != "torch" or rank < 3:
-            x = backend.numpy.pad(x, pad_width, mode="reflect")
-        else:
-            # torch not support reflect padding for N-D cases when N >= 3
-            x = backend.numpy.pad(x, pad_width, mode="constant")
-    x = backend.math.frame(x, fft_length, frame_step)
-    if window is not None:
-        if isinstance(window, str):
-            window = scipy.signal.get_window(window, frame_length)
-        win = backend.core.convert_to_tensor(window, dtype=x.dtype)
-        if len(win.shape) != 1 or win.shape[-1] != frame_length:
-            raise ValueError(
-                "The shape of `window` must be equal to [frame_length]."
-                f"Received: window shape={win.shape}"
-            )
-        l_pad = (fft_length - frame_length) // 2
-        r_pad = fft_length - frame_length - l_pad
-        win = backend.numpy.pad(win, [[l_pad, r_pad]])
-    else:
-        win = backend.numpy.ones((frame_length,), dtype=x.dtype)
-    x = backend.numpy.multiply(x, win)
+        return RFFT(fft_length).symbolic_call(x)
     return backend.math.rfft(x, fft_length)
 
 
@@ -641,7 +611,7 @@ class STFT(Operation):
         )
 
     def call(self, x):
-        return _stft(
+        return backend.math.stft(
             x,
             frame_length=self.frame_length,
             frame_step=self.frame_step,
@@ -653,8 +623,11 @@ class STFT(Operation):
 
 @keras_core_export("keras_core.ops.stft")
 def stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
-    """Computes the short-time Fourier transform along the last axis of the
-    input.
+    """Short-Time Fourier Transform along the last axis of the input.
+
+    The STFT computes the Fourier transform of short overlapping windows of the
+    input. This giving frequency components of the signal as they change over
+    time.
 
     Args:
         x: Input tensor.
@@ -662,13 +635,11 @@ def stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
         frame_step: An integer representing the frame hop size in samples.
         fft_length: An integer representing the size of the FFT to apply. If not
             specified, uses the smallest power of 2 enclosing `frame_length`.
-        window: A string or the tensor of the window. If `window` is a string,
-            it is passed to `scipy.signal.get_window` to generate the window
-            values, which are DFT-even by default. See
-            `scipy.signal.get_window` for a list of windows and required
-            parameters. If `window` is a tensor, it will be used directly as
-            the window and its length must be `frame_length`. If `window` is
-            `None`, no windowing is used. Defaults to `"hann"`.
+        window: A string, a tensor of the window or `None`. If `window` is a
+            string, available values are `"hann"` and `"hamming"`. If `window`
+            is a tensor, it will be used directly as the window and its length
+            must be `frame_length`. If `window` is `None`, no windowing is used.
+            Defaults to `"hann"`.
         center: Whether to pad `x` on both sides so that the t-th frame is
             centered at time `t * frame_step`. Otherwise, the t-th frame begins
             at time `t * frame_step`. Defaults to `True`.
@@ -679,19 +650,19 @@ def stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
 
     Example:
 
-    >>> x = keras_core.ops.convert_to_tensor([0., 1., 2., 3., 4.])
+    >>> x = keras_core.ops.convert_to_tensor([0.0, 1.0, 2.0, 3.0, 4.0])
     >>> stft(x, 3, 2, 3)
-    (array([[ 0.75 , -0.375],
-       [ 3.75 , -1.875],
-       [ 5.25 , -2.625]]), array([[ 0.        ,  0.64951905],
-       [ 0.        ,  0.64951905],
-       [ 0.        , -0.64951905]]))
+    (array([[0.75, -0.375],
+       [3.75, -1.875],
+       [5.25, -2.625]]), array([[0.0, 0.64951905],
+       [0.0, 0.64951905],
+       [0.0, -0.64951905]]))
     """
     if any_symbolic_tensors((x,)):
         return STFT(
             frame_length, frame_step, fft_length, center, window
         ).symbolic_call(x)
-    return _stft(
+    return backend.math.stft(
         x,
         frame_length=frame_length,
         frame_step=frame_step,

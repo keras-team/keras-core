@@ -1,7 +1,10 @@
 import numpy as np
+import scipy.signal
 
+from keras_core.backend import standardize_dtype
 from keras_core.backend.jax.math import fft as jax_fft
 from keras_core.backend.jax.math import fft2 as jax_fft2
+from keras_core.backend.numpy.core import convert_to_tensor
 
 
 def segment_sum(data, segment_ids, num_segments=None, sorted=False):
@@ -131,6 +134,49 @@ def fft2(a):
     return np.array(real), np.array(imag)
 
 
-def rfft(x, n=None):
-    complex_output = np.fft.rfft(x, n=n, axis=-1, norm="backward")
+def rfft(x, fft_length=None):
+    complex_output = np.fft.rfft(x, n=fft_length, axis=-1, norm="backward")
     return np.real(complex_output), np.imag(complex_output)
+
+
+def stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
+    if standardize_dtype(x.dtype) not in {"float32", "float64"}:
+        raise TypeError(
+            "Invalid input type. Expected `float32` or `float64`. "
+            f"Received: input type={x.dtype}"
+        )
+    if fft_length < frame_length:
+        raise ValueError(
+            "`fft_length` must equal or larger than `frame_length`. "
+            f"Received: frame_length={frame_length}, "
+            f"fft_length={fft_length}"
+        )
+    if isinstance(window, str):
+        if window not in {"hann", "hamming"}:
+            raise ValueError(
+                "If a string is passed to `window`, it must be one of "
+                f'`"hann"`, `"hamming"`. Received: window={window}'
+            )
+
+    if center:
+        pad_width = [(0, 0) for _ in range(len(x.shape))]
+        pad_width[-1] = (fft_length // 2, fft_length // 2)
+        x = np.pad(x, pad_width, mode="reflect")
+    x = frame(x, fft_length, frame_step)
+
+    if window is not None:
+        if isinstance(window, str):
+            win = scipy.signal.get_window(window, frame_length).astype(x.dtype)
+        else:
+            win = convert_to_tensor(window, dtype=x.dtype)
+        if len(win.shape) != 1 or win.shape[-1] != frame_length:
+            raise ValueError(
+                "The shape of `window` must be equal to [frame_length]."
+                f"Received: window shape={win.shape}"
+            )
+        l_pad = (fft_length - frame_length) // 2
+        r_pad = fft_length - frame_length - l_pad
+        win = np.pad(win, [[l_pad, r_pad]])
+        x = np.multiply(x, win)
+
+    return rfft(x, fft_length)

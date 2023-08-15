@@ -1,7 +1,9 @@
 import torch
 
+from keras_core.backend import standardize_dtype
 from keras_core.backend.torch.core import convert_to_tensor
 from keras_core.backend.torch.core import get_device
+from keras_core.backend.torch.numpy import pad
 
 
 def segment_sum(data, segment_ids, num_segments=None, **kwargs):
@@ -169,7 +171,69 @@ def fft2(a):
     return complex_output.real, complex_output.imag
 
 
-def rfft(x, n=None):
+def rfft(x, fft_length=None):
     x = convert_to_tensor(x)
-    complex_output = torch.fft.rfft(x, n=n, dim=-1, norm="backward")
+    complex_output = torch.fft.rfft(x, n=fft_length, dim=-1, norm="backward")
     return complex_output.real, complex_output.imag
+
+
+def stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
+    if standardize_dtype(x.dtype) not in {"float32", "float64"}:
+        raise TypeError(
+            "Invalid input type. Expected `float32` or `float64`. "
+            f"Received: input type={x.dtype}"
+        )
+    if fft_length < frame_length:
+        raise ValueError(
+            "`fft_length` must equal or larger than `frame_length`. "
+            f"Received: frame_length={frame_length}, "
+            f"fft_length={fft_length}"
+        )
+    if isinstance(window, str):
+        if window not in {"hann", "hamming"}:
+            raise ValueError(
+                "If a string is passed to `window`, it must be one of "
+                f'`"hann"`, `"hamming"`. Received: window={window}'
+            )
+    x = convert_to_tensor(x)
+
+    if center:
+        pad_width = [(0, 0) for _ in range(x.ndim)]
+        pad_width[-1] = (fft_length // 2, fft_length // 2)
+        # torch does not support reflect padding when x.ndim >= 3
+        if x.ndim < 3:
+            x = pad(x, pad_width, "reflect")
+        else:
+            x = pad(x, pad_width, "constant")
+
+    x = frame(x, fft_length, frame_step)
+
+    if window is not None:
+        if isinstance(window, str):
+            if window == "hann":
+                win = torch.hann_window(
+                    frame_length,
+                    periodic=True,
+                    dtype=x.dtype,
+                    device=get_device(),
+                )
+            else:
+                win = torch.hamming_window(
+                    frame_length,
+                    periodic=True,
+                    dtype=x.dtype,
+                    device=get_device(),
+                )
+        else:
+            win = convert_to_tensor(window, dtype=x.dtype)
+        if len(win.shape) != 1 or win.shape[-1] != frame_length:
+            raise ValueError(
+                "The shape of `window` must be equal to [frame_length]."
+                f"Received: window shape={win.shape}"
+            )
+        l_pad = (fft_length - frame_length) // 2
+        r_pad = fft_length - frame_length - l_pad
+        win = pad(win, [[l_pad, r_pad]], "constant")
+        x = torch.multiply(x, win)
+
+    return rfft(x, fft_length)
