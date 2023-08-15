@@ -51,6 +51,17 @@ class LayerNormalizationTest(testing.TestCase):
         )
         self.run_layer_test(
             layers.LayerNormalization,
+            init_kwargs={"rms_scaling": True},
+            input_shape=(3, 3),
+            expected_output_shape=(3, 3),
+            expected_num_trainable_weights=1,
+            expected_num_non_trainable_weights=0,
+            expected_num_seed_generators=0,
+            expected_num_losses=0,
+            supports_masking=True,
+        )
+        self.run_layer_test(
+            layers.LayerNormalization,
             init_kwargs={"axis": (-3, -2, -1)},
             input_shape=(2, 8, 8, 3),
             expected_output_shape=(2, 8, 8, 3),
