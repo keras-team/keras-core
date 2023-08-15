@@ -513,9 +513,9 @@ def fft2(a):
 
 
 class RFFT(Operation):
-    def __init__(self, n=None):
+    def __init__(self, fft_length=None):
         super().__init__()
-        self.n = n
+        self.fft_length = fft_length
 
     def compute_output_spec(self, x):
         # We are calculating 1D RFFT. Hence, rank >= 1.
@@ -525,8 +525,8 @@ class RFFT(Operation):
                 f"Received: input.shape = {x.shape}"
             )
 
-        if self.n is not None:
-            new_last_dimension = self.n // 2 + 1
+        if self.fft_length is not None:
+            new_last_dimension = self.fft_length // 2 + 1
         else:
             new_last_dimension = x.shape[-1] // 2 + 1
         new_shape = x.shape[:-1] + (new_last_dimension,)
@@ -537,7 +537,7 @@ class RFFT(Operation):
         )
 
     def call(self, x):
-        return backend.math.rfft(x, n=self.n)
+        return backend.math.rfft(x, fft_length=self.fft_length)
 
 
 @keras_core_export("keras_core.ops.rfft")
