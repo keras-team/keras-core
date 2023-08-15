@@ -289,7 +289,7 @@ def map_graph(inputs, outputs):
                 f'The name "{name}" is used {all_names.count(name)} '
                 "times in the model. All operation names should be unique."
             )
-    return network_nodes, nodes_by_depth, operations, operations_by_depth
+    return nodes, nodes_by_depth, operations, operations_by_depth
 
 
 def _build_map(outputs):
