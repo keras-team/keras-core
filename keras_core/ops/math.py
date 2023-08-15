@@ -475,7 +475,7 @@ class Rsqrt(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
-@keras_core_export(["keras_core.ops.rsqrt", "keras_core.ops.math.rsqrt"])
+@keras_core_export("keras_core.ops.rsqrt")
 def rsqrt(x):
     if any_symbolic_tensors((x,)):
         return Rsqrt().symbolic_call(x)
