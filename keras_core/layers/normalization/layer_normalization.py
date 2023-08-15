@@ -204,7 +204,7 @@ class LayerNormalization(Layer):
 
         # Calculate the variance last axis (layer activations).
         variance = ops.var(inputs, axis=self.axis, keepdims=True)
-        
+
         # Compute the batch normalization.
         inv = 1 / ops.sqrt(variance + self.epsilon)
 
@@ -224,7 +224,9 @@ class LayerNormalization(Layer):
                 offset = ops.cast(offset, inputs.dtype)
                 x = offset + x
 
-            outputs = inputs * ops.cast(inv, inputs.dtype) + ops.cast(x, inputs.dtype)
+            outputs = inputs * ops.cast(inv, inputs.dtype) + ops.cast(
+                x, inputs.dtype
+            )
 
         outputs = ops.cast(outputs, input_dtype)
 
