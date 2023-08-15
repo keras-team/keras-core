@@ -244,7 +244,7 @@ def absolute(x):
         x: Input tensor.
 
     Returns:
-        An array containing the absolute value of each element in x.
+        An array containing the absolute value of each element in `x`.
 
     Example:
 
@@ -405,7 +405,7 @@ class Any(Operation):
 
 @keras_core_export(["keras_core.ops.any", "keras_core.ops.numpy.any"])
 def any(x, axis=None, keepdims=False):
-    """Test whether any array element along a given axis evaluates to True.
+    """Test whether any array element along a given axis evaluates to `True`.
 
     Args:
         x: Input tensor.
@@ -710,7 +710,7 @@ def arccos(x):
 
     Returns:
         Tensor of the angle of the ray intersecting the unit circle at the given
-        x-coordinate in radians [0, pi].
+        x-coordinate in radians `[0, pi]`.
 
     Example:
     >>> x = keras_core.ops.convert_to_tensor([1, -1])
@@ -788,7 +788,7 @@ def arcsinh(x):
         x: Input tensor.
 
     Returns:
-        Output tensor of same shape as x.
+        Output tensor of same shape as `x`.
     """
     if any_symbolic_tensors((x,)):
         return Arcsinh().symbolic_call(x)
@@ -895,7 +895,7 @@ def arctanh(x):
         x: Input tensor.
 
     Returns:
-        Output tensor of same shape as x.
+        Output tensor of same shape as `x`.
     """
     if any_symbolic_tensors((x,)):
         return Arctanh().symbolic_call(x)
@@ -1294,7 +1294,7 @@ def ceil(x):
     """Return the ceiling of the input, element-wise.
 
     The ceil of the scalar `x` is the smallest integer `i`, such that
-        `i >= x`.
+    `i >= x`.
 
     Args:
         x: Input tensor.
@@ -1496,7 +1496,7 @@ def cosh(x):
         x: Input tensor.
 
     Returns:
-        Output tensor of same shape as x.
+        Output tensor of same shape as `x`.
     """
     if any_symbolic_tensors((x,)):
         return Cosh().symbolic_call(x)
@@ -1535,7 +1535,7 @@ def count_nonzero(x, axis=None):
     Args:
         x: Input tensor.
         axis: Axis or tuple of axes along which to count the number of
-            non-zeros. Defaults to None.
+            non-zeros. Defaults to `None`.
 
     Returns:
         int or tensor of ints.
@@ -1764,8 +1764,8 @@ def diag(x, k=0):
     Args:
         x: Input tensor. If `x` is 2-D, returns the k-th diagonal of `x`.
             If `x` is 1-D, return a 2-D tensor with `x` on the k-th diagonal.
-        k: The diagonal to consider. Defaults to 0. Use `k` > 0 for diagonals
-            above the main diagonal, and `k` < 0 for diagonals below
+        k: The diagonal to consider. Defaults to 0. Use `k > 0` for diagonals
+            above the main diagonal, and `k < 0` for diagonals below
             the main diagonal.
 
     Returns:
@@ -1924,7 +1924,7 @@ def digitize(x, bins):
             increasing.
 
     Returns:
-        Output array of indices, of same shape as x.
+        Output array of indices, of same shape as `x`.
 
     Example:
 
@@ -2431,7 +2431,7 @@ def flip(x, axis=None):
             `axis=None`, will flip over all of the axes of the input tensor.
 
     Returns:
-        Output tensor with entries of axis reversed.
+        Output tensor with entries of `axis` reversed.
     """
     if any_symbolic_tensors((x,)):
         return Flip(axis=axis).symbolic_call(x)
@@ -2961,12 +2961,12 @@ def linspace(
         stop: The end value of the sequence, unless `endpoint` is set to
             False. In that case, the sequence consists of all but the last
             of `num + 1` evenly spaced samples, so that `stop` is excluded.
-            Note that the step size changes when `endpoint` is False.
+            Note that the step size changes when `endpoint` is `False`.
         num: Number of samples to generate. Default is 50. Must be
             non-negative.
-        endpoint: If True, `stop` is the last sample. Otherwise, it is
-            not included. Default is True.
-        retstep: If True, return (`samples`, `step`), where `step` is the
+        endpoint: If `True`, `stop` is the last sample. Otherwise, it is
+            not included. Default is `True`.
+        retstep: If `True`, return (`samples`, `step`), where `step` is the
             spacing between samples.
         dtype: The type of the output tensor.
         axis: The axis in the result to store the samples. Relevant only if
@@ -3138,7 +3138,7 @@ class LogicalAnd(Operation):
 def logical_and(x1, x2):
     """Computes the element-wise logical AND of the given input tensors.
 
-    Zeros are treated as False and non-zeros are treated as True.
+    Zeros are treated as False and non-zeros are treated as `True`.
 
     Args:
         x1: Input tensor.
@@ -3169,7 +3169,7 @@ class LogicalNot(Operation):
 def logical_not(x):
     """Computes the element-wise NOT of the given input tensor.
 
-    Zeros are treated as False and non-zeros are treated as True.
+    Zeros are treated as False and non-zeros are treated as `True`.
 
     Args:
         x: Input tensor.
@@ -3202,7 +3202,7 @@ class LogicalOr(Operation):
 def logical_or(x1, x2):
     """Computes the element-wise logical OR of the given input tensors.
 
-    Zeros are treated as False and non-zeros are treated as True.
+    Zeros are treated as False and non-zeros are treated as `True`.
 
     Args:
         x1: Input tensor.
@@ -3268,13 +3268,13 @@ def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
 
     Args:
         start: The starting value of the sequence.
-        stop: The final value of the sequence, unless `endpoint` is False.
+        stop: The final value of the sequence, unless `endpoint` is `False`.
             In that case, `num + 1` values are spaced over the interval in
             log-space, of which all but the last (a sequence of length `num`)
             are returned.
         num: Number of samples to generate. Default is 50.
         endpoint: If True, `stop` is the last sample. Otherwise, it is not
-            included. Default is True.
+            included. Default is `True`.
         base: The base of the log space. Default is 10
         dtype: The type of the output tensor.
         axis: The axis in the result to store the samples. Relevant only
@@ -3389,9 +3389,9 @@ def max(x, axis=None, keepdims=False, initial=None):
         x: Input tensor.
         axis: Axis or axes along which to operate. By default, flattened input
             is used.
-        keepdims: If this is set to True, the axes which are reduced are left
-            in the result as dimensions with size one. Default is False.
-        initial: The minimum value of an output element. Default is None.
+        keepdims: If this is set to `True`, the axes which are reduced are left
+            in the result as dimensions with size one. Default is `False`.
+        initial: The minimum value of an output element. Default is `None`.
 
     Returns:
         Maximum of `x`.
@@ -3529,8 +3529,8 @@ def min(x, axis=None, keepdims=False, initial=None):
         axis: Axis or axes along which to operate. By default, flattened input
             is used.
         keepdims: If this is set to True, the axes which are reduced are left
-            in the result as dimensions with size one. Default is False.
-        initial: The maximum value of an output element. Default is None.
+            in the result as dimensions with size one. Default is `False`.
+        initial: The maximum value of an output element. Default is `None`.
 
     Returns:
         Minimum of `x`.
@@ -3839,7 +3839,9 @@ def outer(x1, x2):
 
     Given two vectors `x1` and `x2`, the outer product is:
 
-        out[i, j] = x1[i] * x2[j]
+    ```
+    out[i, j] = x1[i] * x2[j]
+    ```
 
     Args:
         x1: First input tensor.
@@ -3911,7 +3913,7 @@ def pad(x, pad_width, mode="constant"):
             widths for each axis.
             `((before, after),)` yields same before and after pad for
             each axis.
-            `(pad,)` or `int` is a shortcut for before = after = pad
+            `(pad,)` or `int` is a shortcut for `before = after = pad`
             width for all axes.
         mode: One of `"constant"`, `"edge"`, `"linear_ramp"`,
             `"maximum"`, `"mean"`, `"median"`, `"minimum"`,
@@ -3921,7 +3923,6 @@ def pad(x, pad_width, mode="constant"):
     Note:
         Torch backend only supports modes `"constant"`, `"reflect"`,
         `"symmetric"` and `"circular"`.
-
         Only Torch backend supports `"circular"` mode.
 
     Note:
@@ -3970,7 +3971,7 @@ def prod(x, axis=None, keepdims=False, dtype=None):
         axis: Axis or axes along which a product is performed. The default,
             `axis=None`, will compute the product of all elements
             in the input tensor.
-        keepdims: If this is set to True, the axes which are reduce
+        keepdims: If this is set to `True`, the axes which are reduce
             are left in the result as dimensions with size one.
         dtype: Data type of the returned tensor.
 
@@ -4229,7 +4230,7 @@ def sign(x):
         x: Input tensor.
 
     Returns:
-        Output tensor of same shape as x.
+        Output tensor of same shape as `x`.
     """
     if any_symbolic_tensors((x,)):
         return Sign().symbolic_call(x)
@@ -4252,7 +4253,7 @@ def sin(x):
         x: Input tensor.
 
     Returns:
-        Output tensor of same shape as x.
+        Output tensor of same shape as `x`.
     """
     if any_symbolic_tensors((x,)):
         return Sin().symbolic_call(x)
@@ -4275,7 +4276,7 @@ def sinh(x):
         x: Input tensor.
 
     Returns:
-        Output tensor of same shape as x.
+        Output tensor of same shape as `x`.
     """
     if any_symbolic_tensors((x,)):
         return Sinh().symbolic_call(x)
@@ -4323,7 +4324,7 @@ def sort(x, axis=-1):
 
     Args:
         x: Input tensor.
-        axis: Axis along which to sort. If None, the tensor is flattened
+        axis: Axis along which to sort. If `None`, the tensor is flattened
             before sorting. Default is the last axis.
 
     Returns:
@@ -4479,7 +4480,7 @@ def std(x, axis=None, keepdims=False):
         axis: Axis along which to compute standard deviation.
             Default is to compute the standard deviation of the
             flattened tensor.
-        keepdims: If this is set to True, the axes which are reduced are left
+        keepdims: If this is set to `True`, the axes which are reduced are left
             in the result as dimensions with size one.
 
     Returns:
@@ -4639,7 +4640,7 @@ def tan(x):
         x: Input tensor.
 
     Returns:
-        Output tensor of same shape as x.
+        Output tensor of same shape as `x`.
     """
     if any_symbolic_tensors((x,)):
         return Tan().symbolic_call(x)
@@ -4662,7 +4663,7 @@ def tanh(x):
         x: Input tensor.
 
     Returns:
-        Output tensor of same shape as x.
+        Output tensor of same shape as `x`.
     """
     if any_symbolic_tensors((x,)):
         return Tanh().symbolic_call(x)
@@ -4856,8 +4857,8 @@ def tri(N, M=None, k=0, dtype="float32"):
         N: Number of rows in the tensor.
         M: Number of columns in the tensor.
         k: The sub-diagonal at and below which the array is filled.
-            k = 0 is the main diagonal, while k < 0 is below it, and
-            k > 0 is above. The default is 0.
+            `k = 0` is the main diagonal, while `k < 0` is below it, and
+            `k > 0` is above. The default is 0.
         dtype: Data type of the returned tensor. The default is "float32".
 
     Returns:
@@ -4889,7 +4890,7 @@ def tril(x, k=0):
     Args:
         x: Input tensor.
         k: Diagonal above which to zero elements. Defaults to 0, the
-            main diagonal. k < 0 is below it, and k > 0 is above it.
+            main diagonal. `k < 0` is below it, and `k > 0` is above it.
 
     Returns:
         Lower triangle of `x`, of same shape and data type as `x`.
@@ -4921,7 +4922,7 @@ def triu(x, k=0):
     Args:
         x: Input tensor.
         k: Diagonal below which to zero elements. Defaults to 0, the
-            main diagonal. k < 0 is below it, and k > 0 is above it.
+            main diagonal. `k < 0` is below it, and `k > 0` is above it.
 
     Returns:
         Upper triangle of `x`, of same shape and data type as `x`.
@@ -5018,13 +5019,13 @@ def where(condition, x1, x2):
     """Return elements chosen from `x1` or `x2` depending on `condition`.
 
     Args:
-        condition: Where True, yield `x1`, otherwise yield `x2`.
-        x1: Values from which to choose when `condition` is True.
-        x2: Values from which to choose when `condition` is False.
+        condition: Where `True`, yield `x1`, otherwise yield `x2`.
+        x1: Values from which to choose when `condition` is `True`.
+        x2: Values from which to choose when `condition` is `False`.
 
     Returns:
-        A tensor with elements from `x1` where `condition` is True, and
-        elements from `x2` where `condition` is False.
+        A tensor with elements from `x1` where `condition` is `True`, and
+        elements from `x2` where `condition` is `False`.
     """
     if any_symbolic_tensors((condition, x1, x2)):
         return Where().symbolic_call(condition, x1, x2)
@@ -5345,7 +5346,7 @@ def mean(x, axis=None, keepdims=False):
         x: Input tensor.
         axis: Axis or axes along which the means are computed. The default
             is to compute the mean of the flattened tensor.
-        keepdims: If this is set to True, the axes which are reduced are left
+        keepdims: If this is set to `True`, the axes which are reduced are left
             in the result as dimensions with size one.
 
     Returns:
@@ -5382,7 +5383,7 @@ def var(x, axis=None, keepdims=False):
         x: Input tensor.
         axis: Axis or axes along which the variance is computed. The default
             is to compute the variance of the flattened tensor.
-        keepdims: If this is set to True, the axes which are reduced are left
+        keepdims: If this is set to `True`, the axes which are reduced are left
             in the result as dimensions with size one.
 
     Returns:
@@ -5419,7 +5420,7 @@ def sum(x, axis=None, keepdims=False):
         x: Input tensor.
         axis: Axis or axes along which the sum is computed. The default is to
             compute the sum of the flattened tensor.
-        keepdims: If this is set to True, the axes which are reduced are left
+        keepdims: If this is set to `True`, the axes which are reduced are left
             in the result as dimensions with size one.
 
     Returns:
@@ -5490,7 +5491,7 @@ def eye(N, M=None, k=0, dtype="float32"):
 
     Args:
         N: Number of rows in the output.
-        M: Number of columns in the output. If None, defaults to N.
+        M: Number of columns in the output. If `None`, defaults to N.
         k: Index of the diagonal: 0 (the default) refers to the main
             diagonal, a positive value refers to an upper diagonal,
             and a negative value to a lower diagonal.
