@@ -1,5 +1,7 @@
-from keras_core.utils.module_utils import tensorflow as tf
 import numpy as np
+
+from keras_core.utils.module_utils import tensorflow as tf
+
 
 def expand_dims(inputs, axis):
     """Expand dims on sparse, ragged, or dense tensors."""
@@ -135,6 +137,7 @@ def get_tensor_spec(t, dynamic_batch=False, name=None):
     shape = tf.TensorShape(shape_list)
     spec._shape = shape
     return spec
+
 
 def ensure_tensor(inputs, dtype=None):
     """Ensures the input is a Tensor, SparseTensor or RaggedTensor."""
