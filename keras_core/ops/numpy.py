@@ -203,10 +203,10 @@ def shape_equal(shape1, shape2, axis=None, allow_none=True):
     Args:
         shape1: A tuple or list of integers.
         shape2: A tuple or list of integers.
-        axis: int or list/tuple of ints, defaults to None. If specified, the
+        axis: int or list/tuple of ints, defaults to `None`. If specified, the
             shape check will ignore the axes specified by `axis`.
-        allow_none: bool, defaults to True. If True, None in the shape will
-            match any value.
+        allow_none: bool, defaults to `True`. If `True`, `None` in the shape
+            will match any value.
     """
     if len(shape1) != len(shape2):
         return False
@@ -2032,7 +2032,8 @@ class Einsum(Operation):
             the index 0. For dims not represented by any letter, insert to the
             wildcard part. For each letter in output target not appearing in
             input spec, the dim will be 1 for broadcasting. After 4, each
-            operand should have a target shape containing only number and None.
+            operand should have a target shape containing only number and
+            `None`.
         5. Broadcast all shapes computed from 4, and the result is the output
             shape.
 
@@ -2959,14 +2960,14 @@ def linspace(
     Args:
         start: The starting value of the sequence.
         stop: The end value of the sequence, unless `endpoint` is set to
-            False. In that case, the sequence consists of all but the last
+            `False`. In that case, the sequence consists of all but the last
             of `num + 1` evenly spaced samples, so that `stop` is excluded.
             Note that the step size changes when `endpoint` is `False`.
         num: Number of samples to generate. Default is 50. Must be
             non-negative.
         endpoint: If `True`, `stop` is the last sample. Otherwise, it is
             not included. Default is `True`.
-        retstep: If `True`, return (`samples`, `step`), where `step` is the
+        retstep: If `True`, return `(samples, step)`, where `step` is the
             spacing between samples.
         dtype: The type of the output tensor.
         axis: The axis in the result to store the samples. Relevant only if
@@ -2977,7 +2978,7 @@ def linspace(
 
     Returns:
         A tensor of evenly spaced numbers.
-        If `retstep` is True, returns `(samples, step)`
+        If `retstep` is `True`, returns `(samples, step)`
     """
     if any_symbolic_tensors((start, stop)):
         return Linspace(num, endpoint, retstep, dtype, axis)(start, stop)
@@ -3138,7 +3139,7 @@ class LogicalAnd(Operation):
 def logical_and(x1, x2):
     """Computes the element-wise logical AND of the given input tensors.
 
-    Zeros are treated as False and non-zeros are treated as `True`.
+    Zeros are treated as `False` and non-zeros are treated as `True`.
 
     Args:
         x1: Input tensor.
@@ -3169,7 +3170,7 @@ class LogicalNot(Operation):
 def logical_not(x):
     """Computes the element-wise NOT of the given input tensor.
 
-    Zeros are treated as False and non-zeros are treated as `True`.
+    Zeros are treated as `False` and non-zeros are treated as `True`.
 
     Args:
         x: Input tensor.
@@ -3202,7 +3203,7 @@ class LogicalOr(Operation):
 def logical_or(x1, x2):
     """Computes the element-wise logical OR of the given input tensors.
 
-    Zeros are treated as False and non-zeros are treated as `True`.
+    Zeros are treated as `False` and non-zeros are treated as `True`.
 
     Args:
         x1: Input tensor.
@@ -3273,7 +3274,7 @@ def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
             log-space, of which all but the last (a sequence of length `num`)
             are returned.
         num: Number of samples to generate. Default is 50.
-        endpoint: If True, `stop` is the last sample. Otherwise, it is not
+        endpoint: If `True`, `stop` is the last sample. Otherwise, it is not
             included. Default is `True`.
         base: The base of the log space. Default is 10
         dtype: The type of the output tensor.
@@ -3528,7 +3529,7 @@ def min(x, axis=None, keepdims=False, initial=None):
         x: Input tensor.
         axis: Axis or axes along which to operate. By default, flattened input
             is used.
-        keepdims: If this is set to True, the axes which are reduced are left
+        keepdims: If this is set to `True`, the axes which are reduced are left
             in the result as dimensions with size one. Default is `False`.
         initial: The maximum value of an output element. Default is `None`.
 
