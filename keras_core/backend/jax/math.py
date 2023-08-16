@@ -2,10 +2,10 @@ import math
 
 import jax
 import jax.numpy as jnp
-import scipy.signal
 
 from keras_core.backend import standardize_dtype
 from keras_core.backend.jax.core import convert_to_tensor
+from keras_core.utils.module_utils import scipy
 
 
 def segment_sum(data, segment_ids, num_segments=None, sorted=False):

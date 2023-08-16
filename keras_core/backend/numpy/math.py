@@ -1,10 +1,10 @@
 import numpy as np
-import scipy.signal
 
 from keras_core.backend import standardize_dtype
 from keras_core.backend.jax.math import fft as jax_fft
 from keras_core.backend.jax.math import fft2 as jax_fft2
 from keras_core.backend.numpy.core import convert_to_tensor
+from keras_core.utils.module_utils import scipy
 
 
 def segment_sum(data, segment_ids, num_segments=None, sorted=False):
