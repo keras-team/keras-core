@@ -25,21 +25,17 @@ using cycle-consistent adversarial networks.
 ## Setup
 """
 
-#!pip install -q git+https://github.com/keras-team/keras-core
-
 import numpy as np
 import matplotlib.pyplot as plt
 import keras_core as keras
 from keras_core import layers
 from keras_core import ops
 
-import tensorflow # tf.GradientTap for training
-import tensorflow.data as tf_data
-import tensorflow.image as tf_image
+import tensorflow as tf
 import tensorflow_datasets as tfds
 
 tfds.disable_progress_bar()
-autotune = tf_data.AUTOTUNE
+autotune = tf.data.AUTOTUNE
 
 """
 ## Prepare the dataset
@@ -50,7 +46,9 @@ dataset.
 """
 
 # Load the horse-zebra dataset using tensorflow-datasets.
-dataset, _ = tfds.load("cycle_gan/horse2zebra", with_info=True, as_supervised=True)
+dataset, _ = tfds.load(
+    "cycle_gan/horse2zebra", with_info=True, as_supervised=True
+)
 train_horses, train_zebras = dataset["trainA"], dataset["trainB"]
 test_horses, test_zebras = dataset["testA"], dataset["testB"]
 
@@ -75,11 +73,11 @@ def normalize_img(img):
 
 def preprocess_train_image(img, label):
     # Random flip
-    img = tf_image.random_flip_left_right(img)
+    img = tf.image.random_flip_left_right(img)
     # Resize to the original size first
-    img = tf_image.resize(img, [*orig_img_size])
+    img = tf.image.resize(img, [*orig_img_size])
     # Random crop to 256X256
-    img = tf_image.random_crop(img, size=[*input_img_size])
+    img = tf.image.random_crop(img, size=[*input_img_size])
     # Normalize the pixel values in the range [-1, 1]
     img = normalize_img(img)
     return img
@@ -87,7 +85,7 @@ def preprocess_train_image(img, label):
 
 def preprocess_test_image(img, label):
     # Only resizing and normalization for the test images.
-    img = tf_image.resize(img, [input_img_size[0], input_img_size[1]])
+    img = tf.image.resize(img, [input_img_size[0], input_img_size[1]])
     img = normalize_img(img)
     return img
 
@@ -162,13 +160,15 @@ class ReflectionPadding2D(layers.Layer):
 
     def call(self, input_tensor, mask=None):
         padding_width, padding_height = self.padding
-        padding_tensor = ([
+        padding_tensor = [
             [0, 0],
             [padding_height, padding_height],
             [padding_width, padding_width],
             [0, 0],
-        ])
-        return ops.pad(input_tensor, ops.convert_to_tensor(padding_tensor), mode='reflect')
+        ]
+        return ops.pad(
+            input_tensor, ops.convert_to_tensor(padding_tensor), mode="reflect"
+        )
 
 
 def residual_block(
@@ -193,7 +193,9 @@ def residual_block(
         padding=padding,
         use_bias=use_bias,
     )(x)
-    x = layers.GroupNormalization(groups=x.shape[-1], gamma_initializer=gamma_initializer)(x)
+    x = layers.GroupNormalization(
+        groups=x.shape[-1], gamma_initializer=gamma_initializer
+    )(x)
     x = activation(x)
 
     x = ReflectionPadding2D()(x)
@@ -205,7 +207,9 @@ def residual_block(
         padding=padding,
         use_bias=use_bias,
     )(x)
-    x = layers.GroupNormalization(groups=x.shape[-1], gamma_initializer=gamma_initializer)(x)
+    x = layers.GroupNormalization(
+        groups=x.shape[-1], gamma_initializer=gamma_initializer
+    )(x)
     x = layers.add([input_tensor, x])
     return x
 
@@ -229,7 +233,9 @@ def downsample(
         padding=padding,
         use_bias=use_bias,
     )(x)
-    x = layers.GroupNormalization(groups=x.shape[-1], gamma_initializer=gamma_initializer)(x)
+    x = layers.GroupNormalization(
+        groups=x.shape[-1], gamma_initializer=gamma_initializer
+    )(x)
     if activation:
         x = activation(x)
     return x
@@ -254,7 +260,9 @@ def upsample(
         kernel_initializer=kernel_initializer,
         use_bias=use_bias,
     )(x)
-    x = layers.GroupNormalization(groups=x.shape[-1], gamma_initializer=gamma_initializer)(x)
+    x = layers.GroupNormalization(
+        groups=x.shape[-1], gamma_initializer=gamma_initializer
+    )(x)
     if activation:
         x = activation(x)
     return x
@@ -298,10 +306,12 @@ def get_resnet_generator(
 ):
     img_input = layers.Input(shape=input_img_size, name=name + "_img_input")
     x = ReflectionPadding2D(padding=(3, 3))(img_input)
-    x = layers.Conv2D(filters, (7, 7), kernel_initializer=kernel_init, use_bias=False)(
-        x
-    )
-    x = layers.GroupNormalization(groups=x.shape[-1], gamma_initializer=gamma_initializer)(x)
+    x = layers.Conv2D(
+        filters, (7, 7), kernel_initializer=kernel_init, use_bias=False
+    )(x)
+    x = layers.GroupNormalization(
+        groups=x.shape[-1], gamma_initializer=gamma_initializer
+    )(x)
     x = layers.Activation("relu")(x)
 
     # Downsampling
@@ -369,7 +379,11 @@ def get_discriminator(
             )
 
     x = layers.Conv2D(
-        1, (4, 4), strides=(1, 1), padding="same", kernel_initializer=kernel_initializer
+        1,
+        (4, 4),
+        strides=(1, 1),
+        padding="same",
+        kernel_initializer=kernel_initializer,
     )(x)
 
     model = keras.models.Model(inputs=img_input, outputs=x, name=name)
@@ -457,7 +471,7 @@ class CycleGan(keras.Model):
         # 8. Update the weights of the discriminators
         # 9. Return the losses in a dictionary
 
-        with tensorflow.GradientTape(persistent=True) as tape:
+        with tf.GradientTape(persistent=True) as tape:
             # Horse to fake zebra
             fake_y = self.gen_G(real_x, training=True)
             # Zebra to fake horse -> y2x
@@ -484,8 +498,12 @@ class CycleGan(keras.Model):
             gen_F_loss = self.generator_loss_fn(disc_fake_x)
 
             # Generator cycle loss
-            cycle_loss_G = self.cycle_loss_fn(real_y, cycled_y) * self.lambda_cycle
-            cycle_loss_F = self.cycle_loss_fn(real_x, cycled_x) * self.lambda_cycle
+            cycle_loss_G = (
+                self.cycle_loss_fn(real_y, cycled_y) * self.lambda_cycle
+            )
+            cycle_loss_F = (
+                self.cycle_loss_fn(real_x, cycled_x) * self.lambda_cycle
+            )
 
             # Generator identity loss
             id_loss_G = (
@@ -512,8 +530,12 @@ class CycleGan(keras.Model):
         grads_F = tape.gradient(total_loss_F, self.gen_F.trainable_variables)
 
         # Get the gradients for the discriminators
-        disc_X_grads = tape.gradient(disc_X_loss, self.disc_X.trainable_variables)
-        disc_Y_grads = tape.gradient(disc_Y_loss, self.disc_Y.trainable_variables)
+        disc_X_grads = tape.gradient(
+            disc_X_loss, self.disc_X.trainable_variables
+        )
+        disc_Y_grads = tape.gradient(
+            disc_Y_loss, self.disc_Y.trainable_variables
+        )
 
         # Update the weights of the generators
         self.gen_G_optimizer.apply_gradients(
@@ -597,7 +619,10 @@ def discriminator_loss_fn(real, fake):
 
 # Create cycle gan model
 cycle_gan_model = CycleGan(
-    generator_G=gen_G, generator_F=gen_F, discriminator_X=disc_X, discriminator_Y=disc_Y
+    generator_G=gen_G,
+    generator_F=gen_F,
+    discriminator_X=disc_X,
+    discriminator_Y=disc_Y,
 )
 
 # Compile the model
@@ -611,7 +636,9 @@ cycle_gan_model.compile(
 )
 # Callbacks
 plotter = GANMonitor()
-checkpoint_filepath = "./model_checkpoints/cyclegan_checkpoints.{epoch:03d}.weights.h5"
+checkpoint_filepath = (
+    "./model_checkpoints/cyclegan_checkpoints.{epoch:03d}.weights.h5"
+)
 model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
     filepath=checkpoint_filepath, save_weights_only=True
 )
@@ -619,7 +646,7 @@ model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
 # Here we will train the model for just one epoch as each epoch takes around
 # 7 minutes on a single P100 backed machine.
 cycle_gan_model.fit(
-    tf_data.Dataset.zip((train_horses, train_zebras)),
+    tf.data.Dataset.zip((train_horses, train_zebras)),
     epochs=1,
     callbacks=[plotter, model_checkpoint_callback],
 )
