@@ -1,3 +1,5 @@
+import math
+
 import torch
 
 from keras_core.backend import standardize_dtype
@@ -130,43 +132,80 @@ def extract_sequences(x, sequence_length, sequence_stride):
     )
 
 
-def _get_complex_tensor_from_tuple(a):
-    if not isinstance(a, (tuple, list)) or len(a) != 2:
+def overlap_sequences(x, sequence_stride):
+    # Ref: https://github.com/google/jax/blob/main/jax/_src/scipy/signal.py
+    x = convert_to_tensor(x)
+    *batch_shape, nframes, segment_len = x.size()
+    flat_batchsize = math.prod(batch_shape)
+    x = torch.reshape(x, (flat_batchsize, nframes, segment_len))
+    output_size = sequence_stride * (nframes - 1) + segment_len
+    nstep_per_segment = 1 + (segment_len - 1) // sequence_stride
+    # Here, we use shorter notation for axes.
+    # B: batch_size, N: nframes, S: nstep_per_segment,
+    # T: segment_len divided by S
+    padded_segment_len = nstep_per_segment * sequence_stride
+    x = torch.nn.functional.pad(
+        x, (0, padded_segment_len - segment_len, 0, 0, 0, 0)
+    )
+    x = torch.reshape(
+        x, (flat_batchsize, nframes, nstep_per_segment, sequence_stride)
+    )
+    # For obtaining shifted signals, this routine reinterprets flattened array
+    # with a shrinked axis.  With appropriate truncation/ padding, this
+    # operation pushes the last padded elements of the previous row to the head
+    # of the current row.
+    # See implementation of `overlap_and_add` in Tensorflow for details.
+    x = torch.permute(x, (0, 2, 1, 3))  # x: (B, S, N, T)
+    x = torch.nn.functional.pad(x, (0, 0, 0, nframes, 0, 0, 0, 0))
+    # x: (B, S, N*2, T)
+    shrinked = x.shape[2] - 1
+    x = torch.reshape(x, (flat_batchsize, -1))
+    x = x[:, : (nstep_per_segment * shrinked * sequence_stride)]
+    x = torch.reshape(
+        x, (flat_batchsize, nstep_per_segment, shrinked * sequence_stride)
+    )
+    # Finally, sum shifted segments, and truncate results to the output_size.
+    x = torch.sum(x, dim=1)[:, :output_size]
+    return torch.reshape(x, tuple(batch_shape) + (-1,))
+
+
+def _get_complex_tensor_from_tuple(x):
+    if not isinstance(x, (tuple, list)) or len(x) != 2:
         raise ValueError(
-            "Input `a` should be a tuple of two tensors - real and imaginary."
-            f"Received: a={a}"
+            "Input `x` should be a tuple of two tensors - real and imaginary."
+            f"Received: x={x}"
         )
     # `convert_to_tensor` does not support passing complex tensors. We separate
     # the input out into real and imaginary and convert them separately.
-    real, imag = a
+    real, imag = x
     real = convert_to_tensor(real)
     imag = convert_to_tensor(imag)
     # Check shape.
     if real.shape != imag.shape:
         raise ValueError(
-            "Input `a` should be a tuple of two tensors - real and imaginary."
+            "Input `x` should be a tuple of two tensors - real and imaginary."
             "Both the real and imaginary parts should have the same shape. "
-            f"Received: a[0].shape = {real.shape}, a[1].shape = {imag.shape}"
+            f"Received: x[0].shape = {real.shape}, x[1].shape = {imag.shape}"
         )
     # Ensure dtype is float.
     if not torch.is_floating_point(real) or not torch.is_floating_point(imag):
         raise ValueError(
-            "At least one tensor in input `a` is not of type float."
-            f"Received: a={a}."
+            "At least one tensor in input `x` is not of type float."
+            f"Received: x={x}."
         )
 
     complex_input = torch.complex(real, imag)
     return complex_input
 
 
-def fft(a):
-    complex_input = _get_complex_tensor_from_tuple(a)
+def fft(x):
+    complex_input = _get_complex_tensor_from_tuple(x)
     complex_output = torch.fft.fft(complex_input)
     return complex_output.real, complex_output.imag
 
 
-def fft2(a):
-    complex_input = _get_complex_tensor_from_tuple(a)
+def fft2(x):
+    complex_input = _get_complex_tensor_from_tuple(x)
     complex_output = torch.fft.fft2(complex_input)
     return complex_output.real, complex_output.imag
 
@@ -175,6 +214,11 @@ def rfft(x, fft_length=None):
     x = convert_to_tensor(x)
     complex_output = torch.fft.rfft(x, n=fft_length, dim=-1, norm="backward")
     return complex_output.real, complex_output.imag
+
+
+def irfft(x, fft_length=None):
+    complex_input = _get_complex_tensor_from_tuple(x)
+    return torch.fft.irfft(complex_input, n=fft_length, dim=-1, norm="backward")
 
 
 def stft(

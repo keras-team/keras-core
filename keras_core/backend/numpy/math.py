@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 
 from keras_core.backend import standardize_dtype
@@ -124,19 +126,86 @@ def extract_sequences(x, sequence_length, sequence_stride):
     return np.reshape(x, (*batch_shape, *x.shape[-2:]))
 
 
-def fft(a):
-    real, imag = jax_fft(a)
+def overlap_sequences(x, sequence_stride):
+    # Ref: https://github.com/google/jax/blob/main/jax/_src/scipy/signal.py
+    *batch_shape, nframes, segment_len = x.shape
+    flat_batchsize = math.prod(batch_shape)
+    x = np.reshape(x, (flat_batchsize, nframes, segment_len))
+    output_size = sequence_stride * (nframes - 1) + segment_len
+    nstep_per_segment = 1 + (segment_len - 1) // sequence_stride
+    # Here, we use shorter notation for axes.
+    # B: batch_size, N: nframes, S: nstep_per_segment,
+    # T: segment_len divided by S
+    padded_segment_len = nstep_per_segment * sequence_stride
+    x = np.pad(x, ((0, 0), (0, 0), (0, padded_segment_len - segment_len)))
+    x = np.reshape(
+        x, (flat_batchsize, nframes, nstep_per_segment, sequence_stride)
+    )
+    # For obtaining shifted signals, this routine reinterprets flattened array
+    # with a shrinked axis.  With appropriate truncation/ padding, this
+    # operation pushes the last padded elements of the previous row to the head
+    # of the current row.
+    # See implementation of `overlap_and_add` in Tensorflow for details.
+    x = x.transpose((0, 2, 1, 3))  # x: (B, S, N, T)
+    x = np.pad(x, ((0, 0), (0, 0), (0, nframes), (0, 0)))
+    # x: (B, S, N*2, T)
+    shrinked = x.shape[2] - 1
+    x = np.reshape(x, (flat_batchsize, -1))
+    x = x[:, : (nstep_per_segment * shrinked * sequence_stride)]
+    x = np.reshape(
+        x, (flat_batchsize, nstep_per_segment, shrinked * sequence_stride)
+    )
+    # Finally, sum shifted segments, and truncate results to the output_size.
+    x = np.sum(x, axis=1)[:, :output_size]
+    return np.reshape(x, tuple(batch_shape) + (-1,))
+
+
+def _get_complex_tensor_from_tuple(x):
+    if not isinstance(x, (tuple, list)) or len(x) != 2:
+        raise ValueError(
+            "Input `x` should be a tuple of two tensors - real and imaginary."
+            f"Received: x={x}"
+        )
+    # `convert_to_tensor` does not support passing complex tensors. We separate
+    # the input out into real and imaginary and convert them separately.
+    real, imag = x
+    # Check shapes.
+    if real.shape != imag.shape:
+        raise ValueError(
+            "Input `x` should be a tuple of two tensors - real and imaginary."
+            "Both the real and imaginary parts should have the same shape. "
+            f"Received: x[0].shape = {real.shape}, x[1].shape = {imag.shape}"
+        )
+    # Ensure dtype is float.
+    if not np.issubdtype(real.dtype, np.floating) or not np.issubdtype(
+        imag.dtype, np.floating
+    ):
+        raise ValueError(
+            "At least one tensor in input `x` is not of type float."
+            f"Received: x={x}."
+        )
+    complex_input = real + 1j * imag
+    return complex_input
+
+
+def fft(x):
+    real, imag = jax_fft(x)
     return np.array(real), np.array(imag)
 
 
-def fft2(a):
-    real, imag = jax_fft2(a)
+def fft2(x):
+    real, imag = jax_fft2(x)
     return np.array(real), np.array(imag)
 
 
 def rfft(x, fft_length=None):
     complex_output = np.fft.rfft(x, n=fft_length, axis=-1, norm="backward")
     return np.real(complex_output), np.imag(complex_output)
+
+
+def irfft(x, fft_length=None):
+    complex_input = _get_complex_tensor_from_tuple(x)
+    return np.fft.irfft(complex_input, n=fft_length, axis=-1, norm="backward")
 
 
 def stft(

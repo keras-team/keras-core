@@ -378,6 +378,63 @@ def extract_sequences(x, sequence_length, sequence_stride):
     return backend.math.extract_sequences(x, sequence_length, sequence_stride)
 
 
+class OverlapSequences(Operation):
+    def __init__(self, sequence_stride):
+        super().__init__()
+        self.sequence_stride = sequence_stride
+
+    def compute_output_spec(self, x):
+        if len(x.shape) < 2:
+            raise ValueError(
+                f"Input should have rank >= 2. "
+                f"Received: input.shape = {x.shape}"
+            )
+        if x.shape[-2] is not None and x.shape[-1] is not None:
+            num_sequences = x.shape[-2]
+            sequence_length = x.shape[-1]
+            output_size = (
+                num_sequences - 1
+            ) * self.sequence_stride + sequence_length
+        else:
+            output_size = None
+        new_shape = x.shape[:-2] + (output_size,)
+        return KerasTensor(shape=new_shape, dtype=x.dtype)
+
+    def call(self, x):
+        return backend.math.overlap_sequences(
+            x, sequence_stride=self.sequence_stride
+        )
+
+
+@keras_core_export("keras_core.ops.overlap_sequences")
+def overlap_sequences(x, sequence_stride):
+    """Reconstructs a signal from a sequenced representation.
+
+    Adds potentially overlapping sequences of a signal with shape
+    `[..., sequences, sequence_length]`, offsetting subsequent sequences by
+    `sequence_stride`. The resulting tensor has shape `[..., output_size]` where
+
+    `output_size = (sequences - 1) * sequence_stride + sequence_length`
+
+    Args:
+        x: Input tensor.
+        sequence_stride: An integer representing the sequence hop size.
+
+    Returns:
+        A tensor with shape [..., output_size] containing the overlap-added
+        sequences of the input tensor.
+
+    Example:
+
+    >>> x = keras_core.ops.convert_to_tensor([[1, 2, 3], [4, 5, 6]])
+    >>> overlap_sequences(x, 2)
+    array([1 2 6 4 5])
+    """
+    if any_symbolic_tensors((x,)):
+        return OverlapSequences(sequence_stride).symbolic_call(x)
+    return backend.math.overlap_sequences(x, sequence_stride)
+
+
 class FFT(Operation):
     def compute_output_spec(self, x):
         if not isinstance(x, (tuple, list)) or len(x) != 2:
@@ -420,6 +477,32 @@ class FFT(Operation):
         return backend.math.fft(x)
 
 
+@keras_core_export("keras_core.ops.fft")
+def fft(x):
+    """Computes the Fast Fourier Transform along last axis of input.
+
+    Args:
+        x: Tuple of the real and imaginary parts of the input tensor. Both
+            tensors in the tuple should be of floating type.
+
+    Returns:
+        A tuple containing two tensors - the real and imaginary parts of the
+        output tensor.
+
+    Example:
+
+    >>> x = (
+    ...     keras_core.ops.convert_to_tensor([1., 2.]),
+    ...     keras_core.ops.convert_to_tensor([0., 1.]),
+    ... )
+    >>> fft(x)
+    (array([ 3., -1.], dtype=float32), array([ 1., -1.], dtype=float32))
+    """
+    if any_symbolic_tensors(x):
+        return FFT().symbolic_call(x)
+    return backend.math.fft(x)
+
+
 class FFT2(Operation):
     def compute_output_spec(self, x):
         if not isinstance(x, (tuple, list)) or len(x) != 2:
@@ -460,32 +543,6 @@ class FFT2(Operation):
 
     def call(self, x):
         return backend.math.fft2(x)
-
-
-@keras_core_export("keras_core.ops.fft")
-def fft(x):
-    """Computes the Fast Fourier Transform along last axis of input.
-
-    Args:
-        x: Tuple of the real and imaginary parts of the input tensor. Both
-            tensors in the tuple should be of floating type.
-
-    Returns:
-        A tuple containing two tensors - the real and imaginary parts of the
-        output tensor.
-
-    Example:
-
-    >>> x = (
-    ...     keras_core.ops.convert_to_tensor([1., 2.]),
-    ...     keras_core.ops.convert_to_tensor([0., 1.]),
-    ... )
-    >>> fft(x)
-    (array([ 3., -1.], dtype=float32), array([ 1., -1.], dtype=float32))
-    """
-    if any_symbolic_tensors(x):
-        return FFT().symbolic_call(x)
-    return backend.math.fft(x)
 
 
 @keras_core_export("keras_core.ops.fft2")
@@ -582,6 +639,86 @@ def rfft(x, fft_length=None):
     if any_symbolic_tensors((x,)):
         return RFFT(fft_length).symbolic_call(x)
     return backend.math.rfft(x, fft_length)
+
+
+class IRFFT(Operation):
+    def __init__(self, fft_length=None):
+        super().__init__()
+        self.fft_length = fft_length
+
+    def compute_output_spec(self, x):
+        if not isinstance(x, (tuple, list)) or len(x) != 2:
+            raise ValueError(
+                "Input `x` should be a tuple of two tensors - real and "
+                f"imaginary. Received: x={x}"
+            )
+        real, imag = x
+        # Both real and imaginary parts should have the same shape.
+        if real.shape != imag.shape:
+            raise ValueError(
+                "Input `x` should be a tuple of two tensors - real and "
+                "imaginary. Both the real and imaginary parts should have the "
+                f"same shape. Received: x[0].shape = {real.shape}, "
+                f"x[1].shape = {imag.shape}"
+            )
+        # We are calculating 1D IRFFT. Hence, rank >= 1.
+        if len(real.shape) < 1:
+            raise ValueError(
+                f"Input should have rank >= 1. "
+                f"Received: input.shape = {real.shape}"
+            )
+
+        if self.fft_length is not None:
+            new_last_dimension = self.fft_length // 2 + 1
+        else:
+            new_last_dimension = x.shape[-1]
+        new_shape = x.shape[:-1] + (new_last_dimension,)
+        return KerasTensor(shape=new_shape, dtype=real.dtype)
+
+    def call(self, x):
+        return backend.math.irfft(x, fft_length=self.fft_length)
+
+
+@keras_core_export("keras_core.ops.irfft")
+def irfft(x, fft_length=None):
+    """Inverse real-valued Fast Fourier transform along the last axis.
+
+    Computes the inverse 1D Discrete Fourier Transform of a real-valued signal
+    over the inner-most dimension of input.
+
+    The inner-most dimension of the input is assumed to be the result of RFFT:
+    the `fft_length / 2 + 1` unique components of the DFT of a real-valued
+    signal. If `fft_length` is not provided, it is computed from the size of the
+    inner-most dimension of the input `(fft_length = 2 * (inner - 1))`. If the
+    FFT length used to compute is odd, it should be provided since it cannot
+    be inferred properly.
+
+    Along the axis IRFFT is computed on, if `fft_length / 2 + 1` is smaller than
+    the corresponding dimension of the input, the dimension is cropped. If it is
+    larger, the dimension is padded with zeros.
+
+    Args:
+        x: Input tensor.
+        fft_length: An integer representing the number of the fft length. If not
+            specified, it is inferred from the length of the last axis of `x`.
+            Defaults to `None`.
+
+    Returns:
+        A tensor containing the inverse real-valued Fast Fourier Transform
+        along the last axis of `x`.
+
+    Examples:
+
+    >>> x = keras_core.ops.convert_to_tensor([0.0, 1.0, 2.0, 3.0, 4.0])
+    >>> irfft(rfft(x))
+    array([0.625    , 1.4045226, 3.125    , 4.8454774])
+
+    >>> irfft(rfft(x, 5), 5)
+    array([0., 1., 2., 3., 4.])
+    """
+    if any_symbolic_tensors((x,)):
+        return IRFFT(fft_length).symbolic_call(x)
+    return backend.math.irfft(x, fft_length)
 
 
 class STFT(Operation):

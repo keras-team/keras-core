@@ -136,6 +136,21 @@ class MathOpsDynamicShapeTest(testing.TestCase):
         outputs = kmath.extract_sequences(x, sequence_length, sequence_stride)
         self.assertEqual(outputs.shape, (None, None, sequence_length))
 
+    def test_overlap_sequences(self):
+        num_sequences = 3
+        sequence_length = 4
+        sequence_stride = 2
+        # Defined dimension
+        x = KerasTensor((None, num_sequences, sequence_length), dtype="float32")
+        outputs = kmath.overlap_sequences(x, sequence_stride)
+        output_size = (num_sequences - 1) * sequence_stride + sequence_length
+        self.assertEqual(outputs.shape, (None, output_size))
+
+        # Undefined dimension
+        x = KerasTensor((None, None, None), dtype="float32")
+        outputs = kmath.overlap_sequences(x, sequence_stride)
+        self.assertEqual(outputs.shape, (None, None))
+
     def test_fft(self):
         real = KerasTensor((None, 4, 3), dtype="float32")
         imag = KerasTensor((None, 4, 3), dtype="float32")
@@ -251,6 +266,15 @@ class MathOpsStaticShapeTest(testing.TestCase):
         outputs = kmath.extract_sequences(x, sequence_length, sequence_stride)
         num_sequences = 1 + (x.shape[-1] - sequence_length) // sequence_stride
         self.assertEqual(outputs.shape, (10, num_sequences, sequence_length))
+
+    def test_overlap_sequences(self):
+        num_sequences = 3
+        sequence_length = 4
+        sequence_stride = 2
+        x = KerasTensor((10, num_sequences, sequence_length), dtype="float32")
+        outputs = kmath.overlap_sequences(x, sequence_stride)
+        output_size = (num_sequences - 1) * sequence_stride + sequence_length
+        self.assertEqual(outputs.shape, (10, output_size))
 
     def test_fft(self):
         real = KerasTensor((2, 4, 3), dtype="float32")
@@ -530,6 +554,36 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         pos = 0
         for i in range(num_sequences):
             expected[:, i] = x[:, pos : pos + sequence_length]
+            pos += sequence_stride
+        self.assertAllClose(output, expected)
+
+    def test_overlap_sequences(self):
+        num_sequences = 3
+        sequence_length = 4
+        sequence_stride = 2
+        # Test 2D case.
+        x = np.random.random((num_sequences, sequence_length))
+        output = kmath.overlap_sequences(x, sequence_stride)
+
+        output_size = (num_sequences - 1) * sequence_stride + sequence_length
+        expected = np.zeros(shape=(output_size,))
+        pos = 0
+        for i in range(num_sequences):
+            end = pos + sequence_length
+            expected[pos:end] = expected[pos:end] + x[i]
+            pos += sequence_stride
+        self.assertAllClose(output, expected)
+
+        # Test N-D case.
+        x = np.random.random((2, num_sequences, sequence_length))
+        output = kmath.overlap_sequences(x, sequence_stride)
+
+        output_size = (num_sequences - 1) * sequence_stride + sequence_length
+        expected = np.zeros(shape=(2, output_size))
+        pos = 0
+        for i in range(num_sequences):
+            end = pos + sequence_length
+            expected[:, pos:end] = expected[:, pos:end] + x[:, i]
             pos += sequence_stride
         self.assertAllClose(output, expected)
 
