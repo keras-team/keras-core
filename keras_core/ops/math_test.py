@@ -175,6 +175,9 @@ class MathOpsDynamicShapeTest(testing.TestCase):
         imag_ref_shape = (None,) + imag_ref.shape[1:]
         self.assertEqual(real_output.shape, real_ref_shape)
         self.assertEqual(imag_output.shape, imag_ref_shape)
+    def test_rsqrt(self):
+        x = KerasTensor([None, 3])
+        self.assertEqual(kmath.rsqrt(x).shape, (None, 3))
 
 
 class MathOpsStaticShapeTest(testing.TestCase):
@@ -268,6 +271,10 @@ class MathOpsStaticShapeTest(testing.TestCase):
         ref = np.fft.rfft(np.ones((2, 4, 3)))
         self.assertEqual(real_output.shape, ref.shape)
         self.assertEqual(imag_output.shape, ref.shape)
+    def test_rsqrt(self):
+        x = KerasTensor([4, 3], dtype="float32")
+        self.assertEqual(kmath.rsqrt(x).shape, (4, 3))
+
 
     def test_stft(self):
         x = KerasTensor((2, 32), dtype="float32")
@@ -600,3 +607,11 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         )
         self.assertAllClose(real_ref, real_output, atol=1e-5, rtol=1e-5)
         self.assertAllClose(imag_ref, imag_output, atol=1e-5, rtol=1e-5)
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Numpy does not support rsqrt.",
+    )
+    def test_rsqrt(self):
+        x = np.array([[1, 4, 9], [16, 25, 36]], dtype="float32")
+        self.assertAllClose(kmath.rsqrt(x), 1 / np.sqrt(x))
+        self.assertAllClose(kmath.Rsqrt()(x), 1 / np.sqrt(x))
