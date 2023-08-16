@@ -13,6 +13,7 @@ def _stft(
     x, sequence_length, sequence_stride, fft_length, window="hann", center=True
 ):
     # pure numpy version of stft
+    ori_dtype = x.dtype
     if backend.standardize_dtype(x.dtype) not in {"float32", "float64"}:
         raise TypeError(
             "Invalid input type. Expected `float32` or `float64`. "
@@ -60,10 +61,10 @@ def _stft(
         x = np.multiply(x, win)
 
     x = np.fft.rfft(x, fft_length)
-    return np.real(x), np.imag(x)
+    return np.real(x).astype(ori_dtype), np.imag(x).astype(ori_dtype)
 
 
-class MathOpsDynamicShapeTest(testing.TestCase):
+class MathOpsDynamicShapeTest(testing.TestCase, parameterized.TestCase):
     def test_segment_sum(self):
         data = KerasTensor((None, 4), dtype="float32")
         segment_ids = KerasTensor((10,), dtype="int32")
@@ -169,13 +170,23 @@ class MathOpsDynamicShapeTest(testing.TestCase):
         self.assertEqual(real_output.shape, ref_shape)
         self.assertEqual(imag_output.shape, ref_shape)
 
-    def test_rfft(self):
+    @parameterized.parameters([(None,), (1,), (5,)])
+    def test_rfft(self, fft_length):
         x = KerasTensor((None, 4, 3), dtype="float32")
-        real_output, imag_output = kmath.rfft(x)
-        ref = np.fft.rfft(np.ones((2, 4, 3)))
+        real_output, imag_output = kmath.rfft(x, fft_length=fft_length)
+        ref = np.fft.rfft(np.ones((2, 4, 3)), n=fft_length)
         ref_shape = (None,) + ref.shape[1:]
         self.assertEqual(real_output.shape, ref_shape)
         self.assertEqual(imag_output.shape, ref_shape)
+
+    @parameterized.parameters([(None,), (1,), (5,)])
+    def test_irfft(self, fft_length):
+        real = KerasTensor((None, 4, 3), dtype="float32")
+        imag = KerasTensor((None, 4, 3), dtype="float32")
+        output = kmath.irfft((real, imag), fft_length=fft_length)
+        ref = np.fft.irfft(np.ones((2, 4, 3)), n=fft_length)
+        ref_shape = (None,) + ref.shape[1:]
+        self.assertEqual(output.shape, ref_shape)
 
     def test_stft(self):
         x = KerasTensor((None, 32), dtype="float32")
@@ -298,6 +309,13 @@ class MathOpsStaticShapeTest(testing.TestCase):
         ref = np.fft.rfft(np.ones((2, 4, 3)))
         self.assertEqual(real_output.shape, ref.shape)
         self.assertEqual(imag_output.shape, ref.shape)
+
+    def test_irfft(self):
+        real = KerasTensor((2, 4, 3), dtype="float32")
+        imag = KerasTensor((2, 4, 3), dtype="float32")
+        output = kmath.irfft((real, imag))
+        ref = np.fft.irfft(np.ones((2, 4, 3)))
+        self.assertEqual(output.shape, ref.shape)
 
     def test_rsqrt(self):
         x = KerasTensor([4, 3], dtype="float32")
@@ -630,6 +648,24 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         imag_ref = np.imag(ref)
         self.assertAllClose(real_ref, real_output, atol=1e-5, rtol=1e-5)
         self.assertAllClose(imag_ref, imag_output, atol=1e-5, rtol=1e-5)
+
+    @parameterized.parameters([(None,), (3,), (15,)])
+    def test_irfft(self, n):
+        # Test 1D.
+        real = np.random.random((10,))
+        imag = np.random.random((10,))
+        complex_arr = real + 1j * imag
+        output = kmath.irfft((real, imag), fft_length=n)
+        ref = np.fft.irfft(complex_arr, n=n)
+        self.assertAllClose(output, ref, atol=1e-5, rtol=1e-5)
+
+        # Test N-D case.
+        real = np.random.random((2, 3, 10))
+        imag = np.random.random((2, 3, 10))
+        complex_arr = real + 1j * imag
+        output = kmath.irfft((real, imag), fft_length=n)
+        ref = np.fft.irfft(complex_arr, n=n)
+        self.assertAllClose(output, ref, atol=1e-5, rtol=1e-5)
 
     @parameterized.parameters(
         [

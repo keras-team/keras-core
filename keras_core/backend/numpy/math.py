@@ -200,12 +200,19 @@ def fft2(x):
 
 def rfft(x, fft_length=None):
     complex_output = np.fft.rfft(x, n=fft_length, axis=-1, norm="backward")
-    return np.real(complex_output), np.imag(complex_output)
+    # numpy always outputs complex128, so we need to recast the dtype
+    return (
+        np.real(complex_output).astype(x.dtype),
+        np.imag(complex_output).astype(x.dtype),
+    )
 
 
 def irfft(x, fft_length=None):
     complex_input = _get_complex_tensor_from_tuple(x)
-    return np.fft.irfft(complex_input, n=fft_length, axis=-1, norm="backward")
+    # numpy always outputs float64, so we need to recast the dtype
+    return np.fft.irfft(
+        complex_input, n=fft_length, axis=-1, norm="backward"
+    ).astype(x[0].dtype)
 
 
 def stft(
@@ -233,6 +240,7 @@ def stft(
         pad_width = [(0, 0) for _ in range(len(x.shape))]
         pad_width[-1] = (fft_length // 2, fft_length // 2)
         x = np.pad(x, pad_width, mode="reflect")
+
     x = extract_sequences(x, fft_length, sequence_stride)
 
     if window is not None:

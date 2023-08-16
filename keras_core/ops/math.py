@@ -589,7 +589,10 @@ class RFFT(Operation):
         if self.fft_length is not None:
             new_last_dimension = self.fft_length // 2 + 1
         else:
-            new_last_dimension = x.shape[-1] // 2 + 1
+            if x.shape[-1] is not None:
+                new_last_dimension = x.shape[-1] // 2 + 1
+            else:
+                new_last_dimension = None
         new_shape = x.shape[:-1] + (new_last_dimension,)
 
         return (
@@ -669,10 +672,14 @@ class IRFFT(Operation):
             )
 
         if self.fft_length is not None:
-            new_last_dimension = self.fft_length // 2 + 1
+            new_last_dimension = min(2 * (self.fft_length - 1), self.fft_length)
+            new_last_dimension = max(new_last_dimension, 1)
         else:
-            new_last_dimension = x.shape[-1]
-        new_shape = x.shape[:-1] + (new_last_dimension,)
+            if real.shape[-1] is not None:
+                new_last_dimension = 2 * (real.shape[-1] - 1)
+            else:
+                new_last_dimension = None
+        new_shape = real.shape[:-1] + (new_last_dimension,)
         return KerasTensor(shape=new_shape, dtype=real.dtype)
 
     def call(self, x):
@@ -698,7 +705,8 @@ def irfft(x, fft_length=None):
     larger, the dimension is padded with zeros.
 
     Args:
-        x: Input tensor.
+        x: Tuple of the real and imaginary parts of the input tensor. Both
+            tensors in the tuple should be of floating type.
         fft_length: An integer representing the number of the fft length. If not
             specified, it is inferred from the length of the last axis of `x`.
             Defaults to `None`.
@@ -709,14 +717,15 @@ def irfft(x, fft_length=None):
 
     Examples:
 
-    >>> x = keras_core.ops.convert_to_tensor([0.0, 1.0, 2.0, 3.0, 4.0])
-    >>> irfft(rfft(x))
-    array([0.625    , 1.4045226, 3.125    , 4.8454774])
+    >>> real = keras_core.ops.convert_to_tensor([0.0, 1.0, 2.0, 3.0, 4.0])
+    >>> imag = keras_core.ops.convert_to_tensor([0.0, 1.0, 2.0, 3.0, 4.0])
+    >>> irfft((real, imag))
+    array([0.66666667, -0.9106836, 0.24401694])
 
-    >>> irfft(rfft(x, 5), 5)
-    array([0., 1., 2., 3., 4.])
+    >>> irfft(rfft(real, 5), 5)
+    array([0.0, 1.0, 2.0, 3.0, 4.0])
     """
-    if any_symbolic_tensors((x,)):
+    if any_symbolic_tensors(x):
         return IRFFT(fft_length).symbolic_call(x)
     return backend.math.irfft(x, fft_length)
 
