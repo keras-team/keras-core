@@ -285,6 +285,60 @@ def stft(
     return rfft(x, fft_length)
 
 
+def istft(
+    x, sequence_length, sequence_stride, fft_length, window="hann", center=True
+):
+    # ref:
+    # torch: aten/src/ATen/native/SpectralOps.cpp
+    # tf: tf.signal.inverse_stft_window_fn
+    x = irfft(x, fft_length)
+
+    if window is not None:
+        if isinstance(window, str):
+            if window == "hann":
+                win = torch.hann_window(
+                    sequence_length,
+                    periodic=True,
+                    dtype=x.dtype,
+                    device=get_device(),
+                )
+            else:
+                win = torch.hamming_window(
+                    sequence_length,
+                    periodic=True,
+                    dtype=x.dtype,
+                    device=get_device(),
+                )
+        else:
+            win = convert_to_tensor(window, dtype=x.dtype)
+        if len(win.shape) != 1 or win.shape[-1] != sequence_length:
+            raise ValueError(
+                "The shape of `window` must be equal to [sequence_length]."
+                f"Received: window shape={win.shape}"
+            )
+        l_pad = (fft_length - sequence_length) // 2
+        r_pad = fft_length - sequence_length - l_pad
+        win = pad(win, [[l_pad, r_pad]], "constant")
+
+        # square and sum
+        _sequence_length = sequence_length + l_pad + r_pad
+        denom = torch.square(win)
+        overlaps = -(-_sequence_length // sequence_stride)
+        denom = pad(denom, [(0, overlaps * sequence_stride - _sequence_length)])
+        denom = torch.reshape(denom, [overlaps, sequence_stride])
+        denom = torch.sum(denom, 0, keepdims=True)
+        denom = torch.tile(denom, [overlaps, 1])
+        denom = torch.reshape(denom, [overlaps * sequence_stride])
+        win = torch.divide(win, denom[:_sequence_length])
+        x = torch.multiply(x, win)
+
+    x = overlap_sequences(x, sequence_stride)
+
+    if center:
+        x[..., fft_length // 2 : -(fft_length // 2)]
+    return x
+
+
 def rsqrt(x):
     x = convert_to_tensor(x)
     return torch.rsqrt(x)

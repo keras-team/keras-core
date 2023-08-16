@@ -170,5 +170,55 @@ def stft(
     return rfft(x, fft_length)
 
 
+def istft(
+    x, sequence_length, sequence_stride, fft_length, window="hann", center=True
+):
+    # ref:
+    # torch: aten/src/ATen/native/SpectralOps.cpp
+    # tf: tf.signal.inverse_stft_window_fn
+    x = irfft(x, fft_length)
+
+    if window is not None:
+        if isinstance(window, str):
+            if window == "hann":
+                win = tf.signal.hann_window(
+                    sequence_length, periodic=True, dtype=x.dtype
+                )
+            else:
+                win = tf.signal.hamming_window(
+                    sequence_length, periodic=True, dtype=x.dtype
+                )
+        else:
+            win = convert_to_tensor(window, dtype=x.dtype)
+        if len(win.shape) != 1 or win.shape[-1] != sequence_length:
+            raise ValueError(
+                "The shape of `window` must be equal to [sequence_length]."
+                f"Received: window shape={win.shape}"
+            )
+        l_pad = (fft_length - sequence_length) // 2
+        r_pad = fft_length - sequence_length - l_pad
+        win = tf.pad(win, [[l_pad, r_pad]])
+
+        # square and sum
+        _sequence_length = sequence_length + l_pad + r_pad
+        denom = tf.square(win)
+        overlaps = -(-_sequence_length // sequence_stride)
+        denom = tf.pad(
+            denom, [(0, overlaps * sequence_stride - _sequence_length)]
+        )
+        denom = tf.reshape(denom, [overlaps, sequence_stride])
+        denom = tf.reduce_sum(denom, 0, keepdims=True)
+        denom = tf.tile(denom, [overlaps, 1])
+        denom = tf.reshape(denom, [overlaps * sequence_stride])
+        win = tf.divide(win, denom[:_sequence_length])
+        x = tf.multiply(x, win)
+
+    x = overlap_sequences(x, sequence_stride)
+
+    if center:
+        x[..., fft_length // 2 : -(fft_length // 2)]
+    return x
+
+
 def rsqrt(x):
     return tf.math.rsqrt(x)

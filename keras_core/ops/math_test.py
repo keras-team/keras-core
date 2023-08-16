@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import pytest
 import scipy.signal
@@ -62,6 +64,72 @@ def _stft(
 
     x = np.fft.rfft(x, fft_length)
     return np.real(x).astype(ori_dtype), np.imag(x).astype(ori_dtype)
+
+
+def _istft(
+    x, sequence_length, sequence_stride, fft_length, window="hann", center=True
+):
+    # pure numpy version of istft
+    complex_input = x[0] + 1j * x[1]
+    x = np.fft.irfft(
+        complex_input, n=fft_length, axis=-1, norm="backward"
+    ).astype(x[0].dtype)
+
+    if window is not None:
+        if isinstance(window, str):
+            win = np.array(
+                scipy.signal.get_window(window, sequence_length), dtype=x.dtype
+            )
+        else:
+            win = np.array(window, dtype=x.dtype)
+        if len(win.shape) != 1 or win.shape[-1] != sequence_length:
+            raise ValueError(
+                "The shape of `window` must be equal to [sequence_length]."
+                f"Received: window shape={win.shape}"
+            )
+        l_pad = (fft_length - sequence_length) // 2
+        r_pad = fft_length - sequence_length - l_pad
+        win = np.pad(win, [[l_pad, r_pad]])
+
+        # square and sum
+        _sequence_length = sequence_length + l_pad + r_pad
+        denom = np.square(win)
+        overlaps = -(-_sequence_length // sequence_stride)
+        denom = np.pad(
+            denom, [(0, overlaps * sequence_stride - _sequence_length)]
+        )
+        denom = np.reshape(denom, [overlaps, sequence_stride])
+        denom = np.sum(denom, 0, keepdims=True)
+        denom = np.tile(denom, [overlaps, 1])
+        denom = np.reshape(denom, [overlaps * sequence_stride])
+        win = np.divide(win, denom[:_sequence_length])
+        x = np.multiply(x, win)
+
+    # overlap_sequences
+    *batch_shape, nframes, segment_len = x.shape
+    flat_batchsize = math.prod(batch_shape)
+    x = np.reshape(x, (flat_batchsize, nframes, segment_len))
+    output_size = sequence_stride * (nframes - 1) + segment_len
+    nstep_per_segment = 1 + (segment_len - 1) // sequence_stride
+    padded_segment_len = nstep_per_segment * sequence_stride
+    x = np.pad(x, ((0, 0), (0, 0), (0, padded_segment_len - segment_len)))
+    x = np.reshape(
+        x, (flat_batchsize, nframes, nstep_per_segment, sequence_stride)
+    )
+    x = x.transpose((0, 2, 1, 3))  # x: (B, S, N, T)
+    x = np.pad(x, ((0, 0), (0, 0), (0, nframes), (0, 0)))
+    shrinked = x.shape[2] - 1
+    x = np.reshape(x, (flat_batchsize, -1))
+    x = x[:, : (nstep_per_segment * shrinked * sequence_stride)]
+    x = np.reshape(
+        x, (flat_batchsize, nstep_per_segment, shrinked * sequence_stride)
+    )
+    x = np.sum(x, axis=1)[:, :output_size]
+    x = np.reshape(x, tuple(batch_shape) + (-1,))
+
+    if center:
+        x[..., fft_length // 2 : -(fft_length // 2)]
+    return x
 
 
 class MathOpsDynamicShapeTest(testing.TestCase, parameterized.TestCase):
@@ -204,6 +272,24 @@ class MathOpsDynamicShapeTest(testing.TestCase, parameterized.TestCase):
         self.assertEqual(real_output.shape, real_ref_shape)
         self.assertEqual(imag_output.shape, imag_ref_shape)
 
+    def test_istft(self):
+        sequence_length = 10
+        sequence_stride = 3
+        fft_length = 15
+        real = KerasTensor((None, 32), dtype="float32")
+        imag = KerasTensor((None, 32), dtype="float32")
+        output = kmath.istft(
+            (real, imag), sequence_length, sequence_stride, fft_length
+        )
+        ref = _istft(
+            (np.ones((2, 32)), np.ones((2, 32))),
+            sequence_length,
+            sequence_stride,
+            fft_length,
+        )
+        ref_shape = (None,) + ref.shape[1:]
+        self.assertEqual(output.shape, ref_shape)
+
     def test_rsqrt(self):
         x = KerasTensor([None, 3])
         self.assertEqual(kmath.rsqrt(x).shape, (None, 3))
@@ -334,6 +420,23 @@ class MathOpsStaticShapeTest(testing.TestCase):
         )
         self.assertEqual(real_output.shape, real_ref.shape)
         self.assertEqual(imag_output.shape, imag_ref.shape)
+
+    def test_istft(self):
+        sequence_length = 10
+        sequence_stride = 3
+        fft_length = 15
+        real = KerasTensor((2, 32), dtype="float32")
+        imag = KerasTensor((2, 32), dtype="float32")
+        output = kmath.istft(
+            (real, imag), sequence_length, sequence_stride, fft_length
+        )
+        ref = _istft(
+            (np.ones((2, 32)), np.ones((2, 32))),
+            sequence_length,
+            sequence_stride,
+            fft_length,
+        )
+        self.assertEqual(output.shape, ref.shape)
 
 
 class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):

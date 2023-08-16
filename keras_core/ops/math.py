@@ -672,8 +672,7 @@ class IRFFT(Operation):
             )
 
         if self.fft_length is not None:
-            new_last_dimension = min(2 * (self.fft_length - 1), self.fft_length)
-            new_last_dimension = max(new_last_dimension, 1)
+            new_last_dimension = self.fft_length
         else:
             if real.shape[-1] is not None:
                 new_last_dimension = 2 * (real.shape[-1] - 1)
@@ -822,6 +821,112 @@ def stft(
             sequence_length, sequence_stride, fft_length, center, window
         ).symbolic_call(x)
     return backend.math.stft(
+        x,
+        sequence_length=sequence_length,
+        sequence_stride=sequence_stride,
+        fft_length=fft_length,
+        window=window,
+        center=center,
+    )
+
+
+class ISTFT(Operation):
+    def __init__(
+        self,
+        sequence_length,
+        sequence_stride,
+        fft_length,
+        window="hann",
+        center=True,
+    ):
+        super().__init__()
+        self.sequence_length = sequence_length
+        self.sequence_stride = sequence_stride
+        self.fft_length = fft_length
+        self.window = window
+        self.center = center
+
+    def compute_output_spec(self, x):
+        if not isinstance(x, (tuple, list)) or len(x) != 2:
+            raise ValueError(
+                "Input `x` should be a tuple of two tensors - real and "
+                f"imaginary. Received: x={x}"
+            )
+        real, imag = x
+        # Both real and imaginary parts should have the same shape.
+        if real.shape != imag.shape:
+            raise ValueError(
+                "Input `a` should be a tuple of two tensors - real and "
+                "imaginary. Both the real and imaginary parts should have the "
+                f"same shape. Received: x[0].shape = {real.shape}, "
+                f"x[1].shape = {imag.shape}"
+            )
+        if len(real.shape) < 2:
+            raise ValueError(
+                f"Input should have rank >= 2. "
+                f"Received: input.shape = {real.shape}"
+            )
+        if real.shape[-2] is not None:
+            output_size = (
+                real.shape[-2] - 1
+            ) * self.sequence_stride + self.fft_length
+            if self.center:
+                output_size = output_size - ((self.fft_length // 2) * 2)
+        else:
+            output_size = None
+        new_shape = real.shape[:-2] + (output_size,)
+        return KerasTensor(shape=new_shape, dtype=real.dtype)
+
+    def call(self, x):
+        return backend.math.istft(
+            x,
+            sequence_length=self.sequence_length,
+            sequence_stride=self.sequence_stride,
+            fft_length=self.fft_length,
+            window=self.window,
+            center=self.center,
+        )
+
+
+@keras_core_export("keras_core.ops.istft")
+def istft(
+    x, sequence_length, sequence_stride, fft_length, window="hann", center=True
+):
+    """Inverse Short-Time Fourier Transform along the last axis of the input.
+
+    To reconstruct an original waveform, the parameters should be the same in
+    `stft`.
+
+    Args:
+        x: Tuple of the real and imaginary parts of the input tensor. Both
+            tensors in the tuple should be of floating type.
+        sequence_length: An integer representing the sequence length.
+        sequence_stride: An integer representing the sequence hop size.
+        fft_length: An integer representing the size of the FFT that produced
+            `stft`.
+        window: A string, a tensor of the window or `None`. If `window` is a
+            string, available values are `"hann"` and `"hamming"`. If `window`
+            is a tensor, it will be used directly as the window and its length
+            must be `sequence_length`. If `window` is `None`, no windowing is
+            used. Defaults to `"hann"`.
+        center: Whether `x` was padded on both sides so that the t-th sequence
+            is centered at time `t * sequence_stride`. Defaults to `True`.
+
+    Returns:
+        A tensor containing the inverse Short-Time Fourier Transform along the
+        last axis of `x`.
+
+    Example:
+
+    >>> x = keras_core.ops.convert_to_tensor([0.0, 1.0, 2.0, 3.0, 4.0])
+    >>> istft(stft(x, 1, 1, 1), 1, 1, 1)
+    array([0.0, 1.0, 2.0, 3.0, 4.0])
+    """
+    if any_symbolic_tensors(x):
+        return ISTFT(
+            sequence_length, sequence_stride, fft_length, center, window
+        ).symbolic_call(x)
+    return backend.math.istft(
         x,
         sequence_length=sequence_length,
         sequence_stride=sequence_stride,

@@ -245,8 +245,8 @@ def stft(
 
     if window is not None:
         if isinstance(window, str):
-            win = scipy.signal.get_window(window, sequence_length).astype(
-                x.dtype
+            win = convert_to_tensor(
+                scipy.signal.get_window(window, sequence_length), dtype=x.dtype
             )
         else:
             win = convert_to_tensor(window, dtype=x.dtype)
@@ -261,3 +261,48 @@ def stft(
         x = np.multiply(x, win)
 
     return rfft(x, fft_length)
+
+
+def istft(
+    x, sequence_length, sequence_stride, fft_length, window="hann", center=True
+):
+    # ref:
+    # torch: aten/src/ATen/native/SpectralOps.cpp
+    # tf: tf.signal.inverse_stft_window_fn
+    x = irfft(x, fft_length)
+
+    if window is not None:
+        if isinstance(window, str):
+            win = convert_to_tensor(
+                scipy.signal.get_window(window, sequence_length), dtype=x.dtype
+            )
+        else:
+            win = convert_to_tensor(window, dtype=x.dtype)
+        if len(win.shape) != 1 or win.shape[-1] != sequence_length:
+            raise ValueError(
+                "The shape of `window` must be equal to [sequence_length]."
+                f"Received: window shape={win.shape}"
+            )
+        l_pad = (fft_length - sequence_length) // 2
+        r_pad = fft_length - sequence_length - l_pad
+        win = np.pad(win, [[l_pad, r_pad]])
+
+        # square and sum
+        _sequence_length = sequence_length + l_pad + r_pad
+        denom = np.square(win)
+        overlaps = -(-_sequence_length // sequence_stride)
+        denom = np.pad(
+            denom, [(0, overlaps * sequence_stride - _sequence_length)]
+        )
+        denom = np.reshape(denom, [overlaps, sequence_stride])
+        denom = np.sum(denom, 0, keepdims=True)
+        denom = np.tile(denom, [overlaps, 1])
+        denom = np.reshape(denom, [overlaps * sequence_stride])
+        win = np.divide(win, denom[:_sequence_length])
+        x = np.multiply(x, win)
+
+    x = overlap_sequences(x, sequence_stride)
+
+    if center:
+        x[..., fft_length // 2 : -(fft_length // 2)]
+    return x
