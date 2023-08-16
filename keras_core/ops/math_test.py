@@ -9,17 +9,19 @@ from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.ops import math as kmath
 
 
-def _stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
+def _stft(
+    x, sequence_length, sequence_stride, fft_length, window="hann", center=True
+):
     # pure numpy version of stft
     if backend.standardize_dtype(x.dtype) not in {"float32", "float64"}:
         raise TypeError(
             "Invalid input type. Expected `float32` or `float64`. "
             f"Received: input type={x.dtype}"
         )
-    if fft_length < frame_length:
+    if fft_length < sequence_length:
         raise ValueError(
-            "`fft_length` must equal or larger than `frame_length`. "
-            f"Received: frame_length={frame_length}, "
+            "`fft_length` must equal or larger than `sequence_length`. "
+            f"Received: sequence_length={sequence_length}, "
             f"fft_length={fft_length}"
         )
 
@@ -32,28 +34,28 @@ def _stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
             # torch not support reflect padding for N-D cases when N >= 3
             x = np.pad(x, pad_width, mode="constant")
 
-    # frame
+    # extract_sequences
     *batch_shape, _ = x.shape
     batch_shape = list(batch_shape)
     shape = x.shape[:-1] + (
-        (x.shape[-1] - (fft_length - frame_step)) // frame_step,
+        (x.shape[-1] - (fft_length - sequence_stride)) // sequence_stride,
         fft_length,
     )
-    strides = x.strides[:-1] + (frame_step * x.strides[-1], x.strides[-1])
+    strides = x.strides[:-1] + (sequence_stride * x.strides[-1], x.strides[-1])
     x = np.lib.stride_tricks.as_strided(x, shape=shape, strides=strides)
     x = np.reshape(x, (*batch_shape, *x.shape[-2:]))
 
     if window is not None:
         if isinstance(window, str):
-            window = scipy.signal.get_window(window, frame_length)
+            window = scipy.signal.get_window(window, sequence_length)
         win = np.array(window, dtype=x.dtype)
-        if len(win.shape) != 1 or win.shape[-1] != frame_length:
+        if len(win.shape) != 1 or win.shape[-1] != sequence_length:
             raise ValueError(
-                "The shape of `window` must be equal to [frame_length]."
+                "The shape of `window` must be equal to [sequence_length]."
                 f"Received: window shape={win.shape}"
             )
-        l_pad = (fft_length - frame_length) // 2
-        r_pad = fft_length - frame_length - l_pad
+        l_pad = (fft_length - sequence_length) // 2
+        r_pad = fft_length - sequence_length - l_pad
         win = np.pad(win, [[l_pad, r_pad]])
         x = np.multiply(x, win)
 
@@ -118,21 +120,21 @@ class MathOpsDynamicShapeTest(testing.TestCase):
         self.assertEqual(q.shape, qref_shape)
         self.assertEqual(r.shape, rref_shape)
 
-    def test_frame(self):
+    def test_extract_sequences(self):
         # Defined dimension
         x = KerasTensor((None, 32), dtype="float32")
-        frame_length = 3
-        frame_step = 2
-        outputs = kmath.frame(x, frame_length, frame_step)
-        num_frames = 1 + (x.shape[-1] - frame_length) // frame_step
-        self.assertEqual(outputs.shape, (None, num_frames, frame_length))
+        sequence_length = 3
+        sequence_stride = 2
+        outputs = kmath.extract_sequences(x, sequence_length, sequence_stride)
+        num_sequences = 1 + (x.shape[-1] - sequence_length) // sequence_stride
+        self.assertEqual(outputs.shape, (None, num_sequences, sequence_length))
 
         # Undefined dimension
         x = KerasTensor((None, None), dtype="float32")
-        frame_length = 3
-        frame_step = 2
-        outputs = kmath.frame(x, frame_length, frame_step)
-        self.assertEqual(outputs.shape, (None, None, frame_length))
+        sequence_length = 3
+        sequence_stride = 2
+        outputs = kmath.extract_sequences(x, sequence_length, sequence_stride)
+        self.assertEqual(outputs.shape, (None, None, sequence_length))
 
     def test_fft(self):
         real = KerasTensor((None, 4, 3), dtype="float32")
@@ -162,14 +164,14 @@ class MathOpsDynamicShapeTest(testing.TestCase):
 
     def test_stft(self):
         x = KerasTensor((None, 32), dtype="float32")
-        frame_length = 10
-        frame_step = 3
+        sequence_length = 10
+        sequence_stride = 3
         fft_length = 15
         real_output, imag_output = kmath.stft(
-            x, frame_length, frame_step, fft_length
+            x, sequence_length, sequence_stride, fft_length
         )
         real_ref, imag_ref = _stft(
-            np.ones((2, 32)), frame_length, frame_step, fft_length
+            np.ones((2, 32)), sequence_length, sequence_stride, fft_length
         )
         real_ref_shape = (None,) + real_ref.shape[1:]
         imag_ref_shape = (None,) + imag_ref.shape[1:]
@@ -242,13 +244,13 @@ class MathOpsStaticShapeTest(testing.TestCase):
         self.assertEqual(q.shape, qref.shape)
         self.assertEqual(r.shape, rref.shape)
 
-    def test_frame(self):
+    def test_extract_sequences(self):
         x = KerasTensor((10, 16), dtype="float32")
-        frame_length = 3
-        frame_step = 2
-        outputs = kmath.frame(x, frame_length, frame_step)
-        num_frames = 1 + (x.shape[-1] - frame_length) // frame_step
-        self.assertEqual(outputs.shape, (10, num_frames, frame_length))
+        sequence_length = 3
+        sequence_stride = 2
+        outputs = kmath.extract_sequences(x, sequence_length, sequence_stride)
+        num_sequences = 1 + (x.shape[-1] - sequence_length) // sequence_stride
+        self.assertEqual(outputs.shape, (10, num_sequences, sequence_length))
 
     def test_fft(self):
         real = KerasTensor((2, 4, 3), dtype="float32")
@@ -279,14 +281,14 @@ class MathOpsStaticShapeTest(testing.TestCase):
 
     def test_stft(self):
         x = KerasTensor((2, 32), dtype="float32")
-        frame_length = 10
-        frame_step = 3
+        sequence_length = 10
+        sequence_stride = 3
         fft_length = 15
         real_output, imag_output = kmath.stft(
-            x, frame_length, frame_step, fft_length
+            x, sequence_length, sequence_stride, fft_length
         )
         real_ref, imag_ref = _stft(
-            np.ones((2, 32)), frame_length, frame_step, fft_length
+            np.ones((2, 32)), sequence_length, sequence_stride, fft_length
         )
         self.assertEqual(real_output.shape, real_ref.shape)
         self.assertEqual(imag_output.shape, imag_ref.shape)
@@ -502,33 +504,33 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(qref, q)
         self.assertAllClose(rref, r)
 
-    def test_frame(self):
+    def test_extract_sequences(self):
         # Test 1D case.
         x = np.random.random((10,))
-        frame_length = 3
-        frame_step = 2
-        output = kmath.frame(x, frame_length, frame_step)
+        sequence_length = 3
+        sequence_stride = 2
+        output = kmath.extract_sequences(x, sequence_length, sequence_stride)
 
-        num_frames = 1 + (x.shape[-1] - frame_length) // frame_step
-        expected = np.zeros(shape=(num_frames, frame_length))
+        num_sequences = 1 + (x.shape[-1] - sequence_length) // sequence_stride
+        expected = np.zeros(shape=(num_sequences, sequence_length))
         pos = 0
-        for i in range(num_frames):
-            expected[i] = x[pos : pos + frame_length]
-            pos += frame_step
+        for i in range(num_sequences):
+            expected[i] = x[pos : pos + sequence_length]
+            pos += sequence_stride
         self.assertAllClose(output, expected)
 
         # Test N-D case.
         x = np.random.random((4, 8))
-        frame_length = 3
-        frame_step = 2
-        output = kmath.frame(x, frame_length, frame_step)
+        sequence_length = 3
+        sequence_stride = 2
+        output = kmath.extract_sequences(x, sequence_length, sequence_stride)
 
-        num_frames = 1 + (x.shape[-1] - frame_length) // frame_step
-        expected = np.zeros(shape=(4, num_frames, frame_length))
+        num_sequences = 1 + (x.shape[-1] - sequence_length) // sequence_stride
+        expected = np.zeros(shape=(4, num_sequences, sequence_length))
         pos = 0
-        for i in range(num_frames):
-            expected[:, i] = x[:, pos : pos + frame_length]
-            pos += frame_step
+        for i in range(num_sequences):
+            expected[:, i] = x[:, pos : pos + sequence_length]
+            pos += sequence_stride
         self.assertAllClose(output, expected)
 
     def test_fft(self):
@@ -586,14 +588,16 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             (32, 8, 32, None, True),
         ]
     )
-    def test_stft(self, frame_length, frame_step, fft_length, window, center):
+    def test_stft(
+        self, sequence_length, sequence_stride, fft_length, window, center
+    ):
         # Test 1D case.
         x = np.random.random((32,))
         real_output, imag_output = kmath.stft(
-            x, frame_length, frame_step, fft_length, window, center
+            x, sequence_length, sequence_stride, fft_length, window, center
         )
         real_ref, imag_ref = _stft(
-            x, frame_length, frame_step, fft_length, window, center
+            x, sequence_length, sequence_stride, fft_length, window, center
         )
         self.assertAllClose(real_ref, real_output, atol=1e-5, rtol=1e-5)
         self.assertAllClose(imag_ref, imag_output, atol=1e-5, rtol=1e-5)
@@ -601,10 +605,10 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         # Test N-D case.
         x = np.random.random((2, 3, 32))
         real_output, imag_output = kmath.stft(
-            x, frame_length, frame_step, fft_length, window, center
+            x, sequence_length, sequence_stride, fft_length, window, center
         )
         real_ref, imag_ref = _stft(
-            x, frame_length, frame_step, fft_length, window, center
+            x, sequence_length, sequence_stride, fft_length, window, center
         )
         self.assertAllClose(real_ref, real_output, atol=1e-5, rtol=1e-5)
         self.assertAllClose(imag_ref, imag_output, atol=1e-5, rtol=1e-5)

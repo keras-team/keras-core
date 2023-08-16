@@ -109,15 +109,15 @@ def qr(x, mode="reduced"):
     return np.linalg.qr(x, mode=mode)
 
 
-def frame(x, frame_length, frame_step):
+def extract_sequences(x, sequence_length, sequence_stride):
     *batch_shape, _ = x.shape
     batch_shape = list(batch_shape)
     shape = x.shape[:-1] + (
-        (x.shape[-1] - (frame_length - frame_step)) // frame_step,
-        frame_length,
+        (x.shape[-1] - (sequence_length - sequence_stride)) // sequence_stride,
+        sequence_length,
     )
     strides = x.strides[:-1] + (
-        frame_step * x.strides[-1],
+        sequence_stride * x.strides[-1],
         x.strides[-1],
     )
     x = np.lib.stride_tricks.as_strided(x, shape=shape, strides=strides)
@@ -139,16 +139,18 @@ def rfft(x, fft_length=None):
     return np.real(complex_output), np.imag(complex_output)
 
 
-def stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
+def stft(
+    x, sequence_length, sequence_stride, fft_length, window="hann", center=True
+):
     if standardize_dtype(x.dtype) not in {"float32", "float64"}:
         raise TypeError(
             "Invalid input type. Expected `float32` or `float64`. "
             f"Received: input type={x.dtype}"
         )
-    if fft_length < frame_length:
+    if fft_length < sequence_length:
         raise ValueError(
-            "`fft_length` must equal or larger than `frame_length`. "
-            f"Received: frame_length={frame_length}, "
+            "`fft_length` must equal or larger than `sequence_length`. "
+            f"Received: sequence_length={sequence_length}, "
             f"fft_length={fft_length}"
         )
     if isinstance(window, str):
@@ -162,20 +164,22 @@ def stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
         pad_width = [(0, 0) for _ in range(len(x.shape))]
         pad_width[-1] = (fft_length // 2, fft_length // 2)
         x = np.pad(x, pad_width, mode="reflect")
-    x = frame(x, fft_length, frame_step)
+    x = extract_sequences(x, fft_length, sequence_stride)
 
     if window is not None:
         if isinstance(window, str):
-            win = scipy.signal.get_window(window, frame_length).astype(x.dtype)
+            win = scipy.signal.get_window(window, sequence_length).astype(
+                x.dtype
+            )
         else:
             win = convert_to_tensor(window, dtype=x.dtype)
-        if len(win.shape) != 1 or win.shape[-1] != frame_length:
+        if len(win.shape) != 1 or win.shape[-1] != sequence_length:
             raise ValueError(
-                "The shape of `window` must be equal to [frame_length]."
+                "The shape of `window` must be equal to [sequence_length]."
                 f"Received: window shape={win.shape}"
             )
-        l_pad = (fft_length - frame_length) // 2
-        r_pad = fft_length - frame_length - l_pad
+        l_pad = (fft_length - sequence_length) // 2
+        r_pad = fft_length - sequence_length - l_pad
         win = np.pad(win, [[l_pad, r_pad]])
         x = np.multiply(x, win)
 

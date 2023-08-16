@@ -314,11 +314,11 @@ def qr(x, mode="reduced"):
     return backend.math.qr(x, mode=mode)
 
 
-class Frame(Operation):
-    def __init__(self, frame_length, frame_step):
+class ExtractSequences(Operation):
+    def __init__(self, sequence_length, sequence_stride):
         super().__init__()
-        self.frame_length = frame_length
-        self.frame_step = frame_step
+        self.sequence_length = sequence_length
+        self.sequence_stride = sequence_stride
 
     def compute_output_spec(self, x):
         if len(x.shape) < 1:
@@ -327,51 +327,55 @@ class Frame(Operation):
                 f"Received: input.shape = {x.shape}"
             )
         if x.shape[-1] is not None:
-            num_frames = (
-                1 + (x.shape[-1] - self.frame_length) // self.frame_step
+            num_sequences = (
+                1 + (x.shape[-1] - self.sequence_length) // self.sequence_stride
             )
         else:
-            num_frames = None
-        new_shape = x.shape[:-1] + (num_frames, self.frame_length)
+            num_sequences = None
+        new_shape = x.shape[:-1] + (num_sequences, self.sequence_length)
         return KerasTensor(shape=new_shape, dtype=x.dtype)
 
     def call(self, x):
-        return backend.math.frame(
-            x, frame_length=self.frame_length, frame_step=self.frame_step
+        return backend.math.extract_sequences(
+            x,
+            sequence_length=self.sequence_length,
+            sequence_stride=self.sequence_stride,
         )
 
 
-@keras_core_export("keras_core.ops.frame")
-def frame(x, frame_length, frame_step):
-    """Expands the dimension of the last axis into frames of `frame_length`.
+@keras_core_export("keras_core.ops.extract_sequences")
+def extract_sequences(x, sequence_length, sequence_stride):
+    """Expands the dimension of last axis into sequences of `sequence_length`.
 
-    Slides a window of size `frame_length` over the last axis of the input
-    with a stride of `frame_step`, replacing the last axis with
-    `[num_frames, frame_length]` frames.
+    Slides a window of size `sequence_length` over the last axis of the input
+    with a stride of `sequence_stride`, replacing the last axis with
+    `[num_sequences, sequence_length]` sequences.
 
-    If the dimension along the last axis is N, the number of frames can be
+    If the dimension along the last axis is N, the number of sequences can be
     computed by:
 
-    `num_frames = 1 + (N - frame_length) // frame_step`
+    `num_sequences = 1 + (N - sequence_length) // sequence_stride`
 
     Args:
         x: Input tensor.
-        frame_length: An integer representing the frame length in samples.
-        frame_step: An integer representing the frame hop size in samples.
+        sequence_length: An integer representing the sequences length.
+        sequence_stride: An integer representing the sequences hop size.
 
     Returns:
-        A tensor of frames with shape [..., num_frames, frame_length].
+        A tensor of sequences with shape [..., num_sequences, sequence_length].
 
     Example:
 
     >>> x = keras_core.ops.convert_to_tensor([1, 2, 3, 4, 5, 6])
-    >>> frame(x, 3, 2)
+    >>> extract_sequences(x, 3, 2)
     array([[1, 2, 3],
        [3, 4, 5]])
     """
     if any_symbolic_tensors((x,)):
-        return Frame(frame_length, frame_step).symbolic_call(x)
-    return backend.math.frame(x, frame_length, frame_step)
+        return ExtractSequences(sequence_length, sequence_stride).symbolic_call(
+            x
+        )
+    return backend.math.extract_sequences(x, sequence_length, sequence_stride)
 
 
 class FFT(Operation):
@@ -582,11 +586,16 @@ def rfft(x, fft_length=None):
 
 class STFT(Operation):
     def __init__(
-        self, frame_length, frame_step, fft_length, window="hann", center=True
+        self,
+        sequence_length,
+        sequence_stride,
+        fft_length,
+        window="hann",
+        center=True,
     ):
         super().__init__()
-        self.frame_length = frame_length
-        self.frame_step = frame_step
+        self.sequence_length = sequence_length
+        self.sequence_stride = sequence_stride
         self.fft_length = fft_length
         self.window = window
         self.center = center
@@ -599,12 +608,14 @@ class STFT(Operation):
             )
         if x.shape[-1] is not None:
             padded = 0 if self.center is False else (self.fft_length // 2) * 2
-            num_frames = (
-                1 + (x.shape[-1] + padded - self.fft_length) // self.frame_step
+            num_sequences = (
+                1
+                + (x.shape[-1] + padded - self.fft_length)
+                // self.sequence_stride
             )
         else:
-            num_frames = None
-        new_shape = x.shape[:-1] + (num_frames, self.fft_length // 2 + 1)
+            num_sequences = None
+        new_shape = x.shape[:-1] + (num_sequences, self.fft_length // 2 + 1)
         return (
             KerasTensor(shape=new_shape, dtype=x.dtype),
             KerasTensor(shape=new_shape, dtype=x.dtype),
@@ -613,8 +624,8 @@ class STFT(Operation):
     def call(self, x):
         return backend.math.stft(
             x,
-            frame_length=self.frame_length,
-            frame_step=self.frame_step,
+            sequence_length=self.sequence_length,
+            sequence_stride=self.sequence_stride,
             fft_length=self.fft_length,
             window=self.window,
             center=self.center,
@@ -622,7 +633,9 @@ class STFT(Operation):
 
 
 @keras_core_export("keras_core.ops.stft")
-def stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
+def stft(
+    x, sequence_length, sequence_stride, fft_length, window="hann", center=True
+):
     """Short-Time Fourier Transform along the last axis of the input.
 
     The STFT computes the Fourier transform of short overlapping windows of the
@@ -631,18 +644,18 @@ def stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
 
     Args:
         x: Input tensor.
-        frame_length: An integer representing the frame length in samples.
-        frame_step: An integer representing the frame hop size in samples.
+        sequence_length: An integer representing the sequence length.
+        sequence_stride: An integer representing the sequence hop size.
         fft_length: An integer representing the size of the FFT to apply. If not
-            specified, uses the smallest power of 2 enclosing `frame_length`.
+            specified, uses the smallest power of 2 enclosing `sequence_length`.
         window: A string, a tensor of the window or `None`. If `window` is a
             string, available values are `"hann"` and `"hamming"`. If `window`
             is a tensor, it will be used directly as the window and its length
-            must be `frame_length`. If `window` is `None`, no windowing is used.
-            Defaults to `"hann"`.
-        center: Whether to pad `x` on both sides so that the t-th frame is
-            centered at time `t * frame_step`. Otherwise, the t-th frame begins
-            at time `t * frame_step`. Defaults to `True`.
+            must be `sequence_length`. If `window` is `None`, no windowing is
+            used. Defaults to `"hann"`.
+        center: Whether to pad `x` on both sides so that the t-th sequence is
+            centered at time `t * sequence_stride`. Otherwise, the t-th sequence
+            begins at time `t * sequence_stride`. Defaults to `True`.
 
     Returns:
         A tuple containing two tensors - the real and imaginary parts of the
@@ -660,19 +673,16 @@ def stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
     """
     if any_symbolic_tensors((x,)):
         return STFT(
-            frame_length, frame_step, fft_length, center, window
+            sequence_length, sequence_stride, fft_length, center, window
         ).symbolic_call(x)
     return backend.math.stft(
         x,
-        frame_length=frame_length,
-        frame_step=frame_step,
+        sequence_length=sequence_length,
+        sequence_stride=sequence_stride,
         fft_length=fft_length,
         window=window,
         center=center,
     )
-    if any_symbolic_tensors(x):
-        return FFT2().symbolic_call(x)
-    return backend.math.fft2(x)
 
 
 class Rsqrt(Operation):

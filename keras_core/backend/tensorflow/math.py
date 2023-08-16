@@ -48,11 +48,11 @@ def qr(x, mode="reduced"):
     return tf.linalg.qr(x, full_matrices=True)
 
 
-def frame(x, frame_length, frame_step):
+def extract_sequences(x, sequence_length, sequence_stride):
     return tf.signal.frame(
         x,
-        frame_length=frame_length,
-        frame_step=frame_step,
+        frame_length=sequence_length,
+        frame_step=sequence_stride,
         axis=-1,
         pad_end=False,
     )
@@ -105,16 +105,18 @@ def rfft(x, fft_length=None):
     return tf.math.real(complex_output), tf.math.imag(complex_output)
 
 
-def stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
+def stft(
+    x, sequence_length, sequence_stride, fft_length, window="hann", center=True
+):
     if standardize_dtype(x.dtype) not in {"float32", "float64"}:
         raise TypeError(
             "Invalid input type. Expected `float32` or `float64`. "
             f"Received: input type={x.dtype}"
         )
-    if fft_length < frame_length:
+    if fft_length < sequence_length:
         raise ValueError(
-            "`fft_length` must equal or larger than `frame_length`. "
-            f"Received: frame_length={frame_length}, "
+            "`fft_length` must equal or larger than `sequence_length`. "
+            f"Received: sequence_length={sequence_length}, "
             f"fft_length={fft_length}"
         )
     if isinstance(window, str):
@@ -130,27 +132,27 @@ def stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
         pad_width[-1] = (fft_length // 2, fft_length // 2)
         x = tf.pad(x, pad_width, mode="reflect")
 
-    x = frame(x, fft_length, frame_step)
+    x = extract_sequences(x, fft_length, sequence_stride)
 
     if window is not None:
         if isinstance(window, str):
             if window == "hann":
                 win = tf.signal.hann_window(
-                    frame_length, periodic=True, dtype=x.dtype
+                    sequence_length, periodic=True, dtype=x.dtype
                 )
             else:
                 win = tf.signal.hamming_window(
-                    frame_length, periodic=True, dtype=x.dtype
+                    sequence_length, periodic=True, dtype=x.dtype
                 )
         else:
             win = convert_to_tensor(window, dtype=x.dtype)
-        if len(win.shape) != 1 or win.shape[-1] != frame_length:
+        if len(win.shape) != 1 or win.shape[-1] != sequence_length:
             raise ValueError(
-                "The shape of `window` must be equal to [frame_length]."
+                "The shape of `window` must be equal to [sequence_length]."
                 f"Received: window shape={win.shape}"
             )
-        l_pad = (fft_length - frame_length) // 2
-        r_pad = fft_length - frame_length - l_pad
+        l_pad = (fft_length - sequence_length) // 2
+        r_pad = fft_length - sequence_length - l_pad
         win = tf.pad(win, [[l_pad, r_pad]])
         x = tf.multiply(x, win)
 
