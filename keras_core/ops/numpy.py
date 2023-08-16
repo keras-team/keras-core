@@ -4812,7 +4812,7 @@ def trace(x, offset=0, axis1=0, axis2=1):
     """Return the sum along diagonals of the tensor.
 
     If `x` is 2-D, the sum along its diagonal with the given offset is
-    returned, i.e., the sum of elements `x[i, i+offset]` for all i.
+    returned, i.e., the sum of elements `x[i, i+offset]` for all `i`.
 
     If a has more than two dimensions, then the axes specified by `axis1`
     and `axis2` are used to determine the 2-D sub-arrays whose traces are
@@ -5492,7 +5492,7 @@ def eye(N, M=None, k=0, dtype="float32"):
 
     Args:
         N: Number of rows in the output.
-        M: Number of columns in the output. If `None`, defaults to N.
+        M: Number of columns in the output. If `None`, defaults to `N`.
         k: Index of the diagonal: 0 (the default) refers to the main
             diagonal, a positive value refers to an upper diagonal,
             and a negative value to a lower diagonal.
