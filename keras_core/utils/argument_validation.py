@@ -68,3 +68,25 @@ def standardize_padding(value, allow_causal=False):
             f"Received: {padding}"
         )
     return padding
+
+
+def validate_string_arg(
+    value,
+    allowable_strings,
+    caller_name,
+    arg_name,
+    allow_none=False,
+    allow_callables=False,
+):
+    """Validates the correctness of a string-based arg."""
+    if allow_none and value is None:
+        return
+    elif allow_callables and callable(value):
+        return
+    elif isinstance(value, str) and value in allowable_strings:
+        return
+    raise ValueError(
+        f"Unkown value for `{arg_name}` argument of {caller_name}. "
+        f"Allowed values are: {allowable_strings}. Received: "
+        f"{arg_name}={value}"
+    )

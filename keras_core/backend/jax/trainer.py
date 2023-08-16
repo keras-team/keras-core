@@ -420,6 +420,8 @@ class JAXTrainer(base_trainer.Trainer):
                         sample_weight=val_sample_weight,
                         batch_size=validation_batch_size or batch_size,
                         steps_per_execution=self.steps_per_execution,
+                        steps_per_epoch=validation_steps,
+                        shuffle=False,
                     )
                 val_logs = self.evaluate(
                     x=val_x,
@@ -721,7 +723,7 @@ class JAXTrainer(base_trainer.Trainer):
         trainable_variables = self.trainable_variables
         non_trainable_variables = self.non_trainable_variables
         state = (trainable_variables, non_trainable_variables)
-        batch_outputs, state = self.predict_function(state, [x])
+        batch_outputs, state = self.predict_function(state, [(x,)])
         batch_outputs = tree.map_structure(lambda x: np.array(x), batch_outputs)
         return batch_outputs
 
