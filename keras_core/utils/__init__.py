@@ -9,7 +9,6 @@ from keras_core.utils.image_utils import save_img
 from keras_core.utils.io_utils import disable_interactive_logging
 from keras_core.utils.io_utils import enable_interactive_logging
 from keras_core.utils.io_utils import is_interactive_logging_enabled
-from keras_core.utils.layer_utils import validate_string_arg
 from keras_core.utils.model_visualization import model_to_dot
 from keras_core.utils.model_visualization import plot_model
 from keras_core.utils.numerical_utils import normalize

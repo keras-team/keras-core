@@ -2,7 +2,7 @@ from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
 from keras_core.utils import backend_utils
-from keras_core.utils import layer_utils
+from keras_core.utils import argument_validation
 from keras_core.utils import tf_utils
 from keras_core.utils.module_utils import tensorflow as tf
 
@@ -92,10 +92,10 @@ class HashedCrossing(Layer):
                 "TensorFlow backend."
             )
 
-        layer_utils.validate_string_arg(
+        argument_validation.validate_string_arg(
             output_mode,
             allowable_strings=("int", "one_hot"),
-            layer_name=self.__class__.__name__,
+            caller_name=self.__class__.__name__,
             arg_name="output_mode",
         )
 
@@ -136,7 +136,7 @@ class HashedCrossing(Layer):
 
     def call(self, inputs):
         self._check_at_least_two_inputs(inputs)
-        inputs = [layer_utils.ensure_tensor(x) for x in inputs]
+        inputs = [tf_utils.ensure_tensor(x) for x in inputs]
         self._check_input_shape_and_type(inputs)
 
         # Uprank to rank 2 for the cross_hashed op.
