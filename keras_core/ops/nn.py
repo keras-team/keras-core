@@ -1501,8 +1501,7 @@ class MultiHot(Operation):
     ]
 )
 def multi_hot(inputs, num_tokens, axis=-1, dtype=None):
-    """
-    Encodes integer labels as multi-hot vectors.
+    """Encodes integer labels as multi-hot vectors.
 
     This function encodes integer labels as multi-hot vectors, where each label
     is mapped to a binary value in the resulting vector.
