@@ -10,7 +10,6 @@ from keras_core.legacy.saving import serialization as legacy_serialization
 from keras_core.models.functional import Functional
 from keras_core.models.model import Model
 from keras_core.saving import serialization_lib
-from keras_core.utils import tracking
 
 
 @keras_core_export(["keras_core.Sequential", "keras_core.models.Sequential"])
@@ -60,7 +59,6 @@ class Sequential(Model):
     ```
     """
 
-    @tracking.no_automatic_dependency_tracking
     def __init__(self, layers=None, trainable=True, name=None):
         super().__init__(trainable=trainable, name=name)
         self._functional = None
@@ -157,7 +155,10 @@ class Sequential(Model):
                     f"with input_shape {input_shape}"
                 )
         else:
-            self._layers = [InputLayer(batch_shape=input_shape)] + self._layers
+            dtype = self._layers[0].compute_dtype
+            self._layers = [
+                InputLayer(batch_shape=input_shape, dtype=dtype)
+            ] + self._layers
 
         # Build functional model
         inputs = self._layers[0].output
@@ -253,6 +254,15 @@ class Sequential(Model):
         raise ValueError(
             f"Sequential model '{self.name}' has no defined outputs yet."
         )
+
+    @property
+    def input_dtype(self):
+        # Sequential.__call__ will try to convert its inputs
+        # to the dtype expected by its input layer, if any.
+        layers = self._layers
+        if layers and isinstance(layers[0], InputLayer):
+            return layers[0].dtype
+        return super().input_dtype
 
     def _is_layer_name_unique(self, layer):
         for ref_layer in self._layers:

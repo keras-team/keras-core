@@ -230,7 +230,7 @@ def while_loop(
     loop_vars,
     maximum_iterations=None,
 ):
-    """While loop implemetation.
+    """While loop implementation.
 
     Args:
         cond: A callable that represents the termination condition of the loop.
@@ -402,6 +402,10 @@ def unstack(x, num=None, axis=0):
 def shape(x):
     """Gets the shape of the tensor input.
 
+    Note: On the tensorflow backend, when `x` is a `tf.Tensor` with dynamic
+    shape, dimensions which are dynamic in the context of a compiled function
+    will have a `tf.Tensor` value instead of a static integer value.
+
     Args:
         x: A tensor. This function will try to access the `shape` attribute of
             the input tensor.
@@ -419,6 +423,18 @@ def shape(x):
     if any_symbolic_tensors((x,)):
         return x.shape
     return backend.core.shape(x)
+
+
+class Cast(Operation):
+    def __init__(self, dtype):
+        super().__init__()
+        self.dtype = backend.standardize_dtype(dtype)
+
+    def call(self, x):
+        return backend.core.cast(x, self.dtype)
+
+    def compute_output_spec(self, x):
+        return backend.KerasTensor(shape=x.shape, dtype=self.dtype)
 
 
 @keras_core_export("keras_core.ops.cast")
@@ -440,7 +456,7 @@ def cast(x, dtype):
     dtype = backend.standardize_dtype(dtype)
 
     if any_symbolic_tensors((x,)):
-        return backend.KerasTensor(shape=x.shape, dtype=dtype)
+        return Cast(dtype=dtype)(x)
     return backend.core.cast(x, dtype)
 
 
