@@ -62,7 +62,7 @@ def qr(x, mode="reduced"):
     return jax.numpy.linalg.qr(x, mode=mode)
 
 
-def extrace_sequences(x, sequence_length, sequence_stride):
+def extract_sequences(x, sequence_length, sequence_stride):
     *batch_shape, signal_length = x.shape
     batch_shape = list(batch_shape)
     x = jax.numpy.reshape(x, (math.prod(batch_shape), signal_length, 1))
@@ -149,7 +149,7 @@ def stft(
         pad_width[-1] = (fft_length // 2, fft_length // 2)
         x = jnp.pad(x, pad_width, mode="reflect")
 
-    x = extrace_sequences(x, fft_length, sequence_stride)
+    x = extract_sequences(x, fft_length, sequence_stride)
 
     if window is not None:
         if isinstance(window, str):
