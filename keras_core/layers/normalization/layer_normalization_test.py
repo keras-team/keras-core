@@ -99,8 +99,20 @@ class LayerNormalizationTest(testing.TestCase):
 
     def test_output(self):
         layer = layers.LayerNormalization(
-            dtype="float32", beta_initializer="ones", gamma_initializer="ones",
+            dtype="float32",
+            beta_initializer="ones",
+            gamma_initializer="ones",
         )
         inputs = np.arange(5).astype("float32")[None, :]
         out = layer(inputs)
-        self.assertAllClose(out, [[-0.41386, 0.29307, 1., 1.70693, 2.41386]])
+        self.assertAllClose(out, [[-0.41386, 0.29307, 1.0, 1.70693, 2.41386]])
+
+    def test_output_with_rms_scaling(self):
+        layer = layers.LayerNormalization(
+            dtype="float32",
+            rms_scaling=True,
+            gamma_initializer="ones",
+        )
+        inputs = np.arange(5).astype("float32")[None, :]
+        out = layer(inputs)
+        self.assertAllClose(out, [[0., 0.70693, 1.41386, 2.12079, 2.82772]])
