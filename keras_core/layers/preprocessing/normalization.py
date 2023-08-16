@@ -160,6 +160,21 @@ class Normalization(Layer):
         mean_and_var_shape = tuple(input_shape[d] for d in self._keep_axis)
         self._mean_and_var_shape = mean_and_var_shape
 
+        self.mean = self.add_weight(
+            name="_mean",
+            shape=self._broadcast_shape,
+            dtype=self.compute_dtype,
+            initializer="zeros",
+            trainable=False,
+        )
+        self.variance = self.add_weight(
+            name="_variance",
+            shape=self._broadcast_shape,
+            dtype=self.compute_dtype,
+            initializer="zeros",
+            trainable=False,
+        )
+
         if self.input_mean is None:
             self.adapt_mean = self.add_weight(
                 name="mean",
@@ -192,8 +207,8 @@ class Normalization(Layer):
             variance = ops.convert_to_tensor(self.input_variance)
             mean = ops.reshape(mean, self._broadcast_shape)
             variance = ops.reshape(variance, self._broadcast_shape)
-            self.mean = ops.cast(mean, dtype=self.compute_dtype)
-            self.variance = ops.cast(variance, dtype=self.compute_dtype)
+            self.mean.assign(ops.cast(mean, dtype=self.compute_dtype))
+            self.variance.assign(ops.cast(variance, dtype=self.compute_dtype))
             self.built = True
 
     def adapt(self, data):
@@ -288,25 +303,20 @@ class Normalization(Layer):
 
         # In the adapt case, we make constant tensors for mean and variance with
         # proper broadcast shape and dtype each time `finalize_state` is called.
-        self.mean = ops.reshape(self.adapt_mean, self._broadcast_shape)
-        self.mean = ops.cast(self.mean, self.compute_dtype)
-        self.variance = ops.reshape(self.adapt_variance, self._broadcast_shape)
-        self.variance = ops.cast(self.variance, self.compute_dtype)
+        mean = ops.reshape(self.adapt_mean, self._broadcast_shape)
+        self.mean.assign(ops.cast(mean, self.compute_dtype))
+        variance = ops.reshape(self.adapt_variance, self._broadcast_shape)
+        self.variance.assign(ops.cast(variance, self.compute_dtype))
 
     def call(self, inputs):
         inputs = backend.convert_to_tensor(inputs, dtype=self.compute_dtype)
         if self.invert:
-            return ops.add(
-                self.mean,
-                ops.multiply(
-                    inputs,
-                    ops.maximum(ops.sqrt(self.variance), backend.epsilon()),
-                ),
+            return self.mean + (
+                inputs * ops.maximum(ops.sqrt(self.variance), backend.epsilon())
             )
         else:
-            return ops.divide(
-                ops.subtract(inputs, self.mean),
-                ops.maximum(ops.sqrt(self.variance), backend.epsilon()),
+            return (inputs - self.mean) / ops.maximum(
+                ops.sqrt(self.variance), backend.epsilon()
             )
 
     def compute_output_shape(self, input_shape):
