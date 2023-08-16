@@ -237,6 +237,8 @@ def stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
         x = torch.multiply(x, win)
 
     return rfft(x, fft_length)
+
+
 def rsqrt(x):
     x = convert_to_tensor(x)
     return torch.rsqrt(x)

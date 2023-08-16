@@ -155,5 +155,7 @@ def stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
         x = tf.multiply(x, win)
 
     return rfft(x, fft_length)
+
+
 def rsqrt(x):
     return tf.math.rsqrt(x)

@@ -507,9 +507,9 @@ def fft2(x):
         [ 0., -2.]], dtype=float32), array([[ 2.,  0.],
         [ 0., -2.]], dtype=float32))
     """
-    if any_symbolic_tensors(a):
-        return FFT2().symbolic_call(a)
-    return backend.math.fft2(a)
+    if any_symbolic_tensors(x):
+        return FFT2().symbolic_call(x)
+    return backend.math.fft2(x)
 
 
 class RFFT(Operation):

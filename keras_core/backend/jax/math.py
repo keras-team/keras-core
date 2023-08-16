@@ -167,5 +167,7 @@ def stft(x, frame_length, frame_step, fft_length, window="hann", center=True):
         x = jnp.multiply(x, win)
 
     return rfft(x, fft_length)
+
+
 def rsqrt(x):
     return jax.lax.rsqrt(x)
