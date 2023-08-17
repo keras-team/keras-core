@@ -1,9 +1,9 @@
 import numpy as np
 import tensorflow as tf
 
+from keras_core import backend
 from keras_core import layers
 from keras_core import testing
-from keras_core import backend
 
 
 class HashedCrossingTest(testing.TestCase):
@@ -86,8 +86,7 @@ class HashedCrossingTest(testing.TestCase):
             )
 
     def test_cross_output_dtype(self):
-
-        if backend.backend() == 'tensorflow' or backend.backend() == 'numpy':
+        if backend.backend() == "tensorflow" or backend.backend() == "numpy":
             layer = layers.HashedCrossing(num_bins=2)
             self.assertEqual(layer(([1], [1])).dtype, tf.int64)
             layer = layers.HashedCrossing(num_bins=2, dtype=tf.int32)
@@ -99,8 +98,9 @@ class HashedCrossingTest(testing.TestCase):
             )
             self.assertEqual(layer(([1], [1])).dtype, tf.float64)
 
-        elif backend.backend() == 'torch':
+        elif backend.backend() == "torch":
             import torch
+
             layer = layers.HashedCrossing(num_bins=2)
             self.assertEqual(layer(([1], [1])).dtype, torch.int32)
             layer = layers.HashedCrossing(num_bins=2, dtype=torch.int32)
@@ -112,18 +112,19 @@ class HashedCrossingTest(testing.TestCase):
             )
             self.assertEqual(layer(([1], [1])).dtype, torch.float64)
 
-        elif backend.backend() == 'jax':
+        elif backend.backend() == "jax":
             import torch
+
             layer = layers.HashedCrossing(num_bins=2)
-            self.assertEqual(layer(([1], [1])).dtype, 'int32')
-            layer = layers.HashedCrossing(num_bins=2, dtype='int32')
-            self.assertEqual(layer(([1], [1])).dtype, 'int32')
+            self.assertEqual(layer(([1], [1])).dtype, "int32")
+            layer = layers.HashedCrossing(num_bins=2, dtype="int32")
+            self.assertEqual(layer(([1], [1])).dtype, "int32")
             layer = layers.HashedCrossing(num_bins=2, output_mode="one_hot")
-            self.assertEqual(layer(([1], [1])).dtype, 'float32')
+            self.assertEqual(layer(([1], [1])).dtype, "float32")
             layer = layers.HashedCrossing(
-                num_bins=2, output_mode="one_hot", dtype='float32'
+                num_bins=2, output_mode="one_hot", dtype="float32"
             )
-            self.assertEqual(layer(([1], [1])).dtype, 'float32')
+            self.assertEqual(layer(([1], [1])).dtype, "float32")
 
     def test_non_list_input_fails(self):
         with self.assertRaisesRegex(ValueError, "should be called on a list"):
@@ -149,8 +150,8 @@ class HashedCrossingTest(testing.TestCase):
             )
 
     def test_from_config(self):
-        if backend.backend() != 'tensorflow':
-            return # skip
+        if backend.backend() != "tensorflow":
+            return  # skip
 
         layer = layers.HashedCrossing(
             num_bins=5, output_mode="one_hot", sparse=True
