@@ -6,7 +6,7 @@ from keras_core import backend
 from keras_core import callbacks as callbacks_module
 from keras_core import ops
 from keras_core import optimizers as optimizers_module
-from keras_core.backend.common import distribute_scope
+from keras_core.backend.jax import distribution
 from keras_core.trainers import trainer as base_trainer
 from keras_core.trainers.data_adapters import data_adapter_utils
 from keras_core.trainers.epoch_iterator import EpochIterator
@@ -753,7 +753,7 @@ class JAXTrainer(base_trainer.Trainer):
                 ref_v.assign(v)
 
     def _distribute_data(self, data):
-        if distribute_scope.in_distribute_scope():
-            distribute = distribute_scope.get_distribute_scope().distribute
+        if distribution.get_distribution() is not None:
+            distribute = distribution.get_distribution()
             data = distribute.distribute_data(data)
         return data
