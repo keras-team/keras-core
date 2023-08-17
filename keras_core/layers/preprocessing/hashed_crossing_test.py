@@ -43,7 +43,6 @@ class HashedCrossingTest(testing.TestCase):
         self.assertAllClose(outputs, 1)
         self.assertAllEqual(outputs.shape.as_list(), [])
 
-
         layer = layers.HashedCrossing(num_bins=5)
         feat1 = np.array(["A", "B", "A", "B", "A"])
         feat2 = np.array([101, 101, 101, 102, 102])
@@ -91,9 +90,7 @@ class HashedCrossingTest(testing.TestCase):
         self.assertEqual(layer(([1], [1])).dtype, tf.int64)
         layer = layers.HashedCrossing(num_bins=2, dtype=tf.int32)
         self.assertEqual(layer(([1], [1])).dtype, tf.int32)
-        layer = layers.HashedCrossing(
-            num_bins=2, output_mode="one_hot"
-        )
+        layer = layers.HashedCrossing(num_bins=2, output_mode="one_hot")
         self.assertEqual(layer(([1], [1])).dtype, tf.float32)
         layer = layers.HashedCrossing(
             num_bins=2, output_mode="one_hot", dtype=tf.float64
@@ -122,14 +119,12 @@ class HashedCrossingTest(testing.TestCase):
             layers.HashedCrossing(num_bins=10)(
                 (tf.constant([1.0]), tf.constant([1.0]))
             )
-    
+
     def test_from_config(self):
         layer = layers.HashedCrossing(
             num_bins=5, output_mode="one_hot", sparse=True
         )
-        cloned_layer = layers.HashedCrossing.from_config(
-            layer.get_config()
-        )
+        cloned_layer = layers.HashedCrossing.from_config(layer.get_config())
         feat1 = tf.constant([["A"], ["B"], ["A"], ["B"], ["A"]])
         feat2 = tf.constant([[101], [101], [101], [102], [102]])
         original_outputs = layer((feat1, feat2))
