@@ -171,12 +171,20 @@ def stft(
 
 
 def istft(
-    x, sequence_length, sequence_stride, fft_length, window="hann", center=True
+    x,
+    sequence_length,
+    sequence_stride,
+    fft_length,
+    length=None,
+    window="hann",
+    center=True,
 ):
     # ref:
     # torch: aten/src/ATen/native/SpectralOps.cpp
     # tf: tf.signal.inverse_stft_window_fn
     x = irfft(x, fft_length)
+
+    expected_output_len = fft_length + sequence_stride * (tf.shape(x)[-2] - 1)
 
     if window is not None:
         if isinstance(window, str):
@@ -215,9 +223,14 @@ def istft(
 
     x = overlap_sequences(x, sequence_stride)
 
-    if center:
-        x[..., fft_length // 2 : -(fft_length // 2)]
-    return x
+    start = 0 if center is False else fft_length // 2
+    if length is not None:
+        end = start + length
+    elif center is True:
+        end = -(fft_length // 2)
+    else:
+        end = expected_output_len
+    return x[..., start:end]
 
 
 def rsqrt(x):

@@ -418,7 +418,9 @@ def overlap_sequences(x, sequence_stride):
 
     Args:
         x: Input tensor.
-        sequence_stride: An integer representing the sequence hop size.
+        sequence_stride: An integer representing the sequence hop size. Note
+        that `sequence_stride` must not larger than sequence_length. Note that
+        `sequence_stride` must not less than sequence_length / sequences.
 
     Returns:
         A tensor with shape [..., output_size] containing the overlap-added
@@ -447,7 +449,7 @@ class FFT(Operation):
         # Both real and imaginary parts should have the same shape.
         if real.shape != imag.shape:
             raise ValueError(
-                "Input `a` should be a tuple of two tensors - real and "
+                "Input `x` should be a tuple of two tensors - real and "
                 "imaginary. Both the real and imaginary parts should have the "
                 f"same shape. Received: x[0].shape = {real.shape}, "
                 f"x[1].shape = {imag.shape}"
@@ -836,6 +838,7 @@ class ISTFT(Operation):
         sequence_length,
         sequence_stride,
         fft_length,
+        length=None,
         window="hann",
         center=True,
     ):
@@ -843,6 +846,7 @@ class ISTFT(Operation):
         self.sequence_length = sequence_length
         self.sequence_stride = sequence_stride
         self.fft_length = fft_length
+        self.length = length
         self.window = window
         self.center = center
 
@@ -856,7 +860,7 @@ class ISTFT(Operation):
         # Both real and imaginary parts should have the same shape.
         if real.shape != imag.shape:
             raise ValueError(
-                "Input `a` should be a tuple of two tensors - real and "
+                "Input `x` should be a tuple of two tensors - real and "
                 "imaginary. Both the real and imaginary parts should have the "
                 f"same shape. Received: x[0].shape = {real.shape}, "
                 f"x[1].shape = {imag.shape}"
@@ -870,8 +874,10 @@ class ISTFT(Operation):
             output_size = (
                 real.shape[-2] - 1
             ) * self.sequence_stride + self.fft_length
-            if self.center:
-                output_size = output_size - ((self.fft_length // 2) * 2)
+            if self.length is not None:
+                output_size = self.length
+            elif self.center:
+                output_size = output_size - (self.fft_length // 2) * 2
         else:
             output_size = None
         new_shape = real.shape[:-2] + (output_size,)
@@ -883,6 +889,7 @@ class ISTFT(Operation):
             sequence_length=self.sequence_length,
             sequence_stride=self.sequence_stride,
             fft_length=self.fft_length,
+            length=self.length,
             window=self.window,
             center=self.center,
         )
@@ -890,7 +897,13 @@ class ISTFT(Operation):
 
 @keras_core_export("keras_core.ops.istft")
 def istft(
-    x, sequence_length, sequence_stride, fft_length, window="hann", center=True
+    x,
+    sequence_length,
+    sequence_stride,
+    fft_length,
+    length=None,
+    window="hann",
+    center=True,
 ):
     """Inverse Short-Time Fourier Transform along the last axis of the input.
 
@@ -904,6 +917,9 @@ def istft(
         sequence_stride: An integer representing the sequence hop size.
         fft_length: An integer representing the size of the FFT that produced
             `stft`.
+        length: An integer representing the output is clipped to exactly length.
+            If not specified, no padding or clipping take place. Defaults to
+            `None`.
         window: A string, a tensor of the window or `None`. If `window` is a
             string, available values are `"hann"` and `"hamming"`. If `window`
             is a tensor, it will be used directly as the window and its length
@@ -924,13 +940,14 @@ def istft(
     """
     if any_symbolic_tensors(x):
         return ISTFT(
-            sequence_length, sequence_stride, fft_length, center, window
+            sequence_length, sequence_stride, fft_length, length, center, window
         ).symbolic_call(x)
     return backend.math.istft(
         x,
         sequence_length=sequence_length,
         sequence_stride=sequence_stride,
         fft_length=fft_length,
+        length=length,
         window=window,
         center=center,
     )

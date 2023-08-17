@@ -135,20 +135,33 @@ def extract_sequences(x, sequence_length, sequence_stride):
 def overlap_sequences(x, sequence_stride):
     # Ref: https://github.com/google/jax/blob/main/jax/_src/scipy/signal.py
     x = convert_to_tensor(x)
-    *batch_shape, nframes, segment_len = x.size()
+    *batch_shape, num_sequences, sequence_length = x.size()
+    if sequence_stride > sequence_length:
+        raise ValueError(
+            "`sequence_stride` must equal or less than x.shape[-1]. "
+            f"Received: sequence_stride={sequence_stride}, "
+            f"x.shape[-1]={sequence_length}"
+        )
+    if sequence_stride < (sequence_length / num_sequences):
+        raise ValueError(
+            "`sequence_stride` must equal or greater than "
+            "x.shape[-1] / x.shape[-2]. "
+            f"Received: sequence_stride={sequence_stride}, "
+            f"x.shape[-1]={sequence_length}, x.shape[-2]={num_sequences}"
+        )
     flat_batchsize = math.prod(batch_shape)
-    x = torch.reshape(x, (flat_batchsize, nframes, segment_len))
-    output_size = sequence_stride * (nframes - 1) + segment_len
-    nstep_per_segment = 1 + (segment_len - 1) // sequence_stride
+    x = torch.reshape(x, (flat_batchsize, num_sequences, sequence_length))
+    output_size = sequence_stride * (num_sequences - 1) + sequence_length
+    nstep_per_segment = 1 + (sequence_length - 1) // sequence_stride
     # Here, we use shorter notation for axes.
-    # B: batch_size, N: nframes, S: nstep_per_segment,
-    # T: segment_len divided by S
+    # B: batch_size, N: num_sequences, S: nstep_per_segment,
+    # T: sequence_length divided by S
     padded_segment_len = nstep_per_segment * sequence_stride
     x = torch.nn.functional.pad(
-        x, (0, padded_segment_len - segment_len, 0, 0, 0, 0)
+        x, (0, padded_segment_len - sequence_length, 0, 0, 0, 0)
     )
     x = torch.reshape(
-        x, (flat_batchsize, nframes, nstep_per_segment, sequence_stride)
+        x, (flat_batchsize, num_sequences, nstep_per_segment, sequence_stride)
     )
     # For obtaining shifted signals, this routine reinterprets flattened array
     # with a shrinked axis.  With appropriate truncation/ padding, this
@@ -156,7 +169,7 @@ def overlap_sequences(x, sequence_stride):
     # of the current row.
     # See implementation of `overlap_and_add` in Tensorflow for details.
     x = torch.permute(x, (0, 2, 1, 3))  # x: (B, S, N, T)
-    x = torch.nn.functional.pad(x, (0, 0, 0, nframes, 0, 0, 0, 0))
+    x = torch.nn.functional.pad(x, (0, 0, 0, num_sequences, 0, 0, 0, 0))
     # x: (B, S, N*2, T)
     shrinked = x.shape[2] - 1
     x = torch.reshape(x, (flat_batchsize, -1))
@@ -286,12 +299,20 @@ def stft(
 
 
 def istft(
-    x, sequence_length, sequence_stride, fft_length, window="hann", center=True
+    x,
+    sequence_length,
+    sequence_stride,
+    fft_length,
+    length=None,
+    window="hann",
+    center=True,
 ):
     # ref:
     # torch: aten/src/ATen/native/SpectralOps.cpp
     # tf: tf.signal.inverse_stft_window_fn
     x = irfft(x, fft_length)
+
+    expected_output_len = fft_length + sequence_stride * (x.shape[-2] - 1)
 
     if window is not None:
         if isinstance(window, str):
@@ -334,9 +355,14 @@ def istft(
 
     x = overlap_sequences(x, sequence_stride)
 
-    if center:
-        x[..., fft_length // 2 : -(fft_length // 2)]
-    return x
+    start = 0 if center is False else fft_length // 2
+    if length is not None:
+        end = start + length
+    elif center is True:
+        end = -(fft_length // 2)
+    else:
+        end = expected_output_len
+    return x[..., start:end]
 
 
 def rsqrt(x):
