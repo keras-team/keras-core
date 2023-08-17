@@ -1520,11 +1520,11 @@ def multi_hot(inputs, num_tokens, axis=-1, dtype=None):
 
     Example:
 
-    >>> data = keras_core.ops.convert_to_tensor([0,4])
+    >>> data = keras_core.ops.convert_to_tensor([0, 4])
     >>> keras_core.ops.multi_hot(data, num_tokens=5)
-    Array([1., 0., 0., 0., 1.], dtype=float32)
+    array([1.0, 0.0, 0.0, 0.0, 1.0], dtype=float32)
 
-   """
+    """
     if any_symbolic_tensors((inputs,)):
         return MultiHot(num_tokens, axis, dtype).symbolic_call(inputs)
 
