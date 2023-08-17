@@ -101,11 +101,11 @@ def segment_max(data, segment_ids, num_segments=None, sorted=False):
 
     Example:
 
-        >>> data = keras_core.ops.convert_to_tensor([1, 2, 10, 20, 100, 200])
-        >>> segment_ids = keras_core.ops.convert_to_tensor([0, 0, 1, 1, 2, 2])
-        >>> num_segments = 3
-        >>> keras_core.ops.segment_max(data, segment_ids, num_segments)
-        array([2, 20, 200], dtype=int32)
+    >>> data = keras_core.ops.convert_to_tensor([1, 2, 10, 20, 100, 200])
+    >>> segment_ids = keras_core.ops.convert_to_tensor([0, 0, 1, 1, 2, 2])
+    >>> num_segments = 3
+    >>> keras_core.ops.segment_max(data, segment_ids, num_segments)
+    array([2, 20, 200], dtype=int32)
     """
     if any_symbolic_tensors((data,)):
         return SegmentMax(num_segments, sorted).symbolic_call(data, segment_ids)
@@ -690,13 +690,13 @@ def stft(
 class Rsqrt(Operation):
     """Computes reciprocal of square root of x element-wise.
 
-     Args:
-         x: input tensor
+    Args:
+        x: input tensor
 
-     Returns:
-         A tensor with the same type as `x`.
+    Returns:
+        A tensor with the same type as `x`.
 
-     Example:
+    Example:
 
     >>> data = keras_core.ops.convert_to_tensor([1.0, 10.0, 100.0])
     >>> keras_core.ops.rsqrt(data)
