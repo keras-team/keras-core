@@ -1,6 +1,8 @@
 """Tests for JAX based distribution."""
 import os
 
+import jax
+from jax._src import xla_bridge as xb
 import numpy as np
 import pytest
 
@@ -10,8 +12,6 @@ from keras_core import models
 from keras_core import testing
 from keras_core.backend.common import distribute_scope
 from keras_core.backend.jax import distribute
-
-import jax
 
 prev_xla_flags = None
 
@@ -25,6 +25,8 @@ def setUpModule():
         os.environ["XLA_FLAGS"] = (
             flags_str + " --xla_force_host_platform_device_count=8"
         )
+    # Clear any cached backends so new CPU backend will pick up the env var.
+    xb.get_backend.cache_clear()
 
 
 def tearDownModule():
@@ -32,6 +34,8 @@ def tearDownModule():
         del os.environ["XLA_FLAGS"]
     else:
         os.environ["XLA_FLAGS"] = prev_xla_flags
+    # Clear any cached backends so new CPU backend will pick up the env var.
+    xb.get_backend.cache_clear()
 
 
 @pytest.mark.skipif(
