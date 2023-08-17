@@ -786,7 +786,7 @@ def arcsinh(x):
 
     Returns:
         Output tensor of same shape as `x`.
-    
+
     Example:
     >>> x = keras_core.ops.convert_to_tensor([1, -1, 0])
     >>> keras_core.ops.arcsinh(x)
@@ -1326,17 +1326,17 @@ class Clip(Operation):
 def clip(x, x_min, x_max):
     """Clip (limit) the values in a tensor.
 
-    Given an interval, values outside the interval are clipped to the
-    interval edges. For example, if an interval of `[0, 1]` is specified,
-    values smaller than 0 become 0, and values larger than 1 become 1.
+        Given an interval, values outside the interval are clipped to the
+        interval edges. For example, if an interval of `[0, 1]` is specified,
+        values smaller than 0 become 0, and values larger than 1 become 1.
 
-    Args:
-        x: Input tensor.
-        x_min: Minimum value.
-        x_max: Maximum value.
+        Args:
+            x: Input tensor.
+            x_min: Minimum value.
+            x_max: Maximum value.
 
-    Returns:
-        The clipped tensor.
+    pu    Returns:
+            The clipped tensor.
     """
     if any_symbolic_tensors((x,)):
         return Clip(x_min, x_max).symbolic_call(x)
