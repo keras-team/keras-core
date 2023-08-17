@@ -13,16 +13,31 @@ from keras_core.backend.jax import distribute
 
 import jax
 
-# Config the number of devices for testing to be 8.
-flags = os.environ.get("XLA_FLAGS", "")
-os.environ["XLA_FLAGS"] = flags + " --xla_force_host_platform_device_count=8"
-
 
 @pytest.mark.skipif(
     backend.backend() != "jax",
     reason="Only JAX backend support distribution API for now.",
 )
 class DataParallelDistributeTest(testing.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # Config the number of devices for testing to be 8.
+        flags = os.environ.get("XLA_FLAGS", "")
+        os.environ["XLA_FLAGS"] = (
+            flags + " --xla_force_host_platform_device_count=8"
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        flags = os.environ.get("XLA_FLAGS", "")
+        if " --xla_force_host_platform_device_count=8" in flags:
+            flags = flags.replace(
+                " --xla_force_host_platform_device_count=8", ""
+            )
+            os.environ["XLA_FLAGS"] = flags
+
     def test_create_with_devices(self):
         devices = jax.devices()
         self.assertEqual(len(devices), 8)
