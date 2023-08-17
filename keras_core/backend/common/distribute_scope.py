@@ -13,19 +13,20 @@ class DistributeScope:
         """
 
         self._distribute = distribute
+        self._original_scope = None
 
     @property
     def distribute(self):
         return self._distribute
 
     def __enter__(self):
-        self.original_scope = get_distribute_scope()
+        self._original_scope = get_distribute_scope()
         global_state.set_global_attribute("distribute_scope", self)
         return self
 
     def __exit__(self, *args, **kwargs):
         global_state.set_global_attribute(
-            "distribute_scope", self.original_scope
+            "distribute_scope", self._original_scope
         )
 
 

@@ -20,16 +20,17 @@ class DataParallelDistribute:
         User can choose to create this instance by either `Mesh` or `devices`
         parameters (but not both).
 
-        The mesh is expected to be a `jax.sharding.Mesh` instance, and is expected
-        to be 1D only. In case that the mesh has multiple axises, then the first
-        axis will be treated as data parallel dimension (and a warning will be
-        raised).
+        The mesh is expected to be a `jax.sharding.Mesh` instance, and is
+        expected to be 1D only. In case that the mesh has multiple axises, then
+        the first axis will be treated as data parallel dimension (and a warning
+        will be raised).
 
-        When a list of `devices` are provided, they will be used to construct a 1D
-        mesh.
+        When a list of `devices` are provided, they will be used to construct a
+        1D mesh.
 
         When both `mesh` and `devices` are absent, then we will rely on
-        `jax.devices` to detect any available devices, and create mesh from them.
+        `jax.devices` to detect any available devices, and create mesh from
+        them.
         """
         super().__init__()
         if mesh:
