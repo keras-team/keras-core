@@ -9,6 +9,8 @@ from keras_core import layers
 from keras_core import models
 from keras_core import testing
 from keras_core.legacy.saving import legacy_h5_format
+from keras_core.saving import object_registration
+from keras_core.saving import serialization_lib
 
 # TODO: more thorough testing. Correctness depends
 # on exact weight ordering for each layer, so we need
@@ -107,7 +109,7 @@ class LegacyH5WholeModelTest(testing.TestCase):
         ref_input = np.random.random((2, 3))
         self._check_reloading_model(ref_input, model)
 
-    def test_functional_model_weights(self):
+    def test_functional_model(self):
         model = get_functional_model(keras_core)
         ref_input = np.random.random((2, 3))
         self._check_reloading_model(ref_input, model)
@@ -121,3 +123,180 @@ class LegacyH5WholeModelTest(testing.TestCase):
         model.compile(optimizer="rmsprop", loss="mse")
         ref_input = np.random.random((1, 3))
         self._check_reloading_model(ref_input, model)
+
+    def test_saving_lambda(self):
+        mean = np.random.random((4, 2, 3))
+        std = np.abs(np.random.random((4, 2, 3))) + 1e-5
+        inputs = layers.Input(shape=(4, 2, 3))
+        output = layers.Lambda(
+            lambda image, mu, std: (image - mu) / std,
+            arguments={"mu": mean, "std": std},
+        )(inputs)
+        model = models.Model(inputs, output)
+        model.compile(loss="mse", optimizer="sgd", metrics=["acc"])
+
+        temp_filepath = os.path.join(self.get_temp_dir(), "lambda_model.h5")
+        legacy_h5_format.save_model_to_hdf5(model, temp_filepath)
+        loaded = legacy_h5_format.load_model_from_hdf5(temp_filepath)
+
+        self.assertAllClose(mean, loaded.layers[1].arguments["mu"])
+        self.assertAllClose(std, loaded.layers[1].arguments["std"])
+
+    def test_saving_include_optimizer_false(self):
+        model = models.Sequential()
+        model.add(layers.Dense(1))
+        model.compile("adam", loss="mse")
+        x, y = np.ones((10, 10)), np.ones((10, 1))
+        model.fit(x, y)
+        ref_output = model(x)
+
+        temp_filepath = os.path.join(self.get_temp_dir(), "model.h5")
+        legacy_h5_format.save_model_to_hdf5(
+            model, temp_filepath, include_optimizer=False
+        )
+        loaded = legacy_h5_format.load_model_from_hdf5(temp_filepath)
+        output = loaded(x)
+
+        # Assert that optimizer does not exist in loaded model
+        with self.assertRaises(AttributeError):
+            _ = loaded.optimizer
+
+        # Compare output
+        self.assertAllClose(ref_output, output, atol=1e-5)
+
+    def test_custom_sequential_registered_no_scope(self):
+        @object_registration.register_keras_serializable(package="my_package")
+        class MyDense(layers.Dense):
+            def __init__(self, units, **kwargs):
+                super().__init__(units, **kwargs)
+
+        input_shape = [1]
+        inputs = layers.Input(shape=input_shape)
+        custom_layer = MyDense(1)
+        model = models.Sequential(layers=[inputs, custom_layer])
+
+        ref_input = np.array([5])
+        self._check_reloading_model(ref_input, model)
+
+    def test_custom_functional_registered_no_scope(self):
+        @object_registration.register_keras_serializable(package="my_package")
+        class MyDense(layers.Dense):
+            def __init__(self, units, **kwargs):
+                super().__init__(units, **kwargs)
+
+        inputs = layers.Input(shape=[1])
+        outputs = MyDense(1)(inputs)
+        model = models.Model(inputs, outputs)
+
+        ref_input = np.array([5])
+        self._check_reloading_model(ref_input, model)
+
+    def test_nested_layers(self):
+        class MyLayer(layers.Layer):
+            def __init__(self, sublayers, **kwargs):
+                super().__init__(**kwargs)
+                self.sublayers = sublayers
+
+            def call(self, x):
+                prev_input = x
+                for layer in self.sublayers:
+                    prev_input = layer(prev_input)
+                return prev_input
+
+            def get_config(self):
+                config = super().get_config()
+                config["sublayers"] = serialization_lib.serialize_keras_object(
+                    self.sublayers
+                )
+                return config
+
+            @classmethod
+            def from_config(cls, config):
+                config[
+                    "sublayers"
+                ] = serialization_lib.deserialize_keras_object(
+                    config["sublayers"]
+                )
+                return cls(**config)
+
+        @object_registration.register_keras_serializable(package="Foo")
+        class RegisteredSubLayer(layers.Layer):
+            pass
+
+        layer = MyLayer(
+            [
+                layers.Dense(2, name="MyDense"),
+                RegisteredSubLayer(name="MySubLayer"),
+            ]
+        )
+        model = models.Sequential([layer])
+        with self.subTest("test_JSON"):
+            from keras_core.models.model import model_from_json
+
+            model_json = model.to_json()
+            self.assertIn("Foo>RegisteredSubLayer", model_json)
+
+            loaded_model = model_from_json(
+                model_json, custom_objects={"MyLayer": MyLayer}
+            )
+            loaded_layer = loaded_model.layers[0]
+
+            self.assertIsInstance(loaded_layer.sublayers[0], layers.Dense)
+            self.assertEqual(loaded_layer.sublayers[0].name, "MyDense")
+            self.assertIsInstance(loaded_layer.sublayers[1], RegisteredSubLayer)
+            self.assertEqual(loaded_layer.sublayers[1].name, "MySubLayer")
+
+        with self.subTest("test_H5"):
+            temp_filepath = os.path.join(self.get_temp_dir(), "model.h5")
+            legacy_h5_format.save_model_to_hdf5(model, temp_filepath)
+            loaded_model = legacy_h5_format.load_model_from_hdf5(
+                temp_filepath, custom_objects={"MyLayer": MyLayer}
+            )
+            loaded_layer = loaded_model.layers[0]
+
+            self.assertIsInstance(loaded_layer.sublayers[0], layers.Dense)
+            self.assertEqual(loaded_layer.sublayers[0].name, "MyDense")
+            self.assertIsInstance(loaded_layer.sublayers[1], RegisteredSubLayer)
+            self.assertEqual(loaded_layer.sublayers[1].name, "MySubLayer")
+
+
+@pytest.mark.requires_trainable_backend
+class LegacyH5BackwardsCompatTest(testing.TestCase):
+    def _check_reloading_model(self, ref_input, model, tf_keras_model):
+        # Whole model file
+        ref_output = tf_keras_model(ref_input)
+        temp_filepath = os.path.join(self.get_temp_dir(), "model.h5")
+        tf_keras_model.save(temp_filepath)
+        loaded = legacy_h5_format.load_model_from_hdf5(temp_filepath)
+        output = loaded(ref_input)
+        self.assertAllClose(ref_output, output, atol=1e-5)
+
+    def test_sequential_model(self):
+        model = get_sequential_model(keras_core)
+        tf_keras_model = get_sequential_model(tf.keras)
+        ref_input = np.random.random((2, 3))
+        self._check_reloading_model(ref_input, model, tf_keras_model)
+
+    def test_functional_model(self):
+        tf_keras_model = get_functional_model(tf.keras)
+        model = get_functional_model(keras_core)
+        ref_input = np.random.random((2, 3))
+        self._check_reloading_model(ref_input, model, tf_keras_model)
+
+    def test_compiled_model_with_various_layers(self):
+        model = models.Sequential()
+        model.add(layers.Dense(2, input_shape=(3,)))
+        model.add(layers.RepeatVector(3))
+        model.add(layers.TimeDistributed(layers.Dense(3)))
+        model.compile(optimizer="rmsprop", loss="mse")
+
+        tf_keras_model = tf.keras.Sequential()
+        tf_keras_model.add(tf.keras.layers.Dense(2, input_shape=(3,)))
+        tf_keras_model.add(tf.keras.layers.RepeatVector(3))
+        tf_keras_model.add(
+            tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(3))
+        )
+        tf_keras_model.compile(optimizer="rmsprop", loss="mse")
+
+        ref_input = np.random.random((1, 3))
+        self._check_reloading_model(ref_input, model, tf_keras_model)

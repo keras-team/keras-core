@@ -7,6 +7,7 @@ from keras_core import backend
 from keras_core import utils
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
+from keras_core.models.variable_mapping import map_trackable_variables
 from keras_core.saving import saving_api
 from keras_core.saving import saving_lib
 from keras_core.trainers import trainer as base_trainer
@@ -447,12 +448,42 @@ class Model(Trainer, Layer):
         return json.dumps(model_config, **kwargs)
 
     def export(self, filepath, format="tf_saved_model"):
-        raise NotImplementedError(
-            "The export() method is not yet supported. It will "
-            "be added in the next version. For the time being, you "
-            "can use `tf.saved_model.save(model)` to save a "
-            "TensorFlow SavedModel for your Keras Core model."
-        )
+        """[TF backend only]* Create a TF SavedModel artifact for inference
+        (e.g. via TF-Serving).
+
+        **Note:** This can currently only be used with the TF backend.
+
+        This method lets you export a model to a lightweight SavedModel artifact
+        that contains the model's forward pass only (its `call()` method)
+        and can be served via e.g. TF-Serving. The forward pass is registered
+        under the name `serve()` (see example below).
+
+        The original code of the model (including any custom layers you may
+        have used) is *no longer* necessary to reload the artifact -- it is
+        entirely standalone.
+
+        Args:
+            filepath: `str` or `pathlib.Path` object. Path where to save
+                the artifact.
+
+        Example:
+
+        ```python
+        # Create the artifact
+        model.export("path/to/location")
+
+        # Later, in a different process / environment...
+        reloaded_artifact = tf.saved_model.load("path/to/location")
+        predictions = reloaded_artifact.serve(input_data)
+        ```
+
+        If you would like to customize your serving endpoints, you can
+        use the lower-level `keras_core.export.ExportArchive` class. The
+        `export()` method relies on `ExportArchive` internally.
+        """
+        from keras_core.export import export_lib
+
+        export_lib.export_model(self, filepath)
 
     @classmethod
     def from_config(cls, config, custom_objects=None):
@@ -479,9 +510,11 @@ class Model(Trainer, Layer):
         if is_functional_config and revivable_as_functional:
             # Revive Functional model
             # (but not Functional subclasses with a custom __init__)
-            if cls == Model:
-                cls = Functional
-            return cls._from_config(config, custom_objects=custom_objects)
+            from keras_core.models.functional import functional_from_config
+
+            return functional_from_config(
+                cls, config, custom_objects=custom_objects
+            )
 
         # Either the model has a custom __init__, or the config
         # does not contain all the information necessary to
@@ -506,6 +539,13 @@ class Model(Trainer, Layer):
                 f"Received config={config}\n\n"
                 f"Error encountered during deserialization: {e}"
             )
+
+    def _get_variable_map(self):
+        store = {}
+        map_trackable_variables(
+            self, store=store, inner_path="", visited_trackables=set()
+        )
+        return store
 
 
 @keras_core_export("keras_core.models.model_from_json")

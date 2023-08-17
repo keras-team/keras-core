@@ -10,6 +10,7 @@ from keras_core.backend.common.backend_utils import (
 from keras_core.backend.config import epsilon
 from keras_core.backend.numpy.core import cast
 from keras_core.backend.numpy.core import is_tensor
+from keras_core.utils.module_utils import scipy
 
 
 def relu(x):
@@ -37,10 +38,6 @@ def softsign(x):
 
 
 def silu(x):
-    return x * (1.0 / (1.0 + np.exp(-x)))
-
-
-def swish(x):
     return x * (1.0 / (1.0 + np.exp(-x)))
 
 
@@ -82,9 +79,7 @@ def gelu(x, approximate=True):
             )
         )
     else:
-        from scipy.stats import norm
-
-        return x * norm.cdf(x)
+        return x * scipy.stats.norm.cdf(x)
 
 
 def softmax(x, axis=None):
