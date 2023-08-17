@@ -128,4 +128,4 @@ class DataParallelDistributeTest(testing.TestCase):
                 weight._value.sharding, data_distribution._weight_sharding
             )
 
-        # TODO(qlzh727): Data distribution should happen in adapter.
+        # TODO(qlzh727): Need to validate the data sharding
