@@ -13,31 +13,32 @@ from keras_core.backend.jax import distribute
 
 import jax
 
+prev_xla_flags = None
+
+
+def setUpModule():
+    global prev_xla_flags
+    prev_xla_flags = os.getenv("XLA_FLAGS")
+    flags_str = prev_xla_flags or ""
+    # Don't override user-specified device count, or other XLA flags.
+    if "xla_force_host_platform_device_count" not in flags_str:
+        os.environ["XLA_FLAGS"] = (
+            flags_str + " --xla_force_host_platform_device_count=8"
+        )
+
+
+def tearDownModule():
+    if prev_xla_flags is None:
+        del os.environ["XLA_FLAGS"]
+    else:
+        os.environ["XLA_FLAGS"] = prev_xla_flags
+
 
 @pytest.mark.skipif(
     backend.backend() != "jax",
     reason="Only JAX backend support distribution API for now.",
 )
 class DataParallelDistributeTest(testing.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        # Config the number of devices for testing to be 8.
-        flags = os.environ.get("XLA_FLAGS", "")
-        os.environ["XLA_FLAGS"] = (
-            flags + " --xla_force_host_platform_device_count=8"
-        )
-
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        flags = os.environ.get("XLA_FLAGS", "")
-        if " --xla_force_host_platform_device_count=8" in flags:
-            flags = flags.replace(
-                " --xla_force_host_platform_device_count=8", ""
-            )
-            os.environ["XLA_FLAGS"] = flags
-
     def test_create_with_devices(self):
         devices = jax.devices()
         self.assertEqual(len(devices), 8)
