@@ -135,7 +135,7 @@ def extract_sequences(x, sequence_length, sequence_stride):
 def overlap_sequences(x, sequence_stride):
     # Ref: https://github.com/google/jax/blob/main/jax/_src/scipy/signal.py
     x = convert_to_tensor(x)
-    *batch_shape, num_sequences, sequence_length = x.size()
+    *batch_shape, num_sequences, sequence_length = x.shape
     if sequence_stride > sequence_length:
         raise ValueError(
             "`sequence_stride` must equal or less than x.shape[-1]. "
