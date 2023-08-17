@@ -714,7 +714,8 @@ def arccos(x):
 
     Example:
     >>> x = keras_core.ops.convert_to_tensor([1, -1])
-    array([0., 3.1415927], dtype=float32)
+    >>> keras_core.ops.arccos(x)
+    array([0.0, 3.1415927], dtype=float32)
     """
     if any_symbolic_tensors((x,)):
         return Arccos().symbolic_call(x)
@@ -737,6 +738,11 @@ def arccosh(x):
 
     Returns:
         Output tensor of same shape as x.
+
+    Example:
+    >>> x = keras_core.ops.convert_to_tensor([10, 100])
+    >>> keras_core.ops.arccosh(x)
+    array([2.993223, 5.298292], dtype=float32)
     """
     if any_symbolic_tensors((x,)):
         return Arccosh().symbolic_call(x)
@@ -789,6 +795,11 @@ def arcsinh(x):
 
     Returns:
         Output tensor of same shape as `x`.
+    
+    Example:
+    >>> x = keras_core.ops.convert_to_tensor([1, -1, 0])
+    >>> keras_core.ops.arcsinh(x)
+    array([0.88137364, -0.88137364, 0.0], dtype=float32)
     """
     if any_symbolic_tensors((x,)):
         return Arcsinh().symbolic_call(x)
@@ -1926,8 +1937,7 @@ def digitize(x, bins):
     Returns:
         Output array of indices, of same shape as `x`.
 
-    Example:
-
+    Examples:
     >>> x = np.array([0.0, 1.0, 3.0, 1.6])
     >>> bins = np.array([0.0, 3.0, 4.5, 7.0])
     >>> keras_core.ops.digitize(x, bins)
