@@ -37,12 +37,6 @@ class HashedCrossingTest(testing.TestCase):
         )
 
     def test_correctness(self):
-        layer = layers.HashedCrossing(num_bins=10)
-        feat1 = tf.constant("A")
-        feat2 = tf.constant(101)
-        outputs = layer((feat1, feat2))
-        self.assertAllClose(outputs, 1)
-
         layer = layers.HashedCrossing(num_bins=5)
         feat1 = np.array(["A", "B", "A", "B", "A"])
         feat2 = np.array([101, 101, 101, 102, 102])
@@ -86,45 +80,30 @@ class HashedCrossingTest(testing.TestCase):
             )
 
     def test_cross_output_dtype(self):
-        if backend.backend() == "tensorflow" or backend.backend() == "numpy":
-            layer = layers.HashedCrossing(num_bins=2)
-            self.assertEqual(layer(([1], [1])).dtype, tf.int64)
-            layer = layers.HashedCrossing(num_bins=2, dtype=tf.int32)
-            self.assertEqual(layer(([1], [1])).dtype, tf.int32)
-            layer = layers.HashedCrossing(num_bins=2, output_mode="one_hot")
-            self.assertEqual(layer(([1], [1])).dtype, tf.float32)
-            layer = layers.HashedCrossing(
-                num_bins=2, output_mode="one_hot", dtype=tf.float64
-            )
-            self.assertEqual(layer(([1], [1])).dtype, tf.float64)
+        input_1, input_2 = np.array([1]), np.array([1])
 
-        elif backend.backend() == "torch":
-            import torch
-
-            layer = layers.HashedCrossing(num_bins=2)
-            self.assertEqual(layer(([1], [1])).dtype, torch.int32)
-            layer = layers.HashedCrossing(num_bins=2, dtype=torch.int32)
-            self.assertEqual(layer(([1], [1])).dtype, torch.int32)
-            layer = layers.HashedCrossing(num_bins=2, output_mode="one_hot")
-            self.assertEqual(layer(([1], [1])).dtype, torch.float32)
-            layer = layers.HashedCrossing(
-                num_bins=2, output_mode="one_hot", dtype=torch.float64
-            )
-            self.assertEqual(layer(([1], [1])).dtype, torch.float64)
-
-        elif backend.backend() == "jax":
-            import torch
-
-            layer = layers.HashedCrossing(num_bins=2)
-            self.assertEqual(layer(([1], [1])).dtype, "int32")
-            layer = layers.HashedCrossing(num_bins=2, dtype="int32")
-            self.assertEqual(layer(([1], [1])).dtype, "int32")
-            layer = layers.HashedCrossing(num_bins=2, output_mode="one_hot")
-            self.assertEqual(layer(([1], [1])).dtype, "float32")
-            layer = layers.HashedCrossing(
-                num_bins=2, output_mode="one_hot", dtype="float32"
-            )
-            self.assertEqual(layer(([1], [1])).dtype, "float32")
+        layer = layers.HashedCrossing(num_bins=2)
+        output_dtype = backend.standardize_dtype(
+            layer((input_1, input_2)).dtype
+        )
+        self.assertEqual(output_dtype, "int64")
+        layer = layers.HashedCrossing(num_bins=2, dtype=tf.int32)
+        output_dtype = backend.standardize_dtype(
+            layer((input_1, input_2)).dtype
+        )
+        self.assertEqual(output_dtype, "int32")
+        layer = layers.HashedCrossing(num_bins=2, output_mode="one_hot")
+        output_dtype = backend.standardize_dtype(
+            layer((input_1, input_2)).dtype
+        )
+        self.assertEqual(output_dtype, "float32")
+        layer = layers.HashedCrossing(
+            num_bins=2, output_mode="one_hot", dtype=tf.float64
+        )
+        output_dtype = backend.standardize_dtype(
+            layer((input_1, input_2)).dtype
+        )
+        self.assertEqual(output_dtype, "float64")
 
     def test_non_list_input_fails(self):
         with self.assertRaisesRegex(ValueError, "should be called on a list"):
@@ -149,9 +128,38 @@ class HashedCrossingTest(testing.TestCase):
                 (tf.constant([1.0]), tf.constant([1.0]))
             )
 
-    def test_from_config(self):
+    def test_tf_string(self):
         if backend.backend() != "tensorflow":
             return  # skip
+
+        layer = layers.HashedCrossing(num_bins=10)
+        feat1 = tf.constant("A")
+        feat2 = tf.constant(101)
+        outputs = layer((feat1, feat2))
+        self.assertAllClose(outputs, 1)
+
+        layer = tf.keras.layers.HashedCrossing(
+            num_bins=5, output_mode="one_hot"
+        )
+        feat1 = tf.constant(["A", "B", "A", "B", "A"])
+        feat2 = tf.constant([101, 101, 101, 102, 102])
+        self.assertAllClose(
+            np.array(
+                [
+                    [0.0, 1.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 1.0],
+                    [0.0, 1.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0, 0.0],
+                ]
+            ),
+            layer((feat1, feat2)),
+        )
+
+        layer = tf.keras.layers.HashedCrossing(num_bins=5)
+        feat1 = tf.constant(["A", "B", "A", "B", "A"])
+        feat2 = tf.constant([101, 101, 101, 102, 102])
+        self.assertAllClose(np.array([1, 4, 1, 1, 3]), layer((feat1, feat2)))
 
         layer = layers.HashedCrossing(
             num_bins=5, output_mode="one_hot", sparse=True

@@ -85,6 +85,7 @@ class HashedCrossing(Layer):
 
         if output_mode == "int" and dtype is None:
             dtype = "int64"
+
         super().__init__(name=name, dtype=dtype)
         if sparse and backend.backend() != "tensorflow":
             raise ValueError(
@@ -173,7 +174,7 @@ class HashedCrossing(Layer):
             backend.backend() != "tensorflow"
             and not backend_utils.in_tf_graph()
         ):
-            outputs = backend.convert_to_tensor(outputs)
+            outputs = backend.convert_to_tensor(outputs, dtype=self.dtype)
         return outputs
 
     def get_config(self):
