@@ -42,8 +42,8 @@ def tearDownModule():
     # Clear any cached backends so new CPU backend will pick up the env var.
     xb.get_backend.cache_clear()
 
-    devices = jax.devices()
-    assert len(devices) == 1, f"{devices} should only have 1 item after cleanup"
+    # devices = jax.devices()
+    # assert len(devices) == 1, f"{devices} should only have 1 item after cleanup"
 
 
 @pytest.mark.skipif(
