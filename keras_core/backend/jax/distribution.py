@@ -55,7 +55,9 @@ class DataParallelDistribution:
 
     @contextlib.contextmanager
     def scope(self):
-        original_scope = global_state.get_global_attribute(_GLOBAL_ATTRIBUTE_NAME)
+        original_scope = global_state.get_global_attribute(
+            _GLOBAL_ATTRIBUTE_NAME
+        )
         global_state.set_global_attribute(_GLOBAL_ATTRIBUTE_NAME, self)
         try:
             yield
@@ -101,7 +103,9 @@ class DataParallelDistribution:
         )
 
     def _config_sharding_spec(self):
-        variable_shard_spec = [None] * self.mesh.devices.ndim  # Fully replicated
+        variable_shard_spec = [
+            None
+        ] * self.mesh.devices.ndim  # Fully replicated
         data_shard_spec = variable_shard_spec.copy()
         data_shard_spec[0] = self.mesh.axis_names[0]  # Shard on the first dim
 
