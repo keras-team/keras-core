@@ -2,7 +2,6 @@
 import os
 
 import jax
-from jax._src import xla_bridge as xb
 import numpy as np
 import pytest
 
@@ -13,37 +12,15 @@ from keras_core import testing
 from keras_core.backend.common import global_state
 from keras_core.backend.jax import distribution
 
-prev_xla_flags = None
-
-prev_xla_flags = os.getenv("XLA_FLAGS")
-flags_str = prev_xla_flags or ""
+# Due to https://github.com/google/jax/issues/17188, we can't
+# override the XLA flag after the JAX back init. We have to
+# run this at top level to let JAX pick the flag value.
+xla_flags = os.getenv("XLA_FLAGS") or ""
 # Don't override user-specified device count, or other XLA flags.
-if "xla_force_host_platform_device_count" not in flags_str:
+if "xla_force_host_platform_device_count" not in xla_flags:
     os.environ["XLA_FLAGS"] = (
-        flags_str + " --xla_force_host_platform_device_count=8"
+        xla_flags + " --xla_force_host_platform_device_count=8"
     )
-# Clear any cached backends so new CPU backend will pick up the env var.
-xb.get_backend.cache_clear()
-
-devices = jax.devices()
-assert len(devices) == 8, f"{devices} should have 8 devices."
-
-
-# def setUpModule():
-    # global prev_xla_flags
-
-
-
-def tearDownModule():
-    if prev_xla_flags is None:
-        del os.environ["XLA_FLAGS"]
-    else:
-        os.environ["XLA_FLAGS"] = prev_xla_flags
-    # Clear any cached backends so new CPU backend will pick up the env var.
-    xb.get_backend.cache_clear()
-
-    # devices = jax.devices()
-    # assert len(devices) == 1, f"{devices} should only have 1 item after cleanup"
 
 
 @pytest.mark.skipif(

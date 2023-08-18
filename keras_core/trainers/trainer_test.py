@@ -93,15 +93,6 @@ class TrainingTestingLayer(layers.Layer, Trainer):
 
 
 class TestTrainer(testing.TestCase, parameterized.TestCase):
-
-    @pytest.mark.skipif(
-        backend.backend() != "jax",
-        reason="Only JAX backend suppored for now.",
-    )
-    def test_jax_device(self):
-        import jax
-        assert len(jax.devices()) == 1, "Should have only 1 devices."
-
     @pytest.mark.requires_trainable_backend
     def test_metric_tracking(self):
         class ModelWithMetric(layers.Dense, Trainer):
