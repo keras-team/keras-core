@@ -15,21 +15,23 @@ from keras_core.backend.jax import distribution
 
 prev_xla_flags = None
 
+prev_xla_flags = os.getenv("XLA_FLAGS")
+flags_str = prev_xla_flags or ""
+# Don't override user-specified device count, or other XLA flags.
+if "xla_force_host_platform_device_count" not in flags_str:
+    os.environ["XLA_FLAGS"] = (
+        flags_str + " --xla_force_host_platform_device_count=8"
+    )
+# Clear any cached backends so new CPU backend will pick up the env var.
+xb.get_backend.cache_clear()
 
-def setUpModule():
-    global prev_xla_flags
-    prev_xla_flags = os.getenv("XLA_FLAGS")
-    flags_str = prev_xla_flags or ""
-    # Don't override user-specified device count, or other XLA flags.
-    if "xla_force_host_platform_device_count" not in flags_str:
-        os.environ["XLA_FLAGS"] = (
-            flags_str + " --xla_force_host_platform_device_count=8"
-        )
-    # Clear any cached backends so new CPU backend will pick up the env var.
-    xb.get_backend.cache_clear()
+devices = jax.devices()
+assert len(devices) == 8, f"{devices} should have 8 devices."
 
-    devices = jax.devices()
-    assert len(devices) == 8, f"{devices} should have 8 devices."
+
+# def setUpModule():
+    # global prev_xla_flags
+
 
 
 def tearDownModule():
@@ -39,6 +41,9 @@ def tearDownModule():
         os.environ["XLA_FLAGS"] = prev_xla_flags
     # Clear any cached backends so new CPU backend will pick up the env var.
     xb.get_backend.cache_clear()
+
+    devices = jax.devices()
+    assert len(devices) == 1, f"{devices} should only have 1 item after cleanup"
 
 
 @pytest.mark.skipif(
