@@ -17,7 +17,6 @@ prev_xla_flags = None
 
 
 def setUpModule():
-    raise ValueError("Shouldn't raise at setup")
     global prev_xla_flags
     prev_xla_flags = os.getenv("XLA_FLAGS")
     flags_str = prev_xla_flags or ""
@@ -29,9 +28,11 @@ def setUpModule():
     # Clear any cached backends so new CPU backend will pick up the env var.
     xb.get_backend.cache_clear()
 
+    devices = jax.devices()
+    assert len(devices) == 8, f"{devices} should have 8 devices."
+
 
 def tearDownModule():
-    raise ValueError("Shouldn't raise at teardown")
     if prev_xla_flags is None:
         del os.environ["XLA_FLAGS"]
     else:
