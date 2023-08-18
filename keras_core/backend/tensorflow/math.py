@@ -142,7 +142,6 @@ def stft(
     l_pad = (fft_length - sequence_length) // 2
     r_pad = fft_length - sequence_length - l_pad
 
-    win = None
     if window is not None:
         if isinstance(window, str):
             if window == "hann":
@@ -164,6 +163,9 @@ def stft(
 
         def win(frame_step, dtype):
             return win_array
+
+    else:
+        win = None
 
     result = tf.signal.stft(
         x,
