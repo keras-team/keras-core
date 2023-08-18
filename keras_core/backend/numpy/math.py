@@ -1,5 +1,3 @@
-import math
-
 import numpy as np
 
 from keras_core.backend import standardize_dtype
@@ -124,52 +122,6 @@ def extract_sequences(x, sequence_length, sequence_stride):
     )
     x = np.lib.stride_tricks.as_strided(x, shape=shape, strides=strides)
     return np.reshape(x, (*batch_shape, *x.shape[-2:]))
-
-
-def _overlap_sequences(x, sequence_stride):
-    # Ref: https://github.com/google/jax/blob/main/jax/_src/scipy/signal.py
-    *batch_shape, num_sequences, sequence_length = x.shape
-    if sequence_stride > sequence_length:
-        raise ValueError(
-            "`sequence_stride` must not larger than x.shape[-1]. "
-            f"Received: sequence_stride={sequence_stride}, "
-            f"x.shape[-1]={sequence_length}"
-        )
-    if sequence_stride < (sequence_length / num_sequences):
-        raise ValueError(
-            "`sequence_stride` must not less than x.shape[-1] / x.shape[-2]. "
-            f"Received: sequence_stride={sequence_stride}, "
-            f"x.shape[-1]={sequence_length}, x.shape[-2]={num_sequences}"
-        )
-    flat_batchsize = math.prod(batch_shape)
-    x = np.reshape(x, (flat_batchsize, num_sequences, sequence_length))
-    output_size = sequence_stride * (num_sequences - 1) + sequence_length
-    nstep_per_segment = 1 + (sequence_length - 1) // sequence_stride
-    # Here, we use shorter notation for axes.
-    # B: batch_size, N: nframes, S: nstep_per_segment,
-    # T: segment_len divided by S
-    padded_segment_len = nstep_per_segment * sequence_stride
-    x = np.pad(x, ((0, 0), (0, 0), (0, padded_segment_len - sequence_length)))
-    x = np.reshape(
-        x, (flat_batchsize, num_sequences, nstep_per_segment, sequence_stride)
-    )
-    # For obtaining shifted signals, this routine reinterprets flattened array
-    # with a shrinked axis.  With appropriate truncation/ padding, this
-    # operation pushes the last padded elements of the previous row to the head
-    # of the current row.
-    # See implementation of `overlap_and_add` in Tensorflow for details.
-    x = x.transpose((0, 2, 1, 3))  # x: (B, S, N, T)
-    x = np.pad(x, ((0, 0), (0, 0), (0, num_sequences), (0, 0)))
-    # x: (B, S, N*2, T)
-    shrinked = x.shape[2] - 1
-    x = np.reshape(x, (flat_batchsize, -1))
-    x = x[:, : (nstep_per_segment * shrinked * sequence_stride)]
-    x = np.reshape(
-        x, (flat_batchsize, nstep_per_segment, shrinked * sequence_stride)
-    )
-    # Finally, sum shifted segments, and truncate results to the output_size.
-    x = np.sum(x, axis=1)[:, :output_size]
-    return np.reshape(x, tuple(batch_shape) + (-1,))
 
 
 def _get_complex_tensor_from_tuple(x):
@@ -300,49 +252,48 @@ def istft(
     window="hann",
     center=True,
 ):
-    # ref:
-    # torch: aten/src/ATen/native/SpectralOps.cpp
-    # tf: tf.signal.inverse_stft_window_fn
-    x = irfft(x, fft_length)
+    x = _get_complex_tensor_from_tuple(x)
+    dtype = np.real(x).dtype
 
     expected_output_len = fft_length + sequence_stride * (x.shape[-2] - 1)
+    l_pad = (fft_length - sequence_length) // 2
+    r_pad = fft_length - sequence_length - l_pad
 
     if window is not None:
         if isinstance(window, str):
             win = convert_to_tensor(
-                scipy.signal.get_window(window, sequence_length), dtype=x.dtype
+                scipy.signal.get_window(window, sequence_length), dtype=dtype
             )
         else:
-            win = convert_to_tensor(window, dtype=x.dtype)
+            win = convert_to_tensor(window, dtype=dtype)
         if len(win.shape) != 1 or win.shape[-1] != sequence_length:
             raise ValueError(
                 "The shape of `window` must be equal to [sequence_length]."
                 f"Received: window shape={win.shape}"
             )
-        l_pad = (fft_length - sequence_length) // 2
-        r_pad = fft_length - sequence_length - l_pad
         win = np.pad(win, [[l_pad, r_pad]])
+    else:
+        win = np.ones((sequence_length + l_pad + r_pad), dtype=dtype)
 
-        # square and sum
-        _sequence_length = sequence_length + l_pad + r_pad
-        denom = np.square(win)
-        overlaps = -(-_sequence_length // sequence_stride)
-        denom = np.pad(
-            denom, [(0, overlaps * sequence_stride - _sequence_length)]
-        )
-        denom = np.reshape(denom, [overlaps, sequence_stride])
-        denom = np.sum(denom, 0, keepdims=True)
-        denom = np.tile(denom, [overlaps, 1])
-        denom = np.reshape(denom, [overlaps * sequence_stride])
-        win = np.divide(win, denom[:_sequence_length])
-        x = np.multiply(x, win)
+    x = scipy.signal.istft(
+        x,
+        fs=1.0,
+        window=win,
+        nperseg=(sequence_length + l_pad + r_pad),
+        noverlap=(sequence_length + l_pad + r_pad - sequence_stride),
+        nfft=fft_length,
+        boundary=False,
+        time_axis=-2,
+        freq_axis=-1,
+    )[-1]
 
-    x = _overlap_sequences(x, sequence_stride)
+    # scale
+    x = x / win.sum() if window is not None else x / sequence_stride
 
     start = 0 if center is False else fft_length // 2
     if length is not None:
         end = start + length
-    elif center:
+    elif center is True:
         end = -(fft_length // 2)
     else:
         end = expected_output_len
