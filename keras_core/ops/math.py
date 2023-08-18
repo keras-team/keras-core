@@ -380,65 +380,6 @@ def extract_sequences(x, sequence_length, sequence_stride):
     return backend.math.extract_sequences(x, sequence_length, sequence_stride)
 
 
-class OverlapSequences(Operation):
-    def __init__(self, sequence_stride):
-        super().__init__()
-        self.sequence_stride = sequence_stride
-
-    def compute_output_spec(self, x):
-        if len(x.shape) < 2:
-            raise ValueError(
-                f"Input should have rank >= 2. "
-                f"Received: input.shape = {x.shape}"
-            )
-        if x.shape[-2] is not None and x.shape[-1] is not None:
-            num_sequences = x.shape[-2]
-            sequence_length = x.shape[-1]
-            output_size = (
-                num_sequences - 1
-            ) * self.sequence_stride + sequence_length
-        else:
-            output_size = None
-        new_shape = x.shape[:-2] + (output_size,)
-        return KerasTensor(shape=new_shape, dtype=x.dtype)
-
-    def call(self, x):
-        return backend.math.overlap_sequences(
-            x, sequence_stride=self.sequence_stride
-        )
-
-
-@keras_core_export("keras_core.ops.overlap_sequences")
-def overlap_sequences(x, sequence_stride):
-    """Reconstructs a signal from a sequenced representation.
-
-    Adds potentially overlapping sequences of a signal with shape
-    `[..., sequences, sequence_length]`, offsetting subsequent sequences by
-    `sequence_stride`. The resulting tensor has shape `[..., output_size]` where
-
-    `output_size = (sequences - 1) * sequence_stride + sequence_length`
-
-    Args:
-        x: Input tensor.
-        sequence_stride: An integer representing the sequence hop size. Note
-        that `sequence_stride` must not larger than sequence_length. Note that
-        `sequence_stride` must not less than sequence_length / sequences.
-
-    Returns:
-        A tensor with shape [..., output_size] containing the overlap-added
-        sequences of the input tensor.
-
-    Example:
-
-    >>> x = keras_core.ops.convert_to_tensor([[1, 2, 3], [4, 5, 6]])
-    >>> overlap_sequences(x, 2)
-    array([1 2 6 4 5])
-    """
-    if any_symbolic_tensors((x,)):
-        return OverlapSequences(sequence_stride).symbolic_call(x)
-    return backend.math.overlap_sequences(x, sequence_stride)
-
-
 class FFT(Operation):
     def compute_output_spec(self, x):
         if not isinstance(x, (tuple, list)) or len(x) != 2:
@@ -750,10 +691,10 @@ class STFT(Operation):
         self.center = center
 
     def compute_output_spec(self, x):
-        if len(x.shape) < 1:
+        if len(x.shape) not in {1, 2}:
             raise ValueError(
-                f"Input should have rank >= 1. "
-                f"Received: input shape = {x.shape}"
+                f"Input should have rank 1 (single sequence) or 2 "
+                f"(batched sequences). Received: input shape = {x.shape}"
             )
         if x.shape[-1] is not None:
             padded = 0 if self.center is False else (self.fft_length // 2) * 2

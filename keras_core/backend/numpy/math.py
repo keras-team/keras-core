@@ -126,7 +126,7 @@ def extract_sequences(x, sequence_length, sequence_stride):
     return np.reshape(x, (*batch_shape, *x.shape[-2:]))
 
 
-def overlap_sequences(x, sequence_stride):
+def _overlap_sequences(x, sequence_stride):
     # Ref: https://github.com/google/jax/blob/main/jax/_src/scipy/signal.py
     *batch_shape, num_sequences, sequence_length = x.shape
     if sequence_stride > sequence_length:
@@ -247,13 +247,16 @@ def stft(
                 "If a string is passed to `window`, it must be one of "
                 f'`"hann"`, `"hamming"`. Received: window={window}'
             )
+    x = convert_to_tensor(x)
+    ori_dtype = x.dtype
 
     if center:
         pad_width = [(0, 0) for _ in range(len(x.shape))]
         pad_width[-1] = (fft_length // 2, fft_length // 2)
         x = np.pad(x, pad_width, mode="reflect")
 
-    x = extract_sequences(x, fft_length, sequence_stride)
+    l_pad = (fft_length - sequence_length) // 2
+    r_pad = fft_length - sequence_length - l_pad
 
     if window is not None:
         if isinstance(window, str):
@@ -267,12 +270,25 @@ def stft(
                 "The shape of `window` must be equal to [sequence_length]."
                 f"Received: window shape={win.shape}"
             )
-        l_pad = (fft_length - sequence_length) // 2
-        r_pad = fft_length - sequence_length - l_pad
         win = np.pad(win, [[l_pad, r_pad]])
-        x = np.multiply(x, win)
+    else:
+        win = np.ones((sequence_length + l_pad + r_pad), dtype=x.dtype)
 
-    return rfft(x, fft_length)
+    x = scipy.signal.stft(
+        x,
+        fs=1.0,
+        window=win,
+        nperseg=(sequence_length + l_pad + r_pad),
+        noverlap=(sequence_length + l_pad + r_pad - sequence_stride),
+        nfft=fft_length,
+        boundary=None,
+        padded=False,
+    )[-1]
+
+    # scale and swap to (..., num_sequences, fft_bins)
+    x = x / np.sqrt(1.0 / win.sum() ** 2)
+    x = np.swapaxes(x, -2, -1)
+    return np.real(x).astype(ori_dtype), np.imag(x).astype(ori_dtype)
 
 
 def istft(
@@ -321,7 +337,7 @@ def istft(
         win = np.divide(win, denom[:_sequence_length])
         x = np.multiply(x, win)
 
-    x = overlap_sequences(x, sequence_stride)
+    x = _overlap_sequences(x, sequence_stride)
 
     start = 0 if center is False else fft_length // 2
     if length is not None:

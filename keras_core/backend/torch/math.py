@@ -132,7 +132,7 @@ def extract_sequences(x, sequence_length, sequence_stride):
     )
 
 
-def overlap_sequences(x, sequence_stride):
+def _overlap_sequences(x, sequence_stride):
     # Ref: https://github.com/google/jax/blob/main/jax/_src/scipy/signal.py
     x = convert_to_tensor(x)
     *batch_shape, num_sequences, sequence_length = x.shape
@@ -256,17 +256,6 @@ def stft(
             )
     x = convert_to_tensor(x)
 
-    if center:
-        pad_width = [(0, 0) for _ in range(x.ndim)]
-        pad_width[-1] = (fft_length // 2, fft_length // 2)
-        # torch does not support reflect padding when x.ndim >= 3
-        if x.ndim < 3:
-            x = pad(x, pad_width, "reflect")
-        else:
-            x = pad(x, pad_width, "constant")
-
-    x = extract_sequences(x, fft_length, sequence_stride)
-
     if window is not None:
         if isinstance(window, str):
             if window == "hann":
@@ -290,12 +279,20 @@ def stft(
                 "The shape of `window` must be equal to [sequence_length]."
                 f"Received: window shape={win.shape}"
             )
-        l_pad = (fft_length - sequence_length) // 2
-        r_pad = fft_length - sequence_length - l_pad
-        win = pad(win, [[l_pad, r_pad]], "constant")
-        x = torch.multiply(x, win)
+    else:
+        win = torch.ones((sequence_length,), dtype=x.dtype, device=get_device())
 
-    return rfft(x, fft_length)
+    x = torch.stft(
+        x,
+        n_fft=fft_length,
+        hop_length=sequence_stride,
+        win_length=sequence_length,
+        window=win,
+        center=center,
+        return_complex=True,
+    )
+    x = torch.swapaxes(x, -2, -1)
+    return x.real, x.imag
 
 
 def istft(
@@ -353,7 +350,7 @@ def istft(
         win = torch.divide(win, denom[:_sequence_length])
         x = torch.multiply(x, win)
 
-    x = overlap_sequences(x, sequence_stride)
+    x = _overlap_sequences(x, sequence_stride)
 
     start = 0 if center is False else fft_length // 2
     if length is not None:

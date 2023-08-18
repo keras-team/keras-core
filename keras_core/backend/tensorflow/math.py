@@ -58,10 +58,6 @@ def extract_sequences(x, sequence_length, sequence_stride):
     )
 
 
-def overlap_sequences(x, sequence_stride):
-    return tf.signal.overlap_and_add(x, frame_step=sequence_stride)
-
-
 def _get_complex_tensor_from_tuple(x):
     if not isinstance(x, (tuple, list)) or len(x) != 2:
         raise ValueError(
@@ -143,31 +139,40 @@ def stft(
         pad_width[-1] = (fft_length // 2, fft_length // 2)
         x = tf.pad(x, pad_width, mode="reflect")
 
-    x = extract_sequences(x, fft_length, sequence_stride)
+    l_pad = (fft_length - sequence_length) // 2
+    r_pad = fft_length - sequence_length - l_pad
 
+    win = None
     if window is not None:
         if isinstance(window, str):
             if window == "hann":
-                win = tf.signal.hann_window(
+                win_array = tf.signal.hann_window(
                     sequence_length, periodic=True, dtype=x.dtype
                 )
             else:
-                win = tf.signal.hamming_window(
+                win_array = tf.signal.hamming_window(
                     sequence_length, periodic=True, dtype=x.dtype
                 )
         else:
-            win = convert_to_tensor(window, dtype=x.dtype)
-        if len(win.shape) != 1 or win.shape[-1] != sequence_length:
+            win_array = convert_to_tensor(window, dtype=x.dtype)
+        if len(win_array.shape) != 1 or win_array.shape[-1] != sequence_length:
             raise ValueError(
                 "The shape of `window` must be equal to [sequence_length]."
-                f"Received: window shape={win.shape}"
+                f"Received: window shape={win_array.shape}"
             )
-        l_pad = (fft_length - sequence_length) // 2
-        r_pad = fft_length - sequence_length - l_pad
-        win = tf.pad(win, [[l_pad, r_pad]])
-        x = tf.multiply(x, win)
+        win_array = tf.pad(win_array, [[l_pad, r_pad]])
 
-    return rfft(x, fft_length)
+        def win(frame_step, dtype):
+            return win_array
+
+    result = tf.signal.stft(
+        x,
+        frame_length=(sequence_length + l_pad + r_pad),
+        frame_step=sequence_stride,
+        fft_length=fft_length,
+        window_fn=win,
+    )
+    return tf.math.real(result), tf.math.imag(result)
 
 
 def istft(
@@ -179,49 +184,46 @@ def istft(
     window="hann",
     center=True,
 ):
-    # ref:
-    # torch: aten/src/ATen/native/SpectralOps.cpp
-    # tf: tf.signal.inverse_stft_window_fn
-    x = irfft(x, fft_length)
+    complex_input = _get_complex_tensor_from_tuple(x)
+    dtype = tf.math.real(complex_input).dtype
 
-    expected_output_len = fft_length + sequence_stride * (tf.shape(x)[-2] - 1)
+    expected_output_len = fft_length + sequence_stride * (
+        tf.shape(complex_input)[-2] - 1
+    )
+    l_pad = (fft_length - sequence_length) // 2
+    r_pad = fft_length - sequence_length - l_pad
 
     if window is not None:
         if isinstance(window, str):
             if window == "hann":
-                win = tf.signal.hann_window(
-                    sequence_length, periodic=True, dtype=x.dtype
+                win_array = tf.signal.hann_window(
+                    sequence_length, periodic=True, dtype=dtype
                 )
             else:
-                win = tf.signal.hamming_window(
-                    sequence_length, periodic=True, dtype=x.dtype
+                win_array = tf.signal.hamming_window(
+                    sequence_length, periodic=True, dtype=dtype
                 )
         else:
-            win = convert_to_tensor(window, dtype=x.dtype)
-        if len(win.shape) != 1 or win.shape[-1] != sequence_length:
+            win_array = convert_to_tensor(window, dtype=dtype)
+        if len(win_array.shape) != 1 or win_array.shape[-1] != sequence_length:
             raise ValueError(
                 "The shape of `window` must be equal to [sequence_length]."
-                f"Received: window shape={win.shape}"
+                f"Received: window shape={win_array.shape}"
             )
-        l_pad = (fft_length - sequence_length) // 2
-        r_pad = fft_length - sequence_length - l_pad
-        win = tf.pad(win, [[l_pad, r_pad]])
-
-        # square and sum
-        _sequence_length = sequence_length + l_pad + r_pad
-        denom = tf.square(win)
-        overlaps = -(-_sequence_length // sequence_stride)
-        denom = tf.pad(
-            denom, [(0, overlaps * sequence_stride - _sequence_length)]
+        win_array = tf.pad(win_array, [[l_pad, r_pad]])
+        win = tf.signal.inverse_stft_window_fn(
+            sequence_stride, lambda frame_step, dtype: win_array
         )
-        denom = tf.reshape(denom, [overlaps, sequence_stride])
-        denom = tf.reduce_sum(denom, 0, keepdims=True)
-        denom = tf.tile(denom, [overlaps, 1])
-        denom = tf.reshape(denom, [overlaps * sequence_stride])
-        win = tf.divide(win, denom[:_sequence_length])
-        x = tf.multiply(x, win)
+    else:
+        win = None
 
-    x = overlap_sequences(x, sequence_stride)
+    x = tf.signal.inverse_stft(
+        complex_input,
+        frame_length=(sequence_length + l_pad + r_pad),
+        frame_step=sequence_stride,
+        fft_length=fft_length,
+        window_fn=win,
+    )
 
     start = 0 if center is False else fft_length // 2
     if length is not None:

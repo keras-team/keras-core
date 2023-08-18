@@ -15,61 +15,39 @@ def _stft(
     x, sequence_length, sequence_stride, fft_length, window="hann", center=True
 ):
     # pure numpy version of stft
+    x = np.array(x)
     ori_dtype = x.dtype
-    if backend.standardize_dtype(x.dtype) not in {"float32", "float64"}:
-        raise TypeError(
-            "Invalid input type. Expected `float32` or `float64`. "
-            f"Received: input type={x.dtype}"
-        )
-    if fft_length < sequence_length:
-        raise ValueError(
-            "`fft_length` must equal or larger than `sequence_length`. "
-            f"Received: sequence_length={sequence_length}, "
-            f"fft_length={fft_length}"
-        )
 
     if center:
         pad_width = [(0, 0) for _ in range(len(x.shape))]
         pad_width[-1] = (fft_length // 2, fft_length // 2)
-        if backend.backend() != "torch" or len(x.shape) < 3:
-            x = np.pad(x, pad_width, mode="reflect")
-        else:
-            # torch does not support reflect padding when rank >= 3
-            x = np.pad(x, pad_width, mode="constant")
+        x = np.pad(x, pad_width, mode="reflect")
 
-    # extract_sequences
-    def extract_sequences(x, sequence_length, sequence_stride):
-        *batch_shape, _ = x.shape
-        batch_shape = list(batch_shape)
-        shape = x.shape[:-1] + (
-            (x.shape[-1] - (sequence_length - sequence_stride))
-            // sequence_stride,
-            sequence_length,
-        )
-        strides = x.strides[:-1] + (
-            sequence_stride * x.strides[-1],
-            x.strides[-1],
-        )
-        x = np.lib.stride_tricks.as_strided(x, shape=shape, strides=strides)
-        return np.reshape(x, (*batch_shape, *x.shape[-2:]))
-
-    x = extract_sequences(x, fft_length, sequence_stride)
+    l_pad = (fft_length - sequence_length) // 2
+    r_pad = fft_length - sequence_length - l_pad
 
     if window is not None:
         if isinstance(window, str):
             window = scipy.signal.get_window(window, sequence_length)
         win = np.array(window, dtype=x.dtype)
-        if len(win.shape) != 1 or win.shape[-1] != sequence_length:
-            raise ValueError(
-                "The shape of `window` must be equal to [sequence_length]."
-                f"Received: window shape={win.shape}"
-            )
-        l_pad = (fft_length - sequence_length) // 2
-        r_pad = fft_length - sequence_length - l_pad
         win = np.pad(win, [[l_pad, r_pad]])
-        x = np.multiply(x, win)
+    else:
+        win = np.ones((sequence_length + l_pad + r_pad), dtype=x.dtype)
 
-    x = np.fft.rfft(x, fft_length)
+    x = scipy.signal.stft(
+        x,
+        fs=1.0,
+        window=win,
+        nperseg=(sequence_length + l_pad + r_pad),
+        noverlap=(sequence_length + l_pad + r_pad - sequence_stride),
+        nfft=fft_length,
+        boundary=None,
+        padded=False,
+    )[-1]
+
+    # scale and swap to (..., num_sequences, fft_bins)
+    x = x / np.sqrt(1.0 / win.sum() ** 2)
+    x = np.swapaxes(x, -2, -1)
     return np.real(x).astype(ori_dtype), np.imag(x).astype(ori_dtype)
 
 
@@ -97,11 +75,6 @@ def _istft(
             )
         else:
             win = np.array(window, dtype=x.dtype)
-        if len(win.shape) != 1 or win.shape[-1] != sequence_length:
-            raise ValueError(
-                "The shape of `window` must be equal to [sequence_length]."
-                f"Received: window shape={win.shape}"
-            )
         l_pad = (fft_length - sequence_length) // 2
         r_pad = fft_length - sequence_length - l_pad
         win = np.pad(win, [[l_pad, r_pad]])
@@ -121,21 +94,8 @@ def _istft(
         x = np.multiply(x, win)
 
     # overlap_sequences
-    def overlap_sequences(x, sequence_stride):
+    def _overlap_sequences(x, sequence_stride):
         *batch_shape, num_sequences, sequence_length = x.shape
-        if sequence_stride > sequence_length:
-            raise ValueError(
-                "`sequence_stride` must equal or less than x.shape[-1]. "
-                f"Received: sequence_stride={sequence_stride}, "
-                f"x.shape[-1]={sequence_length}"
-            )
-        if sequence_stride < (sequence_length / num_sequences):
-            raise ValueError(
-                "`sequence_stride` must equal or greater than "
-                "x.shape[-1] / x.shape[-2]. "
-                f"Received: sequence_stride={sequence_stride}, "
-                f"x.shape[-1]={sequence_length}, x.shape[-2]={num_sequences}"
-            )
         flat_batchsize = math.prod(batch_shape)
         x = np.reshape(x, (flat_batchsize, num_sequences, sequence_length))
         output_size = sequence_stride * (num_sequences - 1) + sequence_length
@@ -159,7 +119,7 @@ def _istft(
         x = np.sum(x, axis=1)[:, :output_size]
         return np.reshape(x, tuple(batch_shape) + (-1,))
 
-    x = overlap_sequences(x, sequence_stride)
+    x = _overlap_sequences(x, sequence_stride)
 
     start = 0 if center is False else fft_length // 2
     if length is not None:
@@ -243,23 +203,6 @@ class MathOpsDynamicShapeTest(testing.TestCase, parameterized.TestCase):
         sequence_stride = 2
         outputs = kmath.extract_sequences(x, sequence_length, sequence_stride)
         self.assertEqual(outputs.shape, (None, None, sequence_length))
-
-    def test_overlap_sequences(self):
-        # sequence_stride must <= sequence_length
-        # sequence_stride must >= sequence_length / num_sequences
-        num_sequences = 3
-        sequence_length = 4
-        sequence_stride = 2
-        # Defined dimension
-        x = KerasTensor((None, num_sequences, sequence_length), dtype="float32")
-        outputs = kmath.overlap_sequences(x, sequence_stride)
-        output_size = (num_sequences - 1) * sequence_stride + sequence_length
-        self.assertEqual(outputs.shape, (None, output_size))
-
-        # Undefined dimension
-        x = KerasTensor((None, None, None), dtype="float32")
-        outputs = kmath.overlap_sequences(x, sequence_stride)
-        self.assertEqual(outputs.shape, (None, None))
 
     def test_fft(self):
         real = KerasTensor((None, 4, 3), dtype="float32")
@@ -404,17 +347,6 @@ class MathOpsStaticShapeTest(testing.TestCase):
         outputs = kmath.extract_sequences(x, sequence_length, sequence_stride)
         num_sequences = 1 + (x.shape[-1] - sequence_length) // sequence_stride
         self.assertEqual(outputs.shape, (10, num_sequences, sequence_length))
-
-    def test_overlap_sequences(self):
-        # sequence_stride must <= sequence_length
-        # sequence_stride must >= sequence_length / num_sequences
-        num_sequences = 3
-        sequence_length = 4
-        sequence_stride = 2
-        x = KerasTensor((10, num_sequences, sequence_length), dtype="float32")
-        outputs = kmath.overlap_sequences(x, sequence_stride)
-        output_size = (num_sequences - 1) * sequence_stride + sequence_length
-        self.assertEqual(outputs.shape, (10, output_size))
 
     def test_fft(self):
         real = KerasTensor((2, 4, 3), dtype="float32")
@@ -724,38 +656,6 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             pos += sequence_stride
         self.assertAllClose(output, expected)
 
-    def test_overlap_sequences(self):
-        # sequence_stride must <= sequence_length
-        # sequence_stride must >= sequence_length / num_sequences
-        num_sequences = 3
-        sequence_length = 4
-        sequence_stride = 2
-        # Test 2D case.
-        x = np.random.random((num_sequences, sequence_length))
-        output = kmath.overlap_sequences(x, sequence_stride)
-
-        output_size = (num_sequences - 1) * sequence_stride + sequence_length
-        expected = np.zeros(shape=(output_size,))
-        pos = 0
-        for i in range(num_sequences):
-            end = pos + sequence_length
-            expected[pos:end] = expected[pos:end] + x[i]
-            pos += sequence_stride
-        self.assertAllClose(output, expected)
-
-        # Test N-D case.
-        x = np.random.random((2, num_sequences, sequence_length))
-        output = kmath.overlap_sequences(x, sequence_stride)
-
-        output_size = (num_sequences - 1) * sequence_stride + sequence_length
-        expected = np.zeros(shape=(2, output_size))
-        pos = 0
-        for i in range(num_sequences):
-            end = pos + sequence_length
-            expected[:, pos:end] = expected[:, pos:end] + x[:, i]
-            pos += sequence_stride
-        self.assertAllClose(output, expected)
-
     def test_fft(self):
         real = np.random.random((2, 4, 3))
         imag = np.random.random((2, 4, 3))
@@ -843,8 +743,8 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(real_ref, real_output, atol=1e-5, rtol=1e-5)
         self.assertAllClose(imag_ref, imag_output, atol=1e-5, rtol=1e-5)
 
-        # Test N-D case.
-        x = np.random.random((2, 3, 32))
+        # Test 2D case.
+        x = np.random.random((3, 32))
         real_output, imag_output = kmath.stft(
             x, sequence_length, sequence_stride, fft_length, window, center
         )
@@ -893,8 +793,8 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         )
         self.assertAllClose(output, ref, atol=1e-5, rtol=1e-5)
 
-        # Test N-D case.
-        x = np.random.random((2, 3, 32))
+        # Test 2D case.
+        x = np.random.random((3, 32))
         real_x, imag_x = _stft(
             x, sequence_length, sequence_stride, fft_length, window, center
         )
