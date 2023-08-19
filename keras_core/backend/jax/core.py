@@ -19,8 +19,10 @@ DYNAMIC_SHAPES_OK = True
 class Variable(KerasVariable):
     def _initialize(self, value):
         value = jnp.array(value, dtype=self._dtype)
-        if distribution.get_distribution() is not None:
-            value = distribution.get_distribution().distribute_variable(value)
+        if distribution.get_global_distribution() is not None:
+            value = distribution.get_global_distribution().distribute_variable(
+                value
+            )
         self._value = value
 
     def _direct_assign(self, value):

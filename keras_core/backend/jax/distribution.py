@@ -18,9 +18,15 @@ DEFAULT_BATCH_DIM_NAME = "batch"
 GLOBAL_ATTRIBUTE_NAME = "distribution"
 
 
-def get_distribution():
+def get_global_distribution():
     """Retrieve the current distribution from global context."""
     return global_state.get_global_attribute(GLOBAL_ATTRIBUTE_NAME)
+
+
+def set_global_distribution(distribution):
+    """Set the distribution as the global distribution setting."""
+    # TODO(qlzh727): Do type checking for input once we have a base class.
+    distribution.as_global_distribution()
 
 
 class DataParallelDistribution:

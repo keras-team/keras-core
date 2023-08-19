@@ -116,27 +116,48 @@ class DataParallelDistributionTest(testing.TestCase):
         self.assertEqual(distributed_weights.sharding, ds._variable_sharding)
 
     def test_scope(self):
-        self.assertIsNone(distribution.get_distribution())
+        self.assertIsNone(distribution.get_global_distribution())
         data_distribution = distribution.DataParallelDistribution()
         with data_distribution.scope():
-            self.assertIs(distribution.get_distribution(), data_distribution)
+            self.assertIs(
+                distribution.get_global_distribution(), data_distribution
+            )
             data_distribution_2 = distribution.DataParallelDistribution()
             with data_distribution_2.scope():
                 self.assertIs(
-                    distribution.get_distribution(), data_distribution_2
+                    distribution.get_global_distribution(), data_distribution_2
                 )
 
-            self.assertIs(distribution.get_distribution(), data_distribution)
+            self.assertIs(
+                distribution.get_global_distribution(), data_distribution
+            )
 
-        self.assertIsNone(distribution.get_distribution())
+        self.assertIsNone(distribution.get_global_distribution())
 
     def test_as_global_distribution(self):
         try:
-            self.assertIsNone(distribution.get_distribution())
+            self.assertIsNone(distribution.get_global_distribution())
 
             data_distribution = distribution.DataParallelDistribution()
             data_distribution.as_global_distribution()
-            self.assertIs(distribution.get_distribution(), data_distribution)
+            self.assertIs(
+                distribution.get_global_distribution(), data_distribution
+            )
+        finally:
+            # Cleanup the global state
+            global_state.set_global_attribute(
+                distribution.GLOBAL_ATTRIBUTE_NAME, None
+            )
+
+    def test_set_global_distribution(self):
+        try:
+            self.assertIsNone(distribution.get_global_distribution())
+
+            data_distribution = distribution.DataParallelDistribution()
+            distribution.set_global_distribution(data_distribution)
+            self.assertIs(
+                distribution.get_global_distribution(), data_distribution
+            )
         finally:
             # Cleanup the global state
             global_state.set_global_attribute(

@@ -753,7 +753,7 @@ class JAXTrainer(base_trainer.Trainer):
                 ref_v.assign(v)
 
     def _distribute_data(self, data):
-        if distribution.get_distribution() is not None:
-            distribute = distribution.get_distribution()
+        if distribution.get_global_distribution() is not None:
+            distribute = distribution.get_global_distribution()
             data = distribute.distribute_data(data)
         return data
