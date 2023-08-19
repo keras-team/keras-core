@@ -14,13 +14,13 @@ import numpy as np
 
 from keras_core.backend.common import global_state
 
-_DEFAULT_BATCH_DIM_NAME = "batch"
-_GLOBAL_ATTRIBUTE_NAME = "distribution"
+DEFAULT_BATCH_DIM_NAME = "batch"
+GLOBAL_ATTRIBUTE_NAME = "distribution"
 
 
 def get_distribution():
     """Retrieve the current distribution from global context."""
-    return global_state.get_global_attribute(_GLOBAL_ATTRIBUTE_NAME)
+    return global_state.get_global_attribute(GLOBAL_ATTRIBUTE_NAME)
 
 
 class DataParallelDistribution:
@@ -44,30 +44,30 @@ class DataParallelDistribution:
         """
         super().__init__()
         if mesh:
-            self._init_with_mesh(mesh)
+            self._initialize_with_mesh(mesh)
         elif devices:
-            self._init_mesh_from_devices(devices)
+            self._initialize_mesh_from_devices(devices)
         else:
-            self._init_mesh_from_jax_devices()
+            self._initialize_mesh_from_jax_devices()
 
-        self._config_sharding_spec()
+        self._configure_sharding_spec()
         self._batch_dim_name = self.mesh.axis_names[0]
 
     @contextlib.contextmanager
     def scope(self):
         original_scope = global_state.get_global_attribute(
-            _GLOBAL_ATTRIBUTE_NAME
+            GLOBAL_ATTRIBUTE_NAME
         )
-        global_state.set_global_attribute(_GLOBAL_ATTRIBUTE_NAME, self)
+        global_state.set_global_attribute(GLOBAL_ATTRIBUTE_NAME, self)
         try:
             yield
         finally:
             global_state.set_global_attribute(
-                _GLOBAL_ATTRIBUTE_NAME, original_scope
+                GLOBAL_ATTRIBUTE_NAME, original_scope
             )
 
     def as_global_distribution(self):
-        global_state.set_global_attribute(_GLOBAL_ATTRIBUTE_NAME, self)
+        global_state.set_global_attribute(GLOBAL_ATTRIBUTE_NAME, self)
 
     def distribute_data(self, data):
         return jax.device_put(data, self._data_sharding)
@@ -75,7 +75,7 @@ class DataParallelDistribution:
     def distribute_variable(self, variable):
         return jax.device_put(variable, self._variable_sharding)
 
-    def _init_with_mesh(self, mesh):
+    def _initialize_with_mesh(self, mesh):
         if not isinstance(mesh, jax.sharding.Mesh):
             raise ValueError(
                 "Expect the mesh to be type of jax.sharding.Mesh, "
@@ -90,19 +90,17 @@ class DataParallelDistribution:
                 self.mesh.devices.ndim,
             )
 
-    def _init_mesh_from_devices(self, devices):
+    def _initialize_mesh_from_devices(self, devices):
         self._user_provide_devices = devices
-        self.mesh = jax.sharding.Mesh(
-            np.array(devices), _DEFAULT_BATCH_DIM_NAME
-        )
+        self.mesh = jax.sharding.Mesh(np.array(devices), DEFAULT_BATCH_DIM_NAME)
 
-    def _init_mesh_from_jax_devices(self):
+    def _initialize_mesh_from_jax_devices(self):
         self._user_provide_devices = None
         self.mesh = jax.sharding.Mesh(
-            np.array(jax.devices()), _DEFAULT_BATCH_DIM_NAME
+            np.array(jax.devices()), DEFAULT_BATCH_DIM_NAME
         )
 
-    def _config_sharding_spec(self):
+    def _configure_sharding_spec(self):
         variable_shard_spec = [
             None
         ] * self.mesh.devices.ndim  # Fully replicated

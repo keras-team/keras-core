@@ -140,7 +140,7 @@ class DataParallelDistributionTest(testing.TestCase):
         finally:
             # Cleanup the global state
             global_state.set_global_attribute(
-                distribution._GLOBAL_ATTRIBUTE_NAME, None
+                distribution.GLOBAL_ATTRIBUTE_NAME, None
             )
 
     def test_e2e_model(self):
