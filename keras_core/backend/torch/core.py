@@ -13,7 +13,9 @@ from keras_core.backend.common.stateless_scope import StatelessScope
 from keras_core.utils.nest import pack_sequence_as
 
 DYNAMIC_SHAPES_OK = True
-# The operator 'aten::_foreach_mul_.Scalar' is not currently implemented for the MPS device, check https://github.com/pytorch/pytorch/issues/77764.
+# Some operators such as 'aten::_foreach_mul_.Scalar'
+# are not currently implemented for the MPS device.
+# check https://github.com/pytorch/pytorch/issues/77764.
 if (
     torch.backends.mps.is_available()
     and os.getenv("PYTORCH_ENABLE_MPS_FALLBACK") == "1"
