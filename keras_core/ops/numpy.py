@@ -238,48 +238,22 @@ def shape_equal(shape1, shape2, axis=None, allow_none=True):
         >>> shape_equal((32, 64), (32, 64, 128))
         False
     """
-    # Check if both shapes are None, in which case they are considered equal.
-    if shape1 is None and shape2 is None:
-        return True
-    # If one of the shapes is None and the other isn't, they are not equal.
-    if (shape1 is None and shape2 is not None) or (
-        shape1 is not None and shape2 is None
-    ):
+    if len(shape1) != len(shape2):
         return False
-    # Convert shapes to lists for easier manipulation.
     shape1 = list(shape1)
     shape2 = list(shape2)
-
-    # Handle the axis parameter. If provided, it specifies the axes that should be ignored during comparison.
     if axis is not None:
-        # If only a single axis is provided as an integer, convert it to a list.
-        if isinstance(axis, int):
-            axis = [axis]
-        # Check if the provided axis/axes exist in both shapes.
-        if any(ax >= len(shape1) or ax >= len(shape2) for ax in axis):
-            return False
-        # Ignore the specified axes by setting their values to -1 in both shapes.
         for ax in axis:
             shape1[ax] = -1
             shape2[ax] = -1
-    # If the shapes have different lengths, they aren't equal.
-    if len(shape1) != len(shape2):
-        return False
-    # The allow_none parameter lets None in one shape match any value in the other.
     if allow_none:
-        for s1, s2 in zip(
-            shape1, shape2
-        ):  # Use zip to safely iterate over both lists in parallel.
-            # Replace None with the corresponding value from the other shape.
-            if s1 is None:
-                s1 = s2
-            if s2 is None:
-                s2 = s1
-            # If after possible replacement the dimensions are still not the same, the shapes are not equal.
-            if s1 != s2:
-                return False
-    # If all conditions have passed, the shapes are considered equal.
-    return True
+        for i in range(len(shape1)):
+            if shape1[i] is None:
+                shape1[i] = shape2[i]
+            if shape2[i] is None:
+                shape2[i] = shape1[i]
+
+    return shape1 == shape2
 
 
 class Absolute(Operation):
