@@ -42,7 +42,7 @@ class HashedCrossingTest(testing.TestCase):
         feat1 = np.array(["A", "B", "A", "B", "A"])
         feat2 = np.array([101, 101, 101, 102, 102])
         output = layer((feat1, feat2))
-        self.assertAllClose(np.array([1, 4, 1, 1, 3]), output)
+        self.assertAllClose(tf.constant([1, 4, 1, 1, 3]), output)
 
         layer = layers.HashedCrossing(num_bins=5, output_mode="one_hot")
         feat1 = np.array(["A", "B", "A", "B", "A"])
@@ -109,11 +109,11 @@ class HashedCrossingTest(testing.TestCase):
 
     def test_non_list_input_fails(self):
         with self.assertRaisesRegex(ValueError, "should be called on a list"):
-            layers.HashedCrossing(num_bins=10)(tf.constant(1))
+            layers.HashedCrossing(num_bins=10)(np.array(1))
 
     def test_single_input_fails(self):
         with self.assertRaisesRegex(ValueError, "at least two inputs"):
-            layers.HashedCrossing(num_bins=10)([tf.constant(1)])
+            layers.HashedCrossing(num_bins=10)([np.array(1)])
 
     @pytest.mark.skipif(
         backend.backend() != "tensorflow",
@@ -123,7 +123,7 @@ class HashedCrossingTest(testing.TestCase):
         with self.assertRaisesRegex(
             ValueError, "inputs should be dense tensors"
         ):
-            sparse_in = tf.sparse.from_dense(tf.constant([1]))
+            sparse_in = tf.sparse.from_dense(np.array([1]))
             layers.HashedCrossing(num_bins=10)((sparse_in, sparse_in))
 
     def test_float_input_fails(self):
@@ -131,7 +131,7 @@ class HashedCrossingTest(testing.TestCase):
             ValueError, "should have an integer or string"
         ):
             layers.HashedCrossing(num_bins=10)(
-                (tf.constant([1.0]), tf.constant([1.0]))
+                (np.array([1.0]), np.array([1.0]))
             )
 
     @pytest.mark.skipif(
@@ -151,7 +151,7 @@ class HashedCrossingTest(testing.TestCase):
         feat1 = tf.constant(["A", "B", "A", "B", "A"])
         feat2 = tf.constant([101, 101, 101, 102, 102])
         self.assertAllClose(
-            np.array(
+            tf.constant(
                 [
                     [0.0, 1.0, 0.0, 0.0, 0.0],
                     [0.0, 0.0, 0.0, 0.0, 1.0],
@@ -166,7 +166,7 @@ class HashedCrossingTest(testing.TestCase):
         layer = tf.keras.layers.HashedCrossing(num_bins=5)
         feat1 = tf.constant(["A", "B", "A", "B", "A"])
         feat2 = tf.constant([101, 101, 101, 102, 102])
-        self.assertAllClose(np.array([1, 4, 1, 1, 3]), layer((feat1, feat2)))
+        self.assertAllClose(tf.constant([1, 4, 1, 1, 3]), layer((feat1, feat2)))
 
         layer = layers.HashedCrossing(
             num_bins=5, output_mode="one_hot", sparse=True
