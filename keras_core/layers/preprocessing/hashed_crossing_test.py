@@ -136,7 +136,7 @@ class HashedCrossingTest(testing.TestCase):
 
     @pytest.mark.skipif(
         backend.backend() != "tensorflow",
-        reason="String tensors applicable with tensorflow backend",
+        reason="String tensors are only applicable with tensorflow backend",
     )
     def test_tf_string(self):
         layer = layers.HashedCrossing(num_bins=10)
