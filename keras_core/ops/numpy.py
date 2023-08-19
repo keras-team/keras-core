@@ -240,7 +240,6 @@ def shape_equal(shape1, shape2, axis=None, allow_none=True):
     """
     # Check if both shapes are None, in which case they are considered equal.
     if shape1 is None and shape2 is None:
-        print("Both shapes are None.")
         return True
     # If one of the shapes is None and the other isn't, they are not equal.
     if (shape1 is None and shape2 is not None) or (
