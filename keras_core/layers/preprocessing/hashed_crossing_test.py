@@ -77,9 +77,9 @@ class HashedCrossingTest(testing.TestCase):
     def test_upsupported_shape_input_fails(self):
         with self.assertRaisesRegex(ValueError, "inputs should have shape"):
             layers.HashedCrossing(num_bins=10)(
-                (tf.constant([[[1.0]]]), tf.constant([[[1.0]]]))
+                (np.array([[[1.0]]]), np.array([[[1.0]]]))
             )
-    
+
     @pytest.mark.xfail
     def test_cross_output_dtype(self):
         input_1, input_2 = np.array([1]), np.array([1])
