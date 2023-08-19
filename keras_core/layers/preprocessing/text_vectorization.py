@@ -569,7 +569,7 @@ class TextVectorization(Layer):
         if not isinstance(
             inputs, (tf.Tensor, tf.RaggedTensor, np.ndarray, list, tuple)
         ):
-            inputs = tf.convert_to_tensor(np.array(inputs))
+            inputs = tf.convert_to_tensor(backend.convert_to_numpy(inputs))
 
         inputs = self._preprocess(inputs)
 
