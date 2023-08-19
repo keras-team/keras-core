@@ -320,7 +320,7 @@ def add(x1, x2):
     >>> x1 = keras_core.ops.convert_to_tensor([1, 4])
     >>> x2 = keras_core.ops.convert_to_tensor([5, 6])
     >>> keras_core.ops.add(x1, x2)
-    array([ 6 10], shape=(2,), dtype=int32)
+    array([6, 10], dtype=int32)
 
     `keras_core.ops.add` also broadcasts shapes:
     >>> x1 = keras_core.ops.convert_to_tensor(
