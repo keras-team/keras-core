@@ -197,24 +197,61 @@ def broadcast_shapes(shape1, shape2):
 
 
 def shape_equal(shape1, shape2, axis=None, allow_none=True):
-    """Check if two shapes are equal.
+    """Check if two shapes are equal, with options to ignore certain axes and to
+    allow None as a wildcard.
 
     Args:
-        shape1: A tuple or list of integers.
-        shape2: A tuple or list of integers.
-        axis: int or list/tuple of ints, defaults to `None`. If specified, the
-            shape check will ignore the axes specified by `axis`.
-        allow_none: bool, defaults to `True`. If `True`, `None` in the shape
-            will match any value.
+        shape1 (list or tuple): First shape.
+        shape2 (list or tuple): Second shape.
+        axis (int, list, or tuple, optional): Axes to ignore during comparison.
+            Default is None.
+        allow_none (bool, optional): If True, allows None in a shape to match
+            any value in the corresponding position of the other shape.
+            Default is True.
+
+    Returns:
+        bool: True if shapes are considered equal based on the criteria,
+        False otherwise.
+
+    Examples:
+        # Basic equality check
+        >>> shape_equal((32, 64, 128), (32, 64, 128))
+        True
+        >>> shape_equal((32, 64, 128), (32, 64, 127))
+        False
+
+        # Using allow_none option
+        >>> shape_equal((32, 64, None), (32, 64, 128), allow_none=True)
+        True
+        >>> shape_equal((32, 64, None), (32, 64, 128), allow_none=False)
+        False
+
+        # Ignoring specific axes with the axis parameter
+        >>> shape_equal((32, 64, 128), (32, 63, 128), axis=1)
+        True
+        >>> shape_equal((32, 64, 128), (32, 63, 127), axis=(1, 2))
+        True
+        >>> shape_equal((32, 64, 128), (32, 63, 127), axis=1)
+        False
+
+        # Comparing shapes of different lengths
+        >>> shape_equal((32, 64), (32, 64, 128))
+        False
     """
-    if len(shape1) != len(shape2):
-        return False
     shape1 = list(shape1)
     shape2 = list(shape2)
+    
     if axis is not None:
+        if isinstance(axis, int):
+            axis = [axis]
+        elif not isinstance(axis, (list, tuple)) or not all(
+            isinstance(ax, int) for ax in axis
+        ):
+            raise ValueError("axis must be an int or list/tuple of ints")
         for ax in axis:
             shape1[ax] = -1
             shape2[ax] = -1
+
     if allow_none:
         for i in range(len(shape1)):
             if shape1[i] is None:
@@ -223,7 +260,6 @@ def shape_equal(shape1, shape2, axis=None, allow_none=True):
                 shape2[i] = shape1[i]
 
     return shape1 == shape2
-
 
 class Absolute(Operation):
     def call(self, x):
