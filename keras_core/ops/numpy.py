@@ -204,8 +204,8 @@ def shape_equal(shape1, shape2, axis=None, allow_none=True):
         shape2: A list or tuple of integers for second shape to be compared.
         axis: An integer, list, or tuple of integers (optional):
             Axes to ignore during comparison. Default is 'None'.
-        allow_none (bool, optional): If 'True', allows 'None' in a shape to match
-            any value in the corresponding position of the other shape.
+        allow_none (bool, optional): If 'True', allows 'None' in a shape
+            to match any value in the corresponding position of the other shape.
             Default is 'True'.
 
     Returns:
