@@ -201,9 +201,9 @@ def shape_equal(shape1, shape2, axis=None, allow_none=True):
     allow None as a wildcard.
 
     Args:
-        shape1 (list or tuple): First shape.
-        shape2 (list or tuple): Second shape.
-        axis (int, list, or tuple, optional): Axes to ignore during comparison.
+        shape1: A list or tuple of integers representing the first shape to be compared.
+        shape2: A list or tuple of integers representing the second shape to be compared.
+        axis: integer or list or tuple of integers (optional): Axes to ignore during comparison.
             Default is None.
         allow_none (bool, optional): If True, allows None in a shape to match
             any value in the corresponding position of the other shape.
