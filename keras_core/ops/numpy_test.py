@@ -265,23 +265,24 @@ class NumpyTwoInputOpsDynamicShapeTest(testing.TestCase):
         self.assertFalse(knp.shape_equal(x, y))
 
     def test_shape_equal_allow_none(self):
-       x = KerasTensor([3, 4, None])
-       y = KerasTensor([3, 4, 5])
-       self.assertTrue(knp.shape_equal(x, y, allow_none=True))
-       self.assertFalse(knp.shape_equal(x, y, allow_none=False))
+        x = KerasTensor([3, 4, None])
+        y = KerasTensor([3, 4, 5])
+        self.assertTrue(knp.shape_equal(x, y, allow_none=True))
+        self.assertFalse(knp.shape_equal(x, y, allow_none=False))
 
     def test_shape_equal_ignore_axes(self):
-       x = KerasTensor([3, 4, 5])
-       y = KerasTensor([3, 6, 5])
-       self.assertTrue(knp.shape_equal(x, y, axis=1))
-       y = KerasTensor([3, 6, 7])
-       self.assertTrue(knp.shape_equal(x, y, axis=(1, 2)))
-       self.assertFalse(knp.shape_equal(x, y, axis=1))
+        x = KerasTensor([3, 4, 5])
+        y = KerasTensor([3, 6, 5])
+        self.assertTrue(knp.shape_equal(x, y, axis=1))
+        y = KerasTensor([3, 6, 7])
+        self.assertTrue(knp.shape_equal(x, y, axis=(1, 2)))
+        self.assertFalse(knp.shape_equal(x, y, axis=1))
 
     def test_shape_equal_different_shape_lengths(self):
-       x = KerasTensor([3, 4])
-       y = KerasTensor([3, 4, 5])
-       self.assertFalse(knp.shape_equal(x, y))
+        x = KerasTensor([3, 4])
+        y = KerasTensor([3, 4, 5])
+        self.assertFalse(knp.shape_equal(x, y))
+
 
 class NumpyTwoInputOpsStaticShapeTest(testing.TestCase):
     def test_add(self):

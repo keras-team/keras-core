@@ -240,7 +240,7 @@ def shape_equal(shape1, shape2, axis=None, allow_none=True):
     """
     shape1 = list(shape1)
     shape2 = list(shape2)
-    
+
     if axis is not None:
         if isinstance(axis, int):
             axis = [axis]
