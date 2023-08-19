@@ -275,6 +275,14 @@ class NumpyTwoInputOpsDynamicShapeTest(testing.TestCase):
         y = KerasTensor([3, 4, 5]).shape
         self.assertFalse(knp.shape_equal(x, y))
 
+    def test_shape_equal_ignore_axes(self):
+        x = KerasTensor([3, 4, 5])
+        y = KerasTensor([3, 6, 5])
+        self.assertTrue(knp.shape_equal(x, y, axis=1))
+        y = KerasTensor([3, 6, 7])
+        self.assertTrue(knp.shape_equal(x, y, axis=(1, 2)))
+        self.assertFalse(knp.shape_equal(x, y, axis=1))
+
 
 class NumpyTwoInputOpsStaticShapeTest(testing.TestCase):
     def test_add(self):
