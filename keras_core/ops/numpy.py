@@ -275,9 +275,10 @@ def absolute(x):
         An array containing the absolute value of each element in `x`.
 
     Example:
+
     >>> x = keras_core.ops.convert_to_tensor([-1.2, 1.2])
     >>> keras_core.ops.absolute(x)
-    array([1.2 1.2], shape=(2,), dtype=float32)
+    array([1.2, 1.2], dtype=float32)
     """
     if any_symbolic_tensors((x,)):
         return Absolute().symbolic_call(x)
