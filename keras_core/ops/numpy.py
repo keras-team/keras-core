@@ -197,39 +197,39 @@ def broadcast_shapes(shape1, shape2):
 
 
 def shape_equal(shape1, shape2, axis=None, allow_none=True):
-    """Check if two shapes are equal
+    """Check if two shapes are equal.
 
     Args:
         shape1: A list or tuple of integers for first shape to be compared.
         shape2: A list or tuple of integers for second shape to be compared.
         axis: An integer, list, or tuple of integers (optional):
-            Axes to ignore during comparison.Default is None.
-        allow_none (bool, optional): If True, allows None in a shape to match
+            Axes to ignore during comparison. Default is 'None'.
+        allow_none (bool, optional): If 'True', allows 'None' in a shape to match
             any value in the corresponding position of the other shape.
-            Default is True.
+            Default is 'True'.
 
     Returns:
-        bool: True if shapes are considered equal based on the criteria,
-        False otherwise.
+        bool: 'True' if shapes are considered equal based on the criteria,
+        'False' otherwise.
 
     Examples:
 
-        >>> shape_equal((32, 64, 128), (32, 64, 128))
-        True
-        >>> shape_equal((32, 64, 128), (32, 64, 127))
-        False
-        >>> shape_equal((32, 64, None), (32, 64, 128), allow_none=True)
-        True
-        >>> shape_equal((32, 64, None), (32, 64, 128), allow_none=False)
-        False
-        >>> shape_equal((32, 64, 128), (32, 63, 128), axis=1)
-        True
-        >>> shape_equal((32, 64, 128), (32, 63, 127), axis=(1, 2))
-        True
-        >>> shape_equal((32, 64, 128), (32, 63, 127), axis=[1,2])
-        True
-        >>> shape_equal((32, 64), (32, 64, 128))
-        False
+    >>> shape_equal((32, 64, 128), (32, 64, 128))
+    True
+    >>> shape_equal((32, 64, 128), (32, 64, 127))
+    False
+    >>> shape_equal((32, 64, None), (32, 64, 128), allow_none=True)
+    True
+    >>> shape_equal((32, 64, None), (32, 64, 128), allow_none=False)
+    False
+    >>> shape_equal((32, 64, 128), (32, 63, 128), axis=1)
+    True
+    >>> shape_equal((32, 64, 128), (32, 63, 127), axis=(1, 2))
+    True
+    >>> shape_equal((32, 64, 128), (32, 63, 127), axis=[1,2])
+    True
+    >>> shape_equal((32, 64), (32, 64, 128))
+    False
     """
     if len(shape1) != len(shape2):
         return False
