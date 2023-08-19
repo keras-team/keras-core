@@ -255,11 +255,6 @@ def shape_equal(shape1, shape2, axis=None, allow_none=True):
         # If only a single axis is provided as an integer, convert it to a list.
         if isinstance(axis, int):
             axis = [axis]
-        # Check if axis is a valid list/tuple of integers.
-        elif not isinstance(axis, (list, tuple)) or not all(
-            isinstance(ax, int) for ax in axis
-        ):
-            raise ValueError("axis must be an int or list/tuple of ints")
         # Check if the provided axis/axes exist in both shapes.
         if any(ax >= len(shape1) or ax >= len(shape2) for ax in axis):
             return False
