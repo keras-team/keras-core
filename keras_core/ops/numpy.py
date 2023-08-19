@@ -203,7 +203,7 @@ def shape_equal(shape1, shape2, axis=None, allow_none=True):
     Args:
         shape1: A list or tuple of integers for first shape to be compared.
         shape2: A list or tuple of integers for second shape to be compared.
-        axis: integer or list or tuple of integers (optional):
+        axis: A list or tuple of integers (optional):
             Axes to ignore during comparison.Default is None.
         allow_none (bool, optional): If True, allows None in a shape to match
             any value in the corresponding position of the other shape.
@@ -227,11 +227,11 @@ def shape_equal(shape1, shape2, axis=None, allow_none=True):
         False
 
         # Ignoring specific axes with the axis parameter
-        >>> shape_equal((32, 64, 128), (32, 63, 128), axis=1)
+        >>> shape_equal((32, 64, 128), (32, 63, 128), axis=[1])
         True
         >>> shape_equal((32, 64, 128), (32, 63, 127), axis=(1, 2))
         True
-        >>> shape_equal((32, 64, 128), (32, 63, 127), axis=1)
+        >>> shape_equal((32, 64, 128), (32, 63, 127), axis=[1])
         False
 
         # Comparing shapes of different lengths
