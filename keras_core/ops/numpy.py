@@ -226,8 +226,8 @@ def shape_equal(shape1, shape2, axis=None, allow_none=True):
         True
         >>> shape_equal((32, 64, 128), (32, 63, 127), axis=(1, 2))
         True
-        >>> shape_equal((32, 64, 128), (32, 63, 127), axis=1)
-        False
+        >>> shape_equal((32, 64, 128), (32, 63, 127), axis=[1,2])
+        True
         >>> shape_equal((32, 64), (32, 64, 128))
         False
     """
