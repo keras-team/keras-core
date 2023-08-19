@@ -197,8 +197,7 @@ def broadcast_shapes(shape1, shape2):
 
 
 def shape_equal(shape1, shape2, axis=None, allow_none=True):
-    """Check if two shapes are equal, with options to ignore certain axes and to
-    allow None as a wildcard.
+    """Check if two shapes are equal
 
     Args:
         shape1: A list or tuple of integers for first shape to be compared.
@@ -214,27 +213,21 @@ def shape_equal(shape1, shape2, axis=None, allow_none=True):
         False otherwise.
 
     Examples:
-        # Basic equality check
+
         >>> shape_equal((32, 64, 128), (32, 64, 128))
         True
         >>> shape_equal((32, 64, 128), (32, 64, 127))
         False
-
-        # Using allow_none option
         >>> shape_equal((32, 64, None), (32, 64, 128), allow_none=True)
         True
         >>> shape_equal((32, 64, None), (32, 64, 128), allow_none=False)
         False
-
-        # Ignoring specific axes with the axis parameter
         >>> shape_equal((32, 64, 128), (32, 63, 128), axis=[1])
         True
         >>> shape_equal((32, 64, 128), (32, 63, 127), axis=(1, 2))
         True
         >>> shape_equal((32, 64, 128), (32, 63, 127), axis=[1])
         False
-
-        # Comparing shapes of different lengths
         >>> shape_equal((32, 64), (32, 64, 128))
         False
     """
