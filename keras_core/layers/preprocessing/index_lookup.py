@@ -336,8 +336,8 @@ class IndexLookup(Layer):
             "sparse": self.sparse,
             "pad_to_max_tokens": self.pad_to_max_tokens,
             "vocabulary_dtype": self.vocabulary_dtype,
-            "idf_weights": listify_tensors(self.input_idf_weights),
-            "vocabulary": listify_tensors(self.input_vocabulary),
+            "idf_weights": tf_utils.listify_tensors(self.input_idf_weights),
+            "vocabulary": tf_utils.listify_tensors(self.input_vocabulary),
             "vocabulary_size": self._frozen_vocab_size,
         }
         base_config = super().get_config()
@@ -981,12 +981,3 @@ class NullInitializer(tf.lookup.KeyValueTensorInitializer):
     def initialize(self, table):
         """Returns the table initialization op."""
         pass
-
-
-def listify_tensors(x):
-    """Convert any tensors or numpy arrays to lists for config serialization."""
-    if tf.is_tensor(x):
-        x = x.numpy()
-    if isinstance(x, np.ndarray):
-        x = x.tolist()
-    return x

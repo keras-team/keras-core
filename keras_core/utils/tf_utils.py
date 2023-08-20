@@ -146,3 +146,12 @@ def ensure_tensor(inputs, dtype=None):
     if dtype is not None and inputs.dtype != dtype:
         inputs = tf.cast(inputs, dtype)
     return inputs
+
+
+def listify_tensors(x):
+    """Convert any tensors or numpy arrays to lists for config serialization."""
+    if tf.is_tensor(x):
+        x = x.numpy()
+    if isinstance(x, np.ndarray):
+        x = x.tolist()
+    return x

@@ -3,7 +3,6 @@ import numpy as np
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
-from keras_core.layers.preprocessing.index_lookup import listify_tensors
 from keras_core.layers.preprocessing.string_lookup import StringLookup
 from keras_core.saving import serialization_lib
 from keras_core.utils import argument_validation
@@ -474,8 +473,10 @@ class TextVectorization(Layer):
             "pad_to_max_tokens": self._lookup_layer.pad_to_max_tokens,
             "sparse": self._lookup_layer.sparse,
             "ragged": self._ragged,
-            "vocabulary": listify_tensors(self._lookup_layer.input_vocabulary),
-            "idf_weights": listify_tensors(
+            "vocabulary": tf_utils.listify_tensors(
+                self._lookup_layer.input_vocabulary
+            ),
+            "idf_weights": tf_utils.listify_tensors(
                 self._lookup_layer.input_idf_weights
             ),
             "encoding": self._encoding,
