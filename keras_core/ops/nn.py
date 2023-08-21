@@ -166,9 +166,9 @@ def softsign(x):
 
     Example:
 
-    >>> x = keras_core.ops.convert_to_tensor([-0.100, -10.0, 1.0, 0.0, 10.0, 100.0])
+    >>> x = keras_core.ops.convert_to_tensor([-0.100, -10.0, 1.0, 0.0, 100.0])
     >>> keras_core.ops.softsign(x)
-    Array([-0.09090909, -0.90909094, 0.5, 0.0, 0.90909094, 0.990099], dtype=float32)
+    Array([-0.09090909, -0.90909094, 0.5, 0.0, 0.990099], dtype=float32)
 
     """
     if any_symbolic_tensors((x,)):
