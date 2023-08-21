@@ -19,7 +19,7 @@ def list_devices(device_type: str = None) -> list[str]:
     """Return all the available devices based on the device type.
 
     Note that this should return the global devices in a distributed setting.
-    
+
     Args:
         device_type: CPU, GPU or TPU. Default to GPU or TPU if available when
             device_type is not provided. Otherwise will return the CPU devices.
@@ -32,28 +32,30 @@ def list_devices(device_type: str = None) -> list[str]:
 
 class DeviceMesh:
     """The cluster of computation devices for distributed computation.
-    
+
     This is aligned with `jax.sharding.Mesh` and `tf.dtensor.Mesh`, which
     represents the computation devices in the global context.
 
-    See more details in 
+    See more details in
     https://jax.readthedocs.io/en/latest/jax.sharding.html#jax.sharding.Mesh
     and https://www.tensorflow.org/api_docs/python/tf/experimental/dtensor/Mesh.
     """
 
-    def __init__(self,
-                 shape: list|tuple,
-                 axis_names: list[str],
-                 devices: list[str] = None):
+    def __init__(
+        self,
+        shape: list | tuple,
+        axis_names: list[str],
+        devices: list[str] = None,
+    ):
         """Initialize the DeviceMesh for the given topology.
-        
+
         Args:
             shape: the shape of the overall DeviceMesh, e.g. (8,) for a data
                 parallel only distribution, or (4, 2) for a model+data parallel
                 distribution.
             axis_names: The logical name of the each axis for the DeviceMesh.
-                The length of the `axis_names` should match to the rank of the 
-                `shape`. The `axis_names` will be used to match/create the 
+                The length of the `axis_names` should match to the rank of the
+                `shape`. The `axis_names` will be used to match/create the
                 `TensorLayout` when distribute the data and weights.
             devices: Optional list of devices. Default to all the available
                 devices locally from `list_devices()`.
@@ -63,20 +65,20 @@ class DeviceMesh:
 
 class TensorLayout:
     """The layout of a Tensor.
-    
+
     This is aligned with `jax.sharding.NamedSharding` and `tf.dtensor.Layout`,
     which allocate the tensor to its logic axis based on the `DeviceMesh`. With
     `DeviceMesh` and `TensorLayout`, the actual mapping between a Tensor to the
     physical devices can be determined.
 
-    See more details in 
+    See more details in
     https://jax.readthedocs.io/en/latest/jax.sharding.html#jax.sharding.NamedSharding
-    and https://www.tensorflow.org/api_docs/python/tf/experimental/dtensor/Layout.
+    and https://www.tensorflow.org/api_docs/python/tf/experimental/dtensor/Layout.  # noqa: E501
     """
 
-    def __init__(self, layout_spec: list|tuple):
+    def __init__(self, layout_spec: list | tuple):
         """Initialize the TensorLayout with layout_spec.
-        
+
         Args:
             layout_spec: list of strings that should map to the `axis_names` in
                 `DeviceMesh`. For any dimentions that doesn't need any sharding,
@@ -87,7 +89,7 @@ class TensorLayout:
 
 class Distribution:
     """Base class for the distribution.
-    
+
     The `Distribution` has following key functionalities.
 
     1. Distribute the model variables to the `DeviceMesh`.
@@ -102,10 +104,10 @@ class Distribution:
 
     def distribute_data(self, data) -> Any:
         """Shard the input data based on the Distribution setting.
-        
+
         Args:
             data: input data, can be Tensor and np.Array.
-        
+
         Returns:
             distributed data tensor.
         """
@@ -113,7 +115,7 @@ class Distribution:
 
     def distribute_variable(self, variable: KerasVariable) -> KerasVariable:
         """Distribute the variable based on the Distribution setting.
-        
+
         Args:
             variable: a keras variable for distribution.
 
