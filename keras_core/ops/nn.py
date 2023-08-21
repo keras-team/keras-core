@@ -34,11 +34,9 @@ def relu(x):
 
     Example:
 
-    >>> x = np.array([-1., 0., 1.])
-    >>> x_relu = keras_core.ops.relu(x)
-    >>> print(x_relu)
-    array([0., 0., 1.], shape=(3,), dtype=float64)
-
+    >>> x1 = keras_core.ops.convert_to_tensor([-1.0, 0.0, 1.0, 0.2])
+    >>> keras_core.ops.relu(x1)
+    array([0.0, 0.0, 1.0, 0.2], dtype=float32)
     """
     if any_symbolic_tensors((x,)):
         return Relu().symbolic_call(x)
@@ -67,11 +65,9 @@ def relu6(x):
 
     Example:
 
-    >>> x = np.array([-1., 0., 1., 6., 7.])
-    >>> x_relu6 = keras_core.ops.relu6(x)
-    >>> print(x_relu6)
-    array([0., 0., 1., 6., 6.], shape=(5,), dtype=float64)
-
+    >>> x = keras_core.ops.convert_to_tensor([-3.0, -2.0, 0.1, 0.2, 6.0, 8.0])
+    >>> keras_core.ops.relu6(x)
+    array([0.0, 0.0, 0.1, 0.2, 6.0, 6.0], dtype=float32)
     """
     if any_symbolic_tensors((x,)):
         return Relu6().symbolic_call(x)
@@ -100,10 +96,9 @@ def sigmoid(x):
 
     Example:
 
-    >>> x = np.array([-1., 0., 1.])
-    >>> x_sigmoid = keras_core.ops.sigmoid(x)
-    >>> print(x_sigmoid)
-    array([0.26894143, 0.5, 0.7310586 ], dtype=float64)
+    >>> x = keras_core.ops.convert_to_tensor([-6.0, 1.0, 0.0, 1.0, 6.0])
+    >>> keras_core.ops.sigmoid(x)
+    array([0.00247262, 0.7310586, 0.5, 0.7310586, 0.9975274], dtype=float32)
 
     """
     if any_symbolic_tensors((x,)):
@@ -134,10 +129,9 @@ def softplus(x):
 
     Example:
 
-    >>> x = np.array([-1., 0., 1.])
-    >>> x_softplus = keras_core.ops.softplus(x)
-    >>> print(x_softplus)
-    array([0.31326166, 0.6931472 , 1.3132616 ], shape=(3,), dtype=float64)
+    >>> x = keras_core.ops.convert_to_tensor([-0.555, 0.0, 0.555])
+    >>> keras_core.ops.softplus(x)
+    array([0.45366603, 0.6931472, 1.008666], dtype=float32)
 
     """
     if any_symbolic_tensors((x,)):
@@ -167,10 +161,9 @@ def softsign(x):
 
     Example:
 
-    >>> x = np.array([-1., 0., 1.])
-    >>> x_softsign = keras_core.ops.softsign(x)
-    >>> print(x_softsign)
-    array([-0.5, 0., 0.5], shape=(3,), dtype=float64)
+    >>> x = keras_core.ops.convert_to_tensor([-0.100, -10.0, 1.0, 0.0, 100.0])
+    >>> keras_core.ops.softsign(x)
+    Array([-0.09090909, -0.90909094, 0.5, 0.0, 0.990099], dtype=float32)
 
     """
     if any_symbolic_tensors((x,)):
@@ -195,9 +188,10 @@ class Silu(Operation):
     ]
 )
 def silu(x):
-    """Sigmoid-weighted linear unit activation function.
+    """Sigmoid Linear Unit (SiLU) activation function, also known as Swish.
 
-    It is defined as `f(x) = x * sigmoid(x)`.
+    The SiLU activation function is computed by the sigmoid function multiplied
+    by its input. It is defined as `f(x) = x * sigmoid(x)`.
 
     Args:
         x: Input tensor.
@@ -207,10 +201,11 @@ def silu(x):
 
     Example:
 
-    >>> x = np.array([-1., 0., 1.])
-    >>> x_silu = keras_core.ops.silu(x)
-    >>> print(x_silu)
-    array([-0.26894143, 0., 0.7310586], shape=(3,), dtype=float64)
+    >>> x = keras_core.ops.convert_to_tensor([-6.0, 1.0, 0.0, 1.0, 6.0])
+    >>> keras_core.ops.sigmoid(x)
+    array([0.00247262, 0.7310586, 0.5, 0.7310586, 0.9975274], dtype=float32)
+    >>> keras_core.ops.silu(x)
+    array([-0.0148357, 0.7310586, 0.0, 0.7310586, 5.9851646], dtype=float32)
 
     """
     if any_symbolic_tensors((x,)):
@@ -245,10 +240,9 @@ def log_sigmoid(x):
 
     Example:
 
-    >>> x = np.array([-1., 0., 1.])
-    >>> x_log_sigmoid = keras_core.ops.log_sigmoid(x)
-    >>> print(x_log_sigmoid)
-    array([-1.3132616, -0.6931472, -0.3132616], shape=(3,), dtype=float64)
+    >>> x = keras_core.ops.convert_to_tensor([-0.541391, 0.0, 0.50, 5.0])
+    >>> keras_core.ops.log_sigmoid(x)
+    array([-1.0000418, -0.6931472, -0.474077, -0.00671535], dtype=float32)
 
     """
     if any_symbolic_tensors((x,)):
@@ -272,7 +266,7 @@ class LeakyRelu(Operation):
     ["keras_core.ops.leaky_relu", "keras_core.ops.nn.leaky_relu"]
 )
 def leaky_relu(x, negative_slope=0.2):
-    """Leaky version of a Rectified Linear Unit.
+    """Leaky version of a Rectified Linear Unit activation function.
 
     It allows a small gradient when the unit is not active, it is defined as:
 
@@ -353,7 +347,7 @@ class Elu(Operation):
 
 @keras_core_export(["keras_core.ops.elu", "keras_core.ops.nn.elu"])
 def elu(x, alpha=1.0):
-    """Exponential Linear Unit.
+    """Exponential Linear Unit activation function.
 
     It is defined as:
 
@@ -389,7 +383,7 @@ class Selu(Operation):
 
 @keras_core_export(["keras_core.ops.selu", "keras_core.ops.nn.selu"])
 def selu(x):
-    """Scaled Exponential Linear Unit (SELU).
+    """Scaled Exponential Linear Unit (SELU) activation function.
 
     It is defined as:
 
