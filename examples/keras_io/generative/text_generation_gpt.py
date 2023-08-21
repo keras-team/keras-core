@@ -37,9 +37,14 @@ This example requires KerasNLP. You can install it via the following command:
 """
 
 import os
+
+os.environ["KERAS_BACKEND"] = "jax"
+
 import keras_nlp
-import tensorflow as tf
-from tensorflow import keras
+import keras_core as keras
+
+import tensorflow.data as tf_data
+import tensorflow.strings as tf_strings
 
 """
 ## Settings & hyperparameters
@@ -79,16 +84,16 @@ dir = os.path.expanduser("~/.keras/datasets/simplebooks/")
 
 # Load simplebooks-92 train set and filter out short lines.
 raw_train_ds = (
-    tf.data.TextLineDataset(dir + "simplebooks-92-raw/train.txt")
-    .filter(lambda x: tf.strings.length(x) > MIN_TRAINING_SEQ_LEN)
+    tf_data.TextLineDataset(dir + "simplebooks-92-raw/train.txt")
+    .filter(lambda x: tf_strings.length(x) > MIN_TRAINING_SEQ_LEN)
     .batch(BATCH_SIZE)
     .shuffle(buffer_size=256)
 )
 
 # Load simplebooks-92 validation set and filter out short lines.
 raw_val_ds = (
-    tf.data.TextLineDataset(dir + "simplebooks-92-raw/valid.txt")
-    .filter(lambda x: tf.strings.length(x) > MIN_TRAINING_SEQ_LEN)
+    tf_data.TextLineDataset(dir + "simplebooks-92-raw/valid.txt")
+    .filter(lambda x: tf_strings.length(x) > MIN_TRAINING_SEQ_LEN)
     .batch(BATCH_SIZE)
 )
 
@@ -155,12 +160,12 @@ def preprocess(inputs):
 
 
 # Tokenize and split into train and label sequences.
-train_ds = raw_train_ds.map(preprocess, num_parallel_calls=tf.data.AUTOTUNE).prefetch(
-    tf.data.AUTOTUNE
-)
-val_ds = raw_val_ds.map(preprocess, num_parallel_calls=tf.data.AUTOTUNE).prefetch(
-    tf.data.AUTOTUNE
-)
+train_ds = raw_train_ds.map(
+    preprocess, num_parallel_calls=tf_data.AUTOTUNE
+).prefetch(tf_data.AUTOTUNE)
+val_ds = raw_val_ds.map(
+    preprocess, num_parallel_calls=tf_data.AUTOTUNE
+).prefetch(tf_data.AUTOTUNE)
 
 """
 ## Build the model
@@ -174,7 +179,7 @@ The layer has no cross-attention when run with decoder sequence only.
 - One final dense linear layer
 """
 
-inputs = keras.layers.Input(shape=(None,), dtype=tf.int32)
+inputs = keras.layers.Input(shape=(None,), dtype="int32")
 # Embedding.
 embedding_layer = keras_nlp.layers.TokenAndPositionEmbedding(
     vocabulary_size=VOCAB_SIZE,
@@ -193,7 +198,7 @@ for _ in range(NUM_LAYERS):
 # Output.
 outputs = keras.layers.Dense(VOCAB_SIZE)(x)
 model = keras.Model(inputs=inputs, outputs=outputs)
-loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 perplexity = keras_nlp.metrics.Perplexity(from_logits=True, mask_token_id=0)
 model.compile(optimizer="adam", loss=loss_fn, metrics=[perplexity])
 
@@ -398,7 +403,9 @@ class TopKTextGenerator(keras.callbacks.Callback):
 
 text_generation_callback = TopKTextGenerator(k=10)
 # Dummy training loop to demonstrate callback.
-model.fit(train_ds.take(1), verbose=2, epochs=2, callbacks=[text_generation_callback])
+model.fit(
+    train_ds.take(1), verbose=2, epochs=2, callbacks=[text_generation_callback]
+)
 
 """
 ## Conclusion
