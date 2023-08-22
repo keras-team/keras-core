@@ -248,7 +248,7 @@ class Discretization(Layer):
                 backend.KerasTensor,
             ),
         ):
-            inputs = backend.convert_to_tensor(
+            inputs = tf.convert_to_tensor(
                 backend.convert_to_numpy(inputs), dtype=self.input_dtype
             )
 
