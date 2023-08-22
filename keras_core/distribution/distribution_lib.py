@@ -35,10 +35,10 @@ class DeviceMesh:
     This is aligned with `jax.sharding.Mesh` and `tf.dtensor.Mesh`, which
     represents the computation devices in the global context.
 
-    See more details in [jax.sharding.Mesh]
-    (https://jax.readthedocs.io/en/latest/jax.sharding.html#jax.sharding.Mesh)
-    and [tf.dtensor.Mesh]
-    (https://www.tensorflow.org/api_docs/python/tf/experimental/dtensor/Mesh).
+    See more details in [jax.sharding.Mesh](
+        https://jax.readthedocs.io/en/latest/jax.sharding.html#jax.sharding.Mesh)
+    and [tf.dtensor.Mesh](
+        https://www.tensorflow.org/api_docs/python/tf/experimental/dtensor/Mesh).
     """
 
     def __init__(
@@ -72,10 +72,10 @@ class TensorLayout:
     `DeviceMesh` and `TensorLayout`, the actual mapping between a Tensor to the
     physical devices can be determined.
 
-    See more details in [jax.sharding.NamedSharding]
-    (https://jax.readthedocs.io/en/latest/jax.sharding.html#jax.sharding.NamedSharding)
-    and [tf.dtensor.Layout]
-    (https://www.tensorflow.org/api_docs/python/tf/experimental/dtensor/Layout).
+    See more details in [jax.sharding.NamedSharding](
+        https://jax.readthedocs.io/en/latest/jax.sharding.html#jax.sharding.NamedSharding)
+    and [tf.dtensor.Layout](
+        https://www.tensorflow.org/api_docs/python/tf/experimental/dtensor/Layout).
     """
 
     def __init__(self, axes):
@@ -132,11 +132,15 @@ class Distribution:
         pass
 
 
-def get_distribution():
+def distribution():
     """Retrieve the current distribution from global context."""
     return global_state.get_global_attribute(GLOBAL_ATTRIBUTE_NAME)
 
 
-def set_distribution(distribution):
-    """Set the distribution as the global distribution setting."""
-    global_state.set_global_attribute(GLOBAL_ATTRIBUTE_NAME, distribution)
+def set_distribution(value):
+    """Set the distribution as the global distribution setting.
+
+    Args:
+        value: a `Distribution` instance.
+    """
+    global_state.set_global_attribute(GLOBAL_ATTRIBUTE_NAME, value)
