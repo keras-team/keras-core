@@ -897,6 +897,13 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         )
         self.assertAllClose(outputs, expected, rtol=1e-5, atol=1e-5)
 
+    def test_depthwise_conv_1d(self):
+        inputs_1d = np.arange(60, dtype=float).reshape([2, 20, 3])
+        kernel = np.arange(12, dtype=float).reshape([4, 3, 1])
+        outputs = knn.depthwise_conv(inputs_1d, kernel, 1, padding="valid")
+        expected = tf.nn.depthwise_conv1d(inputs_1d, kernel, 1, padding="VALID")
+        self.assertAllClose(outputs, expected)
+
     def test_depthwise_conv_2d(self):
         inputs_2d = np.arange(600, dtype=float).reshape([2, 10, 10, 3])
         kernel = np.arange(24, dtype=float).reshape([2, 2, 3, 2])
@@ -924,6 +931,20 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         )
         expected = tf.nn.depthwise_conv2d(
             inputs_2d, kernel, (1, 1, 1, 1), padding="SAME", dilations=(2, 2)
+        )
+        self.assertAllClose(outputs, expected)
+
+    def test_separable_conv_1d(self):
+        # Test 1D conv.
+        inputs_1d = np.arange(60, dtype=float).reshape([2, 20, 3])
+        depth_kernel = np.arange(12, dtype=float).reshape([4, 3, 1])
+        point_kernel = np.arange(6, dtype=float).reshape([1, 3, 2])
+
+        outputs = knn.separable_conv(
+            inputs_1d, depth_kernel, point_kernel, padding="valid"
+        )
+        expected = tf.nn.separable_conv1d(
+            inputs_1d, depth_kernel, point_kernel, padding="VALID"
         )
         self.assertAllClose(outputs, expected)
 
@@ -991,6 +1012,17 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         )
         self.assertAllClose(outputs, expected)
 
+    def test_separable_conv_3d(self):
+        # Test 3D conv.
+        inputs_3d = np.arange(7200, dtype=float).reshape([2, 6, 6, 6, 3])
+        depth_kernel = np.arange(108, dtype=float).reshape([3, 3, 3, 3, 1])
+        point_kernel = np.arange(18, dtype=float).reshape([1, 1, 1, 3, 6])
+        outputs = knn.separable_conv(inputs_3d, depth_kernel, point_kernel)
+        expected = tf.nn.separable_conv3d(
+            inputs_3d, depth_kernel, point_kernel, padding="VALID"
+        )
+        self.assertAllClose(outputs, expected)
+
     def test_conv_transpose_1d(self):
         inputs_1d = np.arange(24, dtype=float).reshape([2, 4, 3])
         kernel = np.arange(30, dtype=float).reshape([2, 5, 3])
@@ -1020,6 +1052,13 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         expected = tf.nn.conv_transpose(
             inputs_2d, kernel, [2, 8, 8, 5], 2, padding="SAME"
         )
+        self.assertAllClose(outputs, expected)
+
+    def test_conv_transpose_3d(self):
+        inputs_3d = np.arange(192, dtype=float).reshape([2, 4, 4, 4, 3])
+        kernel = np.arange(72, dtype=float).reshape([3, 3, 3, 3, 2])
+        outputs = knn.conv_transpose(inputs_3d, kernel, 2)
+        expected = tf.nn.conv3d_transpose(inputs_3d, kernel, [2, 8, 8, 8, 2], 2)
         self.assertAllClose(outputs, expected)
 
     def test_one_hot(self):
