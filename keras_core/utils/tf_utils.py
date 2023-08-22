@@ -1,3 +1,4 @@
+from keras_core import backend
 from keras_core.utils.module_utils import tensorflow as tf
 
 
@@ -140,6 +141,7 @@ def get_tensor_spec(t, dynamic_batch=False, name=None):
 def ensure_tensor(inputs, dtype=None):
     """Ensures the input is a Tensor, SparseTensor or RaggedTensor."""
     if not isinstance(inputs, (tf.Tensor, tf.SparseTensor, tf.RaggedTensor)):
+        print(dtype)
         inputs = tf.convert_to_tensor(inputs, dtype)
     if dtype is not None and inputs.dtype != dtype:
         inputs = tf.cast(inputs, dtype)
