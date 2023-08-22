@@ -892,11 +892,11 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             expected_2d_avg_same,
         )
 
-    @parameterized.product(
-        strides=(1, 2, 3),
-        padding=("valid", "same"),
-        dilation_rate=(1, 2),
-    )
+    # @parameterized.product(
+    #     strides=(1, 2, 3),
+    #     padding=("valid", "same"),
+    #     dilation_rate=(1, 2),
+    # )
     # def test_conv_1d(self, strides, padding, dilation_rate):
     #     if strides > 1 and dilation_rate > 1:
     #         pytest.skip("Unsupported configuration")
