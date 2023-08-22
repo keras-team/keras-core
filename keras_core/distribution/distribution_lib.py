@@ -104,25 +104,29 @@ class Distribution:
     def __init__(self, device_mesh):
         pass
 
-    def distribute_data(self, data):
-        """Shard the input data based on the Distribution setting.
+    def get_data_layout(self, data_shape):
+        """Retrieve the `TensorLayout` for the input data.
 
         Args:
-            data: input data, can be Tensor and np.Array.
+            data_shape: shape for the input data in list or tuple format.
 
         Returns:
-            distributed data tensor.
+            The `TensorLayout` for the data, which can be used by 
+            `backend.distribute_tensor()` to redistribute a input data.
         """
         pass
 
-    def distribute_variable(self, variable):
-        """Distribute the variable based on the Distribution setting.
+    def get_variable_layout(self, variable_path):
+        """Retrieve the `TensorLayout` for the variable based on the path.
+
+        The path of the variable is available by `variable.path`.
 
         Args:
-            variable: a keras variable for distribution.
+            variable_path: string, the path for the variable to be distributed.
 
         return:
-            distributed keras variable.
+            The `TensorLayout` for the variable, which can be used by 
+            `backend.distribute_tensor()` to redistribute a variable.
         """
         pass
 
