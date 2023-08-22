@@ -5046,7 +5046,7 @@ class Where(Operation):
 
 
 @keras_core_export(["keras_core.ops.where", "keras_core.ops.numpy.where"])
-def where(condition, x1, x2):
+def where(condition, x1=None, x2=None):
     """Return elements chosen from `x1` or `x2` depending on `condition`.
 
     Args:
