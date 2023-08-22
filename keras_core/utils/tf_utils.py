@@ -1,4 +1,3 @@
-from keras_core import backend
 from keras_core.utils.module_utils import tensorflow as tf
 
 
