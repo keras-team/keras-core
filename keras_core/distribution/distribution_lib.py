@@ -111,7 +111,7 @@ class Distribution:
             data_shape: shape for the input data in list or tuple format.
 
         Returns:
-            The `TensorLayout` for the data, which can be used by 
+            The `TensorLayout` for the data, which can be used by
             `backend.distribute_tensor()` to redistribute a input data.
         """
         pass
@@ -125,7 +125,7 @@ class Distribution:
             variable_path: string, the path for the variable to be distributed.
 
         return:
-            The `TensorLayout` for the variable, which can be used by 
+            The `TensorLayout` for the variable, which can be used by
             `backend.distribute_tensor()` to redistribute a variable.
         """
         pass
