@@ -5034,11 +5034,6 @@ def vstack(xs):
 
 class Where(Operation):
     def call(self, condition, x1=None, x2=None):
-        if (x1 is None and x2 is not None) or (x1 is not None and x2 is None):
-            raise ValueError(
-                "`x1` and `x2` either both should be `None`"
-                + " or both should have non-None value."
-            )
         return backend.numpy.where(condition, x1, x2)
 
     def compute_output_spec(self, condition, x1, x2):
@@ -5067,7 +5062,7 @@ def where(condition, x1=None, x2=None):
     if (x1 is None and x2 is not None) or (x1 is not None and x2 is None):
         raise ValueError(
             "`x1` and `x2` either both should be `None`"
-            + " or both should have non-None value."
+            " or both should have non-None value."
         )
     if any_symbolic_tensors((condition, x1, x2)):
         return Where().symbolic_call(condition, x1, x2)
