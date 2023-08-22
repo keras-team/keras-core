@@ -728,41 +728,116 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         )
 
     def test_max_pool(self):
-        # Test 1D max pooling.
-        x = np.arange(120, dtype=float).reshape([2, 20, 3])
-        self.assertAllClose(
-            knn.max_pool(x, 2, 1, padding="valid"),
-            tf.nn.max_pool1d(x, 2, 1, padding="VALID"),
-        )
-        self.assertAllClose(
-            knn.max_pool(x, 2, 2, padding="same"),
-            tf.nn.max_pool1d(x, 2, 2, padding="SAME"),
+        x = np.arange(24, dtype=float).reshape([2, 4, 3])
+        expected_1d_valid = np.array(
+            [
+                [[3.0, 4.0, 5.0], [6.0, 7.0, 8.0], [9.0, 10.0, 11.0]],
+                [[15.0, 16.0, 17.0], [18.0, 19.0, 20.0], [21.0, 22.0, 23.0]],
+            ]
         )
 
-        # Test 2D max pooling.
-        x = np.arange(540, dtype=float).reshape([2, 10, 9, 3])
+        expected_1d_same = np.array(
+            [
+                [[3.0, 4.0, 5.0], [9.0, 10.0, 11.0]],
+                [[15.0, 16.0, 17.0], [21.0, 22.0, 23.0]],
+            ]
+        )
+
         self.assertAllClose(
-            knn.max_pool(x, 2, 1, padding="valid"),
-            tf.nn.max_pool2d(x, 2, 1, padding="VALID"),
+            knn.max_pool(x, 2, 1, padding="valid"), expected_1d_valid
         )
         self.assertAllClose(
-            knn.max_pool(x, 2, (2, 1), padding="same"),
-            tf.nn.max_pool2d(x, 2, (2, 1), padding="SAME"),
+            knn.max_pool(x, 2, 2, padding="same"), expected_1d_same
+        )
+
+        x = np.arange(72, dtype=float).reshape([2, 4, 3, 3])
+
+        expected_2d_valid = np.array(
+            [
+                [
+                    [[12.0, 13.0, 14.0], [15.0, 16.0, 17.0]],
+                    [[21.0, 22.0, 23.0], [24.0, 25.0, 26.0]],
+                    [[30.0, 31.0, 32.0], [33.0, 34.0, 35.0]],
+                ],
+                [
+                    [[48.0, 49.0, 50.0], [51.0, 52.0, 53.0]],
+                    [[57.0, 58.0, 59.0], [60.0, 61.0, 62.0]],
+                    [[66.0, 67.0, 68.0], [69.0, 70.0, 71.0]],
+                ],
+            ]
+        )
+
+        expected_2d_same = np.array(
+            [
+                [
+                    [
+                        [12.0, 13.0, 14.0],
+                        [15.0, 16.0, 17.0],
+                        [15.0, 16.0, 17.0],
+                    ],
+                    [
+                        [30.0, 31.0, 32.0],
+                        [33.0, 34.0, 35.0],
+                        [33.0, 34.0, 35.0],
+                    ],
+                ],
+                [
+                    [
+                        [48.0, 49.0, 50.0],
+                        [51.0, 52.0, 53.0],
+                        [51.0, 52.0, 53.0],
+                    ],
+                    [
+                        [66.0, 67.0, 68.0],
+                        [69.0, 70.0, 71.0],
+                        [69.0, 70.0, 71.0],
+                    ],
+                ],
+            ]
+        )
+
+        self.assertAllClose(
+            knn.max_pool(x, 2, 1, padding="valid"), expected_2d_valid
+        )
+        self.assertAllClose(
+            knn.max_pool(x, 2, (2, 1), padding="same"), expected_2d_same
         )
 
     def test_average_pool_valid_padding(self):
-        # Test 1D max pooling.
-        x = np.arange(120, dtype=float).reshape([2, 20, 3])
-        self.assertAllClose(
-            knn.average_pool(x, 2, 1, padding="valid"),
-            tf.nn.avg_pool1d(x, 2, 1, padding="VALID"),
+        # Test 1D average pooling with compact array.
+        x_1d = np.arange(24, dtype=float).reshape([2, 4, 3])
+
+        expected_1d_avg_valid = np.array(
+            [
+                [[1.5, 2.5, 3.5], [4.5, 5.5, 6.5], [7.5, 8.5, 9.5]],
+                [[13.5, 14.5, 15.5], [16.5, 17.5, 18.5], [19.5, 20.5, 21.5]],
+            ]
         )
 
-        # Test 2D max pooling.
-        x = np.arange(540, dtype=float).reshape([2, 10, 9, 3])
         self.assertAllClose(
-            knn.average_pool(x, 2, 1, padding="valid"),
-            tf.nn.avg_pool2d(x, 2, 1, padding="VALID"),
+            knn.average_pool(x_1d, 2, 1, padding="valid"), expected_1d_avg_valid
+        )
+
+        # Test 2D average pooling with compact array.
+        x_2d = np.arange(72, dtype=float).reshape([2, 4, 3, 3])
+
+        expected_2d_avg_valid = np.array(
+            [
+                [
+                    [[6.0, 7.0, 8.0], [9.0, 10.0, 11.0]],
+                    [[15.0, 16.0, 17.0], [18.0, 19.0, 20.0]],
+                    [[24.0, 25.0, 26.0], [27.0, 28.0, 29.0]],
+                ],
+                [
+                    [[42.0, 43.0, 44.0], [45.0, 46.0, 47.0]],
+                    [[51.0, 52.0, 53.0], [54.0, 55.0, 56.0]],
+                    [[60.0, 61.0, 62.0], [63.0, 64.0, 65.0]],
+                ],
+            ]
+        )
+
+        self.assertAllClose(
+            knn.average_pool(x_2d, 2, 1, padding="valid"), expected_2d_avg_valid
         )
 
     @pytest.mark.skipif(
@@ -770,18 +845,51 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         reason="Torch outputs differently from TF when using `same` padding.",
     )
     def test_average_pool_same_padding(self):
-        # Test 1D max pooling.
-        x = np.arange(120, dtype=float).reshape([2, 20, 3])
-        self.assertAllClose(
-            knn.average_pool(x, 2, 2, padding="same"),
-            tf.nn.avg_pool1d(x, 2, 2, padding="SAME"),
+        # Test 1D average pooling with compact array and 'SAME' padding.
+        x_1d = np.arange(24, dtype=float).reshape([2, 4, 3])
+
+        expected_1d_avg_same = np.array(
+            [
+                [[1.5, 2.5, 3.5], [7.5, 8.5, 9.5]],
+                [[13.5, 14.5, 15.5], [19.5, 20.5, 21.5]],
+            ]
         )
 
-        # Test 2D max pooling.
-        x = np.arange(540, dtype=float).reshape([2, 10, 9, 3])
         self.assertAllClose(
-            knn.average_pool(x, 2, (2, 1), padding="same"),
-            tf.nn.avg_pool2d(x, 2, (2, 1), padding="SAME"),
+            knn.average_pool(x_1d, 2, 2, padding="same"), expected_1d_avg_same
+        )
+
+        # Test 2D average pooling with compact array and 'SAME' padding.
+        x_2d = np.arange(72, dtype=float).reshape([2, 4, 3, 3])
+
+        expected_2d_avg_same = np.array(
+            [
+                [
+                    [[6.0, 7.0, 8.0], [9.0, 10.0, 11.0], [10.5, 11.5, 12.5]],
+                    [
+                        [24.0, 25.0, 26.0],
+                        [27.0, 28.0, 29.0],
+                        [28.5, 29.5, 30.5],
+                    ],
+                ],
+                [
+                    [
+                        [42.0, 43.0, 44.0],
+                        [45.0, 46.0, 47.0],
+                        [46.5, 47.5, 48.5],
+                    ],
+                    [
+                        [60.0, 61.0, 62.0],
+                        [63.0, 64.0, 65.0],
+                        [64.5, 65.5, 66.5],
+                    ],
+                ],
+            ]
+        )
+
+        self.assertAllClose(
+            knn.average_pool(x_2d, 2, (2, 1), padding="same"),
+            expected_2d_avg_same,
         )
 
     @parameterized.product(
@@ -793,8 +901,15 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         if strides > 1 and dilation_rate > 1:
             pytest.skip("Unsupported configuration")
 
-        inputs_1d = np.arange(120, dtype=float).reshape([2, 20, 3])
-        kernel = np.arange(24, dtype=float).reshape([4, 3, 2])
+        inputs_1d = np.arange(24, dtype=float).reshape([2, 4, 3])
+        kernel = np.arange(12, dtype=float).reshape([2, 3, 2])
+
+        expected_1d_conv = np.array(
+            [
+                [[110.0, 125.0], [200.0, 233.0], [290.0, 341.0]],
+                [[470.0, 557.0], [560.0, 665.0], [650.0, 773.0]],
+            ]
+        )
 
         outputs = knn.conv(
             inputs_1d,
@@ -803,14 +918,8 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             padding=padding,
             dilation_rate=dilation_rate,
         )
-        expected = tf.nn.conv1d(
-            inputs_1d,
-            kernel,
-            strides,
-            padding=padding.upper(),
-            dilations=dilation_rate,
-        )
-        self.assertAllClose(outputs, expected)
+
+        self.assertAllClose(outputs, expected_1d_conv)
 
     def test_conv_2d(self):
         inputs_2d = np.arange(600, dtype=float).reshape([2, 10, 10, 3])
