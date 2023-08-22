@@ -616,7 +616,7 @@ def vstack(xs):
     return tfnp.vstack(xs)
 
 
-def where(condition, x1=None, x2=None):
+def where(condition, x1, x2):
     return tfnp.where(condition, x1, x2)
 
 

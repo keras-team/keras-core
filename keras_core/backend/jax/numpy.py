@@ -547,7 +547,7 @@ def vstack(xs):
     return jnp.vstack(xs)
 
 
-def where(condition, x1=None, x2=None):
+def where(condition, x1, x2):
     return jnp.where(condition, x1, x2)
 
 

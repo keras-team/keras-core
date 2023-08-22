@@ -894,7 +894,7 @@ def vstack(xs):
     return torch.vstack(xs)
 
 
-def where(condition, x1=None, x2=None):
+def where(condition, x1, x2):
     condition = convert_to_tensor(condition, dtype=bool)
     if x1 is not None and x2 is not None:
         x1 = convert_to_tensor(x1)
