@@ -56,43 +56,14 @@ def to_jax_layout(tensor_layout):
     return jax.sharding.NamedSharding(jax_mesh, partition_spec)
 
 
-def distribute_data(data, distribution):
-    """Distribute the input data based on the distribution setting.
+def distribute_value(value, tensor_layout):
+    """Distribute the value based on the layout.
 
     Args:
-        data: `jax.Array` or a nested structure `jax.Array` to distribution
-        distribution: `keras_core.distribution.Distribution` instance. Could be
-            `None`.
+        value: `jax.Array` that need to be distributed.
+        tensor_layout: `TensorLayout` for the distribution information.
+
     Returns:
-        Distributed data. In the case that `distribution` is None, the original
-        data will be returned.
+        Distributed value.
     """
-    if distribution is None:
-        return data
-
-    jax_sharding = jax.tree_util.tree_map(
-        lambda d: to_jax_layout(distribution.get_data_layout(d.shape)), data
-    )
-    return jax.device_put(data, jax_sharding)
-
-
-def distribute_variable(value, variable_path, distribution):
-    """Distribute the variable init value based on the distribution setting.
-
-    Args:
-        value: `jax.Array`, the init value for distribution.
-        variable_path: str, the path of the variable, which is obtained from
-            name scope.
-        distribution: `keras_core.distribution.Distribution` instance. Could be
-            `None`.
-    Returns:
-        Distributed variable. In the case that `distribution` is None,
-        the original value will be returned.
-    """
-    if distribution is None:
-        return value
-
-    variable_sharding = to_jax_layout(
-        distribution.get_variable_layout(value.shape, variable_path)
-    )
-    return jax.device_put(value, variable_sharding)
+    return jax.device_put(value, to_jax_layout(tensor_layout))

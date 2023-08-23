@@ -19,11 +19,11 @@ class Variable(KerasVariable):
     def _initialize(self, value):
         value = jnp.array(value, dtype=self._dtype)
         # We can't import the keras_core/distribution/distribution_lib
-        # due to circualr dependency.
+        # due to circular dependency.
         distribution = global_state.get_global_attribute("distribution")
-        value = distribution_lib.distribute_variable(
-            value, self.path, distribution
-        )
+        if distribution is not None:
+            layout = distribution.get_variable_layout(value.shape, self.path)
+            value = distribution_lib.distribute_value(value, layout)
         self._value = value
 
     def _direct_assign(self, value):

@@ -755,4 +755,12 @@ class JAXTrainer(base_trainer.Trainer):
 
     def _distribute_data(self, data):
         distribution = distribution_lib.distribution()
-        return jax_distribution_lib.distribute_data(data, distribution)
+        if distribution is not None:
+
+            def distribute_single_value(d):
+                layout = distribution.get_data_layout(d.shape)
+                return jax_distribution_lib.distribute_value(d, layout)
+
+            return jax.tree_util.tree_map(distribute_single_value, data)
+        else:
+            return data

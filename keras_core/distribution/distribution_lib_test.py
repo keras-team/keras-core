@@ -241,7 +241,8 @@ class JaxDistributionLibTest(testing.TestCase):
 
     def test_e2e_model(self):
         distribution = distribution_lib.DataParallel(
-            devices=backend_dlib.list_devices())
+            devices=backend_dlib.list_devices()
+        )
 
         with distribution.scope():
             inputs = layers.Input(shape=[28, 28, 1])
