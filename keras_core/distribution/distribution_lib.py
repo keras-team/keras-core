@@ -6,12 +6,15 @@ Currently only the JAX backend has been implemented, and the Tensorflow backend
 will be implemented in future (via tf.dtensor API).
 """
 
+import logging
+
 import contextlib
 import numpy as np
 
 from keras_core.backend import distribution_lib
 from keras_core.backend.common import global_state
 
+DEFAULT_BATCH_DIM_NAME = "batch"
 GLOBAL_ATTRIBUTE_NAME = "distribution"
 
 
@@ -74,7 +77,7 @@ class DeviceMesh:
                 "Shape and axis_names should have same size,"
                 f"got shape: {shape} and axis_names: {axis_names}"
             )
-        if not devices:
+        if devices is None:
             devices = list_devices()
         devices = np.array(devices)
         if np.prod(shape) != np.prod(devices.shape):
@@ -172,7 +175,7 @@ class Distribution:
     """
 
     def __init__(self, device_mesh):
-        pass
+        self._device_mesh = device_mesh
 
     def get_data_layout(self, data_shape):
         """Retrieve the `TensorLayout` for the input data.
@@ -184,27 +187,106 @@ class Distribution:
             The `TensorLayout` for the data, which can be used by
             `backend.distribute_tensor()` to redistribute a input data.
         """
-        pass
+        raise NotImplementedError()
 
-    def get_variable_layout(self, variable_path):
+    def get_variable_layout(self, variable_shape, variable_path):
         """Retrieve the `TensorLayout` for the variable based on the path.
 
         The path of the variable is available by `variable.path`.
 
         Args:
+            variable_shape, shape for the variable in list or tuple format.
             variable_path: string, the path for the variable to be distributed.
 
         return:
             The `TensorLayout` for the variable, which can be used by
             `backend.distribute_tensor()` to redistribute a variable.
         """
-        pass
+        raise NotImplementedError()
 
     @contextlib.contextmanager
     def scope(self):
         """Context manager to make the `Distribution` current."""
-        pass
+        original_scope = distribution()
+        set_distribution(self)
+        try:
+            yield
+        finally:
+            set_distribution(original_scope)
 
+    @property
+    def device_mesh(self):
+        return self._device_mesh
+
+
+class DataParallel(Distribution):
+    def __init__(self, device_mesh=None, devices=None):
+        """Create the data parallel distribution.
+
+        You can choose to create this instance by either specifing
+        the `device_mesh` or `devices` parameters (but not both).
+
+        The device_mesh is expected to be a `DeviceMesh` instance, and is
+        expected to be 1D only. In case that the mesh has multiple axes, then
+        the first axis will be treated as the data parallel dimension
+        (and a warning will be raised).
+
+        When a list of `devices` are provided, they will be used to construct a
+        1D mesh.
+
+        When both `mesh` and `devices` are absent, then `list_devices()`
+        will be used to detect any available devices and create a 1D mesh from 
+        them.
+        """
+        if device_mesh:
+            self._initialize_with_device_mesh(device_mesh)
+        elif devices:
+            self._initialize_mesh_from_devices(devices)
+        else:
+            self._initialize_mesh_from_list_devices()
+
+        self._batch_dim_name = self.device_mesh.axis_names[0]
+
+    def _initialize_with_device_mesh(self, device_mesh):
+        if not isinstance(device_mesh, DeviceMesh):
+            raise ValueError(
+                "Expect `mesh` to be an instance of `DeviceMesh`. "
+                f"Received: mesh={device_mesh} (of type {type(device_mesh)})"
+            )
+        super().__init__(device_mesh)
+        if self.device_mesh.devices.ndim != 1:
+            logging.warning(
+                "Expect the input mesh to be 1D, but received "
+                "mesh.devices.ndim=%d. "
+                "The first axis will be used for data-parallel sharding.",
+                device_mesh.devices.ndim
+            )
+
+    def _initialize_mesh_from_devices(self, devices):
+        devices = np.array(devices)
+        device_mesh = DeviceMesh(
+            shape=devices.shape,
+            axis_names=[DEFAULT_BATCH_DIM_NAME],
+            devices=devices)
+        super().__init__(device_mesh)
+
+    def _initialize_mesh_from_list_devices(self):
+        devices = np.array(list_devices())
+        device_mesh = DeviceMesh(
+            shape=devices.shape,
+            axis_names=[DEFAULT_BATCH_DIM_NAME],
+            devices=devices)
+        super().__init__(device_mesh)
+
+    def get_data_layout(self, data_shape):
+        data_shard_spec = [None] * len(data_shape)
+        data_shard_spec[0] = self._batch_dim_name   # Shard on the first dim
+        return TensorLayout(data_shard_spec, self.device_mesh)
+
+    def get_variable_layout(self, variable_shape, variable_path):
+        del variable_path
+        variable_shard_spec =  [None] * len(variable_shape)
+        return TensorLayout(variable_shard_spec, self.device_mesh)
 
 def distribution():
     """Retrieve the current distribution from global context."""

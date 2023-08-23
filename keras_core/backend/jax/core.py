@@ -7,20 +7,22 @@ import tree
 from jax.tree_util import Partial
 
 from keras_core.backend.common import KerasVariable
+from keras_core.backend.common import global_state
 from keras_core.backend.common import standardize_dtype
 from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.backend.common.stateless_scope import StatelessScope
-from keras_core.backend.jax import distribution
+from keras_core.backend.jax import distribution_lib
 from keras_core.utils.nest import pack_sequence_as
 
 
 class Variable(KerasVariable):
     def _initialize(self, value):
         value = jnp.array(value, dtype=self._dtype)
-        if distribution.get_global_distribution() is not None:
-            value = distribution.get_global_distribution().distribute_variable(
-                value
-            )
+        # We can't import the keras_core/distribution/distribution_lib
+        # due to circualr dependency.
+        distribution = global_state.get_global_attribute("distribution")
+        value = distribution_lib.distribute_variable(
+            value, self.path, distribution)
         self._value = value
 
     def _direct_assign(self, value):
