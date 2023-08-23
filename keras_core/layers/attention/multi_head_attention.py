@@ -115,6 +115,8 @@ class MultiHeadAttention(Layer):
         self.supports_masking = True
         self._num_heads = num_heads
         self._key_dim = key_dim
+        # Cache 1.0 / math.sqrt(self._key_dim).
+        self._inverse_sqrt_key_dim = None
         self._value_dim = value_dim if value_dim else key_dim
         self._dropout = dropout
         self._use_bias = use_bias
@@ -311,6 +313,7 @@ class MultiHeadAttention(Layer):
         )
         self._softmax = Softmax(axis=norm_axes)
         self._dropout_layer = Dropout(rate=self._dropout)
+        self._inverse_sqrt_key_dim = 1.0 / math.sqrt(float(self._key_dim))
 
     def _masked_softmax(self, attention_scores, attention_mask=None):
         # Normalize the attention scores to probabilities.
@@ -355,7 +358,7 @@ class MultiHeadAttention(Layer):
         # Note: Applying scalar multiply at the smaller end of einsum improves
         # XLA performance, but may introduce slight numeric differences in
         # the Transformer attention head.
-        query = ops.multiply(query, 1.0 / math.sqrt(float(self._key_dim)))
+        query = ops.multiply(query, self._inverse_sqrt_key_dim)
 
         # Take the dot product between "query" and "key" to get the raw
         # attention scores.

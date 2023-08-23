@@ -326,6 +326,7 @@ class Layer(BackendLayer, Operation):
 
     @utils.default
     def build(self, input_shape):
+        self._check_super_called()
         if utils.is_default(self.build) and might_have_unbuilt_state(self):
             warnings.warn(
                 f"`build()` was called on layer '{self.name}', however "
@@ -438,13 +439,14 @@ class Layer(BackendLayer, Operation):
         # TODO: handle layout
         self._check_super_called()
         initializer = initializers.get(initializer)
-        variable = backend.Variable(
-            initializer=initializer,
-            shape=shape,
-            dtype=dtype or self.variable_dtype,
-            trainable=trainable,
-            name=name,
-        )
+        with backend.name_scope(self.name, caller=self):
+            variable = backend.Variable(
+                initializer=initializer,
+                shape=shape,
+                dtype=dtype or self.variable_dtype,
+                trainable=trainable,
+                name=name,
+            )
         # Will be added to layer.losses
         variable.regularizer = regularizer
         variable.constraint = constraint
@@ -604,6 +606,11 @@ class Layer(BackendLayer, Operation):
         return self.dtype_policy.variable_dtype
 
     @property
+    def input_dtype(self):
+        """The dtype layer inputs should be converted to."""
+        return self.dtype_policy.compute_dtype
+
+    @property
     def supports_masking(self):
         """Whether this layer supports computing a mask using `compute_mask`."""
         return self._supports_masking
@@ -627,20 +634,20 @@ class Layer(BackendLayer, Operation):
                 if (
                     self.autocast
                     and backend.is_float_dtype(x.dtype)
-                    and x.dtype != self.compute_dtype
+                    and x.dtype != self.input_dtype
                 ):
-                    x = backend.cast(x, dtype=self.compute_dtype)
+                    x = backend.cast(x, dtype=self.input_dtype)
                 return x
             elif isinstance(x, backend.KerasTensor):
                 if (
                     self.autocast
                     and backend.is_float_dtype(x.dtype)
-                    and x.dtype != self.compute_dtype
+                    and x.dtype != self.input_dtype
                 ):
-                    x.dtype = self.compute_dtype
+                    x.dtype = self.input_dtype
                 return x
             elif hasattr(x, "__array__"):
-                return backend.convert_to_tensor(x, dtype=self.compute_dtype)
+                return backend.convert_to_tensor(x, dtype=self.input_dtype)
             return x
 
         # Used to avoid expensive `tree` operations in the most common case.
@@ -648,7 +655,7 @@ class Layer(BackendLayer, Operation):
             kwargs
             or len(args) != 1
             or not backend.is_tensor(args[0])
-            or backend.standardize_dtype(args[0].dtype) != self.compute_dtype
+            or backend.standardize_dtype(args[0].dtype) != self.input_dtype
         ) and self._convert_input_args:
             args = tree.map_structure(maybe_convert, args)
             kwargs = tree.map_structure(maybe_convert, kwargs)
@@ -677,7 +684,8 @@ class Layer(BackendLayer, Operation):
 
         ################
         # 4. Call build.
-        self._maybe_build(call_spec)
+        with backend.name_scope(self.name, caller=self):
+            self._maybe_build(call_spec)
 
         ##########################
         # 5. Infer training value
@@ -731,7 +739,7 @@ class Layer(BackendLayer, Operation):
         ####################
         # 7. Call the layer.
         try:
-            with backend.name_scope(self.name):
+            with backend.name_scope(self.name, caller=self):
                 if self.autocast and self.compute_dtype != self.variable_dtype:
                     # For mixed precision, we automatically cast layer variables
                     # (float ones only) to the compute dtype upon access.
@@ -1077,45 +1085,44 @@ class Layer(BackendLayer, Operation):
             shapes_dict = get_shapes_dict(call_spec)
             self._build_shapes_dict = shapes_dict
 
-            with backend.name_scope(self.name):
-                if not utils.is_default(self.build):
-                    shapes_dict = update_shapes_dict_for_target_fn(
-                        self.build,
-                        shapes_dict=shapes_dict,
-                        call_spec=call_spec,
-                        class_name=self.__class__.__name__,
+            if not utils.is_default(self.build):
+                shapes_dict = update_shapes_dict_for_target_fn(
+                    self.build,
+                    shapes_dict=shapes_dict,
+                    call_spec=call_spec,
+                    class_name=self.__class__.__name__,
+                )
+                self.build(**shapes_dict)
+            elif might_have_unbuilt_state(self):
+                if len(shapes_dict) == 1:
+                    # Single arg: pass it positionally
+                    success = self._build_by_run_for_single_pos_arg(
+                        tuple(shapes_dict.values())[0]
                     )
-                    self.build(**shapes_dict)
-                elif might_have_unbuilt_state(self):
-                    if len(shapes_dict) == 1:
-                        # Single arg: pass it positionally
-                        success = self._build_by_run_for_single_pos_arg(
-                            tuple(shapes_dict.values())[0]
-                        )
-                    else:
-                        success = self._build_by_run_for_kwargs(shapes_dict)
-                    if not success:
-                        if call_spec.eager:
-                            # Will let the actual eager call do state-building
-                            return
-                        raise ValueError(
-                            f"Layer '{self.name}' looks like it has "
-                            "unbuilt state, but Keras is not able to "
-                            "trace the layer `call()` in order to "
-                            "build it automatically. Possible causes:\n"
-                            "1. The `call()` method of your layer may be "
-                            "crashing. Try to `__call__()` the layer "
-                            "eagerly on some test input "
-                            "first to see if it works. "
-                            "E.g. `x = np.random.random((3, 4)); "
-                            "y = layer(x)`\n"
-                            "2. If the `call()` method is correct, "
-                            "then you may need to implement "
-                            "the `def build(self, input_shape)` method on your "
-                            "layer. It should create all variables used by the "
-                            "layer (e.g. by calling `layer.build()` on all its "
-                            "children layers)."
-                        )
+                else:
+                    success = self._build_by_run_for_kwargs(shapes_dict)
+                if not success:
+                    if call_spec.eager:
+                        # Will let the actual eager call do state-building
+                        return
+                    raise ValueError(
+                        f"Layer '{self.name}' looks like it has "
+                        "unbuilt state, but Keras is not able to "
+                        "trace the layer `call()` in order to "
+                        "build it automatically. Possible causes:\n"
+                        "1. The `call()` method of your layer may be "
+                        "crashing. Try to `__call__()` the layer "
+                        "eagerly on some test input "
+                        "first to see if it works. "
+                        "E.g. `x = np.random.random((3, 4)); "
+                        "y = layer(x)`\n"
+                        "2. If the `call()` method is correct, "
+                        "then you may need to implement "
+                        "the `def build(self, input_shape)` method on your "
+                        "layer. It should create all variables used by the "
+                        "layer (e.g. by calling `layer.build()` on all its "
+                        "children layers)."
+                    )
             self.built = True
 
             # Check input spec again (after build, since self.input_spec
@@ -1262,6 +1269,7 @@ class Layer(BackendLayer, Operation):
 
     @python_utils.default
     def get_config(self):
+        self._check_super_called()
         base_config = super().get_config()
         config = {
             "trainable": self.trainable,
@@ -1353,7 +1361,7 @@ def get_shapes_dict(call_spec):
     """
     shapes_dict = {}
     for k, v in call_spec.tensor_arguments_dict.items():
-        if k == "mask" or k.startswith("mask_"):
+        if k == "mask" or k.endswith("_mask"):
             # Do not include mask tensors in shapes dict
             continue
         if k == "kwargs" or k == "args":
@@ -1408,7 +1416,11 @@ def update_shapes_dict_for_target_fn(
     # Single arg: don't check names, pass first shape.
     if len(expected_names) == 1:
         key = expected_names[0]
-        input_shape = tuple(shapes_dict.values())[0]
+        values = tuple(shapes_dict.values())
+        if values:
+            input_shape = values[0]
+        else:
+            input_shape = None
         return {key: input_shape}
 
     # Multiple args: check that all names line up.

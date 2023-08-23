@@ -11,6 +11,23 @@ def add(x1, x2):
 def bincount(x, weights=None, minlength=None):
     if minlength is not None:
         x = tf.cast(x, tf.int32)
+    if isinstance(x, tf.SparseTensor):
+        result = tf.sparse.bincount(
+            x,
+            weights=weights,
+            minlength=minlength,
+            axis=-1,
+        )
+        if x.shape.rank == 1:
+            output_shape = (minlength,)
+        else:
+            batch_size = tf.shape(result)[0]
+            output_shape = (batch_size, minlength)
+        return tf.SparseTensor(
+            indices=result.indices,
+            values=result.values,
+            dense_shape=output_shape,
+        )
     return tf.math.bincount(x, weights=weights, minlength=minlength, axis=-1)
 
 
@@ -105,8 +122,16 @@ def arccos(x):
     return tfnp.arccos(x)
 
 
+def arccosh(x):
+    return tfnp.arccosh(x)
+
+
 def arcsin(x):
     return tfnp.arcsin(x)
+
+
+def arcsinh(x):
+    return tfnp.arcsinh(x)
 
 
 def arctan(x):
@@ -115,6 +140,10 @@ def arctan(x):
 
 def arctan2(x1, x2):
     return tfnp.arctan2(x1, x2)
+
+
+def arctanh(x):
+    return tfnp.arctanh(x)
 
 
 def argmax(x, axis=None):
@@ -174,6 +203,10 @@ def cos(x):
     return tfnp.cos(x)
 
 
+def cosh(x):
+    return tfnp.cosh(x)
+
+
 def count_nonzero(x, axis=None):
     return tfnp.count_nonzero(x, axis=axis)
 
@@ -208,6 +241,22 @@ def diagonal(x, offset=0, axis1=0, axis2=1):
         axis1=axis1,
         axis2=axis2,
     )
+
+
+def digitize(x, bins):
+    bins = list(bins)
+    if isinstance(x, tf.RaggedTensor):
+        return tf.ragged.map_flat_values(
+            lambda y: tf.raw_ops.Bucketize(input=y, boundaries=bins), x
+        )
+    elif isinstance(x, tf.SparseTensor):
+        return tf.SparseTensor(
+            indices=tf.identity(x.indices),
+            values=tf.raw_ops.Bucketize(input=x.values, boundaries=bins),
+            dense_shape=tf.identity(x.dense_shape),
+        )
+    x = convert_to_tensor(x)
+    return tf.raw_ops.Bucketize(input=x, boundaries=bins)
 
 
 def dot(x, y):
@@ -472,6 +521,10 @@ def sin(x):
     return tfnp.sin(x)
 
 
+def sinh(x):
+    return tfnp.sinh(x)
+
+
 def size(x):
     return tfnp.size(x)
 
@@ -506,6 +559,10 @@ def take_along_axis(x, indices, axis=None):
 
 def tan(x):
     return tfnp.tan(x)
+
+
+def tanh(x):
+    return tfnp.tanh(x)
 
 
 def tensordot(x1, x2, axes=2):

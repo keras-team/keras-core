@@ -39,7 +39,9 @@ class Concatenate(Merge):
 
     def build(self, input_shape):
         # Used purely for shape validation.
-        if len(input_shape) < 1 or not isinstance(input_shape[0], tuple):
+        if len(input_shape) < 1 or not isinstance(
+            input_shape[0], (tuple, list)
+        ):
             raise ValueError(
                 "A `Concatenate` layer should be called on a list of "
                 f"at least 1 input. Received: input_shape={input_shape}"
@@ -67,7 +69,8 @@ class Concatenate(Merge):
                 if axis != concat_axis and axis_value == 1:
                     del reduced_inputs_shapes[i][axis]
 
-            del reduced_inputs_shapes[i][self.axis]
+            if len(reduced_inputs_shapes[i]) > self.axis:
+                del reduced_inputs_shapes[i][self.axis]
             shape_set.add(tuple(reduced_inputs_shapes[i]))
 
         if len(shape_set) != 1:

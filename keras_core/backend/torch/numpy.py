@@ -173,9 +173,19 @@ def arccos(x):
     return torch.arccos(x)
 
 
+def arccosh(x):
+    x = convert_to_tensor(x)
+    return torch.arccosh(x)
+
+
 def arcsin(x):
     x = convert_to_tensor(x)
     return torch.arcsin(x)
+
+
+def arcsinh(x):
+    x = convert_to_tensor(x)
+    return torch.arcsinh(x)
 
 
 def arctan(x):
@@ -186,6 +196,11 @@ def arctan(x):
 def arctan2(x1, x2):
     x1, x2 = convert_to_tensor(x1), convert_to_tensor(x2)
     return torch.arctan2(x1, x2)
+
+
+def arctanh(x):
+    x = convert_to_tensor(x)
+    return torch.arctanh(x)
 
 
 def argmax(x, axis=None):
@@ -277,6 +292,11 @@ def cos(x):
     return torch.cos(x)
 
 
+def cosh(x):
+    x = convert_to_tensor(x)
+    return torch.cosh(x)
+
+
 def count_nonzero(x, axis=None):
     x = convert_to_tensor(x)
     if axis == () or axis == []:
@@ -325,6 +345,12 @@ def diagonal(x, offset=0, axis1=0, axis2=1):
         dim1=axis1,
         dim2=axis2,
     )
+
+
+def digitize(x, bins):
+    x = convert_to_tensor(x)
+    bins = convert_to_tensor(bins)
+    return cast(torch.bucketize(x, bins, right=True), "int32")
 
 
 def dot(x, y):
@@ -729,6 +755,11 @@ def sin(x):
     return torch.sin(x)
 
 
+def sinh(x):
+    x = convert_to_tensor(x)
+    return torch.sinh(x)
+
+
 def size(x):
     x_shape = convert_to_tensor(tuple(x.shape))
     return torch.prod(x_shape)
@@ -806,6 +837,11 @@ def tan(x):
     return torch.tan(x)
 
 
+def tanh(x):
+    x = convert_to_tensor(x)
+    return torch.tanh(x)
+
+
 def tensordot(x1, x2, axes=2):
     x1, x2 = convert_to_tensor(x1), convert_to_tensor(x2)
     # Conversion to long necessary for `torch.tensordot`
@@ -860,8 +896,12 @@ def vstack(xs):
 
 def where(condition, x1, x2):
     condition = convert_to_tensor(condition, dtype=bool)
-    x1, x2 = convert_to_tensor(x1), convert_to_tensor(x2)
-    return torch.where(condition, x1, x2)
+    if x1 is not None and x2 is not None:
+        x1 = convert_to_tensor(x1)
+        x2 = convert_to_tensor(x2)
+        return torch.where(condition, x1, x2)
+    else:
+        return torch.where(condition)
 
 
 def divide(x1, x2):

@@ -61,6 +61,26 @@ class StructModel(layers.Layer, Trainer):
         }
 
 
+class ListModel(layers.Layer, Trainer):
+    def __init__(self, units):
+        layers.Layer.__init__(self)
+        Trainer.__init__(self)
+        self.dense_1 = layers.Dense(
+            units,
+            use_bias=False,
+            kernel_initializer=initializers.Ones(),
+        )
+        self.dense_2 = layers.Dense(
+            units,
+            use_bias=False,
+            kernel_initializer=initializers.Ones(),
+        )
+
+    def call(self, x):
+        assert isinstance(x, (list, tuple))
+        return self.dense_1(x[0]) + self.dense_2(x[1])
+
+
 class TrainingTestingLayer(layers.Layer, Trainer):
     def __init__(self):
         layers.Layer.__init__(self)
@@ -72,8 +92,8 @@ class TrainingTestingLayer(layers.Layer, Trainer):
         return x * 0
 
 
-@pytest.mark.requires_trainable_backend
 class TestTrainer(testing.TestCase, parameterized.TestCase):
+    @pytest.mark.requires_trainable_backend
     def test_metric_tracking(self):
         class ModelWithMetric(layers.Dense, Trainer):
             def __init__(self, units):
@@ -138,6 +158,7 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
             ("steps_per_epoch_jit", False, True, True),
         ]
     )
+    @pytest.mark.requires_trainable_backend
     def test_fit_flow(self, run_eagerly, jit_compile, use_steps_per_epoch):
         if not run_eagerly and not jit_compile and use_steps_per_epoch:
             if backend.backend() == "tensorflow":
@@ -239,6 +260,7 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(outputs["y_one"], 4 * np.ones((100, 3)))
         self.assertAllClose(outputs["y_two"], 4 * np.ones((100, 3)))
 
+    @pytest.mark.requires_trainable_backend
     @pytest.mark.skipif(
         backend.backend() == "torch",
         reason="`steps_per_execution` not implemented for torch yet",
@@ -278,6 +300,38 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         )
         self.assertAllClose(model.evaluate(x, y), model_2.evaluate(x, y))
 
+    @pytest.mark.skipif(
+        backend.backend() == "torch",
+        reason="`steps_per_execution` not implemented for torch yet",
+    )
+    def test_steps_per_execution_steps_count_without_training(self):
+        class StepCount(Callback):
+            def __init__(self):
+                super().__init__()
+                self.test_count = 0
+                self.predict_count = 0
+                self.batches = [0, 3, 6]
+
+            def on_test_batch_begin(self, batch, logs=None):
+                assert batch == self.batches[self.test_count]
+                self.test_count += 1
+
+            def on_predict_batch_begin(self, batch, logs=None):
+                assert batch == self.batches[self.predict_count]
+                self.predict_count += 1
+
+        x = np.ones((100, 4))
+        y = np.ones((100, 1))
+        batch_size = 16
+        model = ExampleModel(units=1)
+        model.compile(loss="mse", steps_per_execution=3)
+        step_count = StepCount()
+        model.predict(x, batch_size=batch_size, callbacks=[step_count])
+        self.assertEqual(step_count.predict_count, 3)
+        model.evaluate(x, y, batch_size=batch_size, callbacks=[step_count])
+        self.assertEqual(step_count.test_count, 3)
+
+    @pytest.mark.requires_trainable_backend
     def test_training_arg(self):
         model = TrainingTestingLayer()
         model.compile(optimizer="rmsprop", loss="mse")
@@ -297,6 +351,7 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
             ("jit", False, True),
         ]
     )
+    @pytest.mark.requires_trainable_backend
     def test_on_batch_methods(self, run_eagerly, jit_compile):
         model = ExampleModel(units=3)
         x = np.ones((100, 4))
@@ -346,6 +401,38 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         logs = model.train_on_batch(x, y, class_weight={1: 0.3, 0: 0.2})
         self.assertAlmostEqual(logs[0], 12.899)
 
+    @parameterized.named_parameters(
+        [
+            ("eager", True, False),
+            ("graph_fn", False, False),
+            ("jit", False, True),
+        ]
+    )
+    def test_on_batch_methods_without_training(self, run_eagerly, jit_compile):
+        model = ExampleModel(units=3)
+        x = np.ones((100, 4))
+        y = np.zeros((100, 3))
+
+        model.compile(
+            loss=losses.MeanSquaredError(),
+            metrics=[metrics.MeanSquaredError()],
+            run_eagerly=run_eagerly,
+            jit_compile=jit_compile,
+        )
+        output = model.predict_on_batch(x)
+        self.assertTrue(isinstance(output, np.ndarray))
+        self.assertAllClose(output[0], np.array([4.0, 4.0, 4.0]))
+
+        logs = model.test_on_batch(x, y)
+        self.assertTrue(isinstance(logs, list))
+        self.assertEqual(len(logs), 2)
+        self.assertAlmostEqual(logs[0], 16.0)
+
+        logs = model.test_on_batch(x, y, return_dict=True)
+        self.assertTrue(isinstance(logs, dict))
+        self.assertEqual(len(logs), 2)
+        self.assertAlmostEqual(logs["loss"], 16.0)
+
     def test_nested_input_predict(self):
         # https://github.com/keras-team/keras-core/issues/325
 
@@ -368,6 +455,7 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         out = model.predict({"a": x1, "b": x2})
         self.assertEqual(out.shape, (3, 4))
 
+    @pytest.mark.requires_trainable_backend
     def test_callback_methods_keys(self):
         class CustomCallback(Callback):
             def on_train_begin(self, logs=None):
@@ -452,6 +540,7 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         model.evaluate(x_test, y_test, batch_size=4)
         model.predict(x_test, batch_size=4)
 
+    @pytest.mark.requires_trainable_backend
     def test_internal_only_loss(self):
         class LossLayer(layers.Layer):
             def call(self, x):
@@ -511,6 +600,7 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
             },
         ]
     )
+    @pytest.mark.requires_trainable_backend
     @pytest.mark.skipif(
         keras_core.backend.backend() != "tensorflow",
         reason="Only tensorflow supports raggeds",
@@ -556,6 +646,7 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         out3 = model.predict_on_batch(np.ones((2, 20)))
         self.assertGreater(5, np.sum(np.abs(out2 - out3)))
 
+    @pytest.mark.requires_trainable_backend
     def test_recompile(self):
         inputs = layers.Input((2,))
         outputs = layers.Dense(3)(inputs)
@@ -582,3 +673,69 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         self.assertEqual(
             sorted(list(eval_out_2.keys())), ["loss", "mean_absolute_error"]
         )
+
+    @pytest.mark.requires_trainable_backend
+    def test_nested_inputs(self):
+        model = ListModel(units=2)
+        out = model([np.ones((3, 2)), np.ones((3, 3))])
+        self.assertEqual(tuple(out.shape), (3, 2))
+        model.compile(optimizer="sgd", loss="mse", metrics=["mse"])
+        history = model.fit(
+            [np.ones((3, 2)), np.ones((3, 3))], np.ones((3, 2))
+        ).history
+        self.assertAllClose(history["loss"], 16.0)
+        train_out = model.train_on_batch(
+            [np.ones((3, 2)), np.ones((3, 3))], np.ones((3, 2))
+        )
+        self.assertAllClose(train_out[0], 15.2200)
+        eval_out = model.evaluate(
+            [np.ones((3, 2)), np.ones((3, 3))], np.ones((3, 2))
+        )
+        self.assertAllClose(eval_out[0], 13.0321)
+        eval_out = model.test_on_batch(
+            [np.ones((3, 2)), np.ones((3, 3))], np.ones((3, 2))
+        )
+        self.assertAllClose(eval_out[0], 13.0321)
+        predict_out = model.predict([np.ones((3, 2)), np.ones((3, 3))])
+        self.assertEqual(predict_out.shape, (3, 2))
+        predict_out = model.predict_on_batch([np.ones((3, 2)), np.ones((3, 3))])
+        self.assertEqual(predict_out.shape, (3, 2))
+
+    @pytest.mark.requires_trainable_backend
+    def test_validation_data_infinite_generator(self):
+        # Test that you can pass an infinite generator to `validation_data`
+        # arg of fit() as well as a `validation_steps` argument and that
+        # validation only runs for the correct number of steps.
+        inputs = layers.Input((2,))
+        outputs = layers.Dense(3)(inputs)
+        model = keras_core.Model(inputs, outputs)
+        model.compile(optimizer="sgd", loss="mse", metrics=["mse"])
+
+        class Recorder(keras_core.callbacks.Callback):
+            def __init__(self):
+                self.train_counter = 0
+                self.val_counter = 0
+
+            def on_train_batch_end(self, *args, **kwargs):
+                self.train_counter += 1
+
+            def on_test_batch_end(self, *args, **kwargs):
+                self.val_counter += 1
+
+        def infinite_gen():
+            while True:
+                yield np.ones((2, 2)), np.ones((2, 3))
+
+        recorder = Recorder()
+
+        model.fit(
+            infinite_gen(),
+            validation_data=infinite_gen(),
+            steps_per_epoch=3,
+            validation_steps=4,
+            epochs=1,
+            shuffle=False,
+            callbacks=[recorder],
+        )
+        self.assertEqual(recorder.train_counter, 3)
+        self.assertEqual(recorder.val_counter, 4)

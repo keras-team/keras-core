@@ -2,6 +2,7 @@ import numpy as np
 
 from keras_core.backend import config
 from keras_core.backend.common import global_state
+from keras_core.backend.common.name_scope import current_path
 from keras_core.backend.common.stateless_scope import get_stateless_scope
 from keras_core.backend.common.stateless_scope import in_stateless_scope
 from keras_core.utils.naming import auto_name
@@ -11,7 +12,19 @@ class KerasVariable:
     def __init__(
         self, initializer, shape=None, dtype=None, trainable=True, name=None
     ):
-        self.name = name or auto_name(self.__class__.__name__)
+        name = name or auto_name(self.__class__.__name__)
+        if not isinstance(name, str) or "/" in name:
+            raise ValueError(
+                "Argument `name` must be a string and "
+                "cannot contain character `/`. "
+                f"Received: name={name}"
+            )
+        self.name = name
+        parent_path = current_path()
+        if parent_path:
+            self.path = current_path() + "/" + self.name
+        else:
+            self.path = self.name
         dtype = standardize_dtype(dtype)
         self._dtype = dtype
         self._shape = None
@@ -61,7 +74,7 @@ class KerasVariable:
 
     def _deferred_initialize(self):
         if self._value is not None:
-            raise ValueError(f"Variable {self.name} is already initialized.")
+            raise ValueError(f"Variable {self.path} is already initialized.")
 
         if in_stateless_scope():
             raise ValueError(
@@ -140,7 +153,7 @@ class KerasVariable:
     def __repr__(self):
         return (
             f"<KerasVariable shape={self.shape}, dtype={self.dtype}, "
-            f"name={self.name}>"
+            f"path={self.path}>"
         )
 
     def _initialize(self, value):
@@ -403,9 +416,7 @@ def standardize_dtype(dtype):
     return dtype
 
 
-def standardize_shape(
-    shape, allow_dynamic_batch_size=True, allow_all_dynamic=True
-):
+def standardize_shape(shape):
     if not isinstance(shape, tuple):
         if shape is None:
             raise ValueError("Undefined shapes are not supported.")
@@ -413,23 +424,19 @@ def standardize_shape(
             raise ValueError(f"Cannot convert '{shape}' to a shape.")
         shape = tuple(shape)
 
-    for i, e in enumerate(shape):
-        if i == 0 and allow_dynamic_batch_size and e is None:
-            continue
-        if allow_all_dynamic and e is None:
+    if config.backend() == "torch":
+        # `shape` might be `torch.Size`. We need to convert the items in it to
+        # either int or `None`
+        shape = tuple(map(lambda x: int(x) if x is not None else None, shape))
+
+    for e in shape:
+        if e is None:
             continue
         if not isinstance(e, int):
-            msg = (
+            raise ValueError(
                 f"Cannot convert '{shape}' to a shape. "
                 f"Found invalid entry '{e}'. "
             )
-            if not allow_dynamic_batch_size and e is None:
-                msg += (
-                    "Dynamic shapes (shapes with `None` entries) "
-                    f"are not allowed with the {config.backend()} "
-                    "backend."
-                )
-            raise ValueError(msg)
         if e < 0:
             raise ValueError(
                 f"Cannot convert '{shape}' to a shape. "

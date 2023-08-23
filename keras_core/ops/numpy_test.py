@@ -3,6 +3,7 @@ from tensorflow.python.ops.numpy_ops import np_config
 
 from keras_core import backend
 from keras_core import testing
+from keras_core.backend.common import standardize_dtype
 from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.ops import numpy as knp
 
@@ -245,6 +246,7 @@ class NumpyTwoInputOpsDynamicShapeTest(testing.TestCase):
         x = KerasTensor([None, 1])
         y = KerasTensor([None, 3])
         self.assertEqual(knp.where(condition, x, y).shape, (2, None, 3))
+        self.assertEqual(knp.where(condition).shape, (2, None, 1))
 
     def test_floordiv(self):
         x = KerasTensor((None, 3))
@@ -255,6 +257,32 @@ class NumpyTwoInputOpsDynamicShapeTest(testing.TestCase):
         x = KerasTensor((None, 3))
         y = KerasTensor((2, None))
         self.assertEqual(knp.logical_xor(x, y).shape, (2, 3))
+
+    def test_shape_equal_basic_equality(self):
+        x = KerasTensor([3, 4]).shape
+        y = KerasTensor([3, 4]).shape
+        self.assertTrue(knp.shape_equal(x, y))
+        y = KerasTensor([3, 5]).shape
+        self.assertFalse(knp.shape_equal(x, y))
+
+    def test_shape_equal_allow_none(self):
+        x = KerasTensor([3, 4, None]).shape
+        y = KerasTensor([3, 4, 5]).shape
+        self.assertTrue(knp.shape_equal(x, y, allow_none=True))
+        self.assertFalse(knp.shape_equal(x, y, allow_none=False))
+
+    def test_shape_equal_different_shape_lengths(self):
+        x = KerasTensor([3, 4]).shape
+        y = KerasTensor([3, 4, 5]).shape
+        self.assertFalse(knp.shape_equal(x, y))
+
+    def test_shape_equal_ignore_axes(self):
+        x = KerasTensor([3, 4, 5]).shape
+        y = KerasTensor([3, 6, 5]).shape
+        self.assertTrue(knp.shape_equal(x, y, axis=1))
+        y = KerasTensor([3, 6, 7]).shape
+        self.assertTrue(knp.shape_equal(x, y, axis=(1, 2)))
+        self.assertFalse(knp.shape_equal(x, y, axis=1))
 
 
 class NumpyTwoInputOpsStaticShapeTest(testing.TestCase):
@@ -639,6 +667,7 @@ class NumpyTwoInputOpsStaticShapeTest(testing.TestCase):
         x = KerasTensor([2, 3])
         y = KerasTensor([2, 3])
         self.assertEqual(knp.where(condition, x, y).shape, (2, 3))
+        self.assertAllEqual(knp.where(condition).shape, (2, 3))
 
     def test_floordiv(self):
         x = KerasTensor((2, 3))
@@ -659,6 +688,17 @@ class NumpyTwoInputOpsStaticShapeTest(testing.TestCase):
             x = KerasTensor([2, 3])
             y = KerasTensor([2, 3, 4])
             knp.logical_xor(x, y)
+
+    def test_digitize(self):
+        x = KerasTensor((2, 3))
+        bins = KerasTensor((3,))
+        self.assertEqual(knp.digitize(x, bins).shape, (2, 3))
+        self.assertTrue(knp.digitize(x, bins).dtype == "int32")
+
+        with self.assertRaises(ValueError):
+            x = KerasTensor([2, 3])
+            bins = KerasTensor([2, 3, 4])
+            knp.digitize(x, bins)
 
 
 class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
@@ -754,13 +794,25 @@ class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
         x = KerasTensor([None, 3])
         self.assertEqual(knp.arccos(x).shape, (None, 3))
 
+    def test_arccosh(self):
+        x = KerasTensor([None, 3])
+        self.assertEqual(knp.arccosh(x).shape, (None, 3))
+
     def test_arcsin(self):
         x = KerasTensor([None, 3])
         self.assertEqual(knp.arcsin(x).shape, (None, 3))
 
+    def test_arcsinh(self):
+        x = KerasTensor([None, 3])
+        self.assertEqual(knp.arcsinh(x).shape, (None, 3))
+
     def test_arctan(self):
         x = KerasTensor([None, 3])
         self.assertEqual(knp.arctan(x).shape, (None, 3))
+
+    def test_arctanh(self):
+        x = KerasTensor([None, 3])
+        self.assertEqual(knp.arctanh(x).shape, (None, 3))
 
     def test_argmax(self):
         x = KerasTensor([None, 3])
@@ -854,6 +906,10 @@ class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
     def test_cos(self):
         x = KerasTensor([None, 3])
         self.assertEqual(knp.cos(x).shape, (None, 3))
+
+    def test_cosh(self):
+        x = KerasTensor([None, 3])
+        self.assertEqual(knp.cosh(x).shape, (None, 3))
 
     def test_count_nonzero(self):
         x = KerasTensor([None, 3])
@@ -1095,6 +1151,10 @@ class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
         x = KerasTensor([None, 3])
         self.assertEqual(knp.sin(x).shape, (None, 3))
 
+    def test_sinh(self):
+        x = KerasTensor([None, 3])
+        self.assertEqual(knp.sinh(x).shape, (None, 3))
+
     def test_size(self):
         x = KerasTensor([None, 3])
         self.assertEqual(knp.size(x).shape, ())
@@ -1136,6 +1196,10 @@ class NumpyOneInputOpsDynamicShapeTest(testing.TestCase):
     def test_tan(self):
         x = KerasTensor([None, 3])
         self.assertEqual(knp.tan(x).shape, (None, 3))
+
+    def test_tanh(self):
+        x = KerasTensor([None, 3])
+        self.assertEqual(knp.tanh(x).shape, (None, 3))
 
     def test_tile(self):
         x = KerasTensor([None, 3])
@@ -1227,13 +1291,25 @@ class NumpyOneInputOpsStaticShapeTest(testing.TestCase):
         x = KerasTensor([2, 3])
         self.assertEqual(knp.arccos(x).shape, (2, 3))
 
+    def test_arccosh(self):
+        x = KerasTensor([2, 3])
+        self.assertEqual(knp.arccosh(x).shape, (2, 3))
+
     def test_arcsin(self):
         x = KerasTensor([2, 3])
         self.assertEqual(knp.arcsin(x).shape, (2, 3))
 
+    def test_arcsinh(self):
+        x = KerasTensor([2, 3])
+        self.assertEqual(knp.arcsinh(x).shape, (2, 3))
+
     def test_arctan(self):
         x = KerasTensor([2, 3])
         self.assertEqual(knp.arctan(x).shape, (2, 3))
+
+    def test_arctanh(self):
+        x = KerasTensor([2, 3])
+        self.assertEqual(knp.arctanh(x).shape, (2, 3))
 
     def test_argmax(self):
         x = KerasTensor([2, 3])
@@ -1296,6 +1372,10 @@ class NumpyOneInputOpsStaticShapeTest(testing.TestCase):
     def test_cos(self):
         x = KerasTensor([2, 3])
         self.assertEqual(knp.cos(x).shape, (2, 3))
+
+    def test_cosh(self):
+        x = KerasTensor([2, 3])
+        self.assertEqual(knp.cosh(x).shape, (2, 3))
 
     def test_count_nonzero(self):
         x = KerasTensor([2, 3])
@@ -1532,6 +1612,10 @@ class NumpyOneInputOpsStaticShapeTest(testing.TestCase):
         x = KerasTensor([2, 3])
         self.assertEqual(knp.sin(x).shape, (2, 3))
 
+    def test_sinh(self):
+        x = KerasTensor([2, 3])
+        self.assertEqual(knp.sinh(x).shape, (2, 3))
+
     def test_size(self):
         x = KerasTensor([2, 3])
         self.assertEqual(knp.size(x).shape, ())
@@ -1578,6 +1662,10 @@ class NumpyOneInputOpsStaticShapeTest(testing.TestCase):
     def test_tan(self):
         x = KerasTensor([2, 3])
         self.assertEqual(knp.tan(x).shape, (2, 3))
+
+    def test_tanh(self):
+        x = KerasTensor([2, 3])
+        self.assertEqual(knp.tanh(x).shape, (2, 3))
 
     def test_tile(self):
         x = KerasTensor([2, 3])
@@ -2091,6 +2179,42 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         y = np.array([4, 5, 6])
         self.assertAllClose(knp.where(x > 1, x, y), np.where(x > 1, x, y))
         self.assertAllClose(knp.Where()(x > 1, x, y), np.where(x > 1, x, y))
+        self.assertAllClose(knp.where(x > 1), np.where(x > 1))
+        self.assertAllClose(knp.Where()(x > 1), np.where(x > 1))
+
+    def test_digitize(self):
+        x = np.array([0.0, 1.0, 3.0, 1.6])
+        bins = np.array([0.0, 3.0, 4.5, 7.0])
+        self.assertAllClose(knp.digitize(x, bins), np.digitize(x, bins))
+        self.assertAllClose(knp.Digitize()(x, bins), np.digitize(x, bins))
+        self.assertTrue(
+            standardize_dtype(knp.digitize(x, bins).dtype) == "int32"
+        )
+        self.assertTrue(
+            standardize_dtype(knp.Digitize()(x, bins).dtype) == "int32"
+        )
+
+        x = np.array([0.2, 6.4, 3.0, 1.6])
+        bins = np.array([0.0, 1.0, 2.5, 4.0, 10.0])
+        self.assertAllClose(knp.digitize(x, bins), np.digitize(x, bins))
+        self.assertAllClose(knp.Digitize()(x, bins), np.digitize(x, bins))
+        self.assertTrue(
+            standardize_dtype(knp.digitize(x, bins).dtype) == "int32"
+        )
+        self.assertTrue(
+            standardize_dtype(knp.Digitize()(x, bins).dtype) == "int32"
+        )
+
+        x = np.array([1, 4, 10, 15])
+        bins = np.array([4, 10, 14, 15])
+        self.assertAllClose(knp.digitize(x, bins), np.digitize(x, bins))
+        self.assertAllClose(knp.Digitize()(x, bins), np.digitize(x, bins))
+        self.assertTrue(
+            standardize_dtype(knp.digitize(x, bins).dtype) == "int32"
+        )
+        self.assertTrue(
+            standardize_dtype(knp.Digitize()(x, bins).dtype) == "int32"
+        )
 
 
 class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
@@ -2266,17 +2390,41 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
             np.transpose(x, axes=(1, 0, 3, 2, 4)),
         )
 
-    def test_arcos(self):
+    def test_arccos(self):
         x = np.array([[1, 0.5, -0.7], [0.9, 0.2, -1]])
         self.assertAllClose(knp.arccos(x), np.arccos(x))
 
         self.assertAllClose(knp.Arccos()(x), np.arccos(x))
+
+    def test_arccosh(self):
+        x = np.array([[1, 0.5, -0.7], [0.9, 0.2, -1]])
+        self.assertAllClose(knp.arccosh(x), np.arccosh(x))
+
+        self.assertAllClose(knp.Arccosh()(x), np.arccosh(x))
 
     def test_arcsin(self):
         x = np.array([[1, 0.5, -0.7], [0.9, 0.2, -1]])
         self.assertAllClose(knp.arcsin(x), np.arcsin(x))
 
         self.assertAllClose(knp.Arcsin()(x), np.arcsin(x))
+
+    def test_arcsinh(self):
+        x = np.array([[1, 0.5, -0.7], [0.9, 0.2, -1]])
+        self.assertAllClose(knp.arcsinh(x), np.arcsinh(x))
+
+        self.assertAllClose(knp.Arcsinh()(x), np.arcsinh(x))
+
+    def test_arctan(self):
+        x = np.array([[1, 0.5, -0.7], [0.9, 0.2, -1]])
+        self.assertAllClose(knp.arctan(x), np.arctan(x))
+
+        self.assertAllClose(knp.Arctan()(x), np.arctan(x))
+
+    def test_arctanh(self):
+        x = np.array([[1, 0.5, -0.7], [0.9, 0.2, -1]])
+        self.assertAllClose(knp.arctanh(x), np.arctanh(x))
+
+        self.assertAllClose(knp.Arctanh()(x), np.arctanh(x))
 
     def test_argmax(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
@@ -2432,6 +2580,11 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         self.assertAllClose(knp.cos(x), np.cos(x))
         self.assertAllClose(knp.Cos()(x), np.cos(x))
+
+    def test_cosh(self):
+        x = np.array([[1, 2, 3], [3, 2, 1]])
+        self.assertAllClose(knp.cosh(x), np.cosh(x))
+        self.assertAllClose(knp.Cosh()(x), np.cosh(x))
 
     def test_count_nonzero(self):
         x = np.array([[0, 2, 3], [3, 2, 0]])
@@ -2899,6 +3052,11 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         self.assertAllClose(knp.sin(x), np.sin(x))
         self.assertAllClose(knp.Sin()(x), np.sin(x))
 
+    def test_sinh(self):
+        x = np.array([[1, -2, 3], [-3, 2, -1]])
+        self.assertAllClose(knp.sinh(x), np.sinh(x))
+        self.assertAllClose(knp.Sinh()(x), np.sinh(x))
+
     def test_size(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])
         self.assertAllClose(knp.size(x), np.size(x))
@@ -2992,6 +3150,11 @@ class NumpyOneInputOpsCorrectnessTest(testing.TestCase):
         x = np.array([[1, -2, 3], [-3, 2, -1]])
         self.assertAllClose(knp.tan(x), np.tan(x))
         self.assertAllClose(knp.Tan()(x), np.tan(x))
+
+    def test_tanh(self):
+        x = np.array([[1, -2, 3], [-3, 2, -1]])
+        self.assertAllClose(knp.tanh(x), np.tanh(x))
+        self.assertAllClose(knp.Tanh()(x), np.tanh(x))
 
     def test_tile(self):
         x = np.array([[1, 2, 3], [3, 2, 1]])

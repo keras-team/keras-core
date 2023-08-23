@@ -22,6 +22,22 @@ class Relu(Operation):
 
 @keras_core_export(["keras_core.ops.relu", "keras_core.ops.nn.relu"])
 def relu(x):
+    """Rectified linear unit activation function.
+
+    It is defined as `f(x) = max(0, x)`.
+
+    Args:
+        x: Input tensor.
+
+    Returns:
+        A tensor with the same shape as `x`.
+
+    Example:
+
+    >>> x1 = keras_core.ops.convert_to_tensor([-1.0, 0.0, 1.0, 0.2])
+    >>> keras_core.ops.relu(x1)
+    array([0.0, 0.0, 1.0, 0.2], dtype=float32)
+    """
     if any_symbolic_tensors((x,)):
         return Relu().symbolic_call(x)
     return backend.nn.relu(x)
@@ -37,6 +53,22 @@ class Relu6(Operation):
 
 @keras_core_export(["keras_core.ops.relu6", "keras_core.ops.nn.relu6"])
 def relu6(x):
+    """Rectified linear unit activation function with upper bound of 6.
+
+    It is defined as `f(x) = np.clip(x, 0, 6)`.
+
+    Args:
+        x: Input tensor.
+
+    Returns:
+        A tensor with the same shape as `x`.
+
+    Example:
+
+    >>> x = keras_core.ops.convert_to_tensor([-3.0, -2.0, 0.1, 0.2, 6.0, 8.0])
+    >>> keras_core.ops.relu6(x)
+    array([0.0, 0.0, 0.1, 0.2, 6.0, 6.0], dtype=float32)
+    """
     if any_symbolic_tensors((x,)):
         return Relu6().symbolic_call(x)
     return backend.nn.relu6(x)
@@ -52,24 +84,26 @@ class Sigmoid(Operation):
 
 @keras_core_export(["keras_core.ops.sigmoid", "keras_core.ops.nn.sigmoid"])
 def sigmoid(x):
+    """Sigmoid activation function.
+
+    It is defined as `f(x) = 1 / (1 + exp(-x))`.
+
+    Args:
+        x: Input tensor.
+
+    Returns:
+        A tensor with the same shape as `x`.
+
+    Example:
+
+    >>> x = keras_core.ops.convert_to_tensor([-6.0, 1.0, 0.0, 1.0, 6.0])
+    >>> keras_core.ops.sigmoid(x)
+    array([0.00247262, 0.7310586, 0.5, 0.7310586, 0.9975274], dtype=float32)
+
+    """
     if any_symbolic_tensors((x,)):
         return Sigmoid().symbolic_call(x)
     return backend.nn.sigmoid(x)
-
-
-class Tanh(Operation):
-    def call(self, x):
-        return backend.nn.tanh(x)
-
-    def compute_output_spec(self, x):
-        return KerasTensor(x.shape, dtype=x.dtype)
-
-
-@keras_core_export(["keras_core.ops.tanh", "keras_core.ops.nn.tanh"])
-def tanh(x):
-    if any_symbolic_tensors((x,)):
-        return Tanh().symbolic_call(x)
-    return backend.nn.tanh(x)
 
 
 class Softplus(Operation):
@@ -82,6 +116,24 @@ class Softplus(Operation):
 
 @keras_core_export(["keras_core.ops.softplus", "keras_core.ops.nn.softplus"])
 def softplus(x):
+    """Softplus activation function.
+
+    It is defined as `f(x) = log(exp(x) + 1)`, where `log` is the natural
+    logarithm and `exp` is the exponential function.
+
+    Args:
+        x: Input tensor.
+
+    Returns:
+        A tensor with the same shape as `x`.
+
+    Example:
+
+    >>> x = keras_core.ops.convert_to_tensor([-0.555, 0.0, 0.555])
+    >>> keras_core.ops.softplus(x)
+    array([0.45366603, 0.6931472, 1.008666], dtype=float32)
+
+    """
     if any_symbolic_tensors((x,)):
         return Softplus().symbolic_call(x)
     return backend.nn.softplus(x)
@@ -97,6 +149,23 @@ class Softsign(Operation):
 
 @keras_core_export(["keras_core.ops.softsign", "keras_core.ops.nn.softsign"])
 def softsign(x):
+    """Softsign activation function.
+
+    It is defined as `f(x) = x / (abs(x) + 1)`.
+
+    Args:
+        x: Input tensor.
+
+    Returns:
+        A tensor with the same shape as `x`.
+
+    Example:
+
+    >>> x = keras_core.ops.convert_to_tensor([-0.100, -10.0, 1.0, 0.0, 100.0])
+    >>> keras_core.ops.softsign(x)
+    Array([-0.09090909, -0.90909094, 0.5, 0.0, 0.990099], dtype=float32)
+
+    """
     if any_symbolic_tensors((x,)):
         return Softsign().symbolic_call(x)
     return backend.nn.softsign(x)
@@ -110,26 +179,38 @@ class Silu(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
-@keras_core_export(["keras_core.ops.silu", "keras_core.ops.nn.silu"])
+@keras_core_export(
+    [
+        "keras_core.ops.silu",
+        "keras_core.ops.nn.silu",
+        "keras_core.ops.swish",
+        "keras_core.ops.nn.swish",
+    ]
+)
 def silu(x):
+    """Sigmoid Linear Unit (SiLU) activation function, also known as Swish.
+
+    The SiLU activation function is computed by the sigmoid function multiplied
+    by its input. It is defined as `f(x) = x * sigmoid(x)`.
+
+    Args:
+        x: Input tensor.
+
+    Returns:
+        A tensor with the same shape as `x`.
+
+    Example:
+
+    >>> x = keras_core.ops.convert_to_tensor([-6.0, 1.0, 0.0, 1.0, 6.0])
+    >>> keras_core.ops.sigmoid(x)
+    array([0.00247262, 0.7310586, 0.5, 0.7310586, 0.9975274], dtype=float32)
+    >>> keras_core.ops.silu(x)
+    array([-0.0148357, 0.7310586, 0.0, 0.7310586, 5.9851646], dtype=float32)
+
+    """
     if any_symbolic_tensors((x,)):
         return Silu().symbolic_call(x)
     return backend.nn.silu(x)
-
-
-class Swish(Operation):
-    def call(self, x):
-        return backend.nn.swish(x)
-
-    def compute_output_spec(self, x):
-        return KerasTensor(x.shape, dtype=x.dtype)
-
-
-@keras_core_export(["keras_core.ops.swish", "keras_core.ops.nn.swish"])
-def swish(x):
-    if any_symbolic_tensors((x,)):
-        return Swish().symbolic_call(x)
-    return backend.nn.swish(x)
 
 
 class LogSigmoid(Operation):
@@ -147,6 +228,23 @@ class LogSigmoid(Operation):
     ]
 )
 def log_sigmoid(x):
+    """Logarithm of the sigmoid activation function.
+
+    It is defined as `f(x) = log(1 / (1 + exp(-x)))`.
+
+    Args:
+        x: Input tensor.
+
+    Returns:
+        A tensor with the same shape as `x`.
+
+    Example:
+
+    >>> x = keras_core.ops.convert_to_tensor([-0.541391, 0.0, 0.50, 5.0])
+    >>> keras_core.ops.log_sigmoid(x)
+    array([-1.0000418, -0.6931472, -0.474077, -0.00671535], dtype=float32)
+
+    """
     if any_symbolic_tensors((x,)):
         return LogSigmoid().symbolic_call(x)
     return backend.nn.log_sigmoid(x)
@@ -168,6 +266,28 @@ class LeakyRelu(Operation):
     ["keras_core.ops.leaky_relu", "keras_core.ops.nn.leaky_relu"]
 )
 def leaky_relu(x, negative_slope=0.2):
+    """Leaky version of a Rectified Linear Unit activation function.
+
+    It allows a small gradient when the unit is not active, it is defined as:
+
+    `f(x) = alpha * x for x < 0` or `f(x) = x for x >= 0`.
+
+    Args:
+        x: Input tensor.
+        negative_slope: Slope of the activation function at x < 0.
+            Defaults to `0.2`.
+
+    Returns:
+        A tensor with the same shape as `x`.
+
+    Example:
+
+    >>> x = np.array([-1., 0., 1.])
+    >>> x_leaky_relu = keras_core.ops.leaky_relu(x)
+    >>> print(x_leaky_relu)
+    array([-0.2,  0. ,  1. ], shape=(3,), dtype=float64)
+
+    """
     if any_symbolic_tensors((x,)):
         return LeakyRelu(negative_slope).symbolic_call(x)
     return backend.nn.leaky_relu(x, negative_slope=negative_slope)
@@ -188,6 +308,26 @@ class HardSigmoid(Operation):
     ]
 )
 def hard_sigmoid(x):
+    """Hard sigmoid activation function.
+
+    It is defined as:
+
+    `0 if x < -2.5`, `1 if x > 2.5`, `(0.2 * x) + 0.5 if -2.5 <= x <= 2.5`.
+
+    Args:
+        x: Input tensor.
+
+    Returns:
+        A tensor with the same shape as `x`.
+
+    Example:
+
+    >>> x = np.array([-1., 0., 1.])
+    >>> x_hard_sigmoid = keras_core.ops.hard_sigmoid(x)
+    >>> print(x_hard_sigmoid)
+    array([0.3, 0.5, 0.7], shape=(3,), dtype=float64)
+
+    """
     if any_symbolic_tensors((x,)):
         return HardSigmoid().symbolic_call(x)
     return backend.nn.hard_sigmoid(x)
@@ -207,6 +347,27 @@ class Elu(Operation):
 
 @keras_core_export(["keras_core.ops.elu", "keras_core.ops.nn.elu"])
 def elu(x, alpha=1.0):
+    """Exponential Linear Unit activation function.
+
+    It is defined as:
+
+    `f(x) =  alpha * (exp(x) - 1.) for x < 0`, `f(x) = x for x >= 0`.
+
+    Args:
+        x: Input tensor.
+        alpha: A scalar, slope of positive section. Defaults to `1.0`.
+
+    Returns:
+        A tensor with the same shape as `x`.
+
+    Example:
+
+    >>> x = np.array([-1., 0., 1.])
+    >>> x_elu = keras_core.ops.elu(x)
+    >>> print(x_elu)
+    array([-0.63212055, 0., 1.], shape=(3,), dtype=float64)
+
+    """
     if any_symbolic_tensors((x,)):
         return Elu(alpha).symbolic_call(x)
     return backend.nn.elu(x, alpha=alpha)
@@ -222,6 +383,27 @@ class Selu(Operation):
 
 @keras_core_export(["keras_core.ops.selu", "keras_core.ops.nn.selu"])
 def selu(x):
+    """Scaled Exponential Linear Unit (SELU) activation function.
+
+    It is defined as:
+
+    `f(x) =  scale * alpha * (exp(x) - 1.) for x < 0`,
+    `f(x) = scale * x for x >= 0`.
+
+    Args:
+        x: Input tensor.
+
+    Returns:
+        A tensor with the same shape as `x`.
+
+    Example:
+
+    >>> x = np.array([-1., 0., 1.])
+    >>> x_selu = keras_core.ops.selu(x)
+    >>> print(x_selu)
+    array([-1.11133055, 0., 1.05070098], shape=(3,), dtype=float64)
+
+    """
     if any_symbolic_tensors((x,)):
         return Selu().symbolic_call(x)
     return backend.nn.selu(x)
@@ -241,15 +423,39 @@ class Gelu(Operation):
 
 @keras_core_export(["keras_core.ops.gelu", "keras_core.ops.nn.gelu"])
 def gelu(x, approximate=True):
+    """Gaussian Error Linear Unit (GELU) activation function.
+
+    If `approximate` is `True`, it is defined as:
+    `f(x) = 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x^3)))`
+
+    Or if `approximate` is `False`, it is defined as:
+    `f(x) = x * P(X <= x) = 0.5 * x * (1 + erf(x / sqrt(2)))`,
+    where `P(X) ~ N(0, 1)`.
+
+    Args:
+        x: Input tensor.
+        approximate: Approximate version of GELU activation. Defaults to `True`.
+
+    Returns:
+        A tensor with the same shape as `x`.
+
+    Example:
+
+    >>> x = np.array([-1., 0., 1.])
+    >>> x_gelu = keras_core.ops.gelu(x)
+    >>> print(x_gelu)
+    array([-0.15865525, 0., 0.84134475], shape=(3,), dtype=float64)
+
+    """
     if any_symbolic_tensors((x,)):
         return Gelu(approximate).symbolic_call(x)
     return backend.nn.gelu(x, approximate)
 
 
 class Softmax(Operation):
-    def __init__(self, axis=None):
+    def __init__(self, axis=-1):
         super().__init__()
-        self.axis = axis if axis is not None else -1
+        self.axis = axis
 
     def call(self, x):
         return backend.nn.softmax(x, axis=self.axis)
@@ -259,16 +465,42 @@ class Softmax(Operation):
 
 
 @keras_core_export(["keras_core.ops.softmax", "keras_core.ops.nn.softmax"])
-def softmax(x, axis=None):
+def softmax(x, axis=-1):
+    """Softmax activation function.
+
+    The elements of the output vector lie within the range `(0, 1)`, and their
+    total sum is exactly 1 (excluding the floating point rounding error).
+
+    Each vector is processed independently. The `axis` argument specifies the
+    axis along which the function is applied within the input.
+
+    It is defined as:
+    `f(x) = exp(x) / sum(exp(x))`
+
+    Args:
+        x: Input tensor.
+        axis: Integer, axis along which the softmax is applied.
+
+    Returns:
+        A tensor with the same shape as `x`.
+
+    Example:
+
+    >>> x = np.array([-1., 0., 1.])
+    >>> x_softmax = keras_core.ops.softmax(x)
+    >>> print(x_softmax)
+    array([0.09003057, 0.24472847, 0.66524096], shape=(3,), dtype=float64)
+
+    """
     if any_symbolic_tensors((x,)):
         return Softmax(axis).symbolic_call(x)
     return backend.nn.softmax(x, axis=axis)
 
 
 class LogSoftmax(Operation):
-    def __init__(self, axis=None):
+    def __init__(self, axis=-1):
         super().__init__()
-        self.axis = axis if axis is not None else -1
+        self.axis = axis
 
     def call(self, x):
         return backend.nn.log_softmax(x, axis=self.axis)
@@ -283,7 +515,28 @@ class LogSoftmax(Operation):
         "keras_core.ops.nn.log_softmax",
     ]
 )
-def log_softmax(x, axis=None):
+def log_softmax(x, axis=-1):
+    """Log-softmax activation function.
+
+    It is defined as:
+    `f(x) = x - max(x) - log(sum(exp(x - max(x))))`
+
+    Args:
+        x: Input tensor.
+        axis: Integer, axis along which the log-softmax is applied.
+            Defaults to `-1`.
+
+    Returns:
+        A tensor with the same shape as `x`.
+
+    Example:
+
+    >>> x = np.array([-1., 0., 1.])
+    >>> x_log_softmax = keras_core.ops.log_softmax(x)
+    >>> print(x_log_softmax)
+    array([-2.40760596, -1.40760596, -0.40760596], shape=(3,), dtype=float64)
+
+    """
     if any_symbolic_tensors((x,)):
         return LogSoftmax(axis).symbolic_call(x)
     return backend.nn.log_softmax(x, axis=axis)
@@ -1242,6 +1495,30 @@ class MultiHot(Operation):
     ]
 )
 def multi_hot(inputs, num_tokens, axis=-1, dtype=None):
+    """Encodes integer labels as multi-hot vectors.
+
+    This function encodes integer labels as multi-hot vectors, where each label
+    is mapped to a binary value in the resulting vector.
+
+    Args:
+        inputs: Tensor of integer labels to be converted to multi-hot vectors.
+        num_tokens: Integer, the total number of unique tokens or classes.
+        axis: (optional) Axis along which the multi-hot encoding should be
+            added. Default is -1, which corresponds to the last dimension.
+        dtype: (optional) The data type of the resulting tensor. Default
+            is backend's float type.
+
+    Returns:
+        Tensor: The multi-hot encoded tensor.
+
+
+    Example:
+
+    >>> data = keras_core.ops.convert_to_tensor([0, 4])
+    >>> keras_core.ops.multi_hot(data, num_tokens=5)
+    array([1.0, 0.0, 0.0, 0.0, 1.0], dtype=float32)
+
+    """
     if any_symbolic_tensors((inputs,)):
         return MultiHot(num_tokens, axis, dtype).symbolic_call(inputs)
 
