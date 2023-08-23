@@ -682,7 +682,7 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         x = np.array([-1, 0, 1, 2, 3], dtype=np.float32)
         self.assertAllClose(
             knn.gelu(x, approximate=False),
-            [-0.1587, 0.0000, 0.8413, 1.9545, 2.9960],
+            [-0.158655, 0.0, 0.841345, 1.9545, 2.99595],
         )
 
     def test_softmax(self):

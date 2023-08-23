@@ -77,7 +77,7 @@ def selu(x):
 
 
 def gelu(x, approximate=True):
-    x = keras_core.ops.convert_to_tensor(x)
+    x = convert_to_tensor(x)
     gelu_layer = tnn.GELU(approximate="tanh" if approximate else "none")
     return gelu_layer(x)
 
