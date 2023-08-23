@@ -494,8 +494,6 @@ def softmax(x, axis=-1):
     """
     if any_symbolic_tensors((x,)):
         return Softmax(axis).symbolic_call(x)
-    if isinstance(x, list):
-        x = KerasTensor(x)
     if isinstance(axis, tuple):
         original_shape = x.shape
         new_shape = []
