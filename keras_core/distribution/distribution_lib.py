@@ -235,7 +235,7 @@ class DataParallel(Distribution):
         1D mesh.
 
         When both `mesh` and `devices` are absent, then `list_devices()`
-        will be used to detect any available devices and create a 1D mesh from 
+        will be used to detect any available devices and create a 1D mesh from
         them.
         """
         if device_mesh:
@@ -259,7 +259,7 @@ class DataParallel(Distribution):
                 "Expect the input mesh to be 1D, but received "
                 "mesh.devices.ndim=%d. "
                 "The first axis will be used for data-parallel sharding.",
-                device_mesh.devices.ndim
+                device_mesh.devices.ndim,
             )
 
     def _initialize_mesh_from_devices(self, devices):
@@ -267,7 +267,8 @@ class DataParallel(Distribution):
         device_mesh = DeviceMesh(
             shape=devices.shape,
             axis_names=[DEFAULT_BATCH_DIM_NAME],
-            devices=devices)
+            devices=devices,
+        )
         super().__init__(device_mesh)
 
     def _initialize_mesh_from_list_devices(self):
@@ -275,18 +276,20 @@ class DataParallel(Distribution):
         device_mesh = DeviceMesh(
             shape=devices.shape,
             axis_names=[DEFAULT_BATCH_DIM_NAME],
-            devices=devices)
+            devices=devices,
+        )
         super().__init__(device_mesh)
 
     def get_data_layout(self, data_shape):
         data_shard_spec = [None] * len(data_shape)
-        data_shard_spec[0] = self._batch_dim_name   # Shard on the first dim
+        data_shard_spec[0] = self._batch_dim_name  # Shard on the first dim
         return TensorLayout(data_shard_spec, self.device_mesh)
 
     def get_variable_layout(self, variable_shape, variable_path):
         del variable_path
-        variable_shard_spec =  [None] * len(variable_shape)
+        variable_shard_spec = [None] * len(variable_shape)
         return TensorLayout(variable_shard_spec, self.device_mesh)
+
 
 def distribution():
     """Retrieve the current distribution from global context."""

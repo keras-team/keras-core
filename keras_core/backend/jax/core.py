@@ -22,7 +22,8 @@ class Variable(KerasVariable):
         # due to circualr dependency.
         distribution = global_state.get_global_attribute("distribution")
         value = distribution_lib.distribute_variable(
-            value, self.path, distribution)
+            value, self.path, distribution
+        )
         self._value = value
 
     def _direct_assign(self, value):

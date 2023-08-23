@@ -71,7 +71,8 @@ def distribute_data(data, distribution):
         return data
 
     jax_sharding = jax.tree_util.tree_map(
-        lambda d: to_jax_layout(distribution.get_data_layout(d.shape)), data)
+        lambda d: to_jax_layout(distribution.get_data_layout(d.shape)), data
+    )
     return jax.device_put(data, jax_sharding)
 
 
@@ -85,12 +86,13 @@ def distribute_variable(value, variable_path, distribution):
         distribution: `keras_core.distribution.Distribution` instance. Could be
             `None`.
     Returns:
-        Distributed variable. In the case that `distribution` is None, 
+        Distributed variable. In the case that `distribution` is None,
         the original value will be returned.
     """
     if distribution is None:
         return value
 
     variable_sharding = to_jax_layout(
-        distribution.get_variable_layout(value.shape, variable_path))
+        distribution.get_variable_layout(value.shape, variable_path)
+    )
     return jax.device_put(value, variable_sharding)

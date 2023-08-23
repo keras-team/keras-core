@@ -101,7 +101,6 @@ class TensorLayoutTest(testing.TestCase):
 
 
 class DistributionTest(testing.TestCase):
-
     def setUp(self):
         super().setUp()
         devices = ["CPU:{i}" for i in range(8)]
@@ -109,7 +108,8 @@ class DistributionTest(testing.TestCase):
         axis_names = ["batch", "model"]
 
         self.device_mesh = distribution_lib.DeviceMesh(
-            shape, axis_names, devices)
+            shape, axis_names, devices
+        )
 
     def test_init_with_device_mesh(self):
         distribution = distribution_lib.Distribution(self.device_mesh)
@@ -138,11 +138,13 @@ class DataParallelDistributionTest(testing.TestCase):
         axis_names = ["data"]
 
         self.device_mesh = distribution_lib.DeviceMesh(
-            shape, axis_names, self.devices)
+            shape, axis_names, self.devices
+        )
 
     def test_create_with_device_mesh(self):
         distribution = distribution_lib.DataParallel(
-            device_mesh=self.device_mesh)
+            device_mesh=self.device_mesh
+        )
 
         device_mesh = distribution.device_mesh
         self.assertEqual(len(device_mesh.devices), 8)
@@ -156,8 +158,11 @@ class DataParallelDistributionTest(testing.TestCase):
         self.assertEqual(device_mesh.axis_names, ["batch"])
         self.assertEqual(distribution._batch_dim_name, "batch")
 
-    @mock.patch.object(distribution_lib, 'list_devices',
-                       return_value=["CPU:{i}" for i in range(8)])
+    @mock.patch.object(
+        distribution_lib,
+        "list_devices",
+        return_value=["CPU:{i}" for i in range(8)],
+    )
     def test_create_with_list_devices(self, mock_list_devices):
         distribution = distribution_lib.DataParallel()
         mock_list_devices.assert_called_once()
@@ -169,7 +174,8 @@ class DataParallelDistributionTest(testing.TestCase):
 
     def test_get_data_layout(self):
         distribution = distribution_lib.DataParallel(
-            device_mesh=self.device_mesh)
+            device_mesh=self.device_mesh
+        )
 
         data = np.arange(16).reshape((4, 2, 2))
         data_layout = distribution.get_data_layout(data.shape)
@@ -178,7 +184,8 @@ class DataParallelDistributionTest(testing.TestCase):
 
     def test_get_variable_layout(self):
         distribution = distribution_lib.DataParallel(
-            device_mesh=self.device_mesh)
+            device_mesh=self.device_mesh
+        )
 
         weights = np.arange(16).reshape((8, 2))
         variable_layout = distribution.get_variable_layout(weights.shape, "")
@@ -255,5 +262,5 @@ class JaxDistributionLibTest(testing.TestCase):
         labels = np.random.normal(size=(32, 10))
 
         with distribution.scope():
-            model.compile(loss='mse')
+            model.compile(loss="mse")
             model.fit(inputs, labels)
