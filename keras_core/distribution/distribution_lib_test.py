@@ -240,11 +240,8 @@ class JaxDistributionLibTest(testing.TestCase):
             backend_dlib.to_jax_layout(layout)
 
     def test_e2e_model(self):
-        shape = (8,)
-        axis_names = ["batch"]
-
-        mesh = distribution_lib.DeviceMesh(shape, axis_names)
-        distribution = distribution_lib.DataParallel(device_mesh=mesh)
+        distribution = distribution_lib.DataParallel(
+            devices=backend_dlib.list_devices())
 
         with distribution.scope():
             inputs = layers.Input(shape=[28, 28, 1])
