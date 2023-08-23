@@ -16,17 +16,18 @@ class TorchModuleWarpper(Layer):
     modules.
 
     Args:
-        module: torch.nn.Module, A vanilla or lazy PyTorch neural network module.
+        module: torch.nn.Module, A vanilla or lazy PyTorch neural network
+            module.
         name: The name of the layer (string).
 
     References:
-    - [PyTorch docs for `torch.nn.Module`](https://pytorch.org/docs/stable/generated/torch.nn.Module.html)
-    - [PyTorch docs for `LazyModuleMixin`](https://pytorch.org/docs/stable/generated/torch.nn.modules.lazy.LazyModuleMixin.html)
+    - [PyTorch docs for `torch.nn.Module`](https://pytorch.org/docs/stable/generated/torch.nn.Module.html) # noqa: E501
+    - [PyTorch docs for `LazyModuleMixin`](https://pytorch.org/docs/stable/generated/torch.nn.modules.lazy.LazyModuleMixin.html) # noqa: E501
 
     Examples:
 
-    Here's an example of how the `TorchModuleWarpper` can be used with vanilla PyTorch
-    modules.
+    Here's an example of how the `TorchModuleWarpper` can be used with vanilla
+    PyTorch modules.
 
     ```python
     import torch.nn as nn
