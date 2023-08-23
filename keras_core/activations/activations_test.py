@@ -39,6 +39,29 @@ class ActivationsTest(testing.TestCase):
             expected[i, :, :] = _ref_softmax(x[i, :, :])
         self.assertAllClose(result, expected, rtol=1e-05)
 
+    def test_softmax_1d(self):
+        x = np.random.random(5)
+        result = activations.softmax(x)
+        expected = _ref_softmax(x)
+        self.assertAllClose(result, expected, rtol=1e-05)
+
+    def test_softmax_higher_dim(self):
+        x = np.random.random((2, 3, 4, 5))
+        result = activations.softmax(x, axis=(2, 3))
+        expected = np.zeros((2, 3, 4, 5))
+        for i in range(2):
+            for j in range(3):
+                expected[i, j, :, :] = _ref_softmax(x[i, j, :, :])
+        self.assertAllClose(result, expected, rtol=1e-05)
+
+    def test_softmax_negative_axis(self):
+        x = np.random.random((2, 5))
+        result = activations.softmax(x, axis=-1)
+        expected = np.zeros((2, 5))
+        for i in range(2):
+            expected[i, :] = _ref_softmax(x[i, :])
+        self.assertAllClose(result, expected, rtol=1e-05)
+
     def test_temporal_softmax(self):
         x = np.random.random((2, 2, 3)) * 10
         result = activations.softmax(x[np.newaxis, :])[0]
