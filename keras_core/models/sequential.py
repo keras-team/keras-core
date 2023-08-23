@@ -5,6 +5,7 @@ import tree
 from keras_core.api_export import keras_core_export
 from keras_core.backend.common import global_state
 from keras_core.layers.core.input_layer import InputLayer
+from keras_core.layers.layer import Layer
 from keras_core.legacy.saving import saving_utils
 from keras_core.legacy.saving import serialization as legacy_serialization
 from keras_core.models.functional import Functional
@@ -86,6 +87,12 @@ class Sequential(Model):
             origin_layer = layer._keras_history[0]
             if isinstance(origin_layer, InputLayer):
                 layer = origin_layer
+        if not isinstance(layer, Layer):
+            raise ValueError(
+                "Only instances of `keras_core.Layer` can be "
+                f"added to a Sequential model. Received: {layer} "
+                f"(of type {type(layer)})"
+            )
         if not self._is_layer_name_unique(layer):
             raise ValueError(
                 "All layers added to a Sequential model "
@@ -254,6 +261,15 @@ class Sequential(Model):
         raise ValueError(
             f"Sequential model '{self.name}' has no defined outputs yet."
         )
+
+    @property
+    def input_dtype(self):
+        # Sequential.__call__ will try to convert its inputs
+        # to the dtype expected by its input layer, if any.
+        layers = self._layers
+        if layers and isinstance(layers[0], InputLayer):
+            return layers[0].dtype
+        return super().input_dtype
 
     def _is_layer_name_unique(self, layer):
         for ref_layer in self._layers:

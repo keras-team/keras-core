@@ -246,6 +246,7 @@ class NumpyTwoInputOpsDynamicShapeTest(testing.TestCase):
         x = KerasTensor([None, 1])
         y = KerasTensor([None, 3])
         self.assertEqual(knp.where(condition, x, y).shape, (2, None, 3))
+        self.assertEqual(knp.where(condition).shape, (2, None, 1))
 
     def test_floordiv(self):
         x = KerasTensor((None, 3))
@@ -256,6 +257,32 @@ class NumpyTwoInputOpsDynamicShapeTest(testing.TestCase):
         x = KerasTensor((None, 3))
         y = KerasTensor((2, None))
         self.assertEqual(knp.logical_xor(x, y).shape, (2, 3))
+
+    def test_shape_equal_basic_equality(self):
+        x = KerasTensor([3, 4]).shape
+        y = KerasTensor([3, 4]).shape
+        self.assertTrue(knp.shape_equal(x, y))
+        y = KerasTensor([3, 5]).shape
+        self.assertFalse(knp.shape_equal(x, y))
+
+    def test_shape_equal_allow_none(self):
+        x = KerasTensor([3, 4, None]).shape
+        y = KerasTensor([3, 4, 5]).shape
+        self.assertTrue(knp.shape_equal(x, y, allow_none=True))
+        self.assertFalse(knp.shape_equal(x, y, allow_none=False))
+
+    def test_shape_equal_different_shape_lengths(self):
+        x = KerasTensor([3, 4]).shape
+        y = KerasTensor([3, 4, 5]).shape
+        self.assertFalse(knp.shape_equal(x, y))
+
+    def test_shape_equal_ignore_axes(self):
+        x = KerasTensor([3, 4, 5]).shape
+        y = KerasTensor([3, 6, 5]).shape
+        self.assertTrue(knp.shape_equal(x, y, axis=1))
+        y = KerasTensor([3, 6, 7]).shape
+        self.assertTrue(knp.shape_equal(x, y, axis=(1, 2)))
+        self.assertFalse(knp.shape_equal(x, y, axis=1))
 
 
 class NumpyTwoInputOpsStaticShapeTest(testing.TestCase):
@@ -640,6 +667,7 @@ class NumpyTwoInputOpsStaticShapeTest(testing.TestCase):
         x = KerasTensor([2, 3])
         y = KerasTensor([2, 3])
         self.assertEqual(knp.where(condition, x, y).shape, (2, 3))
+        self.assertAllEqual(knp.where(condition).shape, (2, 3))
 
     def test_floordiv(self):
         x = KerasTensor((2, 3))
@@ -2151,6 +2179,8 @@ class NumpyTwoInputOpsCorretnessTest(testing.TestCase):
         y = np.array([4, 5, 6])
         self.assertAllClose(knp.where(x > 1, x, y), np.where(x > 1, x, y))
         self.assertAllClose(knp.Where()(x > 1, x, y), np.where(x > 1, x, y))
+        self.assertAllClose(knp.where(x > 1), np.where(x > 1))
+        self.assertAllClose(knp.Where()(x > 1), np.where(x > 1))
 
     def test_digitize(self):
         x = np.array([0.0, 1.0, 3.0, 1.6])

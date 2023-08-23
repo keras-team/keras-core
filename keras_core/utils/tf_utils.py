@@ -108,7 +108,7 @@ def encode_categorical_inputs(
             bincounts.dense_shape,
         )
     else:
-        return tf.multiply(bincounts, idf_weights)
+        return tf.multiply(tf.cast(bincounts, idf_weights.dtype), idf_weights)
 
 
 def get_tensor_spec(t, dynamic_batch=False, name=None):
@@ -135,3 +135,12 @@ def get_tensor_spec(t, dynamic_batch=False, name=None):
     shape = tf.TensorShape(shape_list)
     spec._shape = shape
     return spec
+
+
+def ensure_tensor(inputs, dtype=None):
+    """Ensures the input is a Tensor, SparseTensor or RaggedTensor."""
+    if not isinstance(inputs, (tf.Tensor, tf.SparseTensor, tf.RaggedTensor)):
+        inputs = tf.convert_to_tensor(inputs, dtype)
+    if dtype is not None and inputs.dtype != dtype:
+        inputs = tf.cast(inputs, dtype)
+    return inputs

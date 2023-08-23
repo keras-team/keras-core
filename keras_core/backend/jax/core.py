@@ -10,14 +10,18 @@ from keras_core.backend.common import KerasVariable
 from keras_core.backend.common import standardize_dtype
 from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.backend.common.stateless_scope import StatelessScope
+from keras_core.backend.jax import distribution
 from keras_core.utils.nest import pack_sequence_as
-
-DYNAMIC_SHAPES_OK = True
 
 
 class Variable(KerasVariable):
     def _initialize(self, value):
-        self._value = jnp.array(value, dtype=self._dtype)
+        value = jnp.array(value, dtype=self._dtype)
+        if distribution.get_global_distribution() is not None:
+            value = distribution.get_global_distribution().distribute_variable(
+                value
+            )
+        self._value = value
 
     def _direct_assign(self, value):
         self._value = value
@@ -58,10 +62,6 @@ def shape(x):
 
 def cast(x, dtype):
     return convert_to_tensor(x, dtype=dtype)
-
-
-def name_scope(name):
-    return jax.named_scope(name)
 
 
 # Shape / dtype inference util
