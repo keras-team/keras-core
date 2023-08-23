@@ -77,11 +77,9 @@ def selu(x):
 
 
 def gelu(x, approximate=True):
-    # TODO: torch.nn.gelu expects string approximate of `"none"` or `"tanh"`
-    x = convert_to_tensor(x)
-    if approximate:
-        return tnn.gelu(x, approximate="tanh")
-    return tnn.gelu(x)
+    x = keras_core.ops.convert_to_tensor(x)
+    gelu_layer = tnn.GELU(approximate="tanh" if approximate else "none")
+    return gelu_layer(x)
 
 
 def softmax(x, axis=-1):

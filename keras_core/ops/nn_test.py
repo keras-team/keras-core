@@ -664,11 +664,25 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             [-1.1113307, 0.0, 1.050701, 2.101402, 3.152103],
         )
 
-    def test_gelu(self):
+    def test_gelu_no_approximate(self):
         x = np.array([-1, 0, 1, 2, 3], dtype=np.float32)
         self.assertAllClose(
             knn.gelu(x),
             [-0.15880796, 0.0, 0.841192, 1.9545977, 2.9963627],
+        )
+
+    def test_gelu_true_approximate(self):
+        x = np.array([-1, 0, 1, 2, 3], dtype=np.float32)
+        self.assertAllClose(
+            knn.gelu(x, approximate=True),
+            [-0.15880796, 0.0, 0.841192, 1.9545977, 2.9963627],
+        )
+
+    def test_gelu_false_approximate(self):
+        x = np.array([-1, 0, 1, 2, 3], dtype=np.float32)
+        self.assertAllClose(
+            knn.gelu(x, approximate=False),
+            [-0.1587, 0.0000, 0.8413, 1.9545, 2.9960],
         )
 
     def test_softmax(self):
