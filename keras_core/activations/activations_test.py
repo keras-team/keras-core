@@ -31,16 +31,13 @@ class ActivationsTest(testing.TestCase):
             expected[:, i] = _ref_softmax(x[:, i])
         self.assertAllClose(result, expected, rtol=1e-05)
 
-    # TODO: Fails on Tuple Axis
-    # ops/nn_ops.py:3824: TypeError:
-    # '<=' not supported between instances of 'int' and 'tuple'
-    # def test_softmax_3d_axis_tuple(self):
-    #     x = np.random.random((2, 3, 5))
-    #     result = activations.softmax([x], axis=(1, 2))[0]
-    #     expected = np.zeros((2, 3, 5))
-    #     for i in range(2):
-    #         expected[i, :, :] = _ref_softmax(x[i, :, :])
-    #     self.assertAllClose(result, expected, rtol=1e-05)
+    def test_softmax_3d_axis_tuple(self):
+        x = np.random.random((2, 3, 5))
+        result = activations.softmax([x], axis=(1, 2))[0]
+        expected = np.zeros((2, 3, 5))
+        for i in range(2):
+            expected[i, :, :] = _ref_softmax(x[i, :, :])
+        self.assertAllClose(result, expected, rtol=1e-05)
 
     def test_temporal_softmax(self):
         x = np.random.random((2, 2, 3)) * 10
