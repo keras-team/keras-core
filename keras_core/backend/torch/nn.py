@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn.functional as tnn
+import torch.nn as nn
 
 from keras_core.backend import standardize_data_format
 from keras_core.backend.common.backend_utils import (
@@ -78,6 +79,8 @@ def selu(x):
 
 
 # https://github.com/facebookresearch/fairseq/issues/2510
+
+
 def gelu(x, approximate=True):
     class GELU(nn.Module):
         def forward(self, input: Tensor) -> Tensor:
