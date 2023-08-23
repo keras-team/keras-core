@@ -1,11 +1,16 @@
 import numpy as np
 import pytest
-import tensorflow as tf
 from absl.testing import parameterized
 
 from keras_core import backend
 from keras_core import layers
 from keras_core import testing
+from keras_core.backend.common.backend_utils import (
+    compute_conv_transpose_output_shape,
+)
+from keras_core.backend.common.backend_utils import (
+    compute_conv_transpose_padding,
+)
 
 
 class ConvTransposeBasicTest(testing.TestCase, parameterized.TestCase):
@@ -250,41 +255,91 @@ class ConvTransposeBasicTest(testing.TestCase, parameterized.TestCase):
 
 
 class ConvTransposeCorrectnessTest(testing.TestCase, parameterized.TestCase):
-
-    def _deconv_output_length(
+    def np_conv1d_transpose(
         self,
-        input_length,
-        filter_size,
+        x,
+        kernel_weights,
+        bias_weights,
+        strides,
         padding,
         output_padding,
-        stride,
+        data_format,
+        dilation_rate,
     ):
-        """Determines output length of a transposed convolution given input length."""
-        assert padding in {"same", "valid", "full"}
-
-        # Infer length if output padding is None, else compute the exact length
-        if output_padding is None:
-            if padding == "valid":
-                length = input_length * stride + max(filter_size - stride, 0)
-            elif padding == "full":
-                length = input_length * stride - (stride + filter_size - 2)
-            elif padding == "same":
-                length = input_length * stride
-
+        if data_format == "channels_first":
+            x = x.transpose((0, 2, 1))
+        if isinstance(strides, (tuple, list)):
+            h_stride = strides[0]
         else:
-            if padding == "same":
-                pad = filter_size // 2
-            elif padding == "valid":
-                pad = 0
-            elif padding == "full":
-                pad = filter_size - 1
+            h_stride = strides
+        if isinstance(dilation_rate, (tuple, list)):
+            h_dilation = dilation_rate[0]
+        else:
+            h_dilation = dilation_rate
 
-            length = (
-                (input_length - 1) * stride + filter_size - 2 * pad + output_padding
+        h_kernel, ch_out, ch_in = kernel_weights.shape
+        n_batch, h_x, _ = x.shape
+        # Get output shape and padding
+        _, h_out, _ = compute_conv_transpose_output_shape(
+            x.shape,
+            kernel_weights.shape,
+            ch_out,
+            strides,
+            padding,
+            output_padding,
+            data_format,
+            dilation_rate,
+        )
+        (h_pad,) = compute_conv_transpose_padding(
+            x.shape,
+            kernel_weights.shape,
+            strides,
+            padding,
+            output_padding,
+            data_format,
+            dilation_rate,
+        )
+        h_pad_side1 = h_kernel - 1 - h_pad[0]
+
+        if h_dilation > 1:
+            # Increase kernel size
+            new_h_kernel = h_kernel + (h_dilation - 1) * (h_kernel - 1)
+            new_kenel_size_tuple = (new_h_kernel,)
+            new_kernel_weights = np.zeros(
+                (*new_kenel_size_tuple, ch_out, ch_in),
+                dtype=kernel_weights.dtype,
             )
-        return length
-    
-    def np_conv2d_transpose(self, x, kernel_weights, bias_weights, strides, padding, output_padding, data_format, dilation_rate):
+            new_kernel_weights[::h_dilation] = kernel_weights
+            kernel_weights = new_kernel_weights
+            h_kernel = kernel_weights.shape[0]
+
+        # Compute output
+        output = np.zeros([n_batch, h_out + h_kernel, ch_out])
+        for nb in range(n_batch):
+            for h_x_idx in range(h_x):
+                h_out_idx = h_x_idx * h_stride  # Index in output
+                output[nb, h_out_idx : h_out_idx + h_kernel, :] += np.sum(
+                    kernel_weights[:, :, :] * x[nb, h_x_idx, :], axis=-1
+                )
+        output = output + bias_weights
+
+        # Cut padding results from output
+        output = output[:, h_pad_side1 : h_out + h_pad_side1]
+        if data_format == "channels_first":
+            output = output.transpose((0, 2, 1))
+        return output
+
+    def np_conv2d_transpose(
+        self,
+        x,
+        kernel_weights,
+        bias_weights,
+        strides,
+        padding,
+        output_padding,
+        data_format,
+        dilation_rate,
+    ):
         if data_format == "channels_first":
             x = x.transpose((0, 2, 3, 1))
         if isinstance(strides, (tuple, list)):
@@ -297,9 +352,34 @@ class ConvTransposeCorrectnessTest(testing.TestCase, parameterized.TestCase):
         else:
             h_dilation = dilation_rate
             w_dilation = dilation_rate
+
         h_kernel, w_kernel, ch_out, ch_in = kernel_weights.shape
+        n_batch, h_x, w_x, _ = x.shape
+        # Get output shape and padding
+        _, h_out, w_out, _ = compute_conv_transpose_output_shape(
+            x.shape,
+            kernel_weights.shape,
+            ch_out,
+            strides,
+            padding,
+            output_padding,
+            data_format,
+            dilation_rate,
+        )
+        h_pad, w_pad = compute_conv_transpose_padding(
+            x.shape,
+            kernel_weights.shape,
+            strides,
+            padding,
+            output_padding,
+            data_format,
+            dilation_rate,
+        )
+        h_pad_side1 = h_kernel - 1 - h_pad[0]
+        w_pad_side1 = w_kernel - 1 - w_pad[0]
 
         if h_dilation > 1 or w_dilation > 1:
+            # Increase kernel size
             new_h_kernel = h_kernel + (h_dilation - 1) * (h_kernel - 1)
             new_w_kernel = w_kernel + (w_dilation - 1) * (w_kernel - 1)
             new_kenel_size_tuple = (new_h_kernel, new_w_kernel)
@@ -311,30 +391,141 @@ class ConvTransposeCorrectnessTest(testing.TestCase, parameterized.TestCase):
             kernel_weights = new_kernel_weights
             h_kernel, w_kernel = kernel_weights.shape[:2]
 
-        n_batch, h_x, w_x, _ = x.shape
-        # Define output shape to max shape
-        h_out = self._deconv_output_length(h_x, h_kernel, padding="valid", output_padding=None, stride=h_stride)
-        w_out = self._deconv_output_length(w_x, w_kernel, padding="valid", output_padding=None, stride=w_stride)
-
-        # h_out = (h_x - 1) * h_stride + h_kernel + output_padding
-        # w_out = (w_x - 1) * w_stride + w_kernel + output_padding
-        
         # Compute output
-        output = np.zeros([n_batch, h_out, w_out, ch_out])
+        output = np.zeros([n_batch, h_out + h_kernel, w_out + w_kernel, ch_out])
         for nb in range(n_batch):
             for h_x_idx in range(h_x):
-                h_out_idx = h_x_idx * h_stride # Index in output
+                h_out_idx = h_x_idx * h_stride  # Index in output
                 for w_x_idx in range(w_x):
                     w_out_idx = w_x_idx * w_stride
-                    output[nb, h_out_idx: h_out_idx + h_kernel, w_out_idx: w_out_idx + w_kernel, :] += np.sum(kernel_weights[:, :, :, :] *
-                                                                                            x[nb, h_x_idx, w_x_idx, :], axis=-1)
+                    output[
+                        nb,
+                        h_out_idx : h_out_idx + h_kernel,
+                        w_out_idx : w_out_idx + w_kernel,
+                        :,
+                    ] += np.sum(
+                        kernel_weights[:, :, :, :] * x[nb, h_x_idx, w_x_idx, :],
+                        axis=-1,
+                    )
         output = output + bias_weights
-        # Crop output to the expected output shape
-        h_expected = self._deconv_output_length(h_x, h_kernel, padding, output_padding, h_stride)
-        w_expected = self._deconv_output_length(w_x, w_kernel, padding, output_padding, w_stride)
-        h_pad = h_out - h_expected
-        w_pad = w_out - w_expected
-        output = output[:, :h_out-h_pad, :w_out-w_pad]
+
+        # Cut padding results from output
+        output = output[
+            :,
+            h_pad_side1 : h_out + h_pad_side1,
+            w_pad_side1 : w_out + w_pad_side1,
+        ]
+        if data_format == "channels_first":
+            output = output.transpose((0, 3, 1, 2))
+        return output
+
+    def np_conv3d_transpose(
+        self,
+        x,
+        kernel_weights,
+        bias_weights,
+        strides,
+        padding,
+        output_padding,
+        data_format,
+        dilation_rate,
+    ):
+        if data_format == "channels_first":
+            x = x.transpose((0, 2, 3, 4, 1))
+        if isinstance(strides, (tuple, list)):
+            h_stride, w_stride, d_stride = strides
+        else:
+            h_stride = strides
+            w_stride = strides
+            d_stride = strides
+        if isinstance(dilation_rate, (tuple, list)):
+            h_dilation, w_dilation, d_dilation = dilation_rate
+        else:
+            h_dilation = dilation_rate
+            w_dilation = dilation_rate
+            d_dilation = dilation_rate
+
+        h_kernel, w_kernel, d_kernel, ch_out, ch_in = kernel_weights.shape
+        n_batch, h_x, w_x, d_x, _ = x.shape
+        # Get output shape and padding
+        _, h_out, w_out, d_out, _ = compute_conv_transpose_output_shape(
+            x.shape,
+            kernel_weights.shape,
+            ch_out,
+            strides,
+            padding,
+            output_padding,
+            data_format,
+            dilation_rate,
+        )
+        h_pad, w_pad, d_pad = compute_conv_transpose_padding(
+            x.shape,
+            kernel_weights.shape,
+            strides,
+            padding,
+            output_padding,
+            data_format,
+            dilation_rate,
+        )
+        h_pad_side1 = h_kernel - 1 - h_pad[0]
+        w_pad_side1 = w_kernel - 1 - w_pad[0]
+        d_pad_side1 = d_kernel - 1 - d_pad[0]
+
+        if h_dilation > 1 or w_dilation > 1 or d_dilation > 1:
+            # Increase kernel size
+            new_h_kernel = h_kernel + (h_dilation - 1) * (h_kernel - 1)
+            new_w_kernel = w_kernel + (w_dilation - 1) * (w_kernel - 1)
+            new_d_kernel = d_kernel + (d_dilation - 1) * (d_kernel - 1)
+            new_kenel_size_tuple = (new_h_kernel, new_w_kernel, new_d_kernel)
+            new_kernel_weights = np.zeros(
+                (*new_kenel_size_tuple, ch_out, ch_in),
+                dtype=kernel_weights.dtype,
+            )
+            new_kernel_weights[
+                ::h_dilation, ::w_dilation, ::d_dilation
+            ] = kernel_weights
+            kernel_weights = new_kernel_weights
+            h_kernel, w_kernel, d_kernel = kernel_weights.shape[:3]
+
+        # Compute output
+        output = np.zeros(
+            [
+                n_batch,
+                h_out + h_kernel,
+                w_out + w_kernel,
+                d_out + d_kernel,
+                ch_out,
+            ]
+        )
+        for nb in range(n_batch):
+            for h_x_idx in range(h_x):
+                h_out_idx = h_x_idx * h_stride  # Index in output
+                for w_x_idx in range(w_x):
+                    w_out_idx = w_x_idx * w_stride
+                    for d_x_idx in range(d_x):
+                        d_out_idx = d_x_idx * d_stride
+                        output[
+                            nb,
+                            h_out_idx : h_out_idx + h_kernel,
+                            w_out_idx : w_out_idx + w_kernel,
+                            d_out_idx : d_out_idx + d_kernel,
+                            :,
+                        ] += np.sum(
+                            kernel_weights[:, :, :, :, :]
+                            * x[nb, h_x_idx, w_x_idx, d_x_idx, :],
+                            axis=-1,
+                        )
+        output = output + bias_weights
+
+        # Cut padding results from output
+        output = output[
+            :,
+            h_pad_side1 : h_out + h_pad_side1,
+            w_pad_side1 : w_out + w_pad_side1,
+            d_pad_side1 : d_out + d_pad_side1,
+        ]
+        if data_format == "channels_first":
+            output = output.transpose((0, 4, 1, 2, 3))
         return output
 
     @parameterized.parameters(
@@ -385,43 +576,39 @@ class ConvTransposeCorrectnessTest(testing.TestCase, parameterized.TestCase):
             data_format=data_format,
             dilation_rate=dilation_rate,
         )
-        tf_keras_layer = tf.keras.layers.Conv1DTranspose(
-            filters=filters,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            output_padding=output_padding,
-            data_format=data_format,
-            dilation_rate=dilation_rate,
-        )
 
         inputs = np.random.normal(size=[2, 8, 4])
         layer.build(input_shape=inputs.shape)
-        tf_keras_layer.build(input_shape=inputs.shape)
 
         kernel_shape = layer.kernel.shape
         kernel_weights = np.random.normal(size=kernel_shape)
         bias_weights = np.random.normal(size=(filters,))
         layer.kernel.assign(kernel_weights)
-        tf_keras_layer.kernel.assign(kernel_weights)
-
         layer.bias.assign(bias_weights)
-        tf_keras_layer.bias.assign(bias_weights)
 
         outputs = layer(inputs)
-        expected = tf_keras_layer(inputs)
+        expected = self.np_conv1d_transpose(
+            inputs,
+            kernel_weights,
+            bias_weights,
+            strides,
+            padding,
+            output_padding,
+            data_format,
+            dilation_rate,
+        )
         self.assertAllClose(outputs, expected, atol=1e-5)
 
     @parameterized.parameters(
-        # {
-        #     "filters": 5,
-        #     "kernel_size": 2,
-        #     "strides": 2,
-        #     "padding": "valid",
-        #     "output_padding": None,
-        #     "data_format": "channels_last",
-        #     "dilation_rate": 1,
-        # },
+        {
+            "filters": 5,
+            "kernel_size": 2,
+            "strides": 2,
+            "padding": "valid",
+            "output_padding": None,
+            "data_format": "channels_last",
+            "dilation_rate": 1,
+        },
         {
             "filters": 6,
             "kernel_size": 7,
@@ -431,24 +618,24 @@ class ConvTransposeCorrectnessTest(testing.TestCase, parameterized.TestCase):
             "data_format": "channels_last",
             "dilation_rate": (1, 1),
         },
-        # {
-        #     "filters": 6,
-        #     "kernel_size": (2, 3),
-        #     "strides": (2, 1),
-        #     "padding": "valid",
-        #     "output_padding": None,
-        #     "data_format": "channels_last",
-        #     "dilation_rate": (1, 1),
-        # },
-        # {
-        #     "filters": 2,
-        #     "kernel_size": (7, 7),
-        #     "strides": (16, 16),
-        #     "padding": "valid",
-        #     "output_padding": None,
-        #     "data_format": "channels_last",
-        #     "dilation_rate": (1, 1),
-        # },
+        {
+            "filters": 6,
+            "kernel_size": (2, 3),
+            "strides": (2, 1),
+            "padding": "valid",
+            "output_padding": None,
+            "data_format": "channels_last",
+            "dilation_rate": (1, 1),
+        },
+        {
+            "filters": 2,
+            "kernel_size": (7, 7),
+            "strides": (16, 16),
+            "padding": "valid",
+            "output_padding": None,
+            "data_format": "channels_last",
+            "dilation_rate": (1, 1),
+        },
     )
     def test_conv2d_transpose(
         self,
@@ -469,32 +656,27 @@ class ConvTransposeCorrectnessTest(testing.TestCase, parameterized.TestCase):
             data_format=data_format,
             dilation_rate=dilation_rate,
         )
-        # tf_keras_layer = tf.keras.layers.Conv2DTranspose(
-        #     filters=filters,
-        #     kernel_size=kernel_size,
-        #     strides=strides,
-        #     padding=padding,
-        #     output_padding=output_padding,
-        #     data_format=data_format,
-        #     dilation_rate=dilation_rate,
-        # )
 
         inputs = np.random.normal(size=[2, 14, 14, 4])
         layer.build(input_shape=inputs.shape)
-        # tf_keras_layer.build(input_shape=inputs.shape)
 
         kernel_shape = layer.kernel.shape
         kernel_weights = np.random.normal(size=kernel_shape)
         bias_weights = np.random.normal(size=(filters,))
         layer.kernel.assign(kernel_weights)
-        # tf_keras_layer.kernel.assign(kernel_weights)
-
         layer.bias.assign(bias_weights)
-        # tf_keras_layer.bias.assign(bias_weights)
 
         outputs = layer(inputs)
-        # expected = tf_keras_layer(inputs)
-        expected = self.np_conv2d_transpose(inputs, kernel_weights, bias_weights, strides, padding, output_padding,data_format, dilation_rate)
+        expected = self.np_conv2d_transpose(
+            inputs,
+            kernel_weights,
+            bias_weights,
+            strides,
+            padding,
+            output_padding,
+            data_format,
+            dilation_rate,
+        )
         self.assertAllClose(outputs, expected, atol=1e-5)
 
     @parameterized.parameters(
@@ -545,28 +727,25 @@ class ConvTransposeCorrectnessTest(testing.TestCase, parameterized.TestCase):
             data_format=data_format,
             dilation_rate=dilation_rate,
         )
-        tf_keras_layer = tf.keras.layers.Conv3DTranspose(
-            filters=filters,
-            kernel_size=kernel_size,
-            strides=strides,
-            padding=padding,
-            output_padding=output_padding,
-            data_format=data_format,
-            dilation_rate=dilation_rate,
-        )
 
         inputs = np.random.normal(size=[2, 8, 8, 8, 4])
         layer.build(input_shape=inputs.shape)
-        tf_keras_layer.build(input_shape=inputs.shape)
 
         kernel_shape = layer.kernel.shape
         kernel_weights = np.random.normal(size=kernel_shape)
         bias_weights = np.random.normal(size=(filters,))
         layer.kernel.assign(kernel_weights)
-        tf_keras_layer.kernel.assign(kernel_weights)
-
         layer.bias.assign(bias_weights)
-        tf_keras_layer.bias.assign(bias_weights)
+
         outputs = layer(inputs)
-        expected = tf_keras_layer(inputs)
+        expected = self.np_conv3d_transpose(
+            inputs,
+            kernel_weights,
+            bias_weights,
+            strides,
+            padding,
+            output_padding,
+            data_format,
+            dilation_rate,
+        )
         self.assertAllClose(outputs, expected, atol=1e-5)
