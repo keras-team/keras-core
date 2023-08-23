@@ -14,6 +14,7 @@ from keras_core.backend.torch.numpy import expand_dims
 from keras_core.backend.torch.numpy import maximum
 from keras_core.backend.torch.numpy import where
 from keras_core.utils.argument_validation import standardize_tuple
+from torch import Tensor
 
 
 def relu(x):
@@ -77,8 +78,6 @@ def selu(x):
 
 
 # https://github.com/facebookresearch/fairseq/issues/2510
-from torch import Tensor
-
 def gelu(x, approximate=True):
     class GELU(nn.Module):
         def forward(self, input: Tensor) -> Tensor:
