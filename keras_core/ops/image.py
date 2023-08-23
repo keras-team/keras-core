@@ -261,53 +261,44 @@ def affine_transform(
 class MapCoordinates(Operation):
     def __init__(
         self,
-        interpolation="bilinear",
-        fill_mode="constant",
-        fill_value=0,
-        data_format="channels_last",
+        order,
+        mode,
+        cval=0.0
     ):
         super().__init__()
-        self.interpolation = interpolation
-        self.fill_mode = fill_mode
-        self.fill_value = fill_value
-        self.data_format = data_format
+        self.order = order
+        self.mode = mode
+        self.cval = cval
 
-    def call(self, image, transform):
-        return backend.image.affine_transform(
+    def call(self, image, coordinates):
+        return backend.image.map_coordinates(
             image,
-            transform,
-            interpolation=self.interpolation,
-            fill_mode=self.fill_mode,
-            fill_value=self.fill_value,
-            data_format=self.data_format,
+            coordinates,
+            order=self.order,
+            mode=self.mode,
+            cval=self.cval,
         )
 
-    def compute_output_spec(self, image, transform):
-        if len(image.shape) not in (3, 4):
+    def compute_output_spec(self, image, coordinates):
+        if coordinates.shape[0] != len(image.shape):
             raise ValueError(
-                "Invalid image rank: expected rank 3 (single image) "
-                "or rank 4 (batch of images). Received input with shape: "
-                f"image.shape={image.shape}"
+                "First dim of `coordinates` must be the same as the rank of `image`"
+                f"Received image with shape: {image.shape} and coordinate leading dim of "
+                f"{coordinates.shape[0]}"
             )
-        if len(transform.shape) not in (1, 2):
+        if len(coordinates.shape) < 2:
             raise ValueError(
-                "Invalid transform rank: expected rank 1 (single transform) "
-                "or rank 2 (batch of transforms). Received input with shape: "
-                f"transform.shape={transform.shape}"
+                "Invalid coordinates rank: expected at least rank 2."
+                f" Received input with shape: {coordinates.shape}"
             )
-        return KerasTensor(image.shape, dtype=image.dtype)
+        return KerasTensor(coordinates.shape[1:], dtype=image.dtype)
 
 
 @keras_core_export("keras_core.ops.image.map_coordinates")
 def map_coordinates(
-    image,
-    transform,
-    interpolation="bilinear",
-    fill_mode="constant",
-    fill_value=0,
-    data_format="channels_last",
+    input, coordinates, order, mode="constant", cval=0.0
 ):
-    """Applies the given transform(s) to the image(s).
+    """Applies the image(s) onto a set of coordinates.
 
     Args:
         image: Input image or batch of images. Must be 3D or 4D.
@@ -355,51 +346,17 @@ def map_coordinates(
     Returns:
         Applied affine transform image or batch of images.
 
-    Examples:
-
-    >>> x = np.random.random((2, 64, 80, 3)) # batch of 2 RGB images
-    >>> transform = np.array(
-    ...     [
-    ...         [1.5, 0, -20, 0, 1.5, -16, 0, 0],  # zoom
-    ...         [1, 0, -20, 0, 1, -16, 0, 0],  # translation
-    ...     ]
-    ... )
-    >>> y = keras_core.ops.image.affine_transform(x, transform)
-    >>> y.shape
-    (2, 64, 80, 3)
-
-    >>> x = np.random.random((64, 80, 3)) # single RGB image
-    >>> transform = np.array([1.0, 0.5, -20, 0.5, 1.0, -16, 0, 0])  # shear
-    >>> y = keras_core.ops.image.affine_transform(x, transform)
-    >>> y.shape
-    (64, 80, 3)
-
-    >>> x = np.random.random((2, 3, 64, 80)) # batch of 2 RGB images
-    >>> transform = np.array(
-    ...     [
-    ...         [1.5, 0, -20, 0, 1.5, -16, 0, 0],  # zoom
-    ...         [1, 0, -20, 0, 1, -16, 0, 0],  # translation
-    ...     ]
-    ... )
-    >>> y = keras_core.ops.image.affine_transform(x, transform,
-    ...     data_format="channels_first")
-    >>> y.shape
-    (2, 3, 64, 80)
     """
-    if any_symbolic_tensors((image, transform)):
-        return AffineTransform(
-            interpolation=interpolation,
-            fill_mode=fill_mode,
-            fill_value=fill_value,
-            data_format=data_format,
-        ).symbolic_call(image, transform)
-    return backend.image.affine_transform(
-        image,
-        transform,
-        interpolation=interpolation,
-        fill_mode=fill_mode,
-        fill_value=fill_value,
-        data_format=data_format,
+    if any_symbolic_tensors((input, coordinates)):
+        return MapCoordinates(
+            order,
+            mode,
+            cval,
+        ).symbolic_call(input, coordinates)
+    return backend.image.map_coordinates(
+        order,
+        mode,
+        cval,
     )
 
 

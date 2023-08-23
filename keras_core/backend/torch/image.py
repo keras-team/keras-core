@@ -334,7 +334,7 @@ def _linear_indices_and_weights(coordinate):
     return [(index, lower_weight), (index + 1, upper_weight)]
 
 
-def _map_coordinates(input, coordinates, order, mode, cval):
+def map_coordinates(input, coordinates, order, mode, cval=0.0):
     input_arr = convert_to_tensor(input)
     coordinate_arrs = [convert_to_tensor(c) for c in coordinates]
     cval = convert_to_tensor(cval, input_arr.dtype)
