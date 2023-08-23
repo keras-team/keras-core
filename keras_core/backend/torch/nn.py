@@ -76,10 +76,16 @@ def selu(x):
     return tnn.selu(x)
 
 
+# https://github.com/facebookresearch/fairseq/issues/2510
+from torch import Tensor
+
 def gelu(x, approximate=True):
-    x = convert_to_tensor(x)
-    gelu_layer = tnn.GELU(approximate="tanh" if approximate else "none")
-    return gelu_layer(x)
+    class GELU(nn.Module):
+        def forward(self, input: Tensor) -> Tensor:
+            return tnn.gelu(
+                convert_to_tensor(x),
+                approximate="tanh" if approximate else "none",
+            )
 
 
 def softmax(x, axis=-1):
