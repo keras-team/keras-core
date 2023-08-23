@@ -155,14 +155,14 @@ def _mirror_index_fixer(index, size):
 
 
 def _reflect_index_fixer(index, size):
-    return tf.floor_divide(
+    return tf.math.floordiv(
         _mirror_index_fixer(2 * index + 1, 2 * size + 1) - 1, 2
     )
 
 
 _INDEX_FIXERS = {
     "constant": lambda index, size: index,
-    "nearest": lambda index, size: tf.clip(index, 0, size - 1),
+    "nearest": lambda index, size: tf.clip_by_value(index, 0, size - 1),
     "wrap": lambda index, size: index % size,
     "mirror": _mirror_index_fixer,
     "reflect": _reflect_index_fixer,
@@ -172,14 +172,14 @@ _INDEX_FIXERS = {
 def _round_half_away_from_zero(a):
     return (
         a
-        if (not tf.is_floating_point(a) and not tf.is_complex(a))
+        if a.dtype.is_integer
         else tf.round(a)
     )
 
 
 def _nearest_indices_and_weights(coordinate):
-    index = _round_half_away_from_zero(coordinate).to(tf.int32)
-    weight = coordinate.dtype.type(1)
+    index = tf.cast(_round_half_away_from_zero(coordinate), tf.int32)
+    weight = tf.constant(1, coordinate.dtype)
     return [(index, weight)]
 
 
@@ -187,14 +187,14 @@ def _linear_indices_and_weights(coordinate):
     lower = tf.floor(coordinate)
     upper_weight = coordinate - lower
     lower_weight = 1 - upper_weight
-    index = lower.to(tf.int32)
+    index = tf.cast(lower, tf.int32)
     return [(index, lower_weight), (index + 1, upper_weight)]
 
 
 def map_coordinates(input, coordinates, order, mode, cval=0.0):
     input_arr = convert_to_tensor(input)
     coordinate_arrs = [convert_to_tensor(c) for c in coordinates]
-    cval = convert_to_tensor(cval, input_arr.dtype)
+    cval = convert_to_tensor(tf.cast(cval, input_arr.dtype))
 
     if len(coordinates) != input_arr.ndim:
         raise ValueError(
@@ -243,8 +243,6 @@ def map_coordinates(input, coordinates, order, mode, cval=0.0):
             contribution = tf.where(all_valid, input_arr[indices], cval)
         outputs.append(_nonempty_prod(weights) * contribution)
     result = _nonempty_sum(outputs)
-    if not tf.is_floating_point(input_arr) and not tf.is_complex(
-        input_arr
-    ):
+    if input_arr.dtype.is_integer:
         result = _round_half_away_from_zero(result)
-    return result.to(input_arr.dtype)
+    return tf.cast(result, input_arr.dtype)

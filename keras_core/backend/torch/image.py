@@ -322,7 +322,7 @@ def _round_half_away_from_zero(a):
 
 def _nearest_indices_and_weights(coordinate):
     index = _round_half_away_from_zero(coordinate).to(torch.int32)
-    weight = coordinate.dtype.type(1)
+    weight = torch.tensor(1).to(torch.int32)
     return [(index, weight)]
 
 

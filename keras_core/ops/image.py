@@ -119,14 +119,16 @@ def resize(
 class AffineTransform(Operation):
     def __init__(
         self,
-        order=0,
-        mode="constant",
-        cval=0.0,
+        interpolation="bilinear",
+        fill_mode="constant",
+        fill_value=0,
+        data_format="channels_last",
     ):
         super().__init__()
-        self.order = order
-        self.mode = mode
-        self.cval = cval
+        self.interpolation = interpolation
+        self.fill_mode = fill_mode
+        self.fill_value = fill_value
+        self.data_format = data_format
 
     def call(self, image, transform):
         return backend.image.affine_transform(
@@ -249,7 +251,7 @@ def affine_transform(
             fill_value=fill_value,
             data_format=data_format,
         ).symbolic_call(image, transform)
-    return backend.image.map_coordinates(
+    return backend.image.affine_transform(
         image,
         transform,
         interpolation=interpolation,
@@ -354,6 +356,8 @@ def map_coordinates(
             cval,
         ).symbolic_call(input, coordinates)
     return backend.image.map_coordinates(
+        input,
+        coordinates,
         order,
         mode,
         cval,

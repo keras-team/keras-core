@@ -382,22 +382,22 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         idx = np.indices(data.shape, np.float32)
         idx -= 0.5
 
-        out1 = ndimage.shift(data, 0.5, order=order)
-        out2 = ndimage.map_coordinates(data, idx, order=order)
+        out1 = scipy.ndimage.shift(data, 0.5, order=order, mode=mode)
+        out2 = scipy.ndimage.map_coordinates(data, idx, order=order, mode=mode)
         self.assertAllClose(out1, out2)
 
         idx = np.indices(data.shape) - 1
-        out = kimage.map_coordinates(data, idx)
-        self.assertAllClose(out, [[0, 0, 0, 0],
-                                        [0, 4, 1, 3],
-                                        [0, 7, 6, 8]])
-        self.assertAllClose(out, ndimage.shift(data, (1, 1)))
+        out = kimage.map_coordinates(data, idx, order=order, mode=mode)
+        #self.assertAllClose(out, [[0, 0, 0, 0],
+        #                                [0, 4, 1, 3],
+        #                                [0, 7, 6, 8]])
+        self.assertAllClose(out, scipy.ndimage.shift(data, (1, 1), order=order, mode=mode))
         idx = np.indices(data[::2].shape) - 1
-        out = kimage.map_coordinates(data[::2], idx)
-        self.assertAllClose(out, [[0, 0, 0, 0],
-                                        [0, 4, 1, 3]])
-        self.assertAllClose(out, ndimage.shift(data[::2], (1, 1)))
+        out = kimage.map_coordinates(data[::2], idx, order=order, mode=mode)
+        #self.assertAllClose(out, [[0, 0, 0, 0],
+        #                                [0, 4, 1, 3]])
+        self.assertAllClose(out, scipy.ndimage.shift(data[::2], (1, 1), order=order, mode=mode))
         idx = np.indices(data[:, ::2].shape) - 1
-        out = kimage.map_coordinates(data[:, ::2], idx)
-        self.assertAllClose(out, [[0, 0], [0, 4], [0, 7]])
-        self.assertAllClose(out, ndimage.shift(data[:, ::2], (1, 1)))
+        out = kimage.map_coordinates(data[:, ::2], idx, order=order, mode=mode)
+        #self.assertAllClose(out, [[0, 0], [0, 4], [0, 7]])
+        self.assertAllClose(out, scipy.ndimage.shift(data[:, ::2], (1, 1), order=order, mode=mode))
