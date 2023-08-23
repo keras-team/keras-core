@@ -33,7 +33,7 @@ class ActivationsTest(testing.TestCase):
 
     def test_softmax_3d_axis_tuple(self):
         x = np.random.random((2, 3, 5))
-        result = activations.softmax(x, axis=(1, 2))[0]
+        result = activations.softmax(x, axis=(1, 2))
         expected = np.zeros((2, 3, 5))
         for i in range(2):
             expected[i, :, :] = _ref_softmax(x[i, :, :])
