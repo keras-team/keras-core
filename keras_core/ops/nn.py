@@ -494,8 +494,9 @@ def softmax(x, axis=-1):
     """
     if any_symbolic_tensors((x,)):
         return Softmax(axis).symbolic_call(x)
+    if isinstance(x, list):
+        x = np.array(x)
     if isinstance(axis, tuple):
-        # Get original shape
         original_shape = x.shape
         new_shape = []
         skip_dims = set(axis)
