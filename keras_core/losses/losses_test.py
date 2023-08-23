@@ -1,6 +1,5 @@
 import numpy as np
 
-from keras_core import backend
 from keras_core import testing
 from keras_core.losses import losses
 
@@ -1164,16 +1163,8 @@ class SparseCategoricalCrossentropyTest(testing.TestCase):
         cce_obj = losses.SparseCategoricalCrossentropy(
             from_logits=True, ignore_class=-1, reduction=None
         )
-
-        if backend.backend() == "torch":
-            with self.assertRaisesRegex(
-                ValueError,
-                "Torch backend doesn't support `ignore_class` param.",
-            ):
-                loss = cce_obj(y_true, logits)
-        else:
-            loss = cce_obj(y_true, logits)
-            self.assertAllClose([[0.0, 1.48012]], loss, 3)
+        loss = cce_obj(y_true, logits)
+        self.assertAllClose([[0.0, 1.48012]], loss, 3)
 
 
 class BinaryFocalCrossentropyTest(testing.TestCase):
