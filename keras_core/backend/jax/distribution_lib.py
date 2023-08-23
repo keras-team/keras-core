@@ -21,7 +21,7 @@ def list_devices(device_type=None):
     Return:
         List of devices that are available for distribute computation.
     """
-    device_type = device_type.lower() if device_type else "cpu"
+    device_type = device_type.lower() if device_type else None
     return jax.devices(backend=device_type)
 
 
