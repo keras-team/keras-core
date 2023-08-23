@@ -664,25 +664,39 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             [-1.1113307, 0.0, 1.050701, 2.101402, 3.152103],
         )
 
-    def test_gelu_no_approximate(self):
+    def test_gelu_no_approximate():
         x = np.array([-1, 0, 1, 2, 3], dtype=np.float32)
-        self.assertAllClose(
-            knn.gelu(x),
-            [-0.15880796, 0.0, 0.841192, 1.9545977, 2.9963627],
+        output = knn.gelu(x)
+        assert isinstance(output, np.ndarray), "Output is not a NumPy array"
+        assertAllClose(
+            output,
+            np.array(
+                [-0.15880796, 0.0, 0.841192, 1.9545977, 2.9963627],
+                dtype=np.float32,
+            ),
         )
 
-    def test_gelu_true_approximate(self):
+    def test_gelu_true_approximate():
         x = np.array([-1, 0, 1, 2, 3], dtype=np.float32)
-        self.assertAllClose(
-            knn.gelu(x, approximate=True),
-            [-0.15880796, 0.0, 0.841192, 1.9545977, 2.9963627],
+        output = knn.gelu(x, approximate=True)
+        assert isinstance(output, np.ndarray), "Output is not a NumPy array"
+        assertAllClose(
+            output,
+            np.array(
+                [-0.15880796, 0.0, 0.841192, 1.9545977, 2.9963627],
+                dtype=np.float32,
+            ),
         )
 
-    def test_gelu_false_approximate(self):
+    def test_gelu_false_approximate():
         x = np.array([-1, 0, 1, 2, 3], dtype=np.float32)
-        self.assertAllClose(
-            knn.gelu(x, approximate=False),
-            [-0.158655, 0.0, 0.841345, 1.9545, 2.99595],
+        output = knn.gelu(x, approximate=False)
+        assert isinstance(output, np.ndarray), "Output is not a NumPy array"
+        assertAllClose(
+            output,
+            np.array(
+                [-0.158655, 0.0, 0.841345, 1.9545, 2.99595], dtype=np.float32
+            ),
         )
 
     def test_softmax(self):
