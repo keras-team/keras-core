@@ -14,9 +14,9 @@ def list_devices(device_type=None):
     Note that this should return the global devices in a distributed setting.
 
     Args:
-        device_type: string of 'CPU', 'GPU' or 'TPU'. Default to GPU or TPU if
-            available when device_type is not provided. Otherwise will return
-            the CPU devices.
+        device_type: string of `"CPU"`, `"GPU"` or `"TPU"`. Default to `GPU` or
+            `TPU` if available when device_type is not provided. Otherwise
+            will return the `CPU` devices.
 
     Return:
         List of devices that are available for distribute computation.
@@ -25,7 +25,7 @@ def list_devices(device_type=None):
     return jax.devices(backend=device_type)
 
 
-def to_backend_mesh(device_mesh):
+def to_jax_mesh(device_mesh):
     """Convert the DeviceMesh to JAX backend specific Mesh.
 
     Args:
@@ -37,7 +37,7 @@ def to_backend_mesh(device_mesh):
     return jax.sharding.Mesh(device_mesh.devices, device_mesh.axis_names)
 
 
-def to_backend_layout(tensor_layout):
+def to_jax_layout(tensor_layout):
     """Convert the TensorLayout to JAX backend specific Sharding.
 
     Args:
@@ -52,5 +52,5 @@ def to_backend_layout(tensor_layout):
             "for TensorLayout."
         )
     partition_spec = jax.sharding.PartitionSpec(*tensor_layout.axes)
-    jax_mesh = to_backend_mesh(tensor_layout.device_mesh)
+    jax_mesh = to_jax_mesh(tensor_layout.device_mesh)
     return jax.sharding.NamedSharding(jax_mesh, partition_spec)

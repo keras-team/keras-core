@@ -21,9 +21,9 @@ def list_devices(device_type=None):
     Note that this should return the global devices in a distributed setting.
 
     Args:
-        device_type: string of 'CPU', 'GPU' or 'TPU'. Default to GPU or TPU if
-            available when device_type is not provided. Otherwise will return
-            the CPU devices.
+        device_type: string of `"CPU"`, `"GPU"` or `"TPU"`. Default to `GPU` or
+            `TPU` if available when device_type is not provided. Otherwise
+            will return the `CPU` devices.
 
     Return:
         List of devices that are available for distribute computation.

@@ -106,26 +106,26 @@ class JaxDistributionLibTest(testing.TestCase):
         self.assertEqual(len(distribution_lib.list_devices("cpu")), 8)
         self.assertEqual(len(distribution_lib.list_devices("CPU")), 8)
 
-    def test_to_backend_mesh(self):
+    def test_to_jax_mesh(self):
         devices = ["CPU:{i}" for i in range(8)]
         shape = (4, 2)
         axis_names = ["batch", "model"]
 
         mesh = distribution_lib.DeviceMesh(shape, axis_names, devices)
-        jax_mesh = backend_dlib.to_backend_mesh(mesh)
+        jax_mesh = backend_dlib.to_jax_mesh(mesh)
 
         self.assertIsInstance(jax_mesh, jax.sharding.Mesh)
         self.assertEqual(jax_mesh.devices.shape, shape)
         self.assertEqual(jax_mesh.axis_names, ("batch", "model"))
 
-    def test_to_backend_layout(self):
+    def test_to_jax_layout(self):
         axes = ["data", None]
         mesh = distribution_lib.DeviceMesh(
             (4, 2), ["data", "model"], [f"CPU:{i}" for i in range(8)]
         )
         layout = distribution_lib.TensorLayout(axes, mesh)
-        jax_sharding = backend_dlib.to_backend_layout(layout)
-        jax_mesh = backend_dlib.to_backend_mesh(mesh)
+        jax_sharding = backend_dlib.to_jax_layout(layout)
+        jax_mesh = backend_dlib.to_jax_mesh(mesh)
         self.assertEqual(
             jax_sharding,
             jax.sharding.NamedSharding(
@@ -140,4 +140,4 @@ class JaxDistributionLibTest(testing.TestCase):
         with self.assertRaisesRegex(
             ValueError, "Cannot create sharding when device mesh is not set"
         ):
-            backend_dlib.to_backend_layout(layout)
+            backend_dlib.to_jax_layout(layout)
