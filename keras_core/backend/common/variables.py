@@ -68,11 +68,8 @@ class KerasVariable:
                 value = initializer(shape, dtype=dtype)
             else:
                 value = initializer
-            from keras_core.backend import convert_to_tensor
-
-            value = convert_to_tensor(value, dtype=dtype)
-            self._shape = tuple(value.shape)
             self._initialize(value)
+            self._shape = tuple(self._value.shape)
         self._ndim = len(self._shape)
 
     def _deferred_initialize(self):

@@ -18,6 +18,8 @@ from keras_core.utils.nest import pack_sequence_as
 class Variable(KerasVariable):
     def _initialize(self, value):
         value = jnp.array(value, dtype=self._dtype)
+        # Note that variable.shape is needed by distribution_lib
+        self._shape = tuple(value.shape)
         # We can't import the keras_core/distribution/distribution_lib
         # due to circular dependency.
         distribution = global_state.get_global_attribute("distribution")
