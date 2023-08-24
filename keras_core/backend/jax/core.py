@@ -22,7 +22,7 @@ class Variable(KerasVariable):
         # due to circular dependency.
         distribution = global_state.get_global_attribute("distribution")
         if distribution is not None:
-            layout = distribution.get_variable_layout(value.shape, self.path)
+            layout = distribution.get_variable_layout(self)
             value = distribution_lib.distribute_value(value, layout)
         self._value = value
 

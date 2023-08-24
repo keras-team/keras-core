@@ -187,10 +187,10 @@ class DataParallelDistributionTest(testing.TestCase):
             device_mesh=self.device_mesh
         )
 
-        weights = np.arange(16).reshape((8, 2))
-        variable_layout = distribution.get_variable_layout(weights.shape, "")
+        variable = backend.Variable(initializer=[1, 2, 3])
+        variable_layout = distribution.get_variable_layout(variable)
         self.assertIs(variable_layout.device_mesh, self.device_mesh)
-        self.assertEqual(variable_layout.axes, [None, None])
+        self.assertEqual(variable_layout.axes, [None])
 
 
 @pytest.mark.skipif(

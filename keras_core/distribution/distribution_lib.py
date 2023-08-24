@@ -185,22 +185,19 @@ class Distribution:
 
         Returns:
             The `TensorLayout` for the data, which can be used by
-            `backend.distribute_tensor()` to redistribute a input data.
+            `backend.distribute_value()` to redistribute a input data.
         """
         raise NotImplementedError()
 
-    def get_variable_layout(self, variable_shape, variable_path):
-        """Retrieve the `TensorLayout` for the variable based on the path.
-
-        The path of the variable is available by `variable.path`.
+    def get_variable_layout(self, variable):
+        """Retrieve the `TensorLayout` for the variable.
 
         Args:
-            variable_shape, shape for the variable in list or tuple format.
-            variable_path: string, the path for the variable to be distributed.
+            variable: A `KerasVariable` to retrieve the `TensorLayout`.
 
         return:
             The `TensorLayout` for the variable, which can be used by
-            `backend.distribute_tensor()` to redistribute a variable.
+            `backend.distribute_value()` to redistribute a variable.
         """
         raise NotImplementedError()
 
@@ -285,9 +282,8 @@ class DataParallel(Distribution):
         data_shard_spec[0] = self._batch_dim_name  # Shard on the first dim
         return TensorLayout(data_shard_spec, self.device_mesh)
 
-    def get_variable_layout(self, variable_shape, variable_path):
-        del variable_path
-        variable_shard_spec = [None] * len(variable_shape)
+    def get_variable_layout(self, variable):
+        variable_shard_spec = [None] * len(variable.shape)
         return TensorLayout(variable_shard_spec, self.device_mesh)
 
 
