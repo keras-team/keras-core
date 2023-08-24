@@ -4339,7 +4339,9 @@ def sort(x, axis=-1):
 class Split(Operation):
     def __init__(self, indices_or_sections, axis=0):
         super().__init__()
-        self.indices_or_sections = tuple(indices_or_sections)
+        if not isinstance(indices_or_sections, int):
+            indices_or_sections = tuple(indices_or_sections)
+        self.indices_or_sections = indices_or_sections
         self.axis = axis
 
     def call(self, x):
