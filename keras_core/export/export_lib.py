@@ -1,5 +1,6 @@
 """Library for exporting inference-only Keras models/layers."""
 
+from jax.experimental import jax2tf
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers import Layer
@@ -84,10 +85,17 @@ class ExportArchive(tf.__internal__.tracking.AutoTrackable):
         self.trainable_variables = []
         self.non_trainable_variables = []
 
+        if backend.backend() == "jax":
+            self.module = tf.Module()
+        if backend.backend() not in ("tensorflow", "jax"):
+            raise NotImplementedError(
+                "The export API is only compatible with JAX and TF backends."
+            )
+
     @tf.__internal__.tracking.no_automatic_dependency_tracking
     def track(self, resource):
         """Track the variables (and other assets) of a layer or model."""
-        if not isinstance(resource, tf.__internal__.tracking.Trackable):
+        if backend.backend() == "tensorflow" and not isinstance(resource, tf.__internal__.tracking.Trackable):
             raise ValueError(
                 "Invalid resource type. Expected an instance of a "
                 "TensorFlow `Trackable` (such as a Keras `Layer` or `Model`). "
@@ -111,9 +119,16 @@ class ExportArchive(tf.__internal__.tracking.AutoTrackable):
         if isinstance(resource, Layer):
             # Variables in the lists below are actually part of the trackables
             # that get saved, because the lists are created in __init__.
-            self.variables += resource.variables
-            self.trainable_variables += resource.trainable_variables
-            self.non_trainable_variables += resource.non_trainable_variables
+            if backend.backend == "tensorflow":
+                self.variables += resource.variables
+                self.trainable_variables += resource.trainable_variables
+                self.non_trainable_variables += resource.non_trainable_variables
+            else: # JAX backend
+                # Wrap the JAX state in `tf.Variable` (needed when calling the converted JAX function.
+                self.variables += tf.nest.map_structure(tf.Variable, resource.variables)
+                self.trainable_variables += tf.nest.map_structure(tf.Variable, resource.trainable_variables)
+                self.non_trainable_variables += tf.nest.map_structure(tf.Variable, resource.non_trainable_variables)
+
 
     def add_endpoint(self, name, fn, input_signature=None):
         """Register a new serving endpoint.
@@ -226,7 +241,11 @@ class ExportArchive(tf.__internal__.tracking.AutoTrackable):
             raise ValueError(f"Endpoint name '{name}' is already taken.")
 
         if input_signature:
-            decorated_fn = tf.function(fn, input_signature=input_signature)
+            if backend.backend() == "tensorflow":
+                decorated_fn = tf.function(fn, input_signature=input_signature)
+            else: # JAX backend
+                fn = self._convert_jax2tf_function(fn, input_signature)
+                decorated_fn = tf.function(fn, input_signature=input_signature, autograph=False)
             self._endpoint_signatures[name] = input_signature
         else:
             if isinstance(fn, tf.types.experimental.GenericFunction):
@@ -259,6 +278,8 @@ class ExportArchive(tf.__internal__.tracking.AutoTrackable):
                     ")"
                 )
         setattr(self, name, decorated_fn)
+        if backend.backend() == "jax": # JAX backend
+            setattr(self.module, name, decorated_fn)
         self._endpoint_names.append(name)
 
     def add_variable_collection(self, name, variables):
@@ -331,7 +352,8 @@ class ExportArchive(tf.__internal__.tracking.AutoTrackable):
             raise ValueError(
                 "No endpoints have been set yet. Call add_endpoint()."
             )
-        self._filter_and_track_resources()
+        if backend.backend() == "tensorflow":
+            self._filter_and_track_resources()
 
         signatures = {}
         for name in self._endpoint_names:
@@ -341,9 +363,26 @@ class ExportArchive(tf.__internal__.tracking.AutoTrackable):
             signatures["serving_default"] = self._get_concrete_fn(
                 self._endpoint_names[0]
             )
-        tf.saved_model.save(
-            self, filepath, options=options, signatures=signatures
-        )
+
+        if backend.backend() == "tensorflow":
+            tf.saved_model.save(
+                self, filepath, options=options, signatures=signatures
+            )
+        else: # JAX backend
+            self.module._endpoint_names = self._endpoint_names
+            self.module._endpoint_signatures = self._endpoint_signatures
+            self.module.tensorflow_version = self.tensorflow_version
+
+            # Keep the wrapped state as flat list (needed in TensorFlow fine-tuning).
+            self.module.vars = tf.nest.flatten(self.variables)
+
+            # The `variables`, `trainable_variables`, and `non_trainable_variables`
+            # attributes will be automatically populated in the tf.Module.
+
+            tf.saved_model.save(
+                self.module, filepath, options=options, signatures=signatures
+            )
+
         # Print out available endpoints
         endpoints = "\n\n".join(
             _print_signature(getattr(self, name), name)
@@ -391,6 +430,16 @@ class ExportArchive(tf.__internal__.tracking.AutoTrackable):
                     ):
                         self._misc_assets.append(trackable)
 
+    def _convert_jax2tf_function(self, fn, input_signature):
+        shapes = []
+        for spec in input_signature:
+            if isinstance(input_signature, dict):
+                spec_shape = input_signature[spec].shape
+            else:
+                spec_shape = spec.shape
+            spec_shape = str(spec_shape).replace("None", "b")
+            shapes.append(spec_shape)
+        return jax2tf.convert(fn, polymorphic_shapes=shapes)
 
 def export_model(model, filepath):
     export_archive = ExportArchive()
