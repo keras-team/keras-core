@@ -740,9 +740,7 @@ class Layer(BackendLayer, Operation):
         # 7. Call the layer.
         try:
             with backend.name_scope(self.name, caller=self):
-                if self.autocast and self.compute_dtype != self.variable_dtype:
-                    # For mixed precision, we automatically cast layer variables
-                    # (float ones only) to the compute dtype upon access.
+                if self.autocast and backend.is_float_dtype(self.compute_dtype):
                     with backend.AutocastScope(self.compute_dtype):
                         outputs = super().__call__(*args, **kwargs)
                 else:
