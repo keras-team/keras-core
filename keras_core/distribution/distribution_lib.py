@@ -304,7 +304,7 @@ class ModelParallel(Distribution):
         corresponding `TensorLayout`.
 
     Example:
-    ```
+    ```python
     devices = list_devices()    # Assume there are 8 devices.
 
     # Create a mesh with 2 devices on data parallel and 4 devices on weight
@@ -324,10 +324,12 @@ class ModelParallel(Distribution):
     distribution = ModelParallel(device_mesh=device_mesh,
                                  layout_map=layout_map,
                                  batch_dim_name='batch')
-    with distribution.scope():
-        model = model_creation()
-        model.compile()
-        model.fit(data)
+    # Set the global distribution, or via `with distribution.scope():`
+    set_distribution(distribution)
+
+    model = model_creation()
+    model.compile()
+    model.fit(data)
     ```
 
     User can quickly update the device mesh shape to change the sharding factor
