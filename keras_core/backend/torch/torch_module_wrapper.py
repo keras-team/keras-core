@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 
 from keras_core.layers import Layer
-from keras_core.backend import Variable
 from keras_core.api_export import keras_core_export
 
 
@@ -142,6 +141,8 @@ class TorchModuleWrapper(Layer):
         return self.module.parameters(recurse=recurse)
 
     def track_module_parameters(self):
+        from keras_core.backend import Variable
+
         for param in self.module.parameters():
             variable = Variable(
                 initializer=param, trainable=param.requires_grad
