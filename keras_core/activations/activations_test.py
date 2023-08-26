@@ -17,8 +17,9 @@ def _ref_softplus(x):
 
 def _ref_log_softmax(values):
     max_val = np.max(values)  # for numerical stability
-    log_sum_exp = np.log(np.sum(np.exp(values - max_val)))
-    return values - log_sum_exp
+    stabilized_values = values - max_val
+    log_sum_exp = np.log(np.sum(np.exp(stabilized_values)))
+    return stabilized_values - log_sum_exp
 
 
 class ActivationsTest(testing.TestCase):
