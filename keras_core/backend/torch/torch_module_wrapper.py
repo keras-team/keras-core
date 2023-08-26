@@ -6,11 +6,11 @@ from keras_core.backend import Variable
 from keras_core.api_export import keras_core_export
 
 
-@keras_core_export(["keras_core.backend.torch.TorchModuleWarpper"])
-class TorchModuleWarpper(Layer):
+@keras_core_export(["keras_core.backend.torch.TorchModuleWrapper"])
+class TorchModuleWrapper(Layer):
     """Torch module wrapper layer.
 
-    `TorchModuleWarpper` is an abstraction that can be wrapped around a
+    `TorchModuleWrapper` is an abstraction that can be wrapped around a
     `torch.nn.Module` to make its parameters trackable as a
     `keras_core.layers.Layer`. It works with both vanilla and lazy PyTorch
     modules.
@@ -26,7 +26,7 @@ class TorchModuleWarpper(Layer):
 
     Examples:
 
-    Here's an example of how the `TorchModuleWarpper` can be used with vanilla
+    Here's an example of how the `TorchModuleWrapper` can be used with vanilla
     PyTorch modules.
 
     ```python
@@ -34,26 +34,26 @@ class TorchModuleWarpper(Layer):
     import torch.nn.functional as F
 
     import keras_core
-    from keras_core.backend.torch import TorchModuleWarpper
+    from keras_core.backend.torch import TorchModuleWrapper
 
 
     class Classifier(keras_core.Model):
 
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
-            # Wrap all `torch.nn.Module`s with `TorchModuleWarpper`
-            self.conv1 = TorchModuleWarpper(
+            # Wrap all `torch.nn.Module`s with `TorchModuleWrapper`
+            self.conv1 = TorchModuleWrapper(
                 nn.Conv2d(in_channels=1, out_channels=32, kernel_size=(3, 3))
             )
-            self.conv2 = TorchModuleWarpper(
+            self.conv2 = TorchModuleWrapper(
                 nn.Conv2d(in_channels=32, out_channels=64, kernel_size=(3, 3))
             )
-            self.pool = TorchModuleWarpper(
+            self.pool = TorchModuleWrapper(
                 nn.MaxPool2d(kernel_size=(2, 2))
             )
-            self.flatten = TorchModuleWarpper(nn.Flatten())
-            self.dropout = TorchModuleWarpper(nn.Dropout(p=0.5))
-            self.fc = TorchModuleWarpper(nn.Linear(1600, 10))
+            self.flatten = TorchModuleWrapper(nn.Flatten())
+            self.dropout = TorchModuleWrapper(nn.Dropout(p=0.5))
+            self.fc = TorchModuleWrapper(nn.Linear(1600, 10))
 
         def call(self, inputs):
             x = F.relu(self.conv1(inputs))
@@ -78,7 +78,7 @@ class TorchModuleWarpper(Layer):
     model.fit(train_loader, epochs=5)
     ```
 
-    Here's an example of how the `TorchModuleWarpper` can be used with PyTorch
+    Here's an example of how the `TorchModuleWrapper` can be used with PyTorch
     Lazy modules.
 
     ```python
@@ -86,25 +86,25 @@ class TorchModuleWarpper(Layer):
     import torch.nn.functional as F
 
     import keras_core
-    from keras_core.backend.torch import TorchModuleWarpper
+    from keras_core.backend.torch import TorchModuleWrapper
 
 
     class LazyClassifier(keras.Model):
 
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
-            # You can wrap all `torch.nn.Module`s with `TorchModuleWarpper`
+            # You can wrap all `torch.nn.Module`s with `TorchModuleWrapper`
             # irrespective of whether they are lazy or not.
-            self.conv1 = TorchModuleWarpper(
+            self.conv1 = TorchModuleWrapper(
                 nn.LazyConv2d(out_channels=32, kernel_size=(3, 3))
             )
-            self.conv2 = TorchModuleWarpper(
+            self.conv2 = TorchModuleWrapper(
                 nn.LazyConv2d(out_channels=64, kernel_size=(3, 3))
             )
-            self.pool = TorchModuleWarpper(nn.MaxPool2d(kernel_size=(2, 2)))
-            self.flatten = TorchModuleWarpper(nn.Flatten())
-            self.dropout = TorchModuleWarpper(nn.Dropout(p=0.5))
-            self.fc = TorchModuleWarpper(nn.LazyLinear(10))
+            self.pool = TorchModuleWrapper(nn.MaxPool2d(kernel_size=(2, 2)))
+            self.flatten = TorchModuleWrapper(nn.Flatten())
+            self.dropout = TorchModuleWrapper(nn.Dropout(p=0.5))
+            self.fc = TorchModuleWrapper(nn.LazyLinear(10))
 
         def call(self, inputs):
             x = F.relu(self.conv1(inputs))
