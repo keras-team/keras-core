@@ -305,25 +305,26 @@ class LayoutMap(collections.abc.MutableMapping):
     is the idenifier of the variable.
 
     ```python
-    map = LayoutMap(device_mesh=None)
-    map['.*dense.*kernel'] = layout_2d
-    map['.*dense.*bias'] = layout_1d
-    map['.*conv2d.*kernel'] = layout_4d
-    map['.*conv2d.*bias'] = layout_1d
+    layout_map = LayoutMap(device_mesh=None)
+    layout_map['.*dense.*kernel'] = layout_2d
+    layout_map['.*dense.*bias'] = layout_1d
+    layout_map['.*conv2d.*kernel'] = layout_4d
+    layout_map['.*conv2d.*bias'] = layout_1d
 
-    layout_1 = map['dense_1.kernel']                #   layout_1 == layout_2d
-    layout_2 = map['dense_1.bias']                  #   layout_2 == layout_1d
-    layout_3 = map['dense_2.kernel']                #   layout_3 == layout_2d
-    layout_4 = map['dense_2.bias']                  #   layout_4 == layout_1d
-    layout_5 = map['my_model/conv2d_123/kernel']    #   layout_5 == layout_4d
-    layout_6 = map['my_model/conv2d_123/bias']      #   layout_6 == layout_1d
-    layout_7 = map['my_model/conv3d_1/kernel']      #   layout_7 == None
-    layout_8 = map['my_model/conv3d_1/bias']        #   layout_8 == None
+    layout_1 = layout_map['dense_1.kernel']             # layout_1 == layout_2d
+    layout_2 = layout_map['dense_1.bias']               # layout_2 == layout_1d
+    layout_3 = layout_map['dense_2.kernel']             # layout_3 == layout_2d
+    layout_4 = layout_map['dense_2.bias']               # layout_4 == layout_1d
+    layout_5 = layout_map['my_model/conv2d_123/kernel'] # layout_5 == layout_4d
+    layout_6 = layout_map['my_model/conv2d_123/bias']   # layout_6 == layout_1d
+    layout_7 = layout_map['my_model/conv3d_1/kernel']   # layout_7 == None
+    layout_8 = layout_map['my_model/conv3d_1/bias']     # layout_8 == None
     ```
 
     Args:
-      device_mesh: An optional `DeviceMesh` that can be used to populate the
-        `TensorLayout.device_mesh` if the `TensorLayout.device_mesh` is not set.
+        device_mesh: An optional `DeviceMesh` that can be used to populate the
+            `TensorLayout.device_mesh` if the `TensorLayout.device_mesh` is not
+            set.
     """
 
     def __init__(self, device_mesh=None):
@@ -339,10 +340,10 @@ class LayoutMap(collections.abc.MutableMapping):
         None if there isn't any match found.
 
         Args:
-          key: the string key as the query for the layout.
+            key: the string key as the query for the layout.
 
         Returns:
-          Corresponding layout based on the query.
+            Corresponding layout based on the query.
         """
         if key in self._layout_map:
             return self._layout_map[key]
