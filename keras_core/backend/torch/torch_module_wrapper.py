@@ -132,7 +132,8 @@ class TorchModuleWrapper(Layer):
 
     def __init__(self, module, name=None):
         super().__init__(name=name)
-        self.module = module.to("cuda")
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.module = module.to(self.device)
         self.lazy = isinstance(self.module, nn.modules.lazy.LazyModuleMixin)
         if not self.lazy:
             self.track_module_parameters()
