@@ -138,10 +138,10 @@ class TorchModuleWrapper(Layer):
             self.track_module_parameters()
 
     def parameters(self, recurse=True):
-        return self.module.parameters(recurse=recurse)
+        return self.module.parameters(recurse=not self.lazy)
 
     def track_module_parameters(self):
-        from keras_core.backend import Variable
+        from keras_core.backend.torch import Variable
 
         for param in self.module.parameters():
             variable = Variable(
@@ -151,12 +151,16 @@ class TorchModuleWrapper(Layer):
             self._track_variable(variable)
         self.built = True
 
-    def build(self, input_shape):
-        sample_input = torch.ones(*input_shape).to("cuda")
-        _ = self.module(sample_input)
+    def build(self, input_shape, *args, **kwargs):
+        if not self.lazy:
+            self._build_by_run_for_single_pos_arg(args)
+            self._build_by_run_for_kwargs(kwargs)
+        else:
+            sample_input = torch.ones(*input_shape).to("cuda")
+            _ = self.module(sample_input)
         self.track_module_parameters()
 
-    def call(self, inputs, **kwargs):
+    def call(self, inputs, *args, **kwargs):
         if not self.built:
             self.build(inputs.shape[1:])
-        return self.module.forward(inputs, **kwargs)
+        return self.module.forward(inputs, *args, **kwargs)
