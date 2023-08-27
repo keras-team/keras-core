@@ -1713,10 +1713,10 @@ def sparse_categorical_crossentropy(
         valid_mask = ops.reshape(valid_mask, res_shape)
         res = ops.where(valid_mask, res, 0.0)
 
-    try:
-        res._keras_mask = valid_mask
-    except AttributeError:
-        pass
+        try:
+            res._keras_mask = valid_mask
+        except AttributeError:
+            pass
 
     return res
 
