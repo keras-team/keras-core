@@ -203,6 +203,46 @@ class ActivationsTest(testing.TestCase):
         expected = np.zeros((2, 5))
         self.assertAllClose(result, expected, rtol=1e-05)
 
+    def test_leaky_relu(self):
+        def ref_leaky_relu(x, alpha=0.2):
+            return x if x > 0 else alpha * x
+
+    leaky_relu_vectorized = np.vectorize(ref_leaky_relu)
+
+    # Test for negative_slope = 0.01
+    # Test positive values
+    positive_values = np.random.random((2, 5))
+    result = activations.leaky_relu(
+        positive_values[np.newaxis, :], negative_slope=0.01
+    )[0]
+    expected = leaky_relu_vectorized(positive_values, alpha=0.01)
+    self.assertAllClose(result, expected, rtol=1e-05)
+
+    # Test negative values
+    negative_values = np.random.uniform(-1, 0, (2, 5))
+    result = activations.leaky_relu(
+        negative_values[np.newaxis, :], negative_slope=0.01
+    )[0]
+    expected = leaky_relu_vectorized(negative_values, alpha=0.01)
+    self.assertAllClose(result, expected, rtol=1e-05)
+
+    # Test for negative_slope = 0.3
+    # Test positive values
+    positive_values = np.random.random((2, 5))
+    result = activations.leaky_relu(
+        positive_values[np.newaxis, :], negative_slope=0.3
+    )[0]
+    expected = leaky_relu_vectorized(positive_values, alpha=0.3)
+    self.assertAllClose(result, expected, rtol=1e-05)
+
+    # Test negative values
+    negative_values = np.random.uniform(-1, 0, (2, 5))
+    result = activations.leaky_relu(
+        negative_values[np.newaxis, :], negative_slope=0.3
+    )[0]
+    expected = leaky_relu_vectorized(negative_values, alpha=0.3)
+    self.assertAllClose(result, expected, rtol=1e-05)
+
     def test_gelu(self):
         def gelu(x, approximate=False):
             if approximate:
