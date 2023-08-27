@@ -34,6 +34,24 @@ def _ref_silu(x):
     return x / (1 + np.exp(-x))
 
 
+def _ref_hard_sigmoid(x):
+    x = (x / 6.0) + 0.5
+    z = 0.0 if x <= 0 else (1.0 if x >= 1 else x)
+    return z
+
+
+def _ref_sigmoid(x):
+    if x >= 0:
+        return 1 / (1 + np.exp(-x))
+    else:
+        z = np.exp(x)
+        return z / (1 + z)
+
+
+def _ref_softsign(x):
+    return np.divide(x, np.ones_like(x) + np.absolute(x))
+
+
 class ActivationsTest(testing.TestCase):
     def test_softmax(self):
         x = np.random.random((2, 5))
@@ -164,46 +182,188 @@ class ActivationsTest(testing.TestCase):
         self.assertAllClose(result, true_result)
 
     def test_softplus(self):
-        x = np.random.random((2, 5))
+        # Basic test for random values between 0 and 1
+        x = np.random.uniform(0, 1, (2, 5))
         result = activations.softplus(x[np.newaxis, :])[0]
-        expected = _ref_softplus(x)
+        expected = np.vectorize(_ref_softplus)(x)
         self.assertAllClose(result, expected, rtol=1e-05)
+
+        # Test with 1D array
+        x_1d = np.random.uniform(-10, 10, 5)
+        result_1d = activations.softplus(x_1d)
+        expected_1d = np.vectorize(_ref_softplus)(x_1d)
+        self.assertAllClose(result_1d, expected_1d, rtol=1e-05)
+
+        # Test with 3D array
+        x_3d = np.random.uniform(-10, 10, (3, 3, 3))
+        result_3d = activations.softplus(x_3d)
+        expected_3d = np.vectorize(_ref_softplus)(x_3d)
+        self.assertAllClose(result_3d, expected_3d, rtol=1e-05)
+
+        # Test near zero values
+        x_zero = np.random.uniform(-1e-7, 1e-7, (2, 5))
+        result_zero = activations.softplus(x_zero)
+        expected_zero = np.vectorize(_ref_softplus)(x_zero)
+        self.assertAllClose(result_zero, expected_zero, rtol=1e-05)
+
+        # Test large positive values
+        x_large_positive = np.random.uniform(10, 100, (2, 5))
+        result_large_positive = activations.softplus(x_large_positive)
+        expected_large_positive = np.vectorize(_ref_softplus)(x_large_positive)
+        self.assertAllClose(
+            result_large_positive, expected_large_positive, rtol=1e-05
+        )
+
+        # Test large negative values
+        x_large_negative = np.random.uniform(-100, -10, (2, 5))
+        result_large_negative = activations.softplus(x_large_negative)
+        expected_large_negative = np.vectorize(_ref_softplus)(x_large_negative)
+        self.assertAllClose(
+            result_large_negative, expected_large_negative, rtol=1e-05
+        )
 
     def test_softsign(self):
-        def softsign(x):
-            return np.divide(x, np.ones_like(x) + np.absolute(x))
-
-        x = np.random.random((2, 5))
+        # Basic test for random values between 0 and 1
+        x = np.random.uniform(0, 1, (2, 5))
         result = activations.softsign(x[np.newaxis, :])[0]
-        expected = softsign(x)
+        expected = np.vectorize(_ref_softsign)(x)
         self.assertAllClose(result, expected, rtol=1e-05)
+
+        # Test with 1D array
+        x_1d = np.random.uniform(-10, 10, 5)
+        result_1d = activations.softsign(x_1d)
+        expected_1d = np.vectorize(_ref_softsign)(x_1d)
+        self.assertAllClose(result_1d, expected_1d, rtol=1e-05)
+
+        # Test with 3D array
+        x_3d = np.random.uniform(-10, 10, (3, 3, 3))
+        result_3d = activations.softsign(x_3d)
+        expected_3d = np.vectorize(_ref_softsign)(x_3d)
+        self.assertAllClose(result_3d, expected_3d, rtol=1e-05)
+
+        # Test near zero values
+        x_zero = np.random.uniform(-1e-7, 1e-7, (2, 5))
+        result_zero = activations.softsign(x_zero)
+        expected_zero = np.vectorize(_ref_softsign)(x_zero)
+        self.assertAllClose(result_zero, expected_zero, rtol=1e-05)
+
+        # Test large positive values
+        x_large_positive = np.random.uniform(10, 100, (2, 5))
+        result_large_positive = activations.softsign(x_large_positive)
+        expected_large_positive = np.vectorize(_ref_softsign)(x_large_positive)
+        self.assertAllClose(
+            result_large_positive, expected_large_positive, rtol=1e-05
+        )
+
+        # Test large negative values
+        x_large_negative = np.random.uniform(-100, -10, (2, 5))
+        result_large_negative = activations.softsign(x_large_negative)
+        expected_large_negative = np.vectorize(_ref_softsign)(x_large_negative)
+        self.assertAllClose(
+            result_large_negative, expected_large_negative, rtol=1e-05
+        )
 
     def test_sigmoid(self):
-        def ref_sigmoid(x):
-            if x >= 0:
-                return 1 / (1 + np.exp(-x))
-            else:
-                z = np.exp(x)
-                return z / (1 + z)
-
-        sigmoid = np.vectorize(ref_sigmoid)
-
-        x = np.random.random((2, 5))
+        # Basic test for random values between 0 and 1
+        x = np.random.uniform(0, 1, (2, 5))
         result = activations.sigmoid(x[np.newaxis, :])[0]
-        expected = sigmoid(x)
+        expected = np.vectorize(_ref_sigmoid)(x)
         self.assertAllClose(result, expected, rtol=1e-05)
+
+        # Test with 1D array
+        x_1d = np.random.uniform(-10, 10, 5)
+        result_1d = activations.sigmoid(x_1d)
+        expected_1d = np.vectorize(_ref_sigmoid)(x_1d)
+        self.assertAllClose(result_1d, expected_1d, rtol=1e-05)
+
+        # Test with 3D array
+        x_3d = np.random.uniform(-10, 10, (3, 3, 3))
+        result_3d = activations.sigmoid(x_3d)
+        expected_3d = np.vectorize(_ref_sigmoid)(x_3d)
+        self.assertAllClose(result_3d, expected_3d, rtol=1e-05)
+
+        # Test near zero values
+        x_zero = np.random.uniform(-1e-7, 1e-7, (2, 5))
+        result_zero = activations.sigmoid(x_zero)
+        expected_zero = np.vectorize(_ref_sigmoid)(x_zero)
+        self.assertAllClose(result_zero, expected_zero, rtol=1e-05)
+
+        # Test large positive values
+        x_large_positive = np.random.uniform(10, 100, (2, 5))
+        result_large_positive = activations.sigmoid(x_large_positive)
+        expected_large_positive = np.vectorize(_ref_sigmoid)(x_large_positive)
+        self.assertAllClose(
+            result_large_positive, expected_large_positive, rtol=1e-05
+        )
+
+        # Test large negative values
+        x_large_negative = np.random.uniform(-100, -10, (2, 5))
+        result_large_negative = activations.sigmoid(x_large_negative)
+        expected_large_negative = np.vectorize(_ref_sigmoid)(x_large_negative)
+        self.assertAllClose(
+            result_large_negative, expected_large_negative, rtol=1e-05
+        )
 
     def test_hard_sigmoid(self):
-        def ref_hard_sigmoid(x):
-            x = (x / 6.0) + 0.5
-            z = 0.0 if x <= 0 else (1.0 if x >= 1 else x)
-            return z
-
-        hard_sigmoid = np.vectorize(ref_hard_sigmoid)
-        x = np.random.random((2, 5))
+        # Basic test for random values between 0 and 1
+        x = np.random.uniform(0, 1, (2, 5))
         result = activations.hard_sigmoid(x[np.newaxis, :])[0]
-        expected = hard_sigmoid(x)
+        expected = np.vectorize(_ref_hard_sigmoid)(x)
         self.assertAllClose(result, expected, rtol=1e-05)
+
+        # Test with 1D array
+        x_1d = np.random.uniform(-10, 10, 5)
+        result_1d = activations.hard_sigmoid(x_1d)
+        expected_1d = np.vectorize(_ref_hard_sigmoid)(x_1d)
+        self.assertAllClose(result_1d, expected_1d, rtol=1e-05)
+
+        # Test with 3D array
+        x_3d = np.random.uniform(-10, 10, (3, 3, 3))
+        result_3d = activations.hard_sigmoid(x_3d)
+        expected_3d = np.vectorize(_ref_hard_sigmoid)(x_3d)
+        self.assertAllClose(result_3d, expected_3d, rtol=1e-05)
+
+        # Test with strictly positive values greater than 1
+        x_positive_above_1 = np.random.uniform(1.1, 10, (2, 5))
+        result_positive_above_1 = activations.hard_sigmoid(x_positive_above_1)
+        expected_positive_above_1 = np.ones((2, 5))
+        self.assertAllClose(
+            result_positive_above_1, expected_positive_above_1, rtol=1e-05
+        )
+
+        # Test with strictly negative values less than -1
+        x_negative_below_minus_1 = np.random.uniform(-10, -1.1, (2, 5))
+        result_negative_below_minus_1 = activations.hard_sigmoid(
+            x_negative_below_minus_1
+        )
+        expected_negative_below_minus_1 = np.zeros((2, 5))
+        self.assertAllClose(
+            result_negative_below_minus_1,
+            expected_negative_below_minus_1,
+            rtol=1e-05,
+        )
+
+        # Test near zero values
+        x_zero = np.random.uniform(-1e-7, 1e-7, (2, 5))
+        result_zero = activations.hard_sigmoid(x_zero)
+        expected_zero = np.vectorize(_ref_hard_sigmoid)(x_zero)
+        self.assertAllClose(result_zero, expected_zero, rtol=1e-05)
+
+        # Test large positive values
+        x_large_positive = np.random.uniform(1e4, 1e5, (2, 5))
+        result_large_positive = activations.hard_sigmoid(x_large_positive)
+        expected_large_positive = np.ones((2, 5))
+        self.assertAllClose(
+            result_large_positive, expected_large_positive, rtol=1e-05
+        )
+
+        # Test large negative values
+        x_large_negative = np.random.uniform(-1e5, -1e4, (2, 5))
+        result_large_negative = activations.hard_sigmoid(x_large_negative)
+        expected_large_negative = np.zeros((2, 5))
+        self.assertAllClose(
+            result_large_negative, expected_large_negative, rtol=1e-05
+        )
 
     def test_relu(self):
         # Basic test for positive values
