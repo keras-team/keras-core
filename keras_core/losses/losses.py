@@ -1676,7 +1676,7 @@ def sparse_categorical_crossentropy(
         ignore_class: Optional integer. The ID of a class to be ignored during
             loss computation. This is useful, for example, in segmentation
             problems featuring a "void" class (commonly -1 or 255) in
-            segmentation maps. By default (ignore_class=None), all classes are
+            segmentation maps. By default (`ignore_class=None`), all classes are
             considered.
         axis: Defaults to -1. The dimension along which the entropy is
             computed.
@@ -1713,8 +1713,10 @@ def sparse_categorical_crossentropy(
         valid_mask = ops.reshape(valid_mask, res_shape)
         res = ops.where(valid_mask, res, 0.0)
 
-        if backend.backend() != "numpy":
-            res._keras_mask = valid_mask
+    try:
+        res._keras_mask = valid_mask
+    except AttributeError:
+        pass
 
     return res
 
