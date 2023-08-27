@@ -206,14 +206,47 @@ class ActivationsTest(testing.TestCase):
         self.assertAllClose(result, expected, rtol=1e-05)
 
     def test_relu(self):
-        positive_values = np.random.random((2, 5))
+        # Basic test for positive values
+        positive_values = np.random.uniform(0.1, 10, (2, 5))
         result = activations.relu(positive_values[np.newaxis, :])[0]
         self.assertAllClose(result, positive_values, rtol=1e-05)
 
-        negative_values = np.random.uniform(-1, 0, (2, 5))
+        # Basic test for negative values
+        negative_values = np.random.uniform(-10, -0.1, (2, 5))
         result = activations.relu(negative_values[np.newaxis, :])[0]
         expected = np.zeros((2, 5))
         self.assertAllClose(result, expected, rtol=1e-05)
+
+        # Test with 1D array
+        x_1d = np.random.uniform(-10, 10, 5)
+        result_1d = activations.relu(x_1d)
+        expected_1d = np.maximum(0, x_1d)
+        self.assertAllClose(result_1d, expected_1d, rtol=1e-05)
+
+        # Test with 3D array
+        x_3d = np.random.uniform(-10, 10, (3, 3, 3))
+        result_3d = activations.relu(x_3d)
+        expected_3d = np.maximum(0, x_3d)
+        self.assertAllClose(result_3d, expected_3d, rtol=1e-05)
+
+        # Test near zero values
+        x_zero = np.random.uniform(-1e-7, 1e-7, (2, 5))
+        result_zero = activations.relu(x_zero)
+        expected_zero = np.maximum(0, x_zero)
+        self.assertAllClose(result_zero, expected_zero, rtol=1e-05)
+
+        # Test large positive values
+        x_large_positive = np.random.uniform(1e4, 1e5, (2, 5))
+        result_large_positive = activations.relu(x_large_positive)
+        self.assertAllClose(result_large_positive, x_large_positive, rtol=1e-05)
+
+        # Test large negative values
+        x_large_negative = np.random.uniform(-1e5, -1e4, (2, 5))
+        result_large_negative = activations.relu(x_large_negative)
+        expected_large_negative = np.zeros((2, 5))
+        self.assertAllClose(
+            result_large_negative, expected_large_negative, rtol=1e-05
+        )
 
     def test_leaky_relu(self):
         leaky_relu_vectorized = np.vectorize(_ref_leaky_relu)
