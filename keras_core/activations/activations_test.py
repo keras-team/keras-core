@@ -30,6 +30,10 @@ def _ref_relu6(x):
     return min(max(0, x), 6)
 
 
+def _ref_silu(x):
+    return x / (1 + np.exp(-x))
+
+
 class ActivationsTest(testing.TestCase):
     def test_softmax(self):
         x = np.random.random((2, 5))
@@ -267,6 +271,27 @@ class ActivationsTest(testing.TestCase):
         negative_values = np.random.uniform(-1, 0, (2, 5))
         result = activations.relu6(negative_values[np.newaxis, :])[0]
         expected = relu6_vectorized(negative_values)
+        self.assertAllClose(result, expected, rtol=1e-05)
+
+    def test_silu(self):
+        silu_vectorized = np.vectorize(_ref_silu)
+
+        # Test positive values
+        positive_values = np.random.uniform(0, 5.9, (2, 5))
+        result = activations.silu(positive_values[np.newaxis, :])[0]
+        expected = silu_vectorized(positive_values)
+        self.assertAllClose(result, expected, rtol=1e-05)
+
+        # Test values around zero (to ensure sigmoid behaves correctly)
+        around_zero_values = np.random.uniform(-1, 1, (2, 5))
+        result = activations.silu(around_zero_values[np.newaxis, :])[0]
+        expected = silu_vectorized(around_zero_values)
+        self.assertAllClose(result, expected, rtol=1e-05)
+
+        # Test negative values
+        negative_values = np.random.uniform(-5.9, 0, (2, 5))
+        result = activations.silu(negative_values[np.newaxis, :])[0]
+        expected = silu_vectorized(negative_values)
         self.assertAllClose(result, expected, rtol=1e-05)
 
     def test_gelu(self):
