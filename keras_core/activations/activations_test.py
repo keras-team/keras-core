@@ -333,26 +333,172 @@ class ActivationsTest(testing.TestCase):
         self.assertAllClose(result, true_result)
 
     def test_tanh(self):
+        # Basic test for the tanh activation function
         x = np.random.random((2, 5))
         result = activations.tanh(x[np.newaxis, :])[0]
         expected = np.tanh(x)
         self.assertAllClose(result, expected, rtol=1e-05)
 
+        # Basic test for the tanh activation function
+        x = np.random.uniform(-10, 10, (2, 5))
+        result = activations.tanh(x[np.newaxis, :])[0]
+        expected = np.tanh(x)
+        self.assertAllClose(result, expected, rtol=1e-05)
+
+        # Test with 1D array
+        x_1d = np.random.uniform(-10, 10, 5)
+        result_1d = activations.tanh(x_1d)
+        expected_1d = np.tanh(x_1d)
+        self.assertAllClose(result_1d, expected_1d, rtol=1e-05)
+
+        # Test with 3D array
+        x_3d = np.random.uniform(-10, 10, (3, 3, 3))
+        result_3d = activations.tanh(x_3d)
+        expected_3d = np.tanh(x_3d)
+        self.assertAllClose(result_3d, expected_3d, rtol=1e-05)
+
+        # Test with strictly positive values
+        x_positive = np.random.uniform(0, 10, (2, 5))
+        result_positive = activations.tanh(x_positive)
+        expected_positive = np.tanh(x_positive)
+        self.assertAllClose(result_positive, expected_positive, rtol=1e-05)
+
+        # Test with strictly negative values
+        x_negative = np.random.uniform(-10, 0, (2, 5))
+        result_negative = activations.tanh(x_negative)
+        expected_negative = np.tanh(x_negative)
+        self.assertAllClose(result_negative, expected_negative, rtol=1e-05)
+
+        # Test near zero values
+        x_zero = np.random.uniform(-1e-7, 1e-7, (2, 5))
+        result_zero = activations.tanh(x_zero)
+        expected_zero = np.tanh(x_zero)
+        self.assertAllClose(result_zero, expected_zero, rtol=1e-05)
+
+        # Test large values to check stability
+        x_large = np.random.uniform(1e4, 1e5, (2, 5))
+        result_large = activations.tanh(x_large)
+        expected_large = np.tanh(x_large)
+        self.assertAllClose(result_large, expected_large, rtol=1e-05)
+
     def test_exponential(self):
+        # Basic test for the exponential activation function
         x = np.random.random((2, 5))
         result = activations.exponential(x[np.newaxis, :])[0]
         expected = np.exp(x)
         self.assertAllClose(result, expected, rtol=1e-05)
 
+        x = np.random.uniform(-10, 10, (2, 5))
+        result = activations.exponential(x[np.newaxis, :])[0]
+        expected = np.exp(x)
+        self.assertAllClose(result, expected, rtol=1e-05)
+
+        # Test with 1D array
+        x_1d = np.random.uniform(-10, 10, 5)
+        result_1d = activations.exponential(x_1d)
+        expected_1d = np.exp(x_1d)
+        self.assertAllClose(result_1d, expected_1d, rtol=1e-05)
+
+        # Test with 3D array
+        x_3d = np.random.uniform(-10, 10, (3, 3, 3))
+        result_3d = activations.exponential(x_3d)
+        expected_3d = np.exp(x_3d)
+        self.assertAllClose(result_3d, expected_3d, rtol=1e-05)
+
+        # Test with strictly positive values
+        x_positive = np.random.uniform(0, 10, (2, 5))
+        result_positive = activations.exponential(x_positive)
+        expected_positive = np.exp(x_positive)
+        self.assertAllClose(result_positive, expected_positive, rtol=1e-05)
+
+        # Test with strictly negative values
+        x_negative = np.random.uniform(-10, 0, (2, 5))
+        result_negative = activations.exponential(x_negative)
+        expected_negative = np.exp(x_negative)
+        self.assertAllClose(result_negative, expected_negative, rtol=1e-05)
+
+        # Test near zero values
+        x_zero = np.random.uniform(-1e-7, 1e-7, (2, 5))
+        result_zero = activations.exponential(x_zero)
+        expected_zero = np.exp(x_zero)
+        self.assertAllClose(result_zero, expected_zero, rtol=1e-05)
+
+        # Test large values to check stability
+        x_large = np.random.uniform(1e4, 1e5, (2, 5))
+        result_large = activations.exponential(x_large)
+        expected_large = np.exp(x_large)
+        self.assertAllClose(result_large, expected_large, rtol=1e-05)
+
     def test_mish(self):
+        # Basic test for the mish activation function
         x = np.random.random((2, 5))
         result = activations.mish(x[np.newaxis, :])[0]
         expected = x * np.tanh(_ref_softplus(x))
         self.assertAllClose(result, expected, rtol=1e-05)
 
+        x = np.random.uniform(-10, 10, (2, 5))
+        result = activations.mish(x[np.newaxis, :])[0]
+        expected = x * np.tanh(_ref_softplus(x))
+        self.assertAllClose(result, expected, rtol=1e-05)
+
+        # Test with 1D array
+        x_1d = np.random.uniform(-10, 10, 5)
+        result_1d = activations.mish(x_1d)
+        expected_1d = x_1d * np.tanh(_ref_softplus(x_1d))
+        self.assertAllClose(result_1d, expected_1d, rtol=1e-05)
+
+        # Test with 3D array
+        x_3d = np.random.uniform(-10, 10, (3, 3, 3))
+        result_3d = activations.mish(x_3d)
+        expected_3d = x_3d * np.tanh(_ref_softplus(x_3d))
+        self.assertAllClose(result_3d, expected_3d, rtol=1e-05)
+
+        # Test with strictly positive values
+        x_positive = np.random.uniform(0, 10, (2, 5))
+        result_positive = activations.mish(x_positive)
+        expected_positive = x_positive * np.tanh(_ref_softplus(x_positive))
+        self.assertAllClose(result_positive, expected_positive, rtol=1e-05)
+
+        # Test with strictly negative values
+        x_negative = np.random.uniform(-10, 0, (2, 5))
+        result_negative = activations.mish(x_negative)
+        expected_negative = x_negative * np.tanh(_ref_softplus(x_negative))
+        self.assertAllClose(result_negative, expected_negative, rtol=1e-05)
+
+        # Test near zero values
+        x_zero = np.random.uniform(-1e-7, 1e-7, (2, 5))
+        result_zero = activations.mish(x_zero)
+        expected_zero = x_zero * np.tanh(_ref_softplus(x_zero))
+        self.assertAllClose(result_zero, expected_zero, rtol=1e-05)
+
+        # Test large values to check stability
+        x_large = np.random.uniform(1e4, 1e5, (2, 5))
+        result_large = activations.mish(x_large)
+        expected_large = x_large * np.tanh(_ref_softplus(x_large))
+        self.assertAllClose(result_large, expected_large, rtol=1e-05)
+
     def test_linear(self):
         x = np.random.random((10, 5))
         self.assertAllClose(x, activations.linear(x))
+
+        # Test with 1D array
+        x_1d = np.random.uniform(-10, 10, 5)
+        self.assertAllClose(x_1d, activations.linear(x_1d))
+
+        # Test with 2D array
+        x = np.random.uniform(-10, 10, (10, 5))
+        self.assertAllClose(x, activations.linear(x))
+
+        # Test with 3D array
+        x_3d = np.random.uniform(-10, 10, (5, 5, 5))
+        self.assertAllClose(x_3d, activations.linear(x_3d))
+
+        # Test with float32 data type
+        x_float32 = np.random.uniform(-10, 10, (10, 5)).astype(np.float32)
+        self.assertAllClose(x_float32, activations.linear(x_float32))
+        # Test with int32 data type
+        x_int32 = np.random.randint(-10, 10, (10, 5)).astype(np.int32)
+        self.assertAllClose(x_int32, activations.linear(x_int32))
 
     def test_get_method(self):
         obj = activations.get("relu")
