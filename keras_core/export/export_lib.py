@@ -317,20 +317,16 @@ class ExportArchive(tf.__internal__.tracking.AutoTrackable):
                 f"Received instead object of type '{type(variables)}'."
             )
         # Ensure that all variables added are either tf.Variables
-        # or Variables created by Keras Core with the TF backend.
-        if not all(isinstance(v, tf.Variable) for v in variables) and not (
-            all(
-                isinstance(v, (tf.Variable, backend.Variable))
-                for v in variables
-            )
-            and (backend.backend() == "tensorflow")
-        ):
+        # or Variables created by Keras Core with the TF or JAX backends.
+        if not all(isinstance(v, (tf.Variable, backend.Variable)) for v in variables):
             raise ValueError(
                 "Expected all elements in `variables` to be "
                 "`tf.Variable` instances. Found instead the following types: "
                 f"{list(set(type(v) for v in variables))}"
             )
         setattr(self, name, list(variables))
+        if backend.backend() == "jax":
+            setattr(self.module, name, list(variables))
 
     def write_out(self, filepath, options=None):
         """Write the corresponding SavedModel to disk.
@@ -374,7 +370,7 @@ class ExportArchive(tf.__internal__.tracking.AutoTrackable):
             self.module.tensorflow_version = self.tensorflow_version
 
             # Keep the wrapped state as flat list (needed in TensorFlow fine-tuning).
-            self.module.vars = tf.nest.flatten(self.variables)
+            self.module._vars = tf.nest.flatten(self.variables)
 
             # The `variables`, `trainable_variables`, and `non_trainable_variables`
             # attributes will be automatically populated in the tf.Module.
@@ -450,6 +446,7 @@ def export_model(model, filepath):
             input_signature = [input_signature]
         export_archive.add_endpoint("serve", model.__call__, input_signature)
     else:
+        import pdb; pdb.set_trace()
         save_spec = model._get_save_spec()
         if not save_spec:
             raise ValueError(
