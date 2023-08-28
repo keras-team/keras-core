@@ -171,9 +171,7 @@ def apply_mask(sample_weight, mask, dtype, reduction):
             #   = sum(loss * sample_weight) / total * total / valid
             #   = sum(loss * sample_weight) / valid
             total = ops.cast(
-                ops.prod(
-                    ops.convert_to_tensor(ops.shape(mask), dtype="int32")
-                ),
+                ops.prod(ops.convert_to_tensor(ops.shape(mask), dtype="int32")),
                 dtype,
             )
             valid = ops.sum(mask)  # May be 0!

@@ -131,11 +131,12 @@ class LossTest(testing.TestCase):
 
         loss_fn = ExampleLoss()
         rank1_loss = loss_fn(y_true, y_pred, sample_weight=sample_weight)
-        
+
         # duplicate rows
         mask = ops.tile(ops.expand_dims(mask, axis=0), (2, 1))
         y_true = ops.tile(ops.expand_dims(y_true, axis=0), (2, 1))
         y_pred = ops.tile(ops.expand_dims(y_pred, axis=0), (2, 1))
+        sample_weight = ops.tile(ops.expand_dims(sample_weight, axis=0), (2, 1))
         y_pred._keras_mask = mask
         rank2_loss = loss_fn(y_true, y_pred, sample_weight=sample_weight)
         self.assertAllClose(rank1_loss, rank2_loss)
