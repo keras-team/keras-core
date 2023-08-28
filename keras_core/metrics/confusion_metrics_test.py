@@ -501,13 +501,13 @@ class PrecisionTest(testing.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"When class_id is provided, y_pred must be a 2D array with shape "
-            r"(num_samples, num_classes), found shape: *"
+            r"When class_id is provided, y_pred must be a 2D array "
+            r"with shape \(num_samples, num_classes\), found shape:.*"
         ):
-            p_obj(y_true, y_pred, class_id=2)
+            p_obj(y_true, y_pred)
 
     def test_unweighted_class_id_multiclass(self):
-        p_obj = metrics.Precision()
+        p_obj = metrics.Precision(class_id=1)
 
         y_pred = np.array([[0.1, 0.2, 0.7],
                            [0.5, 0.3, 0.2],
@@ -521,7 +521,7 @@ class PrecisionTest(testing.TestCase):
                            [1., 0., 0.],
                            [0., 0., 1.]])
 
-        result = p_obj(y_true, y_pred, class_id=1)
+        result = p_obj(y_true, y_pred)
         self.assertAlmostEqual(1.0, result)
         self.assertAlmostEqual(1.0, p_obj.true_positives)
         self.assertAlmostEqual(0.0, p_obj.false_positives)
@@ -653,13 +653,14 @@ class RecallTest(testing.TestCase):
         y_true = np.array([0, 1, 1, 0, 0])
 
         with self.assertRaisesRegex(
-            ValueError, r"When class_id is provided, y_pred must be a 2D array"
-                        r" with shape (num_samples, num_classes), found shape:*"
+            ValueError,
+            r"When class_id is provided, y_pred must be a 2D array "
+            r"with shape \(num_samples, num_classes\), found shape:.*"
         ):
             r_obj(y_true, y_pred)
 
     def test_unweighted_class_id_multiclass(self):
-        r_obj = metrics.Recall(class_id=2)
+        r_obj = metrics.Recall(class_id=1)
 
         y_pred = np.array([[0.1, 0.2, 0.7],
                            [0.5, 0.3, 0.2],
