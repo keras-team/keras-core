@@ -117,6 +117,10 @@ class LossTest(testing.TestCase):
             loss,
         )
 
+    @pytest.mark.skipif(
+        backend.backend() == "numpy",
+        reason="Numpy backend does not support masking.",
+    )
     def test_mask_and_sample_weight_rank2(self):
         # check loss of inputs with duplicate rows doesn't change
         sample_weight = np.array([0.4, 0.3, 0.2, 0.1])
