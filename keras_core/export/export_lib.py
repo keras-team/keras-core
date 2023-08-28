@@ -446,7 +446,6 @@ def export_model(model, filepath):
             input_signature = [input_signature]
         export_archive.add_endpoint("serve", model.__call__, input_signature)
     else:
-        import pdb; pdb.set_trace()
         save_spec = model._get_save_spec()
         if not save_spec:
             raise ValueError(
