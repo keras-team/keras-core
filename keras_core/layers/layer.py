@@ -244,6 +244,7 @@ class Layer(BackendLayer, Operation):
         self.dtype_policy = mixed_precision.resolve_policy(dtype)
         self.autocast = autocast
         self._input_spec = None
+        self._save_spec = None
         self.supports_jit = True
 
         self._trainable = trainable
@@ -676,6 +677,9 @@ class Layer(BackendLayer, Operation):
 
         # Caches info about `call()` signature, args, kwargs.
         call_spec = CallSpec(self._call_signature, args, kwargs)
+
+        if self._save_spec is None and args:
+            self.save_spec = self._set_save_spec(args, kwargs)
 
         ############################################
         # 3. Check input spec for 1st positional arg.
@@ -1216,6 +1220,33 @@ class Layer(BackendLayer, Operation):
             )
             self._clear_losses()
         return layer_call_ctx
+
+    def _set_save_spec(self, args, kwargs):
+        save_spec = {}
+        create_spec_info = lambda x: {
+                "shape": x.shape,
+                "dtype": x.dtype,
+                "name": getattr(x, "name", None),
+            }
+        save_spec["inputs"] = tree.map_structure(
+            create_spec_info,
+            args[0]
+        )
+        save_spec["args"] = tree.map_structure(
+            create_spec_info,
+            args[1:]
+        )
+        save_spec["kwargs"] = {}
+        # Filter out non-tensor arguments from kwargs.
+        for key, kwarg in kwargs.items():
+            flat_kwarg = tree.flatten(kwarg)
+            if any((not hasattr(s, "shape") or not hasattr(s,"dtype")) for s in flat_kwarg):
+                continue
+            save_spec["kwargs"][key] = tree.map_structure(
+                create_spec_info,
+                flat_kwarg
+            )
+        return save_spec
 
     def _maybe_reset_call_context(self):
         layer_call_ctx = global_state.get_global_attribute("current_call_ctx")
