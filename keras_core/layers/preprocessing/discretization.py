@@ -2,26 +2,18 @@ import numpy as np
 
 from keras_core import backend
 from keras_core.api_export import keras_core_export
-from keras_core.layers.layer import Layer
 from keras_core.utils import backend_utils
+from keras_core.layers.preprocessing.tf_data_layer import TFDataLayer
 from keras_core.utils.module_utils import tensorflow as tf
 
 
 @keras_core_export("keras_core.layers.Discretization")
-class Discretization(Layer):
+class Discretization(TFDataLayer):
     """A preprocessing layer which buckets continuous features by ranges.
 
     This layer will place each element of its input data into one of several
     contiguous ranges and output an integer index indicating which range each
     element was placed in.
-
-    **Note:** This layer wraps `tf.keras.layers.Discretization`. It cannot
-    be used as part of the compiled computation graph of a model with
-    any backend other than TensorFlow.
-    It can however be used with any backend when running eagerly.
-    It can also always be used as part of an input preprocessing pipeline
-    with any backend (outside the model itself), which is how we recommend
-    to use this layer.
 
     **Note:** This layer is safe to use inside a `tf.data` pipeline
     (independently of which backend you're using).
@@ -103,28 +95,12 @@ class Discretization(Layer):
         dtype=None,
         **kwargs,
     ):
-        if not tf.available:
-            raise ImportError(
-                "Layer Discretization requires TensorFlow. "
-                "Install it via `pip install tensorflow`."
-            )
-
         super().__init__(name=name, dtype=dtype)
         if sparse and backend.backend() != "tensorflow":
             raise ValueError(
                 "`sparse` can only be set to True with the "
                 "TensorFlow backend."
             )
-        self.layer = tf.keras.layers.Discretization(
-            bin_boundaries=bin_boundaries,
-            num_bins=num_bins,
-            epsilon=epsilon,
-            output_mode=output_mode,
-            sparse=sparse,
-            name=name,
-            dtype=dtype,
-            **kwargs,
-        )
         self.bin_boundaries = bin_boundaries
         if self.bin_boundaries:
             self.built = True
