@@ -4369,6 +4369,8 @@ def sort(x, axis=-1):
 class Split(Operation):
     def __init__(self, indices_or_sections, axis=0):
         super().__init__()
+        if not isinstance(indices_or_sections, int):
+            indices_or_sections = tuple(indices_or_sections)
         self.indices_or_sections = indices_or_sections
         self.axis = axis
 
@@ -4399,7 +4401,7 @@ class Split(Operation):
                 for _ in range(self.indices_or_sections)
             ]
 
-        indices_or_sections = [0] + self.indices_or_sections
+        indices_or_sections = (0, *self.indices_or_sections, x_size_on_axis)
         output_size = np.diff(indices_or_sections)
         outputs = []
         for i in range(len(output_size)):
@@ -5282,18 +5284,18 @@ class Squeeze(Operation):
     def call(self, x):
         return backend.numpy.squeeze(x, axis=self.axis)
 
-    def compute_output_spec(self, x, axis=None):
+    def compute_output_spec(self, x):
         input_shape = list(x.shape)
-        if axis is None:
+        if self.axis is None:
             output_shape = list(filter((1).__ne__, input_shape))
             return KerasTensor(output_shape)
         else:
-            if input_shape[axis] != 1:
+            if input_shape[self.axis] != 1:
                 raise ValueError(
-                    f"Cannot squeeze axis {axis}, because the dimension is not "
-                    "1."
+                    f"Cannot squeeze axis {self.axis}, because the dimension "
+                    "is not 1."
                 )
-            del input_shape[axis]
+            del input_shape[self.axis]
             return KerasTensor(input_shape, dtype=x.dtype)
 
 
@@ -5310,7 +5312,7 @@ def squeeze(x, axis=None):
         length 1 removed.
     """
     if any_symbolic_tensors((x,)):
-        return Squeeze().symbolic_call(x, axis=axis)
+        return Squeeze(axis=axis).symbolic_call(x)
     return backend.numpy.squeeze(x, axis=axis)
 
 
