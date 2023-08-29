@@ -160,7 +160,7 @@ class TorchModuleWrapper(Layer):
         else:
             # sample_input = torch.ones(*input_shape).to("cuda")
             # _ = self.module(sample_input)
-            _ = keras_core.backend.torch.core.compute_output_spec(self.module)
+            _ = keras_core.backend.torch.core.compute_output_spec(self.__call__)
         self.track_module_parameters()
 
     def call(self, inputs, *args, **kwargs):
