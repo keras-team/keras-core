@@ -475,13 +475,15 @@ class ExportArchive:
     def _convert_jax2tf_function(self, fn, input_signature):
         shapes = []
         for spec in input_signature:
-            if isinstance(input_signature, dict):
-                spec_shape = input_signature[spec].shape
-            else:
-                spec_shape = spec.shape
-            spec_shape = str(spec_shape).replace("None", "b")
-            shapes.append(spec_shape)
+            shapes.append(self._spec_to_poly_shape(spec))
         return jax2tf.convert(fn, polymorphic_shapes=shapes)
+
+    def _spec_to_poly_shape(self, spec):
+        if isinstance(spec, (dict, list)):
+            return tf.nest.map_structure(self._spec_to_poly_shape, spec)
+        spec_shape = spec.shape
+        spec_shape = str(spec_shape).replace("None", "b")
+        return spec_shape
 
 def export_model(model, filepath):
     export_archive = ExportArchive()
