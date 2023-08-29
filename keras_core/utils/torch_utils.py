@@ -153,7 +153,7 @@ class TorchModuleWrapper(Layer):
             self._track_variable(variable)
         self.built = True
 
-    def build(self, input_shape, *args, **kwargs):
+    def build(self, *args, **kwargs):
         if not self.lazy:
             self._build_by_run_for_single_pos_arg(args)
             self._build_by_run_for_kwargs(kwargs)
@@ -163,7 +163,5 @@ class TorchModuleWrapper(Layer):
             _ = keras_core.backend.torch.core.compute_output_spec(self.__call__)
         self.track_module_parameters()
 
-    def call(self, inputs, *args, **kwargs):
-        if not self.built:
-            self.build(inputs.shape[1:])
-        return self.module.forward(inputs, *args, **kwargs)
+    def call(self, inputs, **kwargs):
+        return self.module.forward(inputs, **kwargs)
