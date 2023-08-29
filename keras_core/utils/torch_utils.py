@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+import keras_core
 from keras_core.layers import Layer
 from keras_core.api_export import keras_core_export
 
@@ -157,8 +158,9 @@ class TorchModuleWrapper(Layer):
             self._build_by_run_for_single_pos_arg(args)
             self._build_by_run_for_kwargs(kwargs)
         else:
-            sample_input = torch.ones(*input_shape).to("cuda")
-            _ = self.module(sample_input)
+            # sample_input = torch.ones(*input_shape).to("cuda")
+            # _ = self.module(sample_input)
+            _ = keras_core.backend.torch.core.compute_output_spec(self.module)
         self.track_module_parameters()
 
     def call(self, inputs, *args, **kwargs):
