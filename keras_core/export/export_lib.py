@@ -129,6 +129,13 @@ class ExportArchive:
                 f"Received instead an object of type '{type(resource)}'. "
                 f"Object received: {resource}"
             )
+        if backend.backend() == "jax" and not isinstance(resource, backend.jax.layer.JaxLayer):
+            raise ValueError(
+                "Invalid resource type. Expected an instance of a "
+                "JAX-based Keras `Layer` or `Model` (backend.jax.layer.JaxLayer). "
+                f"Received instead an object of type '{type(resource)}'. "
+                f"Object received: {resource}"
+            )
         if isinstance(resource, Layer):
             if not resource.built:
                 raise ValueError(
