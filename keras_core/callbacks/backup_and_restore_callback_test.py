@@ -1,6 +1,7 @@
-import pytest
 import os
+
 import numpy as np
+import pytest
 
 from keras_core import callbacks
 from keras_core import layers
@@ -31,22 +32,21 @@ class InterruptingCallback(callbacks.Callback):
 
 
 class BackupAndRestoreCallbackTest(testing.TestCase):
-
     # Checking for invalid backup_dir
     def test_empty_backup_dir(self):
         with self.assertRaisesRegex(
-                ValueError, expected_regex="Empty " "`backup_dir`"
+            ValueError, expected_regex="Empty " "`backup_dir`"
         ):
             callbacks.BackupAndRestoreCallback(file_path=None)
 
     # Checking save_freq and save_before_preemption both unset
     def test_save_set_error(self):
         with self.assertRaisesRegex(
-                ValueError,
-                expected_regex="`save_freq` or "
-                               "`save_before_preemption` "
-                               ""
-                               "must be set",
+            ValueError,
+            expected_regex="`save_freq` or "
+            "`save_before_preemption` "
+            ""
+            "must be set",
         ):
             callbacks.BackupAndRestoreCallback(
                 file_path="backup_dir",
@@ -57,14 +57,14 @@ class BackupAndRestoreCallbackTest(testing.TestCase):
     # Check invalid save_freq, both string and non integer
     def test_save_freq_unknown_error(self):
         with self.assertRaisesRegex(
-                ValueError, expected_regex="Unrecognized save_freq"
+            ValueError, expected_regex="Unrecognized save_freq"
         ):
             callbacks.BackupAndRestoreCallback(
                 file_path="backup_dir", save_freq="batch"
             )
 
         with self.assertRaisesRegex(
-                ValueError, expected_regex="Unrecognized save_freq"
+            ValueError, expected_regex="Unrecognized save_freq"
         ):
             callbacks.BackupAndRestoreCallback(
                 file_path="backup_dir", save_freq=0.15
@@ -90,7 +90,7 @@ class BackupAndRestoreCallbackTest(testing.TestCase):
             return model
 
         temp_dir = self.get_temp_dir()
-        filepath = os.path.join(temp_dir, "subdir", "checkpoint.keras")
+        filepath = os.path.join(temp_dir, "subdir", "checkpoint.weights.h5")
         file_utils.rmtree(filepath)
         self.assertFalse(os.path.exists(filepath))
 
@@ -107,8 +107,10 @@ class BackupAndRestoreCallbackTest(testing.TestCase):
                 x_train,
                 y_train,
                 batch_size=4,
-                callbacks=[cbk,
-                           InterruptingCallback(steps_int=2, epoch_int=None)],
+                callbacks=[
+                    cbk,
+                    InterruptingCallback(steps_int=2, epoch_int=None),
+                ],
                 epochs=2,
                 verbose=0,
             )
@@ -118,11 +120,7 @@ class BackupAndRestoreCallbackTest(testing.TestCase):
             self.assertEqual(cbk._last_batch_seen, 1)
 
             hist = model.fit(
-                x_train,
-                y_train,
-                batch_size=4,
-                callbacks=[cbk],
-                epochs=5
+                x_train, y_train, batch_size=4, callbacks=[cbk], epochs=5
             )
 
             self.assertEqual(cbk._current_epoch, 4)
@@ -148,7 +146,7 @@ class BackupAndRestoreCallbackTest(testing.TestCase):
             return model
 
         temp_dir = self.get_temp_dir()
-        filepath = os.path.join(temp_dir, "subdir", "checkpoint.keras")
+        filepath = os.path.join(temp_dir, "subdir", "checkpoint.weights.h5")
         file_utils.rmtree(filepath)
         self.assertFalse(os.path.exists(filepath))
 
@@ -165,8 +163,10 @@ class BackupAndRestoreCallbackTest(testing.TestCase):
                 x_train,
                 y_train,
                 batch_size=4,
-                callbacks=[cbk,
-                           InterruptingCallback(steps_int=None, epoch_int=2)],
+                callbacks=[
+                    cbk,
+                    InterruptingCallback(steps_int=None, epoch_int=2),
+                ],
                 epochs=6,
                 verbose=0,
             )
@@ -175,11 +175,7 @@ class BackupAndRestoreCallbackTest(testing.TestCase):
             self.assertTrue(os.path.exists(filepath))
 
             hist = model.fit(
-                x_train,
-                y_train,
-                batch_size=4,
-                callbacks=[cbk],
-                epochs=5
+                x_train, y_train, batch_size=4, callbacks=[cbk], epochs=5
             )
             self.assertEqual(cbk._current_epoch, 4)
             self.assertEqual(hist.epoch[-1], 4)
@@ -203,7 +199,7 @@ class BackupAndRestoreCallbackTest(testing.TestCase):
             return model
 
         temp_dir = self.get_temp_dir()
-        filepath = os.path.join(temp_dir, "subdir", "checkpoint.keras")
+        filepath = os.path.join(temp_dir, "subdir", "checkpoint.weights.h5")
         file_utils.rmtree(filepath)
         self.assertFalse(os.path.exists(filepath))
 
@@ -220,8 +216,10 @@ class BackupAndRestoreCallbackTest(testing.TestCase):
                 x_train,
                 y_train,
                 batch_size=4,
-                callbacks=[cbk,
-                           InterruptingCallback(steps_int=None, epoch_int=2)],
+                callbacks=[
+                    cbk,
+                    InterruptingCallback(steps_int=None, epoch_int=2),
+                ],
                 epochs=6,
                 verbose=0,
             )
@@ -230,11 +228,5 @@ class BackupAndRestoreCallbackTest(testing.TestCase):
             self.assertTrue(os.path.exists(filepath))
             file_utils.rmtree(filepath)
 
-            model.fit(
-                x_train,
-                y_train,
-                batch_size=4,
-                callbacks=[cbk],
-                epochs=5
-            )
+            model.fit(x_train, y_train, batch_size=4, callbacks=[cbk], epochs=5)
             self.assertEqual(cbk._current_epoch, 4)

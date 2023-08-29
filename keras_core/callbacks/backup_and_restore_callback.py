@@ -1,5 +1,5 @@
 import os
-import keras_core.saving
+import warnings
 
 from keras_core.api_export import keras_core_export
 from keras_core.callbacks.callback import Callback
@@ -12,10 +12,10 @@ class BackupAndRestoreCallback(Callback):
 
     `BackupAndRestore` callback is intended to recover training from an
     interruption that has happened in the middle of a `Model.fit` execution, by
-    backing up the training states in a temporary checkpoint file (with the help
-    of a `tf.train.CheckpointManager`), at the end of each epoch. Each backup
-    overwrites the previously written checkpoint file, so at any given time
-    there is at most one such checkpoint file for backup/restoring purpose.
+    backing up the training states in a temporary checkpoint file, at the end of
+    each epoch. Each backup overwrites the previously written checkpoint file,
+    so at any given time there is at most one such checkpoint file for
+    backup/restoring purpose.
 
     If training restarts before completion, the training state (which includes
     the `Model` weights and epoch number) is restored to the most recently saved
@@ -31,12 +31,12 @@ class BackupAndRestoreCallback(Callback):
 
     Example:
 
-    >>> class InterruptingCallback(tf.keras.callbacks.Callback):
+    >>> class InterruptingCallback(keras.callbacks.Callback):
     ...   def on_epoch_begin(self, epoch, logs=None):
     ...     if epoch == 4:
     ...       raise RuntimeError('Interrupting!')
     >>> callback = keras.callbacks.BackupAndRestore(backup_dir="/tmp/backup")
-    >>> model = keras.models.Sequential([tf.keras.layers.Dense(10)])
+    >>> model = keras.models.Sequential([keras.layers.Dense(10)])
     >>> model.compile(keras.optimizers.SGD(), loss='mse')
     >>> try:
     ...   model.fit(np.arange(100).reshape(5, 20), np.zeros(5), epochs=10,
@@ -50,7 +50,7 @@ class BackupAndRestoreCallback(Callback):
     >>> # Only 6 more epochs are run, since first training got interrupted at
     >>> # zero-indexed epoch 4, second training will continue from 4 to 9.
     >>> len(history.history['loss'])
-    6
+    >>> 6
 
     Args:
         file_path: String, path to store the checkpoint.
@@ -104,22 +104,26 @@ class BackupAndRestoreCallback(Callback):
                 f"Unrecognized save_freq: {self.save_freq}. "
                 "Expected save_freq are 'epoch' or integer values"
             )
+        if self.save_before_preemption:
+            warnings.warn("`save_before_preemption` not yet implemented")
 
     def on_train_begin(self, logs=None):
         """
         Get training state from temporary file and restore it
         """
         if self._check_checkpoints_exists(self.file_path):
-            self._model = keras_core.saving.load_model(filepath=self.file_path)
+            self._model.load_weights(filepath=self.file_path)
 
     def on_train_end(self, logs=None):
-        if self.delete_checkpoint and \
-                self._check_checkpoints_exists(self.file_path):
+        if self.delete_checkpoint and self._check_checkpoints_exists(
+            self.file_path
+        ):
             self._cleanup_checkpoint()
 
     def on_epoch_begin(self, epoch, logs=None):
-        if self.delete_checkpoint and \
-                self._check_checkpoints_exists(self.file_path):
+        if self.delete_checkpoint and self._check_checkpoints_exists(
+            self.file_path
+        ):
             self._cleanup_checkpoint()
         self._current_epoch = epoch
 
@@ -149,7 +153,7 @@ class BackupAndRestoreCallback(Callback):
             file_utils.makedirs(dirname)
 
         try:
-            self._model.save(filepath, overwrite=True)
+            self._model.save_weights(filepath=filepath, overwrite=True)
         except IsADirectoryError:  # h5py 3.x
             raise IOError(
                 "Please specify a non-directory filepath for "
