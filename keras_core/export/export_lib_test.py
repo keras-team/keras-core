@@ -447,6 +447,31 @@ class ExportArchiveTest(testing.TestCase):
                 my_endpoint,
             )
 
+    def test_subclassed_model_export(self):
+        class CustomModelX(models.Model):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.dense1 = layers.Dense(1)
+                self.dense2 = layers.Dense(1)
+
+            def call(self, inputs):
+                out = self.dense1(inputs)
+                return self.dense2(out)
+        
+        temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
+        x = np.random.random((100, 32))
+        model = CustomModelX()
+        model.compile(
+            optimizer="adam",
+            loss="mse",
+        )
+        ref_output = model(x)
+        model.export(temp_filepath)
+        revived_model = tf.saved_model.load(temp_filepath)
+        self.assertAllClose(
+            ref_output, revived_model.serve(ref_input), atol=1e-6
+        )
+
     def test_export_no_assets(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
 
