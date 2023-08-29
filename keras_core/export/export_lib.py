@@ -366,7 +366,8 @@ class ExportArchive:
         if backend.backend() == "tensorflow":
             setattr(self._tf_trackable, name, list(variables))
         else: # JAX backend
-            setattr(self.module, name, list(variables))
+            tf_variables = tf.nest.flatten(tf.nest.map_structure(tf.Variable, variables))
+            setattr(self.module, name, list(tf_variables))
 
     def write_out(self, filepath, options=None):
         """Write the corresponding SavedModel to disk.
