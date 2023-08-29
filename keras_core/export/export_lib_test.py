@@ -55,6 +55,42 @@ class ExportArchiveTest(testing.TestCase):
         self.assertLen(export_archive.trainable_variables, 6)
         self.assertLen(export_archive.non_trainable_variables, 2)
 
+        export_archive = export_lib.ExportArchive()
+        export_archive.track(model)
+        export_archive.add_endpoint(
+            "call",
+            model.call,
+            input_signature=[
+                tf.TensorSpec(
+                    shape=(None, 10),
+                    dtype=tf.float32,
+                )
+            ],
+        )
+        export_archive.write_out(temp_filepath)
+        revived_model = tf.saved_model.load(temp_filepath)
+        self.assertAllClose(
+            ref_output, revived_model.call(ref_input), atol=1e-6
+        )
+
+    @pytest.mark.skipif(
+        backend.backend() != "tensorflow",
+        reason="Registering a tf.function endpoint with a model is only applicable to TensorFlow backend.",
+    )
+    def test_endpoint_registration_tf_function(self):
+        temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
+
+        model = get_model()
+        ref_input = tf.random.normal((3, 10))
+        ref_output = model(ref_input)
+
+        # Test variable tracking
+        export_archive = export_lib.ExportArchive()
+        export_archive.track(model)
+        self.assertLen(export_archive.variables, 8)
+        self.assertLen(export_archive.trainable_variables, 6)
+        self.assertLen(export_archive.non_trainable_variables, 2)
+
         @tf.function()
         def my_endpoint(x):
             return model(x)
@@ -76,25 +112,6 @@ class ExportArchiveTest(testing.TestCase):
         self.assertLen(revived_model.variables, 8)
         self.assertLen(revived_model.trainable_variables, 6)
         self.assertLen(revived_model.non_trainable_variables, 2)
-
-        # Test registering an endpoint that is NOT a tf.function
-        export_archive = export_lib.ExportArchive()
-        export_archive.track(model)
-        export_archive.add_endpoint(
-            "call",
-            model.call,
-            input_signature=[
-                tf.TensorSpec(
-                    shape=(None, 10),
-                    dtype=tf.float32,
-                )
-            ],
-        )
-        export_archive.write_out(temp_filepath)
-        revived_model = tf.saved_model.load(temp_filepath)
-        self.assertAllClose(
-            ref_output, revived_model.call(ref_input), atol=1e-6
-        )
 
     def test_layer_export(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_layer")
