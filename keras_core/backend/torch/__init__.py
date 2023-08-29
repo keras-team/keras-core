@@ -36,4 +36,3 @@ from keras_core.backend.torch.rnn import cudnn_ok
 from keras_core.backend.torch.rnn import gru
 from keras_core.backend.torch.rnn import lstm
 from keras_core.backend.torch.rnn import rnn
-from keras_core.backend.torch.torch_module_wrapper import TorchModuleWrapper
