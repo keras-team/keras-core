@@ -342,6 +342,12 @@ class TestCase(unittest.TestCase):
             if run_training_check:
                 run_training_step(layer, input_data, output_data)
 
+            # Never test mixed precision on torch CPU. Torch lacks support.
+            if run_mixed_precision_check and backend.backend() == "torch":
+                import torch
+
+                run_mixed_precision_check = torch.cuda.is_available()
+
             if run_mixed_precision_check:
                 layer = layer_cls(**{**init_kwargs, "dtype": "mixed_float16"})
                 if isinstance(input_data, dict):
