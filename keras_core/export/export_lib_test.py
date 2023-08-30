@@ -457,7 +457,7 @@ class ExportArchiveTest(testing.TestCase):
             def call(self, inputs):
                 out = self.dense1(inputs)
                 return self.dense2(out)
-        
+
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
         x = np.random.random((100, 32))
         model = CustomModelX()
@@ -469,7 +469,7 @@ class ExportArchiveTest(testing.TestCase):
         model.export(temp_filepath)
         revived_model = tf.saved_model.load(temp_filepath)
         self.assertAllClose(
-            ref_output, revived_model.serve(ref_input), atol=1e-6
+            ref_output, revived_model.serve(x), atol=1e-6
         )
 
     def test_export_no_assets(self):

@@ -679,7 +679,7 @@ class Layer(BackendLayer, Operation):
         call_spec = CallSpec(self._call_signature, args, kwargs)
 
         if self._save_spec is None and args:
-            self.save_spec = self._set_save_spec(args, kwargs)
+            self._save_spec = self._set_save_spec(args, kwargs)
 
         ############################################
         # 3. Check input spec for 1st positional arg.
