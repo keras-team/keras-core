@@ -221,21 +221,10 @@ class Layer(BackendLayer, Operation):
             # Record build config.
             signature = inspect.signature(original_build_method)
             obj._build_shapes_dict = signature.bind(*args, **kwargs).arguments
-            # Set built and lock.
+            # Set built, post build actions, and lock state.
             obj.built = True
-            if not obj._tracker.locked:
-                # No state updates past this point.
-                obj._tracker.lock(
-                    msg=(
-                        "You cannot add new elements of state "
-                        "(variables or sub-layers) "
-                        "to a layer that is already built. All state "
-                        "must be created in the `__init__()` method or "
-                        "in the`build()` method."
-                    )
-                )
-            # Hook used to do post-build actions
             obj._post_build()
+            obj._lock_state()
 
         obj.build = build_wrapper
         return obj
@@ -371,6 +360,23 @@ class Layer(BackendLayer, Operation):
                 "Make sure to implement a proper `build()` method."
             )
         self.built = True
+
+    def _post_build(self):
+        """Can be overridden for per backend post build actions."""
+        pass
+
+    def _lock_state(self):
+        """Prevent further state updates, called automatically in `build()`."""
+        if not self._tracker.locked:
+            self._tracker.lock(
+                msg=(
+                    "You cannot add new elements of state "
+                    "(variables or sub-layers) "
+                    "to a layer that is already built. All state "
+                    "must be created in the `__init__()` method or "
+                    "in the `build()` method."
+                )
+            )
 
     def get_build_config(self):
         """Returns a dictionary with the layer's input shape.
@@ -714,10 +720,9 @@ class Layer(BackendLayer, Operation):
         self._assert_input_compatibility(call_spec.first_arg)
 
         ################
-        # 4. Call build and check compatibility again.
+        # 4. Call build
         with backend.name_scope(self.name, caller=self):
             self._maybe_build(call_spec)
-        self._assert_input_compatibility(call_spec.first_arg)
 
         ##########################
         # 5. Infer training value
@@ -1138,6 +1143,9 @@ class Layer(BackendLayer, Operation):
                 class_name=self.__class__.__name__,
             )
             self.build(**shapes_dict)
+            # Check input spec again (after build, since self.input_spec
+            # may have been updated
+            self._assert_input_compatibility(call_spec.first_arg)
             return
 
         # Otherwise, attempt to build the layer by calling it on symbolic input.
@@ -1151,20 +1159,16 @@ class Layer(BackendLayer, Operation):
                     # Will let the actual eager call do state-building
                     return
                 raise ValueError(
-                    f"Layer '{self.name}' looks like it has "
-                    "unbuilt state, but Keras is not able to "
-                    "trace the layer `call()` in order to "
+                    f"Layer '{self.name}' looks like it has unbuilt state, but "
+                    "Keras is not able to trace the layer `call()` in order to "
                     "build it automatically. Possible causes:\n"
-                    "1. The `call()` method of your layer may be "
-                    "crashing. Try to `__call__()` the layer "
-                    "eagerly on some test input "
+                    "1. The `call()` method of your layer may be crashing. Try "
+                    "to `__call__()` the layer eagerly on some test input "
                     "first to see if it works. "
-                    "E.g. `x = np.random.random((3, 4)); "
-                    "y = layer(x)`\n"
-                    "2. If the `call()` method is correct, "
-                    "then you may need to implement "
-                    "the `def build(self, input_shape)` method on your "
-                    "layer. It should create all variables used by the "
+                    "E.g. `x = np.random.random((3, 4)); y = layer(x)`\n"
+                    "2. If the `call()` method is correct, then you may need "
+                    "to implement the `def build(self, input_shape)` method on "
+                    "your layer. It should create all variables used by the "
                     "layer (e.g. by calling `layer.build()` on all its "
                     "children layers)."
                 )

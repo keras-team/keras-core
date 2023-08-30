@@ -111,7 +111,6 @@ class Sequential(Model):
                 f"add a different Input layer to it."
             )
 
-        self._tracker.locked = False
         self._layers.append(layer)
         if rebuild:
             self._maybe_rebuild()
@@ -121,7 +120,6 @@ class Sequential(Model):
 
     def pop(self, rebuild=True):
         """Removes the last layer in the model."""
-        self._tracker.locked = False
         layer = self._layers.pop()
         self.built = False
         self._functional = None
@@ -135,7 +133,10 @@ class Sequential(Model):
         if isinstance(self._layers[0], InputLayer) and len(self._layers) > 1:
             input_shape = self._layers[0].batch_shape
             self.build(input_shape)
-        self._tracker.locked = False
+
+    def _lock_state(self):
+        # Unlike other layers, Sequential is mutable after build.
+        pass
 
     def build(self, input_shape=None):
         if not isinstance(input_shape, (tuple, list)):
