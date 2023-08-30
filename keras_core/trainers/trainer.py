@@ -18,7 +18,7 @@ class Trainer:
         self._run_eagerly = False
         self._jit_compile = None
         self.compiled = False
-        self.loss = {}
+        self.loss = None
         self.steps_per_execution = 1
 
     @traceback_utils.filter_traceback
