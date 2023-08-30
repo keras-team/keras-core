@@ -1,6 +1,7 @@
 """Library for exporting inference-only Keras models/layers."""
 
 from jax.experimental import jax2tf
+
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers import Layer
@@ -87,7 +88,7 @@ class ExportArchive:
             self._tf_trackable.variables = []
             self._tf_trackable.trainable_variables = []
             self._tf_trackable.non_trainable_variables = []
-        else: # JAX backend
+        else:  # JAX backend
             self.module = tf.Module()
 
             # Variables of `tf.Module` cannot be directly set.
@@ -103,36 +104,41 @@ class ExportArchive:
     def variables(self):
         if backend.backend() == "tensorflow":
             return self._tf_trackable.variables
-        else: # JAX backend
+        else:  # JAX backend
             return self._variables
 
     @property
     def trainable_variables(self):
         if backend.backend() == "tensorflow":
             return self._tf_trackable.trainable_variables
-        else: # JAX backend
+        else:  # JAX backend
             return self._trainable_variables
 
     @property
     def non_trainable_variables(self):
         if backend.backend() == "tensorflow":
             return self._tf_trackable.non_trainable_variables
-        else: # JAX backend
+        else:  # JAX backend
             return self._non_trainable_variables
 
     def track(self, resource):
         """Track the variables (and other assets) of a layer or model."""
-        if backend.backend() == "tensorflow" and not isinstance(resource, tf.__internal__.tracking.Trackable):
+        if backend.backend() == "tensorflow" and not isinstance(
+            resource, tf.__internal__.tracking.Trackable
+        ):
             raise ValueError(
                 "Invalid resource type. Expected an instance of a "
                 "TensorFlow `Trackable` (such as a Keras `Layer` or `Model`). "
                 f"Received instead an object of type '{type(resource)}'. "
                 f"Object received: {resource}"
             )
-        if backend.backend() == "jax" and not isinstance(resource, backend.jax.layer.JaxLayer):
+        if backend.backend() == "jax" and not isinstance(
+            resource, backend.jax.layer.JaxLayer
+        ):
             raise ValueError(
                 "Invalid resource type. Expected an instance of a "
-                "JAX-based Keras `Layer` or `Model` (backend.jax.layer.JaxLayer). "
+                "JAX-based Keras `Layer` or `Model` "
+                "(backend.jax.layer.JaxLayer). "
                 f"Received instead an object of type '{type(resource)}'. "
                 f"Object received: {resource}"
             )
@@ -161,12 +167,18 @@ class ExportArchive:
                 self._tf_trackable.non_trainable_variables += (
                     resource.non_trainable_variables
                 )
-            else: # JAX backend
-                # Wrap the JAX state in `tf.Variable` (needed when calling the converted JAX function.
-                self._variables += tf.nest.map_structure(tf.Variable, resource.variables)
-                self._trainable_variables += tf.nest.map_structure(tf.Variable, resource.trainable_variables)
-                self._non_trainable_variables += tf.nest.map_structure(tf.Variable, resource.non_trainable_variables)
-
+            else:  # JAX backend
+                # Wrap the JAX state in `tf.Variable`
+                # Needed when calling the converted JAX function.
+                self._variables += tf.nest.map_structure(
+                    tf.Variable, resource.variables
+                )
+                self._trainable_variables += tf.nest.map_structure(
+                    tf.Variable, resource.trainable_variables
+                )
+                self._non_trainable_variables += tf.nest.map_structure(
+                    tf.Variable, resource.non_trainable_variables
+                )
 
     def add_endpoint(self, name, fn, input_signature=None):
         """Register a new serving endpoint.
@@ -281,9 +293,11 @@ class ExportArchive:
         if input_signature:
             if backend.backend() == "tensorflow":
                 decorated_fn = tf.function(fn, input_signature=input_signature)
-            else: # JAX backend
+            else:  # JAX backend
                 fn = self._convert_jax2tf_function(fn, input_signature)
-                decorated_fn = tf.function(fn, input_signature=input_signature, autograph=False)
+                decorated_fn = tf.function(
+                    fn, input_signature=input_signature, autograph=False
+                )
             self._endpoint_signatures[name] = input_signature
         else:
             if isinstance(fn, tf.types.experimental.GenericFunction):
@@ -315,9 +329,9 @@ class ExportArchive:
                     "    ],\n"
                     ")"
                 )
-        if backend.backend() == "tensorflow": 
+        if backend.backend() == "tensorflow":
             setattr(self._tf_trackable, name, decorated_fn)
-        else: # JAX backend
+        else:  # JAX backend
             setattr(self.module, name, decorated_fn)
         self._endpoint_names.append(name)
 
@@ -357,7 +371,9 @@ class ExportArchive:
             )
         # Ensure that all variables added are either tf.Variables
         # or Variables created by Keras Core with the TF or JAX backends.
-        if not all(isinstance(v, (tf.Variable, backend.Variable)) for v in variables):
+        if not all(
+            isinstance(v, (tf.Variable, backend.Variable)) for v in variables
+        ):
             raise ValueError(
                 "Expected all elements in `variables` to be "
                 "`tf.Variable` instances. Found instead the following types: "
@@ -365,8 +381,10 @@ class ExportArchive:
             )
         if backend.backend() == "tensorflow":
             setattr(self._tf_trackable, name, list(variables))
-        else: # JAX backend
-            tf_variables = tf.nest.flatten(tf.nest.map_structure(tf.Variable, variables))
+        else:  # JAX backend
+            tf_variables = tf.nest.flatten(
+                tf.nest.map_structure(tf.Variable, variables)
+            )
             setattr(self.module, name, list(tf_variables))
 
     def write_out(self, filepath, options=None):
@@ -403,24 +421,31 @@ class ExportArchive:
 
         if backend.backend() == "tensorflow":
             tf.saved_model.save(
-                self._tf_trackable, filepath, options=options, signatures=signatures
+                self._tf_trackable,
+                filepath,
+                options=options,
+                signatures=signatures,
             )
-        else: # JAX backend
+        else:  # JAX backend
             self.module._endpoint_names = self._endpoint_names
             self.module._endpoint_signatures = self._endpoint_signatures
             self.module.tensorflow_version = self.tensorflow_version
 
-            # Keep the wrapped state as flat list (needed in TensorFlow fine-tuning).
+            # Keep the wrapped state as flat list
+            # Needed in TensorFlow fine-tuning.
             self.module._variables = tf.nest.flatten(self._variables)
 
-            # The `variables`, `trainable_variables`, and `non_trainable_variables`
-            # attributes will be automatically populated in the tf.Module.
+            # The `variables`, `trainable_variables`, and
+            # `non_trainable_variables` attributes will be automatically
+            # populated in the tf.Module.
 
             tf.saved_model.save(
                 self.module, filepath, options=options, signatures=signatures
             )
 
-        trackable_or_module = self.module if backend.backend() == "jax" else self._tf_trackable
+        trackable_or_module = (
+            self.module if backend.backend() == "jax" else self._tf_trackable
+        )
 
         # Print out available endpoints
         endpoints = "\n\n".join(
@@ -435,7 +460,9 @@ class ExportArchive:
 
     def _get_concrete_fn(self, endpoint):
         """Workaround for some SavedModel quirks."""
-        trackable_or_module = self.module if backend.backend() == "jax" else self._tf_trackable
+        trackable_or_module = (
+            self.module if backend.backend() == "jax" else self._tf_trackable
+        )
         if endpoint in self._endpoint_signatures:
             return getattr(trackable_or_module, endpoint)
         else:
@@ -484,6 +511,7 @@ class ExportArchive:
         spec_shape = spec.shape
         spec_shape = str(spec_shape).replace("None", "b")
         return spec_shape
+
 
 def export_model(model, filepath):
     export_archive = ExportArchive()

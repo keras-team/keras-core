@@ -1223,28 +1223,27 @@ class Layer(BackendLayer, Operation):
 
     def _set_save_spec(self, args, kwargs):
         save_spec = {}
-        create_spec_info = lambda x: {
+
+        def _create_spec_info(x):
+            return {
                 "shape": x.shape,
                 "dtype": x.dtype,
                 "name": getattr(x, "name", None),
             }
-        save_spec["inputs"] = tree.map_structure(
-            create_spec_info,
-            args[0]
-        )
-        save_spec["args"] = tree.map_structure(
-            create_spec_info,
-            args[1:]
-        )
+
+        save_spec["inputs"] = tree.map_structure(_create_spec_info, args[0])
+        save_spec["args"] = tree.map_structure(_create_spec_info, args[1:])
         save_spec["kwargs"] = {}
         # Filter out non-tensor arguments from kwargs.
         for key, kwarg in kwargs.items():
             flat_kwarg = tree.flatten(kwarg)
-            if any((not hasattr(s, "shape") or not hasattr(s,"dtype")) for s in flat_kwarg):
+            if any(
+                (not hasattr(s, "shape") or not hasattr(s, "dtype"))
+                for s in flat_kwarg
+            ):
                 continue
             save_spec["kwargs"][key] = tree.map_structure(
-                create_spec_info,
-                flat_kwarg
+                _create_spec_info, flat_kwarg
             )
         return save_spec
 

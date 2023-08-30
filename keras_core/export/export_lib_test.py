@@ -75,7 +75,7 @@ class ExportArchiveTest(testing.TestCase):
 
     @pytest.mark.skipif(
         backend.backend() != "tensorflow",
-        reason="Registering a tf.function endpoint with a model is only applicable to TensorFlow backend.",
+        reason="Registering a tf.function endpoint is only in TF backend.",
     )
     def test_endpoint_registration_tf_function(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
@@ -505,9 +505,7 @@ class ExportArchiveTest(testing.TestCase):
         ref_output = model(x)
         model.export(temp_filepath)
         revived_model = tf.saved_model.load(temp_filepath)
-        self.assertAllClose(
-            ref_output, revived_model.serve(x), atol=1e-6
-        )
+        self.assertAllClose(ref_output, revived_model.serve(x), atol=1e-6)
 
     def test_export_no_assets(self):
         temp_filepath = os.path.join(self.get_temp_dir(), "exported_model")
@@ -554,9 +552,7 @@ class TestTFSMLayer(testing.TestCase):
 
         export_lib.export_model(model, temp_filepath)
         reloaded_layer = export_lib.TFSMLayer(temp_filepath)
-        self.assertAllClose(
-            reloaded_layer(ref_input), ref_output, atol=1e-7
-        )
+        self.assertAllClose(reloaded_layer(ref_input), ref_output, atol=1e-7)
         self.assertLen(reloaded_layer.weights, len(model.weights))
         self.assertLen(
             reloaded_layer.trainable_weights, len(model.trainable_weights)
@@ -644,9 +640,7 @@ class TestTFSMLayer(testing.TestCase):
         # Test reinstantiation from config
         config = reloaded_layer.get_config()
         rereloaded_layer = export_lib.TFSMLayer.from_config(config)
-        self.assertAllClose(
-            rereloaded_layer(ref_input), ref_output, atol=1e-7
-        )
+        self.assertAllClose(rereloaded_layer(ref_input), ref_output, atol=1e-7)
 
         # Test whole model saving with reloaded layer inside
         model = models.Sequential([reloaded_layer])
@@ -656,9 +650,7 @@ class TestTFSMLayer(testing.TestCase):
             temp_model_filepath,
             custom_objects={"TFSMLayer": export_lib.TFSMLayer},
         )
-        self.assertAllClose(
-            reloaded_model(ref_input), ref_output, atol=1e-7
-        )
+        self.assertAllClose(reloaded_model(ref_input), ref_output, atol=1e-7)
 
     def test_errors(self):
         # Test missing call endpoint
