@@ -18,6 +18,7 @@ And some more magic:
 import collections
 import inspect
 import warnings
+from functools import wraps
 
 import tree
 
@@ -205,6 +206,22 @@ class Layer(BackendLayer, Operation):
     assert my_sum.trainable_weights == []
     ```
     """
+
+    def __new__(cls, *args, **kwargs):
+        # Wrap the user-provided build method in the build_decorator
+        # to add name scope support and serialization support.
+        obj = super().__new__(cls, *args, **kwargs)
+
+        original_build_method = obj.build
+
+        @wraps(original_build_method)
+        def build_wrapper(*args, **kwargs):
+            with backend.name_scope(obj.name, caller=obj):
+                original_build_method(*args, **kwargs)
+            obj.built = True
+
+        obj.build = build_wrapper
+        return obj
 
     def __init__(
         self,
