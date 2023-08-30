@@ -312,6 +312,43 @@ class ExportArchiveTest(testing.TestCase):
         revived_layer = tf.saved_model.load(temp_filepath)
         self.assertAllClose(
             ref_output,
+            revived_layer.call(x1, x2),
+            atol=1e-6,
+        )
+
+    # TODO(nkovela): Remove test when argument name preservation
+    # workaround is created for JAX backend.
+    @pytest.mark.skipif(
+        backend.backend() != "tensorflow",
+        reason="JAX2TF has issues with argument name preservation.",
+    )
+    def test_non_standard_layer_signature_with_kwargs(self):
+        temp_filepath = os.path.join(self.get_temp_dir(), "exported_layer")
+
+        layer = layers.MultiHeadAttention(2, 2)
+        x1 = tf.random.normal((3, 2, 2))
+        x2 = tf.random.normal((3, 2, 2))
+        ref_output = layer(x1, x2)  # Build layer (important)
+        export_archive = export_lib.ExportArchive()
+        export_archive.track(layer)
+        export_archive.add_endpoint(
+            "call",
+            layer.call,
+            input_signature=[
+                tf.TensorSpec(
+                    shape=(None, 2, 2),
+                    dtype=tf.float32,
+                ),
+                tf.TensorSpec(
+                    shape=(None, 2, 2),
+                    dtype=tf.float32,
+                ),
+            ],
+        )
+        export_archive.write_out(temp_filepath)
+        revived_layer = tf.saved_model.load(temp_filepath)
+        self.assertAllClose(
+            ref_output,
             revived_layer.call(query=x1, value=x2),
             atol=1e-6,
         )
@@ -506,7 +543,7 @@ class ExportArchiveTest(testing.TestCase):
 
 @pytest.mark.skipif(
     backend.backend() != "tensorflow",
-    reason="Export only currently supports the TF backend.",
+    reason="TFSM Layer reloading is only for the TF backend.",
 )
 class TestTFSMLayer(testing.TestCase):
     def test_reloading_export_archive(self):
