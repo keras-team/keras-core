@@ -244,6 +244,7 @@ class Layer(BackendLayer, Operation):
         self.dtype_policy = mixed_precision.resolve_policy(dtype)
         self.autocast = autocast
         self._input_spec = None
+        self._called = None
         self.supports_jit = True
 
         self._trainable = trainable
@@ -626,6 +627,7 @@ class Layer(BackendLayer, Operation):
     @traceback_utils.filter_traceback
     def __call__(self, *args, **kwargs):
         self._check_super_called()
+        self._called = True
 
         #####################################
         # 1. Convert any array arguments to tensors of correct dtype.

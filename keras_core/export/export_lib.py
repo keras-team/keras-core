@@ -523,7 +523,7 @@ def export_model(model, filepath):
         export_archive.add_endpoint("serve", model.__call__, input_signature)
     else:
         save_spec = _get_save_spec(model)
-        if not save_spec:
+        if not save_spec or not model._called:
             raise ValueError(
                 "The model provided has never called. "
                 "It must be called at least once before export."
@@ -539,7 +539,9 @@ def _get_save_spec(model):
         return None
 
     if len(shapes_dict) == 1:
-        return tf.TensorSpec(shape=list(shapes_dict.values())[0], dtype=model.input_dtype)
+        return tf.TensorSpec(
+            shape=list(shapes_dict.values())[0], dtype=model.input_dtype
+        )
 
     specs = {}
     for key, value in shapes_dict.items():
