@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-import tensorflow as tf
 from absl.testing import parameterized
 
 from keras_core import backend
@@ -756,12 +755,13 @@ class ConvTransposeCorrectnessTest(testing.TestCase, parameterized.TestCase):
         strides=list(range(1, 5)),
         padding=["same", "valid"],
         output_padding=[None] + list(range(1, 5)),
-    )
-    def test_conv1d_vs_tf_implementation(
+    )    
+    def test_conv1d_transpose_consistency(
         self, kernel_size, strides, padding, output_padding
     ):
-        """Compares results from keras-core implementation to the results from
-        tf-keras, for a 1D input shape of length 3.
+        """Test conv transpose, on an 1D array of size 3, against several
+        convolution parameters. In particular, tests if Torch inconsistencies
+        are raised.
         """
 
         # output_padding cannot be greater than strides
@@ -775,17 +775,17 @@ class ConvTransposeCorrectnessTest(testing.TestCase, parameterized.TestCase):
             (kernel_size, 1, 1)
         )
 
-        # TF layer
-        tf_layer = tf.keras.layers.Conv1DTranspose(
-            filters=1,
-            kernel_size=kernel_size,
+        # Exepected result
+        expected_res = self.np_conv1d_transpose(
+            x=input,
+            kernel_weights=kernel_weights,
+            bias_weights=np.zeros(shape=(1,)),
             strides=strides,
             padding=padding,
             output_padding=output_padding,
+            data_format="channels_last",
             dilation_rate=1,
         )
-        tf_layer.build(input_shape=(1, 3, 1))
-        tf_layer.kernel.assign(kernel_weights)
 
         # keras-core layer
         kc_layer = layers.Conv1DTranspose(
@@ -828,12 +828,10 @@ class ConvTransposeCorrectnessTest(testing.TestCase, parameterized.TestCase):
             )
             if torch_padding > 0 and torch_output_padding > 0:
                 with pytest.raises(AssertionError):
-                    tf_res = tf_layer(input)
                     kc_res = kc_layer(input)
-                    self.assertAllClose(tf_res, kc_res, atol=1e-5)
+                    self.assertAllClose(expected_res, kc_res, atol=1e-5)
                 return
 
         # Compare results
-        tf_res = tf_layer(input)
         kc_res = kc_layer(input)
-        self.assertAllClose(tf_res, kc_res, atol=1e-5)
+        self.assertAllClose(expected_res, kc_res, atol=1e-5)

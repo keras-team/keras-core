@@ -55,6 +55,7 @@ def _convert_conv_tranpose_padding_args_from_keras_to_torch(
     positive.
     """
     assert padding.lower() in {"valid", "same"}
+    original_kernel_size = kernel_size
     kernel_size = (kernel_size - 1) * dilation_rate + 1
 
     if padding.lower() == "valid":
@@ -86,15 +87,15 @@ def _convert_conv_tranpose_padding_args_from_keras_to_torch(
     if torch_padding > 0 and torch_output_padding > 0:
         warnings.warn(
             f"You might experience inconsistencies accross backends when "
-            f"calling conv transpose with {kernel_size}: kernel_size, "
-            f"{stride}: stride, {dilation_rate}: dilation_rate, "
-            f"{padding}: padding, {output_padding}: output_padding."
+            f"calling conv transpose with kernel_size={original_kernel_size}, "
+            f"stride={stride}, dilation_rate={dilation_rate}, "
+            f"padding={padding}, output_padding={output_padding}."
         )
 
     if torch_output_padding >= stride:
         raise ValueError(
-            f"The padding arguments (`padding`={padding}) and "
-            f"`output_padding`={output_padding}) lead to a Torch "
+            f"The padding arguments (padding={padding}) and "
+            f"output_padding={output_padding}) lead to a Torch "
             f"output_padding ({torch_output_padding}) that is greater than "
             f"strides ({stride}). This is not supported. You can change the "
             f"padding arguments, kernel or stride, or run on another backend. "
