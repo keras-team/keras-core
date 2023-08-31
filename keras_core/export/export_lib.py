@@ -522,7 +522,7 @@ def export_model(model, filepath):
             input_signature = [input_signature]
         export_archive.add_endpoint("serve", model.__call__, input_signature)
     else:
-        save_spec = model._get_save_spec()
+        save_spec = _get_save_spec(model)
         if not save_spec:
             raise ValueError(
                 "The model provided has never called. "
@@ -531,6 +531,21 @@ def export_model(model, filepath):
         input_signature = [save_spec]
         export_archive.add_endpoint("serve", model.__call__, input_signature)
     export_archive.write_out(filepath)
+
+
+def _get_save_spec(model):
+    shapes_dict = getattr(model, "_build_shapes_dict", None)
+    if not shapes_dict:
+        return None
+
+    if len(shapes_dict) == 1:
+        return tf.TensorSpec(shape=list(shapes_dict.values())[0], dtype=model.input_dtype)
+
+    specs = {}
+    for key, value in shapes_dict.items():
+        key = key.rstrip("_shape")
+        specs[key] = tf.TensorSpec(shape=value, dtype=model.input_dtype)
+    return specs
 
 
 class TFSMLayer(Layer):

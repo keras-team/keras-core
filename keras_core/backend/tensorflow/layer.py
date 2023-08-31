@@ -45,24 +45,6 @@ class TFLayer(tf.__internal__.tracking.AutoTrackable):
             kwargs_spec,
         )
 
-    def _get_save_spec(self):
-        if self._save_spec is None:
-            return None
-
-        def _save_spec_to_tensor_spec(save_spec):
-            spec = tf.TensorSpec(**save_spec)
-            shape = spec.shape
-            if shape.rank is None or shape.rank == 0:
-                return spec
-
-            shape_list = shape.as_list()
-            shape_list[0] = None
-            shape = tf.TensorShape(shape_list)
-            spec._shape = shape
-            return spec
-
-        return _save_spec_to_tensor_spec(self._save_spec["inputs"])
-
     def _trackable_children(self, save_type="checkpoint", **kwargs):
         if save_type == "savedmodel":
             # SavedModel needs to ignore the execution functions.
