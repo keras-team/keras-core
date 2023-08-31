@@ -21,8 +21,9 @@ class OperationUtilsTest(testing.TestCase):
     def test_compute_pooling_output_shape(self):
         input_shape = (1, 4, 4, 1)
         pool_size = (2, 2)
+        strides = (2, 2)
         output_shape = operation_utils.compute_pooling_output_shape(
-            input_shape, pool_size
+            input_shape, pool_size, strides
         )
         expected_output_shape = (1, 2, 2, 1)
         self.assertEqual(output_shape, expected_output_shape)
@@ -30,8 +31,9 @@ class OperationUtilsTest(testing.TestCase):
     def test_compute_pooling_output_shape_with_none(self):
         input_shape = (None, 4, 4, 1)
         pool_size = (2, 2)
+        strides = (2, 2)
         output_shape = operation_utils.compute_pooling_output_shape(
-            input_shape, pool_size
+            input_shape, pool_size, strides
         )
         expected_output_shape = (None, 2, 2, 1)
         self.assertEqual(output_shape, expected_output_shape)
@@ -74,8 +76,9 @@ class OperationUtilsTest(testing.TestCase):
     def test_compute_conv_output_shape(self):
         input_shape = (1, 4, 4, 1)
         kernel_size = (3, 3)
+        strides = (1, 1)
         output_shape = operation_utils.compute_conv_output_shape(
-            input_shape, kernel_size
+            input_shape, kernel_size, strides
         )
         expected_output_shape = (1, 2, 2, 1)
         self.assertEqual(output_shape, expected_output_shape)
@@ -84,8 +87,9 @@ class OperationUtilsTest(testing.TestCase):
         input_shape = (None, 4, 4, 1)
         kernel_size = (3, 3)
         filters = 1
+        strides = (1, 1)
         output_shape = operation_utils.compute_conv_output_shape(
-            input_shape, filters, kernel_size
+            input_shape, filters, kernel_size, strides
         )
         expected_output_shape = (None, 2, 2, 1)
         self.assertEqual(output_shape, expected_output_shape)
@@ -134,7 +138,7 @@ class OperationUtilsTest(testing.TestCase):
         input_shape = (1, 4, 4, 1)
         target_shape = (16, 1)
         output_shape = operation_utils.compute_reshape_output_shape(
-            input_shape, target_shape
+            input_shape, new_shape=target_shape
         )
         self.assertEqual(output_shape, target_shape)
 
