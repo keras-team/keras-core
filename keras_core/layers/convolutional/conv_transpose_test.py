@@ -755,7 +755,7 @@ class ConvTransposeCorrectnessTest(testing.TestCase, parameterized.TestCase):
         strides=list(range(1, 5)),
         padding=["same", "valid"],
         output_padding=[None] + list(range(1, 5)),
-    )    
+    )
     def test_conv1d_transpose_consistency(
         self, kernel_size, strides, padding, output_padding
     ):
