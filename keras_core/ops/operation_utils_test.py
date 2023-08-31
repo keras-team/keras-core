@@ -75,10 +75,11 @@ class OperationUtilsTest(testing.TestCase):
 
     def test_compute_conv_output_shape(self):
         input_shape = (1, 4, 4, 1)
+        filters = 1
         kernel_size = (3, 3)
         strides = (1, 1)
         output_shape = operation_utils.compute_conv_output_shape(
-            input_shape, kernel_size, strides
+            input_shape, filters, kernel_size, strides
         )
         expected_output_shape = (1, 2, 2, 1)
         self.assertEqual(output_shape, expected_output_shape)
@@ -138,7 +139,7 @@ class OperationUtilsTest(testing.TestCase):
         input_shape = (1, 4, 4, 1)
         target_shape = (16, 1)
         output_shape = operation_utils.compute_reshape_output_shape(
-            input_shape, new_shape=target_shape
+            input_shape, new_shape=target_shape, new_shape_arg_name="New shape"
         )
         self.assertEqual(output_shape, target_shape)
 

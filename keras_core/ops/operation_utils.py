@@ -222,7 +222,7 @@ def reduce_shape(shape, axis=None, keepdims=False):
     shape = list(shape)
     if axis is None:
         if keepdims:
-            output_shape = [1 for _ in range(shape)]
+            output_shape = [1 for _ in range(len(shape))]
         else:
             output_shape = []
         return output_shape
