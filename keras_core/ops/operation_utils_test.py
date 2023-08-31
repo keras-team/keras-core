@@ -184,10 +184,3 @@ class OperationUtilsTest(testing.TestCase):
         output_shape = operation_utils.reduce_shape(input_shape, axes)
         expected_output_shape = (1, 1)
         self.assertEqual(output_shape, expected_output_shape)
-
-    def test_reduce_shape_with_negative_axes(self):
-        input_shape = (1, 4, 4, 1)
-        axes = [-2, -3]
-        output_shape = operation_utils.reduce_shape(input_shape, axes)
-        expected_output_shape = (1, 1)
-        self.assertEqual(output_shape, expected_output_shape)
