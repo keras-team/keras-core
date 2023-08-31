@@ -248,7 +248,7 @@ This can be easily done using `keras_nlp.layers.StartEndPacker`.
 
 
 def preprocess_batch(eng, spa):
-    batch_size = spa.shape[0]
+    batch_size = ops.shape(spa)[0]
 
     eng = eng_tokenizer(eng)
     spa = spa_tokenizer(spa)
