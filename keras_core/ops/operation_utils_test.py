@@ -143,9 +143,51 @@ class OperationUtilsTest(testing.TestCase):
         )
         self.assertEqual(output_shape, target_shape)
 
-    def test_reduce_shape(self):
+    def test_reduce_shape_no_axes_no_keepdims(self):
+        input_shape = (1, 4, 4, 1)
+        output_shape = operation_utils.reduce_shape(input_shape)
+        expected_output_shape = ()
+        self.assertEqual(output_shape, expected_output_shape)
+
+    def test_reduce_shape_no_axes_with_keepdims(self):
+        input_shape = (1, 4, 4, 1)
+        output_shape = operation_utils.reduce_shape(input_shape, keepdims=True)
+        expected_output_shape = (1, 1, 1, 1)
+        self.assertEqual(output_shape, expected_output_shape)
+
+    def test_reduce_shape_single_axis_no_keepdims(self):
+        input_shape = (1, 4, 4, 1)
+        axes = [1]
+        output_shape = operation_utils.reduce_shape(input_shape, axes)
+        expected_output_shape = (1, 4, 1)
+        self.assertEqual(output_shape, expected_output_shape)
+
+    def test_reduce_shape_single_axis_with_keepdims(self):
+        input_shape = (1, 4, 4, 1)
+        axes = [1]
+        output_shape = operation_utils.reduce_shape(
+            input_shape, axes, keepdims=True
+        )
+        expected_output_shape = (1, 1, 4, 1)
+        self.assertEqual(output_shape, expected_output_shape)
+
+    def test_reduce_shape_multiple_axes_no_keepdims(self):
         input_shape = (1, 4, 4, 1)
         axes = [1, 2]
         output_shape = operation_utils.reduce_shape(input_shape, axes)
-        expected_output_shape = (1, 1, 1, 1)
+        expected_output_shape = (1, 1)
+        self.assertEqual(output_shape, expected_output_shape)
+
+    def test_reduce_shape_out_of_order_axes_no_keepdims(self):
+        input_shape = (1, 4, 4, 1)
+        axes = [2, 1]
+        output_shape = operation_utils.reduce_shape(input_shape, axes)
+        expected_output_shape = (1, 1)
+        self.assertEqual(output_shape, expected_output_shape)
+
+    def test_reduce_shape_with_negative_axes(self):
+        input_shape = (1, 4, 4, 1)
+        axes = [-2, -3]
+        output_shape = operation_utils.reduce_shape(input_shape, axes)
+        expected_output_shape = (1, 1)
         self.assertEqual(output_shape, expected_output_shape)
