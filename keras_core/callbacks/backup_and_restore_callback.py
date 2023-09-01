@@ -6,8 +6,8 @@ from keras_core.callbacks.callback import Callback
 from keras_core.utils import file_utils
 
 
-@keras_core_export("keras_core.callbacks.BackupAndRestoreCallback")
-class BackupAndRestoreCallback(Callback):
+@keras_core_export("keras_core.callbacks.BackupAndRestore")
+class BackupAndRestore(Callback):
     """Callback to back up and restore the training state.
 
     `BackupAndRestore` callback is intended to recover training from an
@@ -54,14 +54,14 @@ class BackupAndRestoreCallback(Callback):
 
     Args:
         file_path: String, path to store the checkpoint.
-          e.g. `backup_dir = os.path.join(working_dir, 'backup')`.
+          e.g. `backup_dir = os.path.join(working_dir, "backup")`.
           This is the directory in which the system stores temporary files to
           recover the model from jobs terminated unexpectedly. The directory
           cannot be reused elsewhere to store other files, e.g. by the
           `BackupAndRestore` callback of another training run,
           or by another callback
           (e.g. `ModelCheckpoint`) of the same training.
-        save_freq: `'epoch'`, integer, or `False`. When set to `'epoch'`
+        save_freq: `"epoch"`, integer, or `False`. When set to `"epoch"`
           the callback saves the checkpoint at the end of each epoch.
           When set to an integer, the callback saves the checkpoint every
           `save_freq` batches. Set `save_freq` to `False` if only using
@@ -94,7 +94,7 @@ class BackupAndRestoreCallback(Callback):
             raise ValueError("Empty `backup_dir` argument passed")
         self.file_path = file_path
 
-        if (not save_freq) and (not save_before_preemption):
+        if not save_freq and not save_before_preemption:
             raise ValueError(
                 "Either `save_freq` or `save_before_preemption` " "must be set."
             )

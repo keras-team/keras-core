@@ -37,7 +37,7 @@ class BackupAndRestoreCallbackTest(testing.TestCase):
         with self.assertRaisesRegex(
             ValueError, expected_regex="Empty " "`backup_dir`"
         ):
-            callbacks.BackupAndRestoreCallback(file_path=None)
+            callbacks.BackupAndRestore(file_path=None)
 
     # Checking save_freq and save_before_preemption both unset
     def test_save_set_error(self):
@@ -48,7 +48,7 @@ class BackupAndRestoreCallbackTest(testing.TestCase):
             ""
             "must be set",
         ):
-            callbacks.BackupAndRestoreCallback(
+            callbacks.BackupAndRestore(
                 file_path="backup_dir",
                 save_freq=None,
                 save_before_preemption=False,
@@ -59,16 +59,14 @@ class BackupAndRestoreCallbackTest(testing.TestCase):
         with self.assertRaisesRegex(
             ValueError, expected_regex="Unrecognized save_freq"
         ):
-            callbacks.BackupAndRestoreCallback(
+            callbacks.BackupAndRestore(
                 file_path="backup_dir", save_freq="batch"
             )
 
         with self.assertRaisesRegex(
             ValueError, expected_regex="Unrecognized save_freq"
         ):
-            callbacks.BackupAndRestoreCallback(
-                file_path="backup_dir", save_freq=0.15
-            )
+            callbacks.BackupAndRestore(file_path="backup_dir", save_freq=0.15)
 
     # Checking if after interruption, correct model params and
     # weights are loaded in step-wise backup
@@ -95,9 +93,7 @@ class BackupAndRestoreCallbackTest(testing.TestCase):
         self.assertFalse(os.path.exists(filepath))
 
         model = make_model()
-        cbk = callbacks.BackupAndRestoreCallback(
-            file_path=filepath, save_freq=1
-        )
+        cbk = callbacks.BackupAndRestore(file_path=filepath, save_freq=1)
 
         x_train = np.random.random((10, 3))
         y_train = np.random.random((10, 1))
@@ -151,9 +147,7 @@ class BackupAndRestoreCallbackTest(testing.TestCase):
         self.assertFalse(os.path.exists(filepath))
 
         model = make_model()
-        cbk = callbacks.BackupAndRestoreCallback(
-            file_path=filepath, save_freq="epoch"
-        )
+        cbk = callbacks.BackupAndRestore(file_path=filepath, save_freq="epoch")
 
         x_train = np.random.random((10, 3))
         y_train = np.random.random((10, 1))
@@ -204,9 +198,7 @@ class BackupAndRestoreCallbackTest(testing.TestCase):
         self.assertFalse(os.path.exists(filepath))
 
         model = make_model()
-        cbk = callbacks.BackupAndRestoreCallback(
-            file_path=filepath, save_freq="epoch"
-        )
+        cbk = callbacks.BackupAndRestore(file_path=filepath, save_freq="epoch")
 
         x_train = np.random.random((10, 3))
         y_train = np.random.random((10, 1))
