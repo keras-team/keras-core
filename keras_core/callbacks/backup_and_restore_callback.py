@@ -121,10 +121,6 @@ class BackupAndRestore(Callback):
             self._cleanup_checkpoint()
 
     def on_epoch_begin(self, epoch, logs=None):
-        if self.delete_checkpoint and self._check_checkpoints_exists(
-            self.file_path
-        ):
-            self._cleanup_checkpoint()
         self._current_epoch = epoch
 
     def on_epoch_end(self, epoch, logs=None):
