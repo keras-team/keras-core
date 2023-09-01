@@ -408,7 +408,7 @@ def standardize_dtype(dtype):
             dtype = "int32"
     if hasattr(dtype, "name"):
         dtype = dtype.name
-    elif config.backend() == "torch":
+    if hasattr(dtype, "__str__") and "torch" in str(dtype):
         dtype = str(dtype).split(".")[-1]
 
     if dtype not in ALLOWED_DTYPES:
