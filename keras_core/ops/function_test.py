@@ -104,9 +104,31 @@ class FunctionTest(testing.TestCase):
             _ = fn([np.ones((4, 3)), np.ones((2, 3))])
 
     def test_graph_disconnected_error(self):
-        # TODO
-        pass
+        x1 = keras_tensor.KerasTensor((2, 3))
+        x2 = keras_tensor.KerasTensor((2, 3))
+        y1 = x1 * 3
+        y2 = x2**2
+
+        with self.assertRaisesRegex(ValueError, "Graph is disconnected"):
+            _ = function.Function(inputs=[x1, x2], outputs=[y1, y2])
 
     def test_serialization(self):
-        # TODO
-        pass
+        x1 = keras_tensor.KerasTensor((2, 3))
+        x2 = keras_tensor.KerasTensor((2, 3))
+        x = knp.add(x1, x2)
+        y1 = x * 3
+        y2 = x**2
+        fn = function.Function(
+            inputs=[x1, x2], outputs=[y1, y2], name="test_function"
+        )
+
+        serialized_fn = function.serialize(fn)
+
+        deserialized_fn = function.deserialize(serialized_fn)
+
+        self.assertEqual(deserialized_fn.name, "test_function")
+
+        y_val = deserialized_fn([np.ones((2, 3)), np.ones((2, 3))])
+        self.assertIsInstance(y_val, list)
+        self.assertAllClose(y_val[0], np.ones((2, 3)) * 6)
+        self.assertAllClose(y_val[1], np.ones((2, 3)) * 4)
