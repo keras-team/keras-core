@@ -513,7 +513,13 @@ class JAXTrainer(base_trainer.Trainer):
                 steps_per_execution=self.steps_per_execution,
             )
 
-        if not all(layer.built for layer in self._flatten_layers()):
+        needs_building = not all(
+            layer.built for layer in self._flatten_layers()
+        ) or (
+            self._compile_metrics is not None
+            and not self._compile_metrics.built
+        )
+        if needs_building:
             # Build the model on one batch of data.
             for _, data in epoch_iterator.enumerate_epoch(return_type="np"):
                 data_batch = data[0]

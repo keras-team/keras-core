@@ -121,9 +121,12 @@ class Trainer:
 
     @property
     def metrics(self):
-        metrics = [self._loss_tracker]
+        if hasattr(self, "_loss_tracker"):
+            metrics = [self._loss_tracker]
+        else:
+            metrics = []
         metrics.extend(self._metrics[:])
-        if self._compile_metrics is not None:
+        if getattr(self, "_compile_metrics", None) is not None:
             metrics += [self._compile_metrics]
         return metrics
 
