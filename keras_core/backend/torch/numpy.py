@@ -444,10 +444,11 @@ def imag(x):
 
 def isclose(x1, x2):
     x1, x2 = convert_to_tensor(x1), convert_to_tensor(x2)
-    if torch.is_floating_point(x1) and not torch.is_floating_point(x2):
-        x2 = cast(x2, x1.dtype)
-    if torch.is_floating_point(x2) and not torch.is_floating_point(x1):
-        x1 = cast(x1, x2.dtype)
+    result_dtype = torch.result_type(x1, x2)
+    if x1.dtype != result_dtype:
+        x1 = cast(x1, result_dtype)
+    if x2.dtype != result_dtype:
+        x2 = cast(x2, result_dtype)
     return torch.isclose(x1, x2)
 
 
@@ -676,7 +677,8 @@ def pad(x, pad_width, mode="constant"):
         mode = "replicate"
     if mode != "constant" and x.ndim < 3:
         new_dims = [1] * (3 - x.ndim)
-        x = cast(x, torch.float32) if x.dtype == torch.int else x
+        if x.dtype not in (torch.float32, torch.float64):
+            x = cast(x, torch.float32)
         x = x.view(*new_dims, *x.shape)
         return torch.nn.functional.pad(x, pad=pad_sum, mode=mode).squeeze()
     return torch.nn.functional.pad(x, pad=pad_sum, mode=mode)
