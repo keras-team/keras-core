@@ -444,11 +444,12 @@ def imag(x):
 
 def isclose(x1, x2):
     x1, x2 = convert_to_tensor(x1), convert_to_tensor(x2)
-    result_dtype = torch.result_type(x1, x2)
-    if x1.dtype != result_dtype:
-        x1 = cast(x1, result_dtype)
-    else:
-        x2 = cast(x2, result_dtype)
+    if x1.dtype != x2.dtype:
+        result_dtype = torch.result_type(x1, x2)
+        if x1.dtype != result_dtype:
+            x1 = cast(x1, result_dtype)
+        else:
+            x2 = cast(x2, result_dtype)
     return torch.isclose(x1, x2)
 
 
