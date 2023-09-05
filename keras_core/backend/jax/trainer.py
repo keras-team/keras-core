@@ -29,6 +29,7 @@ class JAXTrainer(base_trainer.Trainer):
         y,
         sample_weight,
         training=False,
+        optimizer_variables=None,
     ):
         """This method is stateless and is intended for use with jax.grad."""
         kwargs = {}
@@ -44,7 +45,10 @@ class JAXTrainer(base_trainer.Trainer):
         loss = self.compute_loss(x, y, y_pred, sample_weight, allow_empty=True)
         if losses:
             loss += ops.sum(losses)
-        return loss, (y_pred, non_trainable_variables)
+        unscaled_loss = loss
+        if training:
+            loss = self.stateless_scale_loss(optimizer_variables, loss)
+        return loss, (unscaled_loss, y_pred, non_trainable_variables)
 
     def _eager_build(self, data_batch):
         model_unbuilt = not all(layer.built for layer in self._flatten_layers())
@@ -82,14 +86,16 @@ class JAXTrainer(base_trainer.Trainer):
         grad_fn = jax.value_and_grad(
             self.compute_loss_and_updates, has_aux=True
         )
-        (loss, (y_pred, non_trainable_variables)), grads = grad_fn(
+        (loss, aux), grads = grad_fn(
             trainable_variables,
             non_trainable_variables,
             x,
             y,
             sample_weight,
             training=True,
+            optimizer_variables=optimizer_variables,
         )
+        (unscaled_loss, y_pred, non_trainable_variables) = aux
 
         (
             trainable_variables,
@@ -104,7 +110,7 @@ class JAXTrainer(base_trainer.Trainer):
                 for ref_v, v in zip(self.metrics_variables, metrics_variables)
             ]
         ) as scope:
-            self._loss_tracker.update_state(loss)
+            self._loss_tracker.update_state(unscaled_loss)
             logs = self.compute_metrics(x, y, y_pred, sample_weight)
 
         new_metrics_variables = []
@@ -130,10 +136,7 @@ class JAXTrainer(base_trainer.Trainer):
             metrics_variables,
         ) = state
         x, y, sample_weight = data_adapter_utils.unpack_x_y_sample_weight(data)
-        loss, (
-            y_pred,
-            non_trainable_variables,
-        ) = self.compute_loss_and_updates(
+        loss, aux = self.compute_loss_and_updates(
             trainable_variables,
             non_trainable_variables,
             x,
@@ -141,6 +144,7 @@ class JAXTrainer(base_trainer.Trainer):
             sample_weight,
             training=False,
         )
+        (unscaled_loss, y_pred, non_trainable_variables) = aux
 
         with backend.StatelessScope(
             state_mapping=[
@@ -148,7 +152,7 @@ class JAXTrainer(base_trainer.Trainer):
                 for ref_v, v in zip(self.metrics_variables, metrics_variables)
             ]
         ) as scope:
-            self._loss_tracker.update_state(loss)
+            self._loss_tracker.update_state(unscaled_loss)
             logs = self.compute_metrics(x, y, y_pred, sample_weight)
 
         new_metrics_variables = []
