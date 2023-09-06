@@ -67,6 +67,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
             trainable_weights = self.trainable_weights
             gradients = tape.gradient(loss, trainable_weights)
 
+            # Update weights
             self.optimizer.apply_gradients(zip(gradients, trainable_weights))
         else:
             warnings.warn("The model does not have any trainable weights.")

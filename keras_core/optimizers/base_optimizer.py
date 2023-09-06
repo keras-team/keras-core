@@ -75,6 +75,14 @@ class BaseOptimizer:
                 f"be set. Received: clipnorm={self.clipnorm}, "
                 f"global_clipnorm={self.global_clipnorm}"
             )
+
+        if self.use_loss_scale:
+            # Verify the arguments related to loss scaling.
+            if not isinstance(loss_scale_factor, (int, float)):
+                raise ValueError(
+                    "Argument `loss_scale_factor` should be float. "
+                    f"Received: loss_scale_factor={loss_scale_factor}."
+                )
         self.built = False
 
         # Set up variable tracking.
@@ -126,12 +134,7 @@ class BaseOptimizer:
             self._track_variable(learning_rate)
             self._learning_rate = learning_rate
 
-        # Create variables for mixed precision training
-        if not isinstance(loss_scale_factor, (int, float)):
-            raise ValueError(
-                "Argument `loss_scale_factor` should be float. "
-                f"Received: loss_scale_factor={loss_scale_factor}."
-            )
+        # Create loss_scale_factor for mixed precision training
         with backend.name_scope(self.name, caller=self):
             loss_scale_factor = backend.Variable(
                 loss_scale_factor,
@@ -141,17 +144,6 @@ class BaseOptimizer:
             )
         self._track_variable(loss_scale_factor)
         self._loss_scale_factor = loss_scale_factor
-
-        if loss_scale_dynamic:
-            with backend.name_scope(self.name, caller=self):
-                loss_scale_good_steps = backend.Variable(
-                    0,
-                    name="loss_scale_good_steps",
-                    dtype="int64",
-                    trainable=False,
-                )
-            self._track_variable(loss_scale_good_steps)
-            self._loss_scale_good_steps = loss_scale_good_steps
 
     def _track_variable(self, variable):
         self._tracker.add_to_store("variables", variable)
@@ -170,6 +162,17 @@ class BaseOptimizer:
                         "average",
                     )
                 )
+        if self.use_loss_scale and self.loss_scale_dynamic:
+            with backend.name_scope(self.name, caller=self):
+                loss_scale_good_steps = backend.Variable(
+                    0,
+                    name="loss_scale_good_steps",
+                    dtype="int",
+                    trainable=False,
+                )
+            self._track_variable(loss_scale_good_steps)
+            self._loss_scale_good_steps = loss_scale_good_steps
+
         self._trainable_variables = variables[:]
         self.built = True
 
@@ -706,7 +709,6 @@ class BaseOptimizer:
             "use_loss_scale": self.use_loss_scale,
             "loss_scale_dynamic": self.loss_scale_dynamic,
             "loss_scale_growth_steps": self.loss_scale_growth_steps,
-            "loss_scale_multiplier": self.loss_scale_multiplier,
             "loss_scale_factor": loss_scale_factor,
         }
         return config

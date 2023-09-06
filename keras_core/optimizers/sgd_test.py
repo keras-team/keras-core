@@ -20,7 +20,7 @@ class SGDTest(testing.TestCase):
 
     def test_single_step(self):
         optimizer = SGD(learning_rate=0.5)
-        self.assertEqual(len(optimizer.variables), 2)
+        self.assertEqual(len(optimizer.variables), 3)
         grads = ops.array([1.0, 6.0, 7.0, 2.0])
         vars = backend.Variable([1.0, 2.0, 3.0, 4.0])
         optimizer.build([vars])
