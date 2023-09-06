@@ -134,7 +134,7 @@ class BaseOptimizer:
             self._track_variable(learning_rate)
             self._learning_rate = learning_rate
 
-        # Create loss_scale_factor for mixed precision training
+        # Create variables for mixed precision training
         with backend.name_scope(self.name, caller=self):
             loss_scale_factor = backend.Variable(
                 loss_scale_factor,
@@ -142,8 +142,16 @@ class BaseOptimizer:
                 dtype=backend.floatx(),
                 trainable=False,
             )
+            loss_scale_good_steps = backend.Variable(
+                0,
+                name="loss_scale_good_steps",
+                dtype="int",
+                trainable=False,
+            )
         self._track_variable(loss_scale_factor)
         self._loss_scale_factor = loss_scale_factor
+        self._track_variable(loss_scale_good_steps)
+        self._loss_scale_good_steps = loss_scale_good_steps
 
     def _track_variable(self, variable):
         self._tracker.add_to_store("variables", variable)
@@ -162,16 +170,6 @@ class BaseOptimizer:
                         "average",
                     )
                 )
-        if self.use_loss_scale and self.loss_scale_dynamic:
-            with backend.name_scope(self.name, caller=self):
-                loss_scale_good_steps = backend.Variable(
-                    0,
-                    name="loss_scale_good_steps",
-                    dtype="int",
-                    trainable=False,
-                )
-            self._track_variable(loss_scale_good_steps)
-            self._loss_scale_good_steps = loss_scale_good_steps
 
         self._trainable_variables = variables[:]
         self.built = True

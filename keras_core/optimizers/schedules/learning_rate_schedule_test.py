@@ -28,7 +28,7 @@ class TestFitLRSchedulesFlow(testing.TestCase):
                 initial_learning_rate=0.05, decay_steps=1, decay_rate=0.9
             )
         )
-        self.assertEqual(len(optimizer.variables), 2)
+        self.assertEqual(len(optimizer.variables), 3)
         self.assertEqual(optimizer.variables[0], 0)
 
         model.compile(optimizer=optimizer, loss="mse")
