@@ -29,7 +29,7 @@ class Constant(Initializer):
     """
 
     def __init__(self, value=0.0):
-        self.value = float(value)
+        self.value = value
 
     def __call__(self, shape, dtype=None):
         dtype = standardize_dtype(dtype)
