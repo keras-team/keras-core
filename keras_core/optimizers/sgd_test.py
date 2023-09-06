@@ -26,7 +26,7 @@ class SGDTest(testing.TestCase):
         optimizer.build([vars])
         optimizer.apply_gradients(zip([grads], [vars]))
         self.assertAllClose(vars, [0.5, -1.0, -0.5, 3.0], rtol=1e-4, atol=1e-4)
-        self.assertEqual(len(optimizer.variables), 2)
+        self.assertEqual(len(optimizer.variables), 4)
         self.assertEqual(optimizer.variables[0], 1)
         self.assertEqual(optimizer.variables[1], 0.5)
 
