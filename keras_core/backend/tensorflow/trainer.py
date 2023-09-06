@@ -59,14 +59,14 @@ class TensorFlowTrainer(base_trainer.Trainer):
             loss = self.compute_loss(
                 x=x, y=y, y_pred=y_pred, sample_weight=sample_weight
             )
-        self._loss_tracker.update_state(loss)
+            self._loss_tracker.update_state(tf.stop_gradient(loss))
+            loss = self.optimizer.scale_loss(loss)
 
         # Compute gradients
         if self.trainable_weights:
             trainable_weights = self.trainable_weights
             gradients = tape.gradient(loss, trainable_weights)
 
-            # Update weights
             self.optimizer.apply_gradients(zip(gradients, trainable_weights))
         else:
             warnings.warn("The model does not have any trainable weights.")

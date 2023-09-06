@@ -3,6 +3,7 @@ import warnings
 
 from keras_core import backend
 from keras_core import metrics as metrics_module
+from keras_core import mixed_precision
 from keras_core import ops
 from keras_core import optimizers
 from keras_core.saving import serialization_lib
@@ -118,6 +119,11 @@ class Trainer:
                 the model supports it, and disabled otherwise.
         """
         self.optimizer = optimizers.get(optimizer)
+        if mixed_precision.dtype_policy().name in (
+            "mixed_float16",
+            "mixed_bfloat16",
+        ):
+            self.optimizer.use_loss_scale = True
         if hasattr(self, "output_names"):
             output_names = self.output_names
         else:
