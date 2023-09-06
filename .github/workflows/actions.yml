@@ -46,10 +46,12 @@ jobs:
       - name: Test applications with pytest
         if: ${{ steps.filter.outputs.applications == 'true' }}
         run: |
-          pytest keras_core/applications
+          pytest keras_core/applications --cov=keras_core.applications --cov-branch --cov-report xml:apps-coverage.xml
       - name: Test with pytest
         run: |
-          pytest keras_core --ignore keras_core/applications
+          pytest keras_core --ignore keras_core/applications --cov-branch --cov=keras_core --cov-report xml:core-coverage.xml
+      - name: Codecov
+        uses: codecov/codecov-action@v3
 
   format:
     name: Check the code format
