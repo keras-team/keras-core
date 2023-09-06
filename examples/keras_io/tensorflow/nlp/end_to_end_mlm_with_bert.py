@@ -52,9 +52,6 @@ from dataclasses import dataclass
 import tensorflow as tf
 import keras_core as keras
 from keras_core import layers
-from keras_core.models import Model
-from keras_core.initializers import Constant
-from keras_core.layers import TextVectorization
 
 """
 ## Configuration
@@ -175,7 +172,7 @@ def get_vectorize_layer(texts, vocab_size, max_seq, special_tokens=["[MASK]"]):
     Returns:
         layers.Layer: Return TextVectorization Keras Layer
     """
-    vectorize_layer = TextVectorization(
+    vectorize_layer = layers.TextVectorization(
         max_tokens=vocab_size,
         output_mode="int",
         standardize=custom_standardization,
@@ -273,6 +270,44 @@ mlm_ds = tf.data.Dataset.from_tensor_slices(
 )
 mlm_ds = mlm_ds.shuffle(1000).batch(config.BATCH_SIZE)
 
+id2token = dict(enumerate(vectorize_layer.get_vocabulary()))
+token2id = {y: x for x, y in id2token.items()}
+
+class MaskedTextGenerator(keras.callbacks.Callback):
+    def __init__(self, sample_tokens, top_k=5):
+        self.sample_tokens = sample_tokens
+        self.k = top_k
+
+    def decode(self, tokens):
+        return " ".join([id2token[t] for t in tokens if t != 0])
+
+    def convert_ids_to_tokens(self, id):
+        return id2token[id]
+
+    def on_epoch_end(self, epoch, logs=None):
+        prediction = self.model.predict(self.sample_tokens)
+
+        masked_index = np.where(self.sample_tokens == mask_token_id)
+        masked_index = masked_index[1]
+        mask_prediction = prediction[0][masked_index]
+
+        top_indices = mask_prediction[0].argsort()[-self.k :][::-1]
+        values = mask_prediction[0][top_indices]
+
+        for i in range(len(top_indices)):
+            p = top_indices[i]
+            v = values[i]
+            tokens = np.copy(self.sample_tokens[0])
+            tokens[masked_index[0]] = p
+            result = {
+                "input_text": self.decode(self.sample_tokens[0]),
+                "prediction": self.decode(tokens),
+                "probability": v,
+                "predicted mask token": self.convert_ids_to_tokens(p),
+            }
+
+sample_tokens = vectorize_layer(["I have watched this [mask] and it was awesome"])
+generator_callback = MaskedTextGenerator(sample_tokens.numpy())
 
 """
 ## Create BERT model (Pretraining Model) for masked language modeling
@@ -335,7 +370,7 @@ loss_fn = keras.losses.SparseCategoricalCrossentropy(
 loss_tracker = keras.metrics.Mean(name="loss")
 
 
-class MaskedLanguageModel(Model):
+class MaskedLanguageModel(keras.Model):
     def train_step(self, inputs):
         if len(inputs) == 3:
             features, labels, sample_weight = inputs
@@ -380,7 +415,7 @@ def create_masked_language_bert_model():
     position_embeddings = layers.Embedding(
         input_dim=config.MAX_LEN,
         output_dim=config.EMBED_DIM,
-        embeddings_initializer=Constant(get_pos_encoding_matrix(config.MAX_LEN, config.EMBED_DIM)),
+        embeddings_initializer=keras.initializers.Constant(get_pos_encoding_matrix(config.MAX_LEN, config.EMBED_DIM)),
         name="position_embedding",
     )(tf.range(start=0, limit=config.MAX_LEN, delta=1))
     
@@ -406,7 +441,7 @@ bert_masked_model.summary()
 ## Train and Save
 """
 
-bert_masked_model.fit(mlm_ds, epochs=Config.NUM_EPOCHS, steps_per_epoch=Config.STEPS_PER_EPOCH)
+bert_masked_model.fit(mlm_ds, epochs=Config.NUM_EPOCHS, steps_per_epoch=Config.STEPS_PER_EPOCH, callbacks=[generator_callback])
 bert_masked_model.save("bert_mlm_imdb.keras")
 
 """
@@ -421,7 +456,7 @@ pretrained BERT features.
 mlm_model = keras.models.load_model(
     "bert_mlm_imdb.keras", custom_objects={"MaskedLanguageModel": MaskedLanguageModel}
 )
-pretrained_bert_model = Model(
+pretrained_bert_model = keras.Model(
     mlm_model.input, mlm_model.get_layer("encoder_0_ffn_layernormalization").output
 )
 
