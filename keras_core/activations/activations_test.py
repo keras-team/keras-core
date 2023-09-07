@@ -371,6 +371,15 @@ class ActivationsTest(testing.TestCase):
         expected_combined = np.array([0.0, 0.0, 0.0, 0.0, 5.0])
         self.assertAllClose(result_combined, expected_combined, rtol=1e-05)
 
+    def test_relu_combined_all_parameters(self):
+        # Define the input tensor
+        x = np.array([-10, -5, 0.0, 5, 10])
+
+        # Test with negative_slope, max_value, and threshold
+        result_combined = activations.relu(x, negative_slope=0.5, max_value=5.0, threshold=5.0)
+        expected_combined = np.array([-7.5, -5.0, -2.5, 0.0, 5.0])
+        self.assertAllClose(result_combined, expected_combined, rtol=1e-05)
+
     def test_relu(self):
         # Basic test for positive values
         positive_values = np.random.uniform(0.1, 10, (2, 5))
