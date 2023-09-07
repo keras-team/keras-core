@@ -77,32 +77,23 @@ class ReLU(ops.Operation):
         # Convert negative_slope to the dtype of x to ensure type consistency during operations
         negative_slope = ops.cast(negative_slope, dtype=x.dtype)
 
-        # 1. Leaky ReLU without threshold or max value clipping
-        if negative_slope != 0.0 and threshold == 0.0 and max_value is None:
-            return backend.nn.leaky_relu(x, negative_slope=negative_slope)
-
-        # 2. Clipping max value without a threshold or negative slope
-        if max_value is not None and negative_slope == 0.0 and threshold == 0.0:
-            return backend.numpy.clip(x, None, max_value)
-
-        # 3. Thresholding
+        # Handling threshold
         if threshold != 0.0:
             threshold = ops.cast(threshold, dtype=x.dtype)
             x = x * backend.cast(
-                backend.numpy.greater(x, threshold), dtype=x.dtype
+                backend.numpy.greater_equal(x, threshold), dtype=x.dtype
             )
-        elif negative_slope == 0.0:  # Standard ReLU when threshold is zero
+
+        # Handling LeakyReLU
+        if negative_slope != 0.0:
+            positive_part = backend.nn.relu(x)
+            negative_part = negative_slope * backend.nn.relu(-x)
+            x = positive_part + negative_part
+
+        else:  # Standard ReLU
             x = backend.nn.relu(x)
 
-        # 4. Leaky part handling
-        if negative_slope != 0.0:
-            if threshold != 0.0:
-                negative_part = backend.nn.relu(-x + threshold)
-            else:
-                negative_part = backend.nn.relu(-x)
-            x -= negative_slope * negative_part
-
-        # 5. Clipping max value
+        # Clipping max value
         if max_value is not None:
             x = backend.numpy.clip(x, None, max_value)
 
