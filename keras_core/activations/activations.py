@@ -74,26 +74,34 @@ class ReLU(ops.Operation):
 
     @staticmethod
     def static_call(x, negative_slope=0.0, max_value=None, threshold=0.0):
-        # Handle negative_slope first
-        negative_part = None
+        if negative_slope != 0.0 and threshold == 0.0 and max_value is None:
+            return backend.nn.leaky_relu(x, negative_slope=negative_slope)
+
+        if max_value == 6 and threshold == 0.0:
+            return backend.nn.relu6(x)
+
+        if threshold != 0:
+            # computes x for x > threshold else 0
+            threshold = ops.cast(threshold, dtype=x.dtype)
+            x = x * backend.cast(
+                backend.numpy.greater(x, threshold), dtype=x.dtype
+            )
+        else:
+            x = backend.nn.relu(x)
+
+        if max_value is not None:
+            min_value = ops.cast(
+                0.0 if negative_slope == 0.0 else -np.inf, dtype=x.dtype
+            )
+            max_value = ops.cast(max_value, dtype=x.dtype)
+            x = backend.numpy.clip(x, min_value, max_value)
+
         if negative_slope != 0.0:
             if threshold != 0:
                 negative_part = backend.nn.relu(-x + threshold)
             else:
                 negative_part = backend.nn.relu(-x)
-
-        # Now, apply ReLU activation to the positive part only
-        positive_part = backend.nn.relu(x)
-
-        if max_value is not None:
-            positive_part = backend.numpy.clip(positive_part, 0, max_value)
-
-        # Combine the positive and negative parts
-        if negative_slope != 0.0:
-            x = positive_part - negative_slope * negative_part
-        else:
-            x = positive_part
-
+            x -= negative_slope * negative_part
         return x
 
     # @staticmethod
