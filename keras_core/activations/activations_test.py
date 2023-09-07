@@ -333,6 +333,37 @@ class ActivationsTest(testing.TestCase):
             result_positive_above_1, expected_positive_above_1, rtol=1e-05
         )
 
+    def test_relu_parameters(self):
+        # Test with negative slope
+        x_negative_slope = np.array([-5, -1, 0, 1, 5])
+        result_negative_slope = activations.relu(
+            x_negative_slope, negative_slope=0.5
+        )
+        expected_negative_slope = np.array([-2.5, -0.5, 0, 1, 5])
+        self.assertAllClose(
+            result_negative_slope, expected_negative_slope, rtol=1e-05
+        )
+
+        # Test with max_value
+        x_max_value = np.array([-5, -1, 0, 1, 5, 10])
+        result_max_value = activations.relu(x_max_value, max_value=5.0)
+        expected_max_value = np.array([-5, -1, 0, 1, 5, 5])
+        self.assertAllClose(result_max_value, expected_max_value, rtol=1e-05)
+
+        # Test with threshold
+        x_threshold = np.array([-5, -1, 0, 1, 5, 10])
+        result_threshold = activations.relu(x_threshold, threshold=1.0)
+        expected_threshold = np.array([0, 0, 0, 0, 5, 10])
+        self.assertAllClose(result_threshold, expected_threshold, rtol=1e-05)
+
+        # Test with combined parameters
+        x_combined = np.array([-5, -1, 0, 1, 5, 10])
+        result_combined = activations.relu(
+            x_combined, negative_slope=0.5, max_value=5.0, threshold=1.0
+        )
+        expected_combined = np.array([-2.5, -0.5, 0, 0, 5, 5])
+        self.assertAllClose(result_combined, expected_combined, rtol=1e-05)
+
     def test_relu(self):
         # Basic test for positive values
         positive_values = np.random.uniform(0.1, 10, (2, 5))
