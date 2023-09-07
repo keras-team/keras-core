@@ -333,7 +333,7 @@ class ActivationsTest(testing.TestCase):
             result_positive_above_1, expected_positive_above_1, rtol=1e-05
         )
 
-    def test_relu_parameters(self):
+    def test_relu_negative_slope(self):
         # Define the input tensor
         x = np.array([-5, -1, 0, 1, 5, 10])
 
@@ -344,10 +344,18 @@ class ActivationsTest(testing.TestCase):
             result_negative_slope, expected_negative_slope, rtol=1e-05
         )
 
+    def test_relu_max_value(self):
+        # Define the input tensor
+        x = np.array([-5, -1, 0, 1, 5, 10])
+
         # Test with only max_value
         result_max_value = activations.relu(x, max_value=5.0)
         expected_max_value = np.array([0, 0, 0, 1, 5, 5])
         self.assertAllClose(result_max_value, expected_max_value, rtol=1e-05)
+
+    def test_relu_threshold_and_combined(self):
+        # Define the input tensor
+        x = np.array([-5, -1, 0, 1, 5, 10])
 
         # Test with only threshold
         result_threshold = activations.relu(x, threshold=1.0)
