@@ -83,18 +83,11 @@ class ExportArchive:
         self._endpoint_signatures = {}
         self.tensorflow_version = tf.__version__
 
-        if backend.backend() == "tensorflow":
-            self._tf_trackable = tf.__internal__.tracking.AutoTrackable()
-            self._tf_trackable.variables = []
-            self._tf_trackable.trainable_variables = []
-            self._tf_trackable.non_trainable_variables = []
-        else:  # JAX backend
-            self._module = tf.Module()
+        self._tf_trackable = tf.__internal__.tracking.AutoTrackable()
+        self._tf_trackable.variables = []
+        self._tf_trackable.trainable_variables = []
+        self._tf_trackable.non_trainable_variables = []
 
-            # Variables of `tf.Module` cannot be directly set.
-            self._variables = []
-            self._trainable_variables = []
-            self._non_trainable_variables = []
         if backend.backend() not in ("tensorflow", "jax"):
             raise NotImplementedError(
                 "The export API is only compatible with JAX and TF backends."
@@ -102,24 +95,15 @@ class ExportArchive:
 
     @property
     def variables(self):
-        if backend.backend() == "tensorflow":
-            return self._tf_trackable.variables
-        else:  # JAX backend
-            return self._variables
+        return self._tf_trackable.variables
 
     @property
     def trainable_variables(self):
-        if backend.backend() == "tensorflow":
-            return self._tf_trackable.trainable_variables
-        else:  # JAX backend
-            return self._trainable_variables
+        return self._tf_trackable.trainable_variables
 
     @property
     def non_trainable_variables(self):
-        if backend.backend() == "tensorflow":
-            return self._tf_trackable.non_trainable_variables
-        else:  # JAX backend
-            return self._non_trainable_variables
+        return self._tf_trackable.non_trainable_variables
 
     def track(self, resource):
         """Track the variables (and other assets) of a layer or model."""
@@ -159,26 +143,13 @@ class ExportArchive:
         if isinstance(resource, Layer):
             # Variables in the lists below are actually part of the trackables
             # that get saved, because the lists are created in __init__.
-            if backend.backend() == "tensorflow":
-                self._tf_trackable.variables += resource.variables
-                self._tf_trackable.trainable_variables += (
-                    resource.trainable_variables
-                )
-                self._tf_trackable.non_trainable_variables += (
-                    resource.non_trainable_variables
-                )
-            else:  # JAX backend
-                # Wrap the JAX state in `tf.Variable`
-                # Needed when calling the converted JAX function.
-                self._variables += tf.nest.map_structure(
-                    tf.Variable, resource.variables
-                )
-                self._trainable_variables += tf.nest.map_structure(
-                    tf.Variable, resource.trainable_variables
-                )
-                self._non_trainable_variables += tf.nest.map_structure(
-                    tf.Variable, resource.non_trainable_variables
-                )
+            self._tf_trackable.variables += resource.variables
+            self._tf_trackable.trainable_variables += (
+                resource.trainable_variables
+            )
+            self._tf_trackable.non_trainable_variables += (
+                resource.non_trainable_variables
+            )
 
     def add_endpoint(self, name, fn, input_signature=None):
         """Register a new serving endpoint.
@@ -329,10 +300,7 @@ class ExportArchive:
                     "    ],\n"
                     ")"
                 )
-        if backend.backend() == "tensorflow":
-            setattr(self._tf_trackable, name, decorated_fn)
-        else:  # JAX backend
-            setattr(self._module, name, decorated_fn)
+        setattr(self._tf_trackable, name, decorated_fn)
         self._endpoint_names.append(name)
 
     def add_variable_collection(self, name, variables):
@@ -379,13 +347,11 @@ class ExportArchive:
                 "`tf.Variable` instances. Found instead the following types: "
                 f"{list(set(type(v) for v in variables))}"
             )
-        if backend.backend() == "tensorflow":
-            setattr(self._tf_trackable, name, list(variables))
-        else:  # JAX backend
-            tf_variables = tf.nest.flatten(
-                tf.nest.map_structure(tf.Variable, variables)
-            )
-            setattr(self._module, name, list(tf_variables))
+        if backend.backend() == "jax":
+            variables = tf.nest.flatten(
+                    tf.nest.map_structure(tf.Variable, variables)
+                )
+        setattr(self._tf_trackable, name, list(variables))
 
     def write_out(self, filepath, options=None):
         """Write the corresponding SavedModel to disk.
@@ -419,37 +385,16 @@ class ExportArchive:
                 self._endpoint_names[0]
             )
 
-        if backend.backend() == "tensorflow":
-            tf.saved_model.save(
-                self._tf_trackable,
-                filepath,
-                options=options,
-                signatures=signatures,
-            )
-        else:  # JAX backend
-            self._module._endpoint_names = self._endpoint_names
-            self._module._endpoint_signatures = self._endpoint_signatures
-            self._module.tensorflow_version = self.tensorflow_version
-
-            # Keep the wrapped state as flat list
-            # Needed in TensorFlow fine-tuning.
-            self._module._variables = tf.nest.flatten(self._variables)
-
-            # The `variables`, `trainable_variables`, and
-            # `non_trainable_variables` attributes will be automatically
-            # populated in the tf.Module.
-
-            tf.saved_model.save(
-                self._module, filepath, options=options, signatures=signatures
-            )
-
-        trackable_or_module = (
-            self._module if backend.backend() == "jax" else self._tf_trackable
+        tf.saved_model.save(
+            self._tf_trackable,
+            filepath,
+            options=options,
+            signatures=signatures,
         )
 
         # Print out available endpoints
         endpoints = "\n\n".join(
-            _print_signature(getattr(trackable_or_module, name), name)
+            _print_signature(getattr(self._tf_trackable, name), name)
             for name in self._endpoint_names
         )
         io_utils.print_msg(
@@ -460,13 +405,10 @@ class ExportArchive:
 
     def _get_concrete_fn(self, endpoint):
         """Workaround for some SavedModel quirks."""
-        trackable_or_module = (
-            self._module if backend.backend() == "jax" else self._tf_trackable
-        )
         if endpoint in self._endpoint_signatures:
-            return getattr(trackable_or_module, endpoint)
+            return getattr(self._tf_trackable, endpoint)
         else:
-            traces = getattr(trackable_or_module, endpoint)._trackable_children(
+            traces = getattr(self._tf_trackable, endpoint)._trackable_children(
                 "saved_model"
             )
             return list(traces.values())[0]

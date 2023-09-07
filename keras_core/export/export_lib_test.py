@@ -380,10 +380,8 @@ class ExportArchiveTest(testing.TestCase):
         export_archive.add_variable_collection(
             "my_vars", model.layers[1].weights
         )
-        if backend.backend() == "tensorflow":
-            self.assertLen(export_archive._tf_trackable.my_vars, 2)
-        else:
-            self.assertLen(export_archive._module.my_vars, 2)
+
+        self.assertLen(export_archive._tf_trackable.my_vars, 2)
         export_archive.write_out(temp_filepath)
         revived_model = tf.saved_model.load(temp_filepath)
         self.assertLen(revived_model.my_vars, 2)
