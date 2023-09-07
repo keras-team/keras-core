@@ -72,32 +72,35 @@ class ReLU(ops.Operation):
     def compute_output_spec(self, x):
         return backend.KerasTensor(x.shape, x.dtype)
 
+    @staticmethod
+    def static_call(x, negative_slope=0.0, max_value=None, threshold=0.0):
+        if negative_slope != 0.0 and threshold == 0.0 and max_value is None:
+            return backend.nn.leaky_relu(x, negative_slope=negative_slope)
 
-@staticmethod
-def static_call(x, negative_slope=0.0, max_value=None, threshold=0.0):
-    if negative_slope != 0.0 and threshold == 0.0 and max_value is None:
-        return backend.nn.leaky_relu(x, negative_slope=negative_slope)
+        if max_value == 6 and threshold == 0.0:
+            return backend.nn.relu6(x)
 
-    if max_value == 6 and threshold == 0.0:
-        return backend.nn.relu6(x)
-
-    if threshold != 0:
-        threshold = ops.cast(threshold, dtype=x.dtype)
-        x = x * backend.cast(backend.numpy.greater(x, threshold), dtype=x.dtype)
-    else:
-        x = backend.nn.relu(x)
-
-    if negative_slope != 0.0:
         if threshold != 0:
-            negative_part = backend.nn.relu(-x + threshold)
+            threshold = ops.cast(threshold, dtype=x.dtype)
+            x = x * backend.cast(
+                backend.numpy.greater(x, threshold), dtype=x.dtype
+            )
         else:
-            negative_part = backend.nn.relu(-x)
-        x -= negative_slope * negative_part
+            x = backend.nn.relu(x)
 
-    if max_value is not None:
-        x = backend.numpy.clip(x, None, max_value)  # Only clip the upper bound
+        if negative_slope != 0.0:
+            if threshold != 0:
+                negative_part = backend.nn.relu(-x + threshold)
+            else:
+                negative_part = backend.nn.relu(-x)
+            x -= negative_slope * negative_part
 
-    return x
+        if max_value is not None:
+            x = backend.numpy.clip(
+                x, None, max_value
+            )  # Only clip the upper bound
+
+        return x
 
 
 @keras_core_export("keras_core.activations.leaky_relu")
