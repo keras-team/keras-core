@@ -75,19 +75,23 @@ class ReLU(ops.Operation):
     @staticmethod
     def static_call(x, negative_slope=0.0, max_value=None, threshold=0.0):
         if negative_slope != 0.0:
+            if max_value is None and threshold == 0:
+                return backend.nn.leaky_relu(x, negative_slope=negative_slope)
+
             if threshold != 0:
                 negative_part = backend.nn.relu(-x + threshold)
             else:
                 negative_part = backend.nn.relu(-x)
 
         clip_max = max_value is not None
-
         if threshold != 0:
+            # computes x for x > threshold else 0
             threshold = ops.cast(threshold, dtype=x.dtype)
             x = x * backend.cast(
                 backend.numpy.greater(x, threshold), dtype=x.dtype
             )
-        elif max_value == 6:  # Added this condition here
+        elif max_value == 6:
+            # if no threshold, then can use nn.relu6 native op for performance
             x = backend.nn.relu6(x)
             clip_max = False
         else:
@@ -99,7 +103,6 @@ class ReLU(ops.Operation):
             x = backend.numpy.clip(x, min_value, max_value)
 
         if negative_slope != 0.0:
-            x = ops.cast(x, dtype="float32")  # Ensure x is a float
             x -= negative_slope * negative_part
         return x
 
