@@ -121,7 +121,7 @@ class ExportArchive:
         ):
             raise ValueError(
                 "Invalid resource type. Expected an instance of a "
-                "JAX-based Keras `Layer` or `Model` "
+                "JAX-based Keras `Layer` or `Model`. "
                 f"Received instead an object of type '{type(resource)}'. "
                 f"Object received: {resource}"
             )
