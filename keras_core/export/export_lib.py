@@ -349,8 +349,8 @@ class ExportArchive:
             )
         if backend.backend() == "jax":
             variables = tf.nest.flatten(
-                    tf.nest.map_structure(tf.Variable, variables)
-                )
+                tf.nest.map_structure(tf.Variable, variables)
+            )
         setattr(self._tf_trackable, name, list(variables))
 
     def write_out(self, filepath, options=None):
