@@ -65,7 +65,7 @@ class LossScaleOptimizer(optimizer.Optimizer):
     def build(self, var_list):
         self.step_counter = self.add_variable(
             shape=(),
-            dtype="int32",
+            dtype="int",
             initializer=initializers.Zeros(),
             name="step_counter",
         )
