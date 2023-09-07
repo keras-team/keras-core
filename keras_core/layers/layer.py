@@ -244,7 +244,7 @@ class Layer(BackendLayer, Operation):
         self.dtype_policy = mixed_precision.resolve_policy(dtype)
         self.autocast = autocast
         self._input_spec = None
-        self._called = None
+        self._called = False
         self.supports_jit = True
 
         self._trainable = trainable
