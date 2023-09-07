@@ -21,10 +21,10 @@ class BaseOptimizer:
         use_ema=False,
         ema_momentum=0.99,
         ema_overwrite_frequency=None,
-        use_loss_scale=False,
-        loss_scale_dynamic=True,
-        loss_scale_factor=2**15,
-        loss_scale_growth_steps=2000,
+        use_loss_scaling=None,
+        loss_scaling_dynamic=True,
+        loss_scaling_factor=2**15,
+        loss_scaling_growth_steps=2000,
         name=None,
         **kwargs,
     ):
@@ -45,10 +45,10 @@ class BaseOptimizer:
         self.global_clipnorm = global_clipnorm
         self.clipvalue = clipvalue
         self.use_ema = use_ema
-        self.use_loss_scale = use_loss_scale
-        self.loss_scale_dynamic = loss_scale_dynamic
-        self.loss_scale_growth_steps = loss_scale_growth_steps
-        self.loss_scale_multiplier = 2.0  # TODO: should this be configurable?
+        self.use_loss_scaling = use_loss_scaling
+        self.loss_scaling_dynamic = loss_scaling_dynamic
+        self.loss_scaling_growth_steps = loss_scaling_growth_steps
+        self.loss_scaling_multiplier = 2.0  # TODO: should this be configurable?
 
         if use_ema:
             # Verify the arguments related to EMA.
@@ -75,14 +75,6 @@ class BaseOptimizer:
                 f"be set. Received: clipnorm={self.clipnorm}, "
                 f"global_clipnorm={self.global_clipnorm}"
             )
-
-        if self.use_loss_scale:
-            # Verify the arguments related to loss scaling.
-            if not isinstance(loss_scale_factor, (int, float)):
-                raise ValueError(
-                    "Argument `loss_scale_factor` should be float. "
-                    f"Received: loss_scale_factor={loss_scale_factor}."
-                )
         self.built = False
 
         # Set up variable tracking.
@@ -136,22 +128,22 @@ class BaseOptimizer:
 
         # Create variables for mixed precision training
         with backend.name_scope(self.name, caller=self):
-            loss_scale_factor = backend.Variable(
-                loss_scale_factor,
-                name="loss_scale_factor",
+            loss_scaling_factor = backend.Variable(
+                loss_scaling_factor,
+                name="loss_scaling_factor",
                 dtype=backend.floatx(),
                 trainable=False,
             )
-            loss_scale_good_steps = backend.Variable(
+            loss_scaling_good_steps = backend.Variable(
                 0,
-                name="loss_scale_good_steps",
+                name="loss_scaling_good_steps",
                 dtype="int",
                 trainable=False,
             )
-        self._track_variable(loss_scale_factor)
-        self._loss_scale_factor = loss_scale_factor
-        self._track_variable(loss_scale_good_steps)
-        self._loss_scale_good_steps = loss_scale_good_steps
+        self._track_variable(loss_scaling_factor)
+        self._loss_scaling_factor = loss_scaling_factor
+        self._track_variable(loss_scaling_good_steps)
+        self._loss_scaling_good_steps = loss_scaling_good_steps
 
     def _track_variable(self, variable):
         self._tracker.add_to_store("variables", variable)
@@ -170,7 +162,9 @@ class BaseOptimizer:
                         "average",
                     )
                 )
-
+        if self.use_loss_scaling is None:
+            # defaults to False
+            self.use_loss_scaling = False
         self._trainable_variables = variables[:]
         self.built = True
 
@@ -237,9 +231,9 @@ class BaseOptimizer:
 
     def apply_gradients(self, grads_and_vars):
         grads, trainable_variables = zip(*grads_and_vars)
-        if self.use_loss_scale:
+        if self.use_loss_scaling:
             grads = self.unscale_gradients(grads)
-            should_apply = self.update_loss_scale_factor(grads)
+            should_apply = self.update_loss_scaling_factor(grads)
             return ops.cond(
                 should_apply,
                 lambda: self.apply(grads, trainable_variables),
@@ -367,54 +361,54 @@ class BaseOptimizer:
         return trainable_variables, optimizer_variables
 
     def scale_loss(self, loss):
-        if self.use_loss_scale:
-            return loss * ops.cast(self._loss_scale_factor, loss.dtype)
+        if self.use_loss_scaling:
+            return loss * ops.cast(self._loss_scaling_factor, loss.dtype)
         else:
             return loss
 
     def unscale_gradients(self, grads):
         return [
-            g * ops.cast(1.0 / self._loss_scale_factor, g.dtype)
+            g * ops.cast(1.0 / self._loss_scaling_factor, g.dtype)
             if g is not None
             else None
             for g in grads
         ]
 
-    def update_loss_scale_factor(self, grads):
+    def update_loss_scaling_factor(self, grads):
         is_finite_per_grad = [
             ops.all(ops.isfinite(g)) for g in grads if g is not None
         ]
         is_all_finite = ops.all(is_finite_per_grad)
-        if not self.loss_scale_dynamic:
+        if not self.loss_scaling_dynamic:
             return is_all_finite
 
         def update_if_all_finite_grads():
             def exceed_good_step():
-                self._loss_scale_good_steps.assign(0)
-                return self._loss_scale_factor * self.loss_scale_multiplier
+                self._loss_scaling_good_steps.assign(0)
+                return self._loss_scaling_factor * self.loss_scaling_multiplier
 
             def not_exceed_good_step():
-                self._loss_scale_good_steps.assign_add(1)
-                return self._loss_scale_factor
+                self._loss_scaling_good_steps.assign_add(1)
+                return self._loss_scaling_factor
 
             return ops.cond(
-                self._loss_scale_good_steps > self.loss_scale_growth_steps,
+                self._loss_scaling_good_steps > self.loss_scaling_growth_steps,
                 exceed_good_step,
                 not_exceed_good_step,
             )
 
         def update_if_any_infinite_grads():
-            self._loss_scale_good_steps.assign(0)
+            self._loss_scaling_good_steps.assign(0)
             return ops.maximum(
-                self._loss_scale_factor / self.loss_scale_multiplier, 1.0
+                self._loss_scaling_factor / self.loss_scaling_multiplier, 1.0
             )
 
-        new_loss_scale_factor = ops.cond(
+        new_loss_scaling_factor = ops.cond(
             is_all_finite,
             update_if_all_finite_grads,
             update_if_any_infinite_grads,
         )
-        self._loss_scale_factor.assign(new_loss_scale_factor)
+        self._loss_scaling_factor.assign(new_loss_scaling_factor)
         return is_all_finite
 
     @property
@@ -443,12 +437,12 @@ class BaseOptimizer:
             self._learning_rate.assign(learning_rate)
 
     @property
-    def loss_scale_factor(self):
-        return self._loss_scale_factor
+    def loss_scaling_factor(self):
+        return self._loss_scaling_factor
 
-    @loss_scale_factor.setter
-    def loss_scale_factor(self, loss_scale_factor):
-        self._loss_scale_factor.assign(loss_scale_factor)
+    @loss_scaling_factor.setter
+    def loss_scaling_factor(self, loss_scaling_factor):
+        self._loss_scaling_factor.assign(loss_scaling_factor)
 
     def set_weights(self, weights):
         """Set the weights of the optimizer."""
@@ -689,10 +683,10 @@ class BaseOptimizer:
                 self._learning_rate
             )
 
-        if isinstance(self._loss_scale_factor, backend.Variable):
-            loss_scale_factor = float(self._loss_scale_factor.numpy())
-        elif ops.is_tensor(self._loss_scale_factor):
-            loss_scale_factor = float(self._loss_scale_factor)
+        if isinstance(self._loss_scaling_factor, backend.Variable):
+            loss_scaling_factor = float(self._loss_scaling_factor.numpy())
+        elif ops.is_tensor(self._loss_scaling_factor):
+            loss_scaling_factor = float(self._loss_scaling_factor)
 
         config = {
             "name": self.name,
@@ -704,10 +698,10 @@ class BaseOptimizer:
             "use_ema": self.use_ema,
             "ema_momentum": self.ema_momentum,
             "ema_overwrite_frequency": self.ema_overwrite_frequency,
-            "use_loss_scale": self.use_loss_scale,
-            "loss_scale_dynamic": self.loss_scale_dynamic,
-            "loss_scale_growth_steps": self.loss_scale_growth_steps,
-            "loss_scale_factor": loss_scale_factor,
+            "use_loss_scaling": self.use_loss_scaling,
+            "loss_scaling_dynamic": self.loss_scaling_dynamic,
+            "loss_scaling_growth_steps": self.loss_scaling_growth_steps,
+            "loss_scaling_factor": loss_scaling_factor,
         }
         return config
 

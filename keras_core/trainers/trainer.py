@@ -34,6 +34,7 @@ class Trainer:
         run_eagerly=False,
         steps_per_execution=1,
         jit_compile="auto",
+        loss_scaling="auto",
     ):
         """Configures the model for training.
 
@@ -119,11 +120,6 @@ class Trainer:
                 the model supports it, and disabled otherwise.
         """
         self.optimizer = optimizers.get(optimizer)
-        if mixed_precision.dtype_policy().name in (
-            "mixed_float16",
-            "mixed_bfloat16",
-        ):
-            self.optimizer.use_loss_scale = True
         if hasattr(self, "output_names"):
             output_names = self.output_names
         else:
@@ -159,6 +155,13 @@ class Trainer:
                 "Proceeding with `jit_compile=False`."
             )
             jit_compile = False
+        if isinstance(self.optimizer.use_loss_scaling, bool):
+            loss_scaling = self.optimizer.use_loss_scaling
+        elif loss_scaling == "auto":
+            loss_scaling = resolve_auto_loss_scaling()
+
+        self.optimizer.use_loss_scaling = loss_scaling
+        self.loss_scaling = loss_scaling
         self.jit_compile = jit_compile
         self.run_eagerly = run_eagerly
         self.stop_training = False
@@ -862,6 +865,15 @@ def resolve_auto_jit_compile(model):
             # Torch defaults to eager mode
             # until torch compile is reliable
             return False
+        return True
+    return False
+
+
+def resolve_auto_loss_scaling():
+    if mixed_precision.dtype_policy().name in (
+        "mixed_float16",
+        "mixed_bfloat16",
+    ):
         return True
     return False
 
