@@ -7,7 +7,12 @@ from keras_core.saving import serialization_lib
 from keras_core.utils import tracking
 
 
-@keras_core_export(["keras_core.optimizers.LossScaleOptimizer"])
+@keras_core_export(
+    [
+        "keras_core.optimizers.LossScaleOptimizer",
+        "keras_core.mixed_precision.LossScaleOptimizer",
+    ]
+)
 class LossScaleOptimizer(optimizer.Optimizer):
     """An optimizer that dynamically scales the loss to prevent underflow.
 
