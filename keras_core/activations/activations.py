@@ -74,37 +74,20 @@ class ReLU(ops.Operation):
 
     @staticmethod
     def static_call(x, negative_slope=0.0, max_value=None, threshold=0.0):
-        if negative_slope != 0.0:
-            if max_value is None and threshold == 0:
-                return backend.nn.leaky_relu(x, negative_slope=negative_slope)
+        # Step 1: Apply negative slope for values below threshold
+        if negative_slope != 0:
+            x = backend.numpy.where(x < threshold, x * negative_slope, x)
 
-            if threshold != 0:
-                negative_part = backend.nn.relu(-x + threshold)
-            else:
-                negative_part = backend.nn.relu(-x)
+        # Step 2: Apply ReLU behavior for values above or equal to 0
+        x = backend.numpy.where(x >= 0, x, 0)
 
-        clip_max = max_value is not None
-        if threshold != 0:
-            # computes x for x >= threshold else 0
-            threshold = ops.cast(threshold, dtype=x.dtype)
-            x = x * backend.cast(
-                backend.numpy.greater_equal(x, threshold), dtype=x.dtype
-            )
-        elif max_value == 6:
-            # if no threshold, then can use nn.relu6 native op for performance
-            x = backend.nn.relu6(x)
-            clip_max = False
-        else:
-            x = backend.nn.relu(x)
+        # Step 3: Set values that are exactly the threshold to 0 when combined with negative slope
+        if negative_slope != 0:
+            x = backend.numpy.where(x == threshold, 0, x)
 
-        if clip_max:
-            min_value = ops.cast(0.0, dtype=x.dtype)
-            max_value = ops.cast(max_value, dtype=x.dtype)
-            x = backend.numpy.clip(x, min_value, max_value)
-
-        if negative_slope != 0.0:
-            # Casting negative_slope to ensure data type consistency
-            x = x - backend.cast(negative_slope, dtype=x.dtype) * negative_part
+        # Step 4: Clip values that exceed max_value
+        if max_value is not None:
+            x = backend.numpy.clip(x, None, max_value)
 
         return x
 
