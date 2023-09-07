@@ -53,7 +53,7 @@ class JAXTrainer(base_trainer.Trainer):
             and not self._compile_metrics.built
         )
         if model_unbuilt or compile_metrics_unbuilt:
-            data_spec = jax.tree_map(
+            data_spec = tree.map_structure(
                 lambda d: backend.KerasTensor(d.shape, d.dtype), data_batch
             )
             (
