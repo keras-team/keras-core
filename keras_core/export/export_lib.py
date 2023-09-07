@@ -89,7 +89,7 @@ class ExportArchive:
             self._tf_trackable.trainable_variables = []
             self._tf_trackable.non_trainable_variables = []
         else:  # JAX backend
-            self.module = tf.Module()
+            self._module = tf.Module()
 
             # Variables of `tf.Module` cannot be directly set.
             self._variables = []
@@ -332,7 +332,7 @@ class ExportArchive:
         if backend.backend() == "tensorflow":
             setattr(self._tf_trackable, name, decorated_fn)
         else:  # JAX backend
-            setattr(self.module, name, decorated_fn)
+            setattr(self._module, name, decorated_fn)
         self._endpoint_names.append(name)
 
     def add_variable_collection(self, name, variables):
@@ -385,7 +385,7 @@ class ExportArchive:
             tf_variables = tf.nest.flatten(
                 tf.nest.map_structure(tf.Variable, variables)
             )
-            setattr(self.module, name, list(tf_variables))
+            setattr(self._module, name, list(tf_variables))
 
     def write_out(self, filepath, options=None):
         """Write the corresponding SavedModel to disk.
@@ -427,24 +427,24 @@ class ExportArchive:
                 signatures=signatures,
             )
         else:  # JAX backend
-            self.module._endpoint_names = self._endpoint_names
-            self.module._endpoint_signatures = self._endpoint_signatures
-            self.module.tensorflow_version = self.tensorflow_version
+            self._module._endpoint_names = self._endpoint_names
+            self._module._endpoint_signatures = self._endpoint_signatures
+            self._module.tensorflow_version = self.tensorflow_version
 
             # Keep the wrapped state as flat list
             # Needed in TensorFlow fine-tuning.
-            self.module._variables = tf.nest.flatten(self._variables)
+            self._module._variables = tf.nest.flatten(self._variables)
 
             # The `variables`, `trainable_variables`, and
             # `non_trainable_variables` attributes will be automatically
             # populated in the tf.Module.
 
             tf.saved_model.save(
-                self.module, filepath, options=options, signatures=signatures
+                self._module, filepath, options=options, signatures=signatures
             )
 
         trackable_or_module = (
-            self.module if backend.backend() == "jax" else self._tf_trackable
+            self._module if backend.backend() == "jax" else self._tf_trackable
         )
 
         # Print out available endpoints
@@ -461,7 +461,7 @@ class ExportArchive:
     def _get_concrete_fn(self, endpoint):
         """Workaround for some SavedModel quirks."""
         trackable_or_module = (
-            self.module if backend.backend() == "jax" else self._tf_trackable
+            self._module if backend.backend() == "jax" else self._tf_trackable
         )
         if endpoint in self._endpoint_signatures:
             return getattr(trackable_or_module, endpoint)
