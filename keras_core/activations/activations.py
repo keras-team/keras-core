@@ -74,23 +74,31 @@ class ReLU(ops.Operation):
 
     @staticmethod
     def static_call(x, negative_slope=0.0, max_value=None, threshold=0.0):
-        # Step 1: Apply negative slope for values below threshold
-        if negative_slope != 0:
-            x = backend.numpy.where(x < threshold, x * negative_slope, x)
-
-        # Step 2: Apply ReLU behavior for values above or equal to 0
-        x = backend.numpy.where(x >= 0, x, 0)
-
-        # Step 3: Set values that are exactly the threshold to 0 when combined with negative slope
-        if negative_slope != 0:
-            x = backend.numpy.where(x == threshold, 0, x)
-
-        # Step 4: Clip values that exceed max_value
-        if max_value is not None:
-            x = backend.numpy.clip(x, None, max_value)
-
+        
+        # Handle negative slope
+        if negative_slope != 0.0:
+            if threshold != 0:
+                negative_part = backend.nn.relu(-x + threshold)
+            else:
+                negative_part = backend.nn.relu(-x)
+                
+        # Handle threshold
+        if threshold != 0:
+            x = backend.numpy.where(x > threshold, x, 0.0)
+            
+        # Handle max value (Use relu6 for max_value=6)
+        if max_value == 6:
+            x = backend.nn.relu6(x)
+        elif max_value is not None:
+            x = backend.numpy.clip(x, 0, max_value)
+        else:
+            x = backend.nn.relu(x)
+            
+        # Apply negative slope to the negative part
+        if negative_slope != 0.0:
+            x = backend.numpy.where(x > 0, x, x - negative_slope * negative_part)
+            
         return x
-
 
 @keras_core_export("keras_core.activations.leaky_relu")
 def leaky_relu(x, negative_slope=0.2):
