@@ -376,7 +376,9 @@ class ActivationsTest(testing.TestCase):
         x = np.array([-10, -5, 0.0, 5, 10])
 
         # Test with negative_slope, max_value, and threshold
-        result_combined = activations.relu(x, negative_slope=0.5, max_value=5.0, threshold=5.0)
+        result_combined = activations.relu(
+            x, negative_slope=0.5, max_value=5.0, threshold=5.0
+        )
         expected_combined = np.array([-7.5, -5.0, -2.5, 0.0, 5.0])
         self.assertAllClose(result_combined, expected_combined, rtol=1e-05)
 

@@ -87,9 +87,7 @@ class ReLU(ops.Operation):
         if threshold != 0:
             # computes x for x > threshold else 0
             threshold = ops.cast(threshold, dtype=x.dtype)
-            x = x * backend.cast(
-                backend.numpy.greater(x, threshold), dtype=x.dtype
-            )
+            x = x * backend.cast(backend.greater(x, threshold), dtype=x.dtype)
         elif max_value == 6:
             # if no threshold, then can use nn.relu6 native op for performance
             x = backend.nn.relu6(x)
