@@ -231,16 +231,7 @@ class BaseOptimizer:
 
     def apply_gradients(self, grads_and_vars):
         grads, trainable_variables = zip(*grads_and_vars)
-        if self.use_loss_scaling:
-            grads = self.unscale_gradients(grads)
-            should_apply = self.update_loss_scaling_factor(grads)
-            return ops.cond(
-                should_apply,
-                lambda: self.apply(grads, trainable_variables),
-                lambda: self.iterations,
-            )
-        else:
-            return self.apply(grads, trainable_variables)
+        return self.apply(grads, trainable_variables)
 
     def apply(self, grads, trainable_variables=None):
         """
@@ -287,20 +278,34 @@ class BaseOptimizer:
             if len(list(grads)) == 0:
                 return
 
-            # Apply clipping and weight decay.
-            grads = self._clip_gradients(grads)
-            self._apply_weight_decay(trainable_variables)
+            # Helper function for normal applying
+            def _apply(grads, trainable_variables):
+                # Apply clipping and weight decay.
+                grads = self._clip_gradients(grads)
+                self._apply_weight_decay(trainable_variables)
 
-            # Apply gradient updates.
-            self._internal_apply_gradients(
-                list(zip(grads, trainable_variables))
-            )
+                # Apply gradient updates.
+                self._internal_apply_gradients(
+                    list(zip(grads, trainable_variables))
+                )
 
-            # Apply variable constraints after applying gradients.
-            for variable in trainable_variables:
-                if getattr(variable, "constraint", None) is not None:
-                    variable.assign(variable.constraint(variable))
-            return self.iterations
+                # Apply variable constraints after applying gradients.
+                for variable in trainable_variables:
+                    if getattr(variable, "constraint", None) is not None:
+                        variable.assign(variable.constraint(variable))
+                return self.iterations
+
+            # Apply loss scaling
+            if self.use_loss_scaling:
+                grads = self.unscale_gradients(grads)
+                should_apply = self.update_loss_scaling_factor(grads)
+                # Skip the update if there exists any nan in grads
+                return ops.cond(
+                    should_apply,
+                    lambda: _apply(grads, trainable_variables),
+                    lambda: self.iterations,
+                )
+            return _apply(grads, trainable_variables)
 
     def _internal_apply_gradients(self, grads_and_vars):
         learning_rate = self._get_current_learning_rate()
@@ -378,7 +383,7 @@ class BaseOptimizer:
         is_finite_per_grad = [
             ops.all(ops.isfinite(g)) for g in grads if g is not None
         ]
-        is_all_finite = ops.all(is_finite_per_grad)
+        is_all_finite = ops.all(ops.stack(is_finite_per_grad))
         if not self.loss_scaling_dynamic:
             return is_all_finite
 
