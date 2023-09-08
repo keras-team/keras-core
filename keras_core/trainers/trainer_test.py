@@ -12,6 +12,8 @@ from keras_core import ops
 from keras_core import optimizers
 from keras_core import testing
 from keras_core.callbacks.callback import Callback
+from keras_core.optimizers.loss_scale_optimizer import LossScaleOptimizer
+from keras_core.optimizers.rmsprop import RMSprop
 
 if backend.backend() == "jax":
     from keras_core.backend.jax.trainer import JAXTrainer as Trainer
@@ -82,8 +84,8 @@ class ListModel(layers.Layer, Trainer):
 
 
 class TrainingTestingLayer(layers.Layer, Trainer):
-    def __init__(self):
-        layers.Layer.__init__(self)
+    def __init__(self, **kwargs):
+        layers.Layer.__init__(self, **kwargs)
         Trainer.__init__(self)
 
     def call(self, x, training=False):
@@ -330,6 +332,29 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         self.assertEqual(step_count.predict_count, 3)
         model.evaluate(x, y, batch_size=batch_size, callbacks=[step_count])
         self.assertEqual(step_count.test_count, 3)
+
+    @pytest.mark.requires_trainable_backend
+    def test_adds_loss_scaling_optimizer(self):
+        model = TrainingTestingLayer(dtype="mixed_float16")
+        model.compile(optimizer="rmsprop", loss="mse")
+        x = np.ones((128, 1))
+        y = np.zeros((128, 1))
+        model.fit(x, y, batch_size=32)
+        self.assertIsInstance(model.optimizer, LossScaleOptimizer)
+
+        model = TrainingTestingLayer(dtype="mixed_float16")
+        model.compile(optimizer="rmsprop", loss="mse", auto_scale_loss=False)
+        x = np.ones((128, 1))
+        y = np.zeros((128, 1))
+        model.fit(x, y, batch_size=32)
+        self.assertIsInstance(model.optimizer, RMSprop)
+
+        model = TrainingTestingLayer(dtype="mixed_bfloat16")
+        model.compile(optimizer="rmsprop", loss="mse")
+        x = np.ones((128, 1))
+        y = np.zeros((128, 1))
+        model.fit(x, y, batch_size=32)
+        self.assertIsInstance(model.optimizer, RMSprop)
 
     @pytest.mark.requires_trainable_backend
     def test_training_arg(self):

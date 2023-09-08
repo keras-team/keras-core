@@ -314,22 +314,6 @@ class Trainer:
             total_loss = ops.sum(losses)
         return total_loss
 
-    def scale_loss(self, loss):
-        """Scale the loss before computing gradients.
-
-        Scales the loss before gradients are computed in a `train_step`. This
-        is primarily useful during mixed precision training to prevent numeric
-        underflow.
-        """
-        if self.optimizer is None:
-            return loss
-        return self.optimizer.scale_loss(loss)
-
-    def stateless_scale_loss(self, optimizer_variables, loss):
-        if self.optimizer is None:
-            return loss
-        return self.optimizer.stateless_scale_loss(optimizer_variables, loss)
-
     def compute_metrics(self, x, y, y_pred, sample_weight=None):
         """Update metric states and collect all metrics to be returned.
 

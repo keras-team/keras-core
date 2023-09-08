@@ -90,7 +90,7 @@ class LossScaleOptimizer(optimizer.Optimizer):
                 "You can build it via `optimizer.build(trainable_variables)`."
             )
 
-        def handle_fininte_grads():
+        def handle_finite_grads():
             def upscale():
                 mapping = list(zip(self.variables, optimizer_variables))
                 with backend.StatelessScope(state_mapping=mapping) as scope:
@@ -141,7 +141,7 @@ class LossScaleOptimizer(optimizer.Optimizer):
             return trainable_variables, new_optimizer_variables
 
         finite = self.check_finite(grads)
-        return ops.cond(finite, handle_fininte_grads, handle_non_finite_grads)
+        return ops.cond(finite, handle_finite_grads, handle_non_finite_grads)
 
     def apply(self, grads, trainable_variables=None):
         # Optionally build optimizer.
@@ -150,7 +150,7 @@ class LossScaleOptimizer(optimizer.Optimizer):
                 self.build(trainable_variables)
             self.built = True
 
-        def handle_fininte_grads():
+        def handle_finite_grads():
             scale = self.dynamic_scale
             # Unscale gradients.
             unscaled_grads = [
@@ -180,7 +180,7 @@ class LossScaleOptimizer(optimizer.Optimizer):
             self.dynamic_scale.assign(self.dynamic_scale / 2.0)
 
         finite = self.check_finite(grads)
-        ops.cond(finite, handle_fininte_grads, handle_non_finite_grads)
+        ops.cond(finite, handle_finite_grads, handle_non_finite_grads)
 
     def check_finite(self, grads):
         tensor_grads = [g for g in grads if g is not None]

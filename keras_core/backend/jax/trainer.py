@@ -46,8 +46,10 @@ class JAXTrainer(base_trainer.Trainer):
         if losses:
             loss += ops.sum(losses)
         unscaled_loss = loss
-        if training:
-            loss = self.stateless_scale_loss(optimizer_variables, loss)
+        if training and self.optimizer is not None:
+            loss = self.optimizer.stateless_scale_loss(
+                optimizer_variables, loss
+            )
         return loss, (unscaled_loss, y_pred, non_trainable_variables)
 
     def _eager_build(self, data_batch):
@@ -824,7 +826,7 @@ class JAXTrainer(base_trainer.Trainer):
         self._non_trainable_variable_shardings = [
             v.value.sharding for v in self.non_trainable_variables
         ]
-        if hasattr(self, "optimizer"):
+        if hasattr(self, "optimizer") and self.optimizer is not None:
             self._optimizer_variable_shardings = [
                 v.value.sharding for v in self.optimizer.variables
             ]

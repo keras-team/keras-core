@@ -21,7 +21,7 @@ class BaseOptimizer:
         use_ema=False,
         ema_momentum=0.99,
         ema_overwrite_frequency=None,
-        loss_scale_factor=1.0,
+        loss_scale_factor=None,
         name=None,
         **kwargs,
     ):
@@ -250,6 +250,11 @@ class BaseOptimizer:
             if len(list(grads)) == 0:
                 return
 
+            # Unscale gradients.
+            scale = self.loss_scale_factor
+            if scale is not None:
+                grads = [g if g is None else g / scale for g in grads]
+
             # Apply clipping and weight decay.
             grads = self._clip_gradients(grads)
             self._apply_weight_decay(trainable_variables)
@@ -329,10 +334,14 @@ class BaseOptimizer:
         is primarily useful during mixed precision training to prevent numeric
         underflow.
         """
-        return loss * self.loss_scale_factor
+        if self.loss_scale_factor is not None:
+            return loss * self.loss_scale_factor
+        return loss
 
     def stateless_scale_loss(self, optimizer_variables, loss):
-        return loss * self.loss_scale_factor
+        if self.loss_scale_factor is not None:
+            return loss * self.loss_scale_factor
+        return loss
 
     @property
     def learning_rate(self):
@@ -678,7 +687,14 @@ base_optimizer_keyword_args = """name: String. The name to use
           (which updates the model
           variables in-place). When using the built-in `fit()` training loop,
           this happens automatically after the last epoch,
-          and you don't need to do anything."""
+          and you don't need to do anything.
+      loss_scale_factor: Float or `None`. If a float, the scale factor will
+          be multiplied the loss before computing gradients, and the inverse of
+          the scale factor will be multiplied by the gradients before updating
+          variables. Useful for preventing underflow during mixed precision
+          training. Alternately, `keras_core.optimizers.LossScaleOptimizer` will
+          automatically set a loss scale factor.
+"""
 
 
 def clip_by_norm(values, clip_norm, axes=None):

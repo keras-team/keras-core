@@ -40,7 +40,8 @@ class TorchTrainer(base_trainer.Trainer):
             x=x, y=y, y_pred=y_pred, sample_weight=sample_weight
         )
         self._loss_tracker.update_state(loss)
-        loss = self.scale_loss(loss)
+        if self.optimizer is not None:
+            loss = self.optimizer.scale_loss(loss)
 
         # Compute gradients
         if self.trainable_weights:
@@ -73,7 +74,6 @@ class TorchTrainer(base_trainer.Trainer):
             x=x, y=y, y_pred=y_pred, sample_weight=sample_weight
         )
         self._loss_tracker.update_state(loss)
-        loss = self.scale_loss(loss)
         return self.compute_metrics(x, y, y_pred, sample_weight=sample_weight)
 
     def predict_step(self, data):
