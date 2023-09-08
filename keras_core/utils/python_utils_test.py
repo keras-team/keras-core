@@ -61,13 +61,6 @@ class PythonUtilsTest(testing.TestCase):
         self.assertEqual(new_sequences, [])
         self.assertEqual(new_labels, [])
 
-    def test_remove_long_seq_empty_sequences(self):
-        sequences = []
-        labels = []
-        new_sequences, new_labels = remove_long_seq(3, sequences, labels)
-        self.assertEqual(new_sequences, [])
-        self.assertEqual(new_labels, [])
-
     def test_remove_long_seq_mixed_case(self):
         sequences = [[1], [2, 2], [3, 3, 3, 3], [3, 3, 3]]
         labels = [1, 2, 3, 4]
