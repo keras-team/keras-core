@@ -312,51 +312,51 @@ class NumpyTwoInputOpsDynamicShapeTest(testing.TestCase):
         y = KerasTensor([0, 5]).shape
         self.assertFalse(knp.shape_equal(x, y))
 
-    def Test_Broadcast_Shapes_conversion_to_list():
+    def test_broadcast_shapes_conversion_to_list(self):
         shape1 = KerasTensor([1, 2]).shape
         shape2 = KerasTensor([3, 4]).shape
         expected_output = [1, 2]
-        assert knp.broadcast_shapes(shape1, shape2) == expected_output
+        self.assertEqual(knp.broadcast_shapes(shape1, shape2), expected_output)
 
-    def Test_Broadcast_Shapes_shape1_longer_than_shape2():
+    def test_broadcast_shapes_shape1_longer_than_shape2(self):
         shape1 = KerasTensor([5, 3, 2]).shape
         shape2 = KerasTensor([1, 3]).shape
         expected_output = [5, 3, 2]
-        assert knp.broadcast_shapes(shape1, shape2) == expected_output
+        self.assertEqual(knp.broadcast_shapes(shape1, shape2), expected_output)
 
-    def Test_Broadcast_Shapes_shape2_longer_than_shape1():
+    def test_broadcast_shapes_shape2_longer_than_shape1(self):
         shape1 = KerasTensor([5, 3]).shape
         shape2 = KerasTensor([2, 5, 3]).shape
         expected_output = [2, 5, 3]
-        assert knp.broadcast_shapes(shape1, shape2) == expected_output
+        self.assertEqual(knp.broadcast_shapes(shape1, shape2), expected_output)
 
-    def Test_Broadcast_Shapes_broadcasting_shape1_is_1():
+    def test_broadcast_shapes_broadcasting_shape1_is_1(self):
         shape1 = KerasTensor([1, 3]).shape
         shape2 = KerasTensor([5, 1]).shape
         expected_output = [5, 3]
-        assert knp.broadcast_shapes(shape1, shape2) == expected_output
+        self.assertEqual(knp.broadcast_shapes(shape1, shape2), expected_output)
 
-    def Test_Broadcast_Shapes_broadcasting_shape1_is_none():
+    def test_broadcast_shapes_broadcasting_shape1_is_none(self):
         shape1 = KerasTensor([None, 3]).shape
         shape2 = KerasTensor([5, 1]).shape
         expected_output = [5, 3]
-        assert knp.broadcast_shapes(shape1, shape2) == expected_output
+        self.assertEqual(knp.broadcast_shapes(shape1, shape2), expected_output)
 
         shape1 = KerasTensor([None, 3]).shape
         shape2 = KerasTensor([5, 3]).shape
         expected_output = [5, 3]
-        assert knp.broadcast_shapes(shape1, shape2) == expected_output
+        self.assertEqual(knp.broadcast_shapes(shape1, shape2), expected_output)
 
-    def Test_Broadcast_Shapes_broadcasting_shape2_conditions():
+    def test_broadcast_shapes_broadcasting_shape2_conditions(self):
         shape1 = KerasTensor([5, 3, 2]).shape
         shape2 = KerasTensor([1, 3, 2]).shape
         expected_output = [5, 3, 2]
-        assert knp.broadcast_shapes(shape1, shape2) == expected_output
+        self.assertEqual(knp.broadcast_shapes(shape1, shape2), expected_output)
 
         shape1 = KerasTensor([5, 3, 2]).shape
         shape2 = KerasTensor([1, None, 2]).shape
         expected_output = [5, 3, 2]
-        assert knp.broadcast_shapes(shape1, shape2) == expected_output
+        self.assertEqual(knp.broadcast_shapes(shape1, shape2), expected_output)
 
 
 class NumpyTwoInputOpsStaticShapeTest(testing.TestCase):
