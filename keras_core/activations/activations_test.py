@@ -382,6 +382,18 @@ class ActivationsTest(testing.TestCase):
         expected_combined = np.array([-7.5, -5.0, -2.5, 0.0, 5.0])
         self.assertAllClose(result_combined, expected_combined, rtol=1e-05)
 
+    def test_relu_to_trigger_relu6(self):
+        x = np.array([-10, -5, 0.0, 5, 10, 12])
+        result_relu6 = activations.relu(x, max_value=6.0)
+        expected_relu6 = np.array([0.0, 0.0, 0.0, 5.0, 6.0, 6.0])
+        self.assertAllClose(result_relu6, expected_relu6, rtol=1e-05)
+
+    def test_relu_to_trigger_leaky(self):
+        x = np.array([-10, -5, 0.0, 5, 10])
+        result_leaky = activations.relu(x, negative_slope=0.5)
+        expected_leaky = np.array([-5.0, -2.5, 0.0, 5.0, 10.0])
+        self.assertAllClose(result_leaky, expected_leaky, rtol=1e-05)
+
     def test_relu(self):
         # Basic test for positive values
         positive_values = np.random.uniform(0.1, 10, (2, 5))
