@@ -314,15 +314,15 @@ class NumpyTwoInputOpsDynamicShapeTest(testing.TestCase):
 
     def test_broadcast_shapes_conversion_to_list(self):
         shape1 = KerasTensor([1, 2]).shape
-        shape2 = KerasTensor([3, 4]).shape
-        expected_output = [1, 2]
+        shape2 = KerasTensor([3, 1]).shape
+        expected_output = [3, 2]
         self.assertEqual(knp.broadcast_shapes(shape1, shape2), expected_output)
 
     def test_broadcast_shapes_shape1_longer_than_shape2(self):
         shape1 = KerasTensor([5, 3, 2]).shape
         shape2 = KerasTensor([1, 3]).shape
-        expected_output = [5, 3, 2]
-        self.assertEqual(knp.broadcast_shapes(shape1, shape2), expected_output)
+        with self.assertRaises(ValueError):
+            knp.broadcast_shapes(shape1, shape2)
 
     def test_broadcast_shapes_shape2_longer_than_shape1(self):
         shape1 = KerasTensor([5, 3]).shape
