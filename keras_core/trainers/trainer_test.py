@@ -356,6 +356,10 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         self.assertIsInstance(model.optimizer, RMSprop)
 
     @pytest.mark.requires_trainable_backend
+    @pytest.mark.skipif(
+        backend.backend() == "torch",
+        reason="half precision unsupported on torch CPU.",
+    )
     def test_loss_scaling_prevents_underflow(self):
         class DeepModel(layers.Layer, Trainer):
             def __init__(self):
