@@ -109,22 +109,26 @@ class PythonUtilsTest(testing.TestCase):
         self.assertEqual(value_to_test, cell_value)
 
     def test_closure_processing(self):
-        code_with_closure = "some_encoded_function"
-        processed_closure = python_utils.func_load(code_with_closure)
-        self.assertIsNotNone(processed_closure)
+        def simple_function(x):
+            return x + 10
 
+        serialized = python_utils.func_dump(simple_function)
+        deserialized = python_utils.func_load(serialized)
+        self.assertEqual(deserialized(5), 15)
 
     def test_func_load_valid_encoded_code(self):
-        valid_encoded_code = "valid_base64_encoded_code_here"
+        def another_simple_function(x):
+            return x * 2
+
+        raw_data = marshal.dumps(another_simple_function.__code__)
+        valid_encoded_code = base64.b64encode(raw_data).decode("utf-8")
 
         try:
             python_utils.func_load(valid_encoded_code)
-        except UnicodeEncodeError:
-            self.fail(
-                "Expected no error for valid code, but got UnicodeEncodeError."
-            )
+        except (UnicodeEncodeError, ValueError):
+            self.fail("Expected no error for valid code, but got an error.")
 
     def test_func_load_bad_encoded_code(self):
         bad_encoded_code = "This isn't valid base64!"
-        with self.assertRaises(UnicodeEncodeError):
+        with self.assertRaises(AttributeError):
             python_utils.func_load(bad_encoded_code)
