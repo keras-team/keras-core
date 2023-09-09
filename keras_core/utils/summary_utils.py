@@ -316,8 +316,11 @@ def print_summary(
         optimizer_memory_size = 0
 
     total_count = trainable_count + non_trainable_count + optimizer_weight_count
-    total_memory_size = (trainable_memory_size + non_trainable_memory_size + 
-                         optimizer_memory_size)
+    total_memory_size = (
+        trainable_memory_size
+        + non_trainable_memory_size
+        + optimizer_memory_size
+    )
 
     # Create a rich console for printing. Capture for non-interactive logging.
     if print_fn:
