@@ -22,7 +22,7 @@ class LossScaleOptimizerTest(testing.TestCase, parameterized.TestCase):
     @parameterized.named_parameters(("stateless", True), ("stateful", False))
     def test_finite_step(self, stateless):
         if not stateless and backend.backend() == "jax":
-            self.skipTest("LossScaleOptimizer must be applied statelss on jax.")
+            self.skipTest("LossScaleOptimizer must use stateless_apply on jax.")
         inner_optimizer = SGD(learning_rate=0.5)
         optimizer = LossScaleOptimizer(inner_optimizer)
         grads = [ops.array([1.0, 6.0, 7.0, 2.0]) * optimizer.initial_scale]
@@ -41,7 +41,7 @@ class LossScaleOptimizerTest(testing.TestCase, parameterized.TestCase):
     @parameterized.named_parameters(("stateless", True), ("stateful", False))
     def test_infinite_step(self, stateless):
         if not stateless and backend.backend() == "jax":
-            self.skipTest("LossScaleOptimizer must be applied statelss on jax.")
+            self.skipTest("LossScaleOptimizer must use stateless_apply on jax.")
         inner_optimizer = SGD(learning_rate=0.5)
         optimizer = LossScaleOptimizer(inner_optimizer)
         grads = [ops.array([np.inf, np.inf, np.inf, np.inf])]
@@ -58,7 +58,7 @@ class LossScaleOptimizerTest(testing.TestCase, parameterized.TestCase):
     @parameterized.named_parameters(("stateless", True), ("stateful", False))
     def test_downscaling(self, stateless):
         if not stateless and backend.backend() == "jax":
-            self.skipTest("LossScaleOptimizer must be applied statelss on jax.")
+            self.skipTest("LossScaleOptimizer must use stateless_apply on jax.")
         inner_optimizer = SGD(learning_rate=0.5)
         optimizer = LossScaleOptimizer(inner_optimizer, initial_scale=400.0)
         vars = [backend.Variable([1.0, 2.0, 3.0, 4.0])]
@@ -77,7 +77,7 @@ class LossScaleOptimizerTest(testing.TestCase, parameterized.TestCase):
     @parameterized.named_parameters(("stateless", True), ("stateful", False))
     def test_upscaling(self, stateless):
         if not stateless and backend.backend() == "jax":
-            self.skipTest("LossScaleOptimizer must be applied statelss on jax.")
+            self.skipTest("LossScaleOptimizer must use stateless_apply on jax.")
         inner_optimizer = SGD(learning_rate=0.5)
         optimizer = LossScaleOptimizer(
             inner_optimizer,

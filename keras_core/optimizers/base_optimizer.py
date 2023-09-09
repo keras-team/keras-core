@@ -338,11 +338,6 @@ class BaseOptimizer:
             return loss * self.loss_scale_factor
         return loss
 
-    def stateless_scale_loss(self, optimizer_variables, loss):
-        if self.loss_scale_factor is not None:
-            return loss * self.loss_scale_factor
-        return loss
-
     @property
     def learning_rate(self):
         return self._get_current_learning_rate()

@@ -47,9 +47,10 @@ class JAXTrainer(base_trainer.Trainer):
             loss += ops.sum(losses)
         unscaled_loss = loss
         if training and self.optimizer is not None:
-            loss = self.optimizer.stateless_scale_loss(
-                optimizer_variables, loss
-            )
+            # Scale loss with a StatelessScope, to use an update scale variable.
+            mapping = list(zip(self.optimizer.variables, optimizer_variables))
+            with backend.StatelessScope(state_mapping=mapping):
+                loss = self.optimizer.scale_loss(loss)
         return loss, (unscaled_loss, y_pred, non_trainable_variables)
 
     def _eager_build(self, data_batch):

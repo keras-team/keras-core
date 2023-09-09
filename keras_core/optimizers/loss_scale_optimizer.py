@@ -199,11 +199,6 @@ class LossScaleOptimizer(optimizer.Optimizer):
         scale = self.dynamic_scale if self.built else self.initial_scale
         return loss * scale
 
-    def stateless_scale_loss(self, optimizer_variables, loss):
-        mapping = list(zip(self.variables, optimizer_variables))
-        with backend.StatelessScope(state_mapping=mapping):
-            return loss * self.dynamic_scale
-
     def finalize_variable_values(self, var_list):
         self.inner_optimizer.finalize_variable_values(var_list)
 

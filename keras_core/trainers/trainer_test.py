@@ -12,7 +12,6 @@ from keras_core import ops
 from keras_core import optimizers
 from keras_core import testing
 from keras_core.callbacks.callback import Callback
-from keras_core.optimizers.loss_scale_optimizer import LossScaleOptimizer
 from keras_core.optimizers.rmsprop import RMSprop
 
 if backend.backend() == "jax":
@@ -340,7 +339,7 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         x = np.ones((128, 1))
         y = np.zeros((128, 1))
         model.fit(x, y, batch_size=32)
-        self.assertIsInstance(model.optimizer, LossScaleOptimizer)
+        self.assertIsInstance(model.optimizer, optimizers.LossScaleOptimizer)
 
         model = TrainingTestingLayer(dtype="mixed_float16")
         model.compile(optimizer="rmsprop", loss="mse", auto_scale_loss=False)
@@ -355,6 +354,49 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         y = np.zeros((128, 1))
         model.fit(x, y, batch_size=32)
         self.assertIsInstance(model.optimizer, RMSprop)
+
+    @pytest.mark.requires_trainable_backend
+    def test_loss_scaling_prevents_underflow(self):
+        class DeepModel(layers.Layer, Trainer):
+            def __init__(self):
+                layers.Layer.__init__(self, dtype="mixed_float16")
+                Trainer.__init__(self)
+                self.layers = []
+                for _ in range(15):
+                    # Sigmoid has a small gradient, will eventually underflow.
+                    self.layers.append(
+                        layers.Dense(
+                            1,
+                            use_bias=False,
+                            kernel_initializer="ones",
+                            activation="sigmoid",
+                            dtype="mixed_float16",
+                        )
+                    )
+
+            def call(self, x):
+                for layer in self.layers:
+                    x = layer(x)
+                return x
+
+        loss = losses.MeanSquaredError()
+        # Blow up any gradient updates, so underflow is obvious.
+        optimizer = optimizers.SGD(learning_rate=1e9)
+        model = DeepModel()
+        model.compile(optimizer, loss=loss, auto_scale_loss=False)
+        model.fit(np.ones((1, 1)), np.ones((1, 1)), batch_size=1)
+        first_kernel = model.layers[0].kernel
+        # Without autoscaling, the first dense will not update.
+        self.assertEqual(first_kernel, np.ones_like(first_kernel))
+
+        # Blow up any gradient updates, so underflow is obvious.
+        optimizer = optimizers.SGD(learning_rate=1e9)
+        model = DeepModel()
+        model.compile(optimizer, loss=loss, auto_scale_loss=True)
+        model.fit(np.ones((1, 1)), np.ones((1, 1)), batch_size=1)
+        first_kernel = model.layers[0].kernel
+        # With autoscaling, the first dense will update.
+        self.assertNotEqual(first_kernel, np.ones_like(first_kernel))
 
     @pytest.mark.requires_trainable_backend
     def test_training_arg(self):
