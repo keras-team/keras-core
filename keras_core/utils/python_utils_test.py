@@ -43,7 +43,7 @@ class PythonUtilsTest(testing.TestCase):
             3, sequences, labels
         )
         self.assertEqual(new_sequences, [[1], [2, 2]])
-        self.assertEqual(new_labels, [1, 2, 3, 4])
+        self.assertEqual(new_labels, [1, 2])
 
     def test_func_load_with_closure(self):
         def outer_fn(x):
