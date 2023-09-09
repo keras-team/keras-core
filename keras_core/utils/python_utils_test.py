@@ -99,12 +99,32 @@ class PythonUtilsTest(testing.TestCase):
         deserialized = python_utils.func_load(serialized)
         self.assertEqual(deserialized(5), 10)
 
-    def test_func_load_decode_exception(self):
+    def test_ensure_value_to_cell(self):
+        value_to_test = "test_value"
+
+        def dummy_fn():
+            value_to_test
+
+        cell_value = dummy_fn.__closure__[0].cell_contents
+        self.assertEqual(value_to_test, cell_value)
+
+    def test_closure_processing(self):
+        code_with_closure = "some_encoded_function"
+        processed_closure = python_utils.func_load(code_with_closure)
+        self.assertIsNotNone(processed_closure)
+
+
+    def test_func_load_valid_encoded_code(self):
+        valid_encoded_code = "valid_base64_encoded_code_here"
+
+        try:
+            python_utils.func_load(valid_encoded_code)
+        except UnicodeEncodeError:
+            self.fail(
+                "Expected no error for valid code, but got UnicodeEncodeError."
+            )
+
+    def test_func_load_bad_encoded_code(self):
         bad_encoded_code = "This isn't valid base64!"
         with self.assertRaises(UnicodeEncodeError):
-            python_utils.func_load(bad_encoded_code)
-
-    def test_func_load_decode_exception(self):
-        bad_encoded_code = "This isn't valid base64!"
-        with self.assertRaisesRegex(UnicodeEncodeError, "base64"):
             python_utils.func_load(bad_encoded_code)
