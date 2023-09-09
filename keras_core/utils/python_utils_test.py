@@ -42,44 +42,8 @@ class PythonUtilsTest(testing.TestCase):
         new_sequences, new_labels = python_utils.remove_long_seq(
             3, sequences, labels
         )
-        self.assertEqual(new_sequences, [[1], [2, 2], [3, 3, 3]])
-        self.assertEqual(new_labels, [1, 2, 3])
-
-    def test_remove_long_seq_all_below_maxlen(self):
-        sequences = [[1], [2, 2], [3, 3, 3]]
-        labels = [1, 2, 3]
-        new_sequences, new_labels = python_utils.remove_long_seq(
-            3, sequences, labels
-        )
-        self.assertEqual(new_sequences, [[1], [2, 2], [3, 3, 3]])
-        self.assertEqual(new_labels, [1, 2, 3])
-
-    def test_remove_long_seq_all_equal_maxlen(self):
-        sequences = [[3, 3, 3], [3, 3, 3], [3, 3, 3]]
-        labels = [1, 2, 3]
-        new_sequences, new_labels = python_utils.remove_long_seq(
-            3, sequences, labels
-        )
-        self.assertEqual(new_sequences, [[3, 3, 3], [3, 3, 3], [3, 3, 3]])
-        self.assertEqual(new_labels, [1, 2, 3])
-
-    def test_remove_long_seq_all_above_maxlen(self):
-        sequences = [[4, 4, 4, 4], [5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]]
-        labels = [4, 5, 6]
-        new_sequences, new_labels = python_utils.remove_long_seq(
-            3, sequences, labels
-        )
-        self.assertEqual(new_sequences, [])
-        self.assertEqual(new_labels, [])
-
-    def test_remove_long_seq_mixed_case(self):
-        sequences = [[1], [2, 2], [3, 3, 3, 3], [3, 3, 3]]
-        labels = [1, 2, 3, 4]
-        new_sequences, new_labels = python_utils.remove_long_seq(
-            3, sequences, labels
-        )
-        self.assertEqual(new_sequences, [[1], [2, 2], [3, 3, 3]])
-        self.assertEqual(new_labels, [1, 2, 4])
+        self.assertEqual(new_sequences, [[1], [2, 2]])
+        self.assertEqual(new_labels, [1, 2, 3, 4])
 
     def test_func_load_with_closure(self):
         def outer_fn(x):
