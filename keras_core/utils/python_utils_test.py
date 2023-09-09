@@ -103,3 +103,8 @@ class PythonUtilsTest(testing.TestCase):
         bad_encoded_code = "This isn't valid base64!"
         with self.assertRaises(UnicodeEncodeError):
             python_utils.func_load(bad_encoded_code)
+
+    def test_func_load_decode_exception(self):
+        bad_encoded_code = "This isn't valid base64!"
+        with self.assertRaisesRegex(UnicodeEncodeError, "base64"):
+            python_utils.func_load(bad_encoded_code)
