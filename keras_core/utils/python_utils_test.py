@@ -77,3 +77,29 @@ class PythonUtilsTest(testing.TestCase):
         )
         self.assertEqual(new_sequences, [[1], [2, 2], [3, 3, 3]])
         self.assertEqual(new_labels, [1, 2, 4])
+
+    def test_func_load_with_closure(self):
+        def outer_fn(x):
+            def inner_fn(y):
+                return x + y
+
+            return inner_fn
+
+        func_with_closure = outer_fn(10)
+        serialized = python_utils.func_dump(func_with_closure)
+        deserialized = python_utils.func_load(serialized)
+        self.assertEqual(deserialized(5), 15)
+
+    def test_func_load_closure_conversion(self):
+        def my_function_with_closure(x):
+            return x + y
+
+        y = 5
+        serialized = python_utils.func_dump(my_function_with_closure)
+        deserialized = python_utils.func_load(serialized)
+        self.assertEqual(deserialized(5), 10)
+
+    def test_func_load_decode_exception(self):
+        bad_encoded_code = "This isn't valid base64!"
+        with self.assertRaises((UnicodeEncodeError, binascii.Error)):
+            python_utils.func_load(bad_encoded_code)
