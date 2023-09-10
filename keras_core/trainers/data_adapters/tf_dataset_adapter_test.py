@@ -101,21 +101,19 @@ class TestTFDatasetAdapter(testing.TestCase):
         self.assertIsNone(adapter.num_batches)
 
     def test_invalid_dataset_type(self):
-        invalid_dataset = [1, 2, 3]
         with self.assertRaisesRegex(
-            ValueError, "Expected argument `dataset` to be a tf.data.Dataset."
+            ValueError, "Expected argument `dataset` to be a tf.data.Dataset"
         ):
-            tf_dataset_adapter.TFDatasetAdapter(invalid_dataset)
+            invalid_data = "This is not a tf.data.Dataset"
+            tf_dataset_adapter.TFDatasetAdapter(invalid_data)
 
-    def test_sample_weight_with_class_weight(self):
+    def test_class_weight_and_sample_weight_together(self):
         x = np.random.random((4, 2))
         y = np.array([[0], [1], [2], [3]], dtype="int64")
-        sample_weights = np.array([0.1, 0.9, 0.8, 0.2])
-
-        base_ds = tf.data.Dataset.from_tensor_slices(
-            (x, y, sample_weights)
-        ).batch(16)
+        sw = np.array([0.5, 0.5, 0.5, 0.5])
+        base_ds = tf.data.Dataset.from_tensor_slices((x, y, sw)).batch(16)
         class_weight = {0: 0.1, 1: 0.2, 2: 0.3, 3: 0.4}
+
         with self.assertRaisesRegex(
             ValueError,
             "You cannot `class_weight` and `sample_weight` at the same time.",
@@ -132,6 +130,7 @@ class TestTFDatasetAdapter(testing.TestCase):
         ]
         base_ds = tf.data.Dataset.from_tensor_slices((x, y)).batch(16)
         class_weight = {0: 0.1, 1: 0.2, 2: 0.3, 3: 0.4}
+
         with self.assertRaisesRegex(
             ValueError,
             "`class_weight` is only supported for Models with a single output.",

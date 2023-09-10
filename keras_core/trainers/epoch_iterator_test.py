@@ -55,8 +55,8 @@ class TestEpochIterator(testing.TestCase):
             steps_seen.append(step)
         self.assertLen(steps_seen, steps_per_epoch - 2)
 
-        self.assertIsInstance(epoch_iter, epoch_iterator.EpochIterator)
-        self.assertTrue(epoch_iter._insufficient_data)
+        self.assertIsInstance(iterator, epoch_iterator.EpochIterator)
+        self.assertTrue(iterator._insufficient_data)
 
     def test_unsupported_y_arg_tfdata(self):
         with self.assertRaisesRegex(ValueError, "`y` should not be passed"):
