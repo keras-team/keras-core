@@ -75,6 +75,35 @@ class TestEpochIterator(testing.TestCase):
     @pytest.mark.skipif(
         backend.backend() != "torch", reason="Need to import torch"
     )
+    def test_torch_dataloader(self):
+        import torch
+
+        class ExampleTorchDataset(torch.utils.data.Dataset):
+            def __init__(self, x, y):
+                self.x = x
+                self.y = y
+
+            def __len__(self):
+                return len(self.x)
+
+            def __getitem__(self, idx):
+                return self.x[idx], self.y[idx]
+
+        torch_dataset = ExampleTorchDataset(
+            np.random.random((64, 2)), np.random.random((64, 1))
+        )
+        torch_dataloader = torch.utils.data.DataLoader(
+            torch_dataset, batch_size=8, shuffle=True
+        )
+        iterator = epoch_iterator.EpochIterator(torch_dataloader)
+        for _, batch in iterator.enumerate_epoch(return_type="np"):
+            batch = batch[0]
+            self.assertEqual(batch[0].shape, (8, 2))
+            self.assertEqual(batch[1].shape, (8, 1))
+
+    @pytest.mark.skipif(
+        backend.backend() != "torch", reason="Need to import torch"
+    )
     def test_unsupported_y_arg_torch_dataloader(self):
         import torch
 
