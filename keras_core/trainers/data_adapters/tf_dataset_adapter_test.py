@@ -147,3 +147,24 @@ class TestTFDatasetAdapter(testing.TestCase):
         for batch in gen:
             _, _, bw = batch
             self.assertAllClose(bw, [0.1, 0.2, 0.3, 0.4])
+
+    def test_nested_y_with_class_weight(self):
+        x = np.random.random((4, 2))
+
+        # Define two target outputs, y1 and y2, for the dataset
+        y1 = np.array([0, 1, 2, 3], dtype="int64")
+        y2 = np.array([0, 1, 2, 3], dtype="int64")
+
+        # Create a tf.data Dataset from the input data and two target outputs
+        base_ds = tf.data.Dataset.from_tensor_slices((x, (y1, y2))).batch(16)
+
+        # Define class weights for potential classes in the output
+        class_weight = {0: 0.1, 1: 0.2, 2: 0.3, 3: 0.4}
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "`class_weight` is only supported for Models with a single output.",
+        ):
+            tf_dataset_adapter.TFDatasetAdapter(
+                base_ds, class_weight=class_weight
+            )
