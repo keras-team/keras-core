@@ -179,3 +179,14 @@ class TestEpochIterator(testing.TestCase):
         x = "unsupported_data"
         with self.assertRaisesRegex(ValueError, "Unrecognized data type"):
             _ = epoch_iterator.EpochIterator(x=x)
+
+    def test_invalid_return_type_in_get_iterator(self):
+        x = np.random.random((100, 16))
+        y = np.random.random((100, 4))
+        epoch_iter = epoch_iterator.EpochIterator(x=x, y=y)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Argument `return_type` must be one of `{'np', 'tf'}`",
+        ):
+            _ = epoch_iter._get_iterator("unsupported")
