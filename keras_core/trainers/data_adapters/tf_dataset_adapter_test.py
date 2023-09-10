@@ -99,3 +99,69 @@ class TestTFDatasetAdapter(testing.TestCase):
         self.assertEqual(cardinality, tf.data.UNKNOWN_CARDINALITY)
         adapter = tf_dataset_adapter.TFDatasetAdapter(dataset)
         self.assertIsNone(adapter.num_batches)
+
+    def test_invalid_dataset_type(self):
+        invalid_dataset = [1, 2, 3]
+        with self.assertRaisesRegex(
+            ValueError, "Expected argument `dataset` to be a tf.data.Dataset."
+        ):
+            tf_dataset_adapter.TFDatasetAdapter(invalid_dataset)
+
+    def test_sample_weight_with_class_weight(self):
+        x = np.random.random((4, 2))
+        y = np.array([[0], [1], [2], [3]], dtype="int64")
+        sample_weights = np.array([0.1, 0.9, 0.8, 0.2])
+
+        base_ds = tf.data.Dataset.from_tensor_slices(
+            (x, y, sample_weights)
+        ).batch(16)
+        class_weight = {0: 0.1, 1: 0.2, 2: 0.3, 3: 0.4}
+        with self.assertRaisesRegex(
+            ValueError,
+            "You cannot `class_weight` and `sample_weight` at the same time.",
+        ):
+            tf_dataset_adapter.TFDatasetAdapter(
+                base_ds, class_weight=class_weight
+            )
+
+    def test_nested_y_with_class_weight(self):
+        x = np.random.random((4, 2))
+        y = [
+            np.array([[0], [1], [2], [3]], dtype="int64"),
+            np.array([[0], [1], [2], [3]], dtype="int64"),
+        ]
+        base_ds = tf.data.Dataset.from_tensor_slices((x, y)).batch(16)
+        class_weight = {0: 0.1, 1: 0.2, 2: 0.3, 3: 0.4}
+        with self.assertRaisesRegex(
+            ValueError,
+            "`class_weight` is only supported for Models with a single output.",
+        ):
+            tf_dataset_adapter.TFDatasetAdapter(
+                base_ds, class_weight=class_weight
+            )
+
+    def test_different_y_shapes_with_class_weight(self):
+        x = np.random.random((4, 2))
+        y = np.array(
+            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+            dtype="float32",
+        )
+        base_ds = tf.data.Dataset.from_tensor_slices((x, y)).batch(16)
+        class_weight = {0: 0.1, 1: 0.2, 2: 0.3, 3: 0.4}
+        adapter = tf_dataset_adapter.TFDatasetAdapter(
+            base_ds, class_weight=class_weight
+        )
+        gen = adapter.get_numpy_iterator()
+        for batch in gen:
+            _, _, bw = batch
+            self.assertAllClose(bw, [0.1, 0.2, 0.3, 0.4])
+
+        y_sparse = np.array([0, 1, 2, 3], dtype="int64")
+        base_ds = tf.data.Dataset.from_tensor_slices((x, y_sparse)).batch(16)
+        adapter = tf_dataset_adapter.TFDatasetAdapter(
+            base_ds, class_weight=class_weight
+        )
+        gen = adapter.get_numpy_iterator()
+        for batch in gen:
+            _, _, bw = batch
+            self.assertAllClose(bw, [0.1, 0.2, 0.3, 0.4])

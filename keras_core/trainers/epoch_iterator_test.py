@@ -14,7 +14,7 @@ class TestEpochIterator(testing.TestCase):
         sample_weight = np.random.random((100,))
         batch_size = 16
         shuffle = True
-        _ = epoch_iterator.EpochIterator(
+        iterator = epoch_iterator.EpochIterator(
             x=x,
             y=y,
             sample_weight=sample_weight,
@@ -22,7 +22,7 @@ class TestEpochIterator(testing.TestCase):
             shuffle=shuffle,
         )
         steps_seen = []
-        for step, batch in _.enumerate_epoch(return_type=return_type):
+        for step, batch in iterator.enumerate_epoch(return_type=return_type):
             batch = batch[0]
             steps_seen.append(step)
             self.assertEqual(len(batch), 3)
@@ -44,14 +44,14 @@ class TestEpochIterator(testing.TestCase):
         dataset_size = batch_size * (steps_per_epoch - 2)
         x = np.arange(dataset_size).reshape((dataset_size, 1))
         y = x * 2
-        epoch_iter = epoch_iterator.EpochIterator(
+        iterator = epoch_iterator.EpochIterator(
             x=x,
             y=y,
             batch_size=batch_size,
             steps_per_epoch=steps_per_epoch,
         )
         steps_seen = []
-        for step, _ in epoch_iter.enumerate_epoch():
+        for step, _ in iterator.enumerate_epoch():
             steps_seen.append(step)
         self.assertLen(steps_seen, steps_per_epoch - 2)
 
