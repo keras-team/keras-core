@@ -61,6 +61,24 @@ class TestEpochIterator(testing.TestCase):
         self.assertLen(steps_seen, steps_per_epoch - 2)
         self.assertTrue(iterator._insufficient_data)
 
+    def test_unsupported_y_arg_tfdata(self):
+        # Check 'y' error with tf.data
+        with self.assertRaisesRegex(ValueError, "`y` should not be passed"):
+            x = tf.data.Dataset.from_tensor_slices(np.random.random((100, 16)))
+            y = np.random.random((100, 4))
+            iterator = epoch_iterator.EpochIterator(x=x, y=y)
+
+    def test_unsupported_sample_weights_arg_tfdata(self):
+        # Check 'sample_weights' error with tf.data
+        with self.assertRaisesRegex(
+            ValueError, "`sample_weights` should not be passed"
+        ):
+            x = tf.data.Dataset.from_tensor_slices(np.random.random((100, 16)))
+            sample_weights = np.random.random((100,))
+            iterator = epoch_iterator.EpochIterator(
+                x=x, sample_weight=sample_weights
+            )
+
     @pytest.mark.skipif(
         backend.backend() != "torch", reason="Need to import torch"
     )
@@ -89,3 +107,59 @@ class TestEpochIterator(testing.TestCase):
             batch = batch[0]
             self.assertEqual(batch[0].shape, (8, 2))
             self.assertEqual(batch[1].shape, (8, 1))
+
+    @pytest.mark.skipif(
+        backend.backend() != "torch", reason="Need to import torch"
+    )
+    def test_unsupported_y_arg_torch_dataloader(self):
+        # Check 'y' error with DataLoader
+        import torch
+
+        class ExampleTorchDataset(torch.utils.data.Dataset):
+            def __init__(self, x, y):
+                self.x = x
+                self.y = y
+
+            def __len__(self):
+                return len(self.x)
+
+            def __getitem__(self, idx):
+                return self.x[idx], self.y[idx]
+
+        torch_dataset = ExampleTorchDataset(
+            np.random.random((100, 16)), np.random.random((100, 4))
+        )
+        x = torch.utils.data.DataLoader(
+            torch_dataset, batch_size=8, shuffle=True
+        )
+        y = np.random.random((100, 4))
+        iterator = epoch_iterator.EpochIterator(x=x, y=y)
+
+    @pytest.mark.skipif(
+        backend.backend() != "torch", reason="Need to import torch"
+    )
+    def test_unsupported_sample_weights_arg_torch_dataloader(self):
+        # Check 'sample_weights' error with DataLoader
+        import torch
+
+        class ExampleTorchDataset(torch.utils.data.Dataset):
+            def __init__(self, x, y):
+                self.x = x
+                self.y = y
+
+            def __len__(self):
+                return len(self.x)
+
+            def __getitem__(self, idx):
+                return self.x[idx], self.y[idx]
+
+        torch_dataset = ExampleTorchDataset(
+            np.random.random((100, 16)), np.random.random((100, 4))
+        )
+        x = torch.utils.data.DataLoader(
+            torch_dataset, batch_size=8, shuffle=True
+        )
+        sample_weights = np.random.random((100,))
+        iterator = epoch_iterator.EpochIterator(
+            x=x, sample_weight=sample_weights
+        )
