@@ -133,3 +133,20 @@ class TestEpochIterator(testing.TestCase):
             "When providing `x` as a torch DataLoader, `sample_weights`",
         ):
             _ = epoch_iterator.EpochIterator(x=x, sample_weight=sample_weights)
+
+    def test_python_generator_input(self):
+        def generator_example():
+            for i in range(100):
+                yield (np.array([i]), np.array([i * 2]))
+
+        x = generator_example()
+        epoch_iter = epoch_iterator.EpochIterator(x=x)
+        self.assertIsInstance(
+            epoch_iter.data_adapter,
+            epoch_iterator.generator_data_adapter.GeneratorDataAdapter,
+        )
+
+    def test_unrecognized_data_type(self):
+        x = "unsupported_data"
+        with self.assertRaisesRegex(ValueError, "Unrecognized data type"):
+            _ = epoch_iterator.EpochIterator(x=x)
