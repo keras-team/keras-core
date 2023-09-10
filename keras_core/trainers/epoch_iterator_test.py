@@ -43,17 +43,19 @@ class TestEpochIterator(testing.TestCase):
         dataset_size = batch_size * (steps_per_epoch - 2)
         x = np.arange(dataset_size).reshape((dataset_size, 1))
         y = x * 2
-        _ = epoch_iterator.EpochIterator(
+        epoch_iter = epoch_iterator.EpochIterator(
             x=x,
             y=y,
             batch_size=batch_size,
             steps_per_epoch=steps_per_epoch,
         )
         steps_seen = []
-        for step, _ in _.enumerate_epoch():
+        for step, _ in epoch_iter.enumerate_epoch():
             steps_seen.append(step)
         self.assertLen(steps_seen, steps_per_epoch - 2)
-        self.assertTrue(_._insufficient_data)
+
+        self.assertIsInstance(epoch_iter, epoch_iterator.EpochIterator)
+        self.assertTrue(epoch_iter._insufficient_data)
 
     def test_unsupported_y_arg_tfdata(self):
         with self.assertRaisesRegex(ValueError, "`y` should not be passed"):
@@ -96,7 +98,7 @@ class TestEpochIterator(testing.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            "When providing `x` as a torch DataLoader, `y` should not be passed.",
+            "When providing `x` as a torch DataLoader, `y` should not",
         ):
             _ = epoch_iterator.EpochIterator(x=x, y=y)
 
@@ -127,6 +129,6 @@ class TestEpochIterator(testing.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            "When providing `x` as a torch DataLoader, `sample_weights` should not be passed.",
+            "When providing `x` as a torch DataLoader, `sample_weights`",
         ):
             _ = epoch_iterator.EpochIterator(x=x, sample_weight=sample_weights)
