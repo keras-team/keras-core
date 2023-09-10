@@ -7,6 +7,30 @@ from keras_core import testing
 from keras_core.trainers import epoch_iterator
 
 
+class DummyPyDataset:
+    """Mock of the PyDataset for testing purposes."""
+
+    def __init__(self, x):
+        self.x = x
+
+    def __len__(self):
+        return len(self.x)
+
+    def __getitem__(self, idx):
+        return self.x[idx]
+
+    def __iter__(self):
+        self.index = 0
+        return self
+
+    def __next__(self):
+        if self.index >= len(self):
+            raise StopIteration
+        value = self[self.index]
+        self.index += 1
+        return value
+
+
 class TestEpochIterator(testing.TestCase):
     def _test_basic_flow(self, return_type):
         x = np.random.random((100, 16))
@@ -133,3 +157,23 @@ class TestEpochIterator(testing.TestCase):
             "When providing `x` as a torch DataLoader, `sample_weights`",
         ):
             _ = epoch_iterator.EpochIterator(x=x, sample_weight=sample_weights)
+
+    def test_pydataset_y_arg(self):
+        py_dataset = DummyPyDataset(np.random.random((100, 16)))
+        y = np.random.random((100, 4))
+        with self.assertRaisesRegex(
+            ValueError,
+            "the targets should be included as part of the PyDataset",
+        ):
+            _ = epoch_iterator.EpochIterator(x=py_dataset, y=y)
+
+    def test_pydataset_sample_weights_arg(self):
+        py_dataset = DummyPyDataset(np.random.random((100, 16)))
+        sample_weights = np.random.random((100,))
+        with self.assertRaisesRegex(
+            ValueError,
+            "the sample weights should be included as part of the PyDataset",
+        ):
+            _ = epoch_iterator.EpochIterator(
+                x=py_dataset, sample_weight=sample_weights
+            )
