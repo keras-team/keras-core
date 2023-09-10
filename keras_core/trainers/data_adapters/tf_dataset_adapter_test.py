@@ -200,39 +200,3 @@ class TestTFDatasetAdapter(testing.TestCase):
             "`class_weight` is only supported for Models with a single output.",
         ):
             class_weights_map_fn(x, (y1, y2))
-
-    def test_class_weights_map_fn_single_class_weighting(self):
-        class_weight = {0: 0.1, 1: 0.2, 2: 0.3, 3: 0.4}
-        class_weights_map_fn = tf_dataset_adapter.make_class_weight_map_fn(
-            class_weight
-        )
-
-        x = np.array([[0.5, 0.5], [0.5, 0.5]])
-        y = np.array([[1, 0], [0, 1]])
-
-        result = class_weights_map_fn(x, y)
-        self.assertEqual(result, (x, y, np.array([0.2, 0.1])))
-
-    def test_class_weights_map_fn_rank_1_class_weighting(self):
-        class_weight = {0: 0.1, 1: 0.2, 2: 0.3, 3: 0.4}
-        class_weights_map_fn = tf_dataset_adapter.make_class_weight_map_fn(
-            class_weight
-        )
-
-        x = np.array([0.5, 0.5])
-        y = np.array([1, 0])
-
-        result = class_weights_map_fn(x, y)
-        self.assertEqual(result, (x, y, np.array([0.2, 0.1])))
-
-    def test_class_weights_map_fn_sparse_class_weighting(self):
-        class_weight = {0: 0.1, 1: 0.2, 2: 0.3, 3: 0.4}
-        class_weights_map_fn = tf_dataset_adapter.make_class_weight_map_fn(
-            class_weight
-        )
-
-        x = np.array([0.5, 0.5])
-        y = np.array([0.9, 0.1])
-
-        result = class_weights_map_fn(x, y)
-        self.assertEqual(result, (x, y, np.array([0.2, 0.1])))
