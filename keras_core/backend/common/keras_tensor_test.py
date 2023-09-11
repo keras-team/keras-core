@@ -90,10 +90,6 @@ class KerasTensorTest(testing.TestCase):
         mock_symbolic_call.assert_called_once_with(x)
         self.assertEqual(abs_x, mock_tensor)
 
-    @patch("keras_core.ops.Absolute.symbolic_call")
-    def test_abs_method(self, mock_method):
-        self._test_unary_op_method(mock_method, abs)
-
     @patch("keras_core.ops.Negative.symbolic_call")
     def test_neg_method(self, mock_method):
         self._test_unary_op_method(mock_method, lambda x: -x)
