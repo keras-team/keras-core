@@ -8,6 +8,15 @@ from keras_core.legacy.layers import RandomWidth
 from keras_core.legacy.layers import ThresholdedReLU
 
 
+def _get_theoretical_min_value(rate):
+    alpha = 1.6732632423543772848170429916717
+    scale = 1.0507009873554804934193349852946
+    alpha_p = -alpha * scale
+    a = ((1 - rate) * (1 + rate * alpha_p**2)) ** -0.5
+    b = -a * alpha_p * rate
+    return a * alpha_p + b
+
+
 class TestAlphaDropout(unittest.TestCase):
     def test_alpha_dropout_no_nan(self):
         layer = AlphaDropout(rate=0.2)
@@ -25,7 +34,9 @@ class TestAlphaDropout(unittest.TestCase):
         layer = AlphaDropout(rate=0.2)
         data = np.ones((10, 10))
         result = layer(data, training=True)
-        self.assertTrue((result.numpy() >= -0.5).all())
+
+        theoretical_min = _get_theoretical_min_value(0.2)
+        self.assertTrue((result >= theoretical_min).all())
 
     def test_alpha_dropout_test_phase(self):
         layer = AlphaDropout(rate=0.2)
