@@ -115,7 +115,7 @@ class VariablesTest(test_case.TestCase):
     def test_standardize_shape_with_negative_entry(self):
         with self.assertRaisesRegex(
             ValueError,
-            "Cannot convert '\\(3, 4, -5\\)' to a shape. Negative dimensions are",
+            "Cannot convert '\\(3, 4, -5\\)' to a shape. Negative dimensions",
         ):
             standardize_shape([3, 4, -5])
 
