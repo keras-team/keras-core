@@ -1,3 +1,6 @@
+from unittest.mock import Mock
+from unittest.mock import patch
+
 import numpy as np
 import tensorflow as tf
 
@@ -50,3 +53,39 @@ class KerasTensorTest(testing.TestCase):
             ValueError, "cannot be used as input to a TensorFlow function"
         ):
             tf.convert_to_tensor(x)
+
+    def test_bool(self):
+        # Test the __bool__ method
+        tensor = keras_tensor.KerasTensor(shape=(3, 4), dtype="float32")
+        with self.assertRaisesRegex(TypeError, "cannot be used as a boolean."):
+            bool(tensor)
+
+    def test_representation(self):
+        x = keras_tensor.KerasTensor(shape=(3, 4), dtype="float32")
+        self.assertIn("<KerasTensor shape=(3, 4)", repr(x))
+
+    def test_iterating(self):
+        x = keras_tensor.KerasTensor(shape=(3, 4), dtype="float32")
+        with self.assertRaises(NotImplementedError):
+            iter(x)
+
+    def test_any_symbolic_tensors(self):
+        x = keras_tensor.KerasTensor(shape=(3, 4), dtype="float32")
+        y = np.array([1, 2, 3])
+        self.assertTrue(keras_tensor.any_symbolic_tensors(args=[x, y]))
+        self.assertFalse(keras_tensor.any_symbolic_tensors(args=[y]))
+
+    def test_is_keras_tensor(self):
+        x = keras_tensor.KerasTensor(shape=(3, 4), dtype="float32")
+        self.assertTrue(keras_tensor.is_keras_tensor(x))
+        y = np.array([1, 2, 3])
+        self.assertFalse(keras_tensor.is_keras_tensor(y))
+
+    @patch("keras_core.ops.Absolute.symbolic_call")
+    def test_abs_method(self, mock_symbolic_call):
+        mock_tensor = Mock()
+        mock_symbolic_call.return_value = mock_tensor
+        x = keras_tensor.KerasTensor(shape=(3, 4), dtype="float32")
+        abs_x = abs(x)  # this will internally call x.__abs__()
+        mock_symbolic_call.assert_called_once_with(x)
+        self.assertEqual(abs_x, mock_tensor)
