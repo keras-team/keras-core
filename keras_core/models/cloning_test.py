@@ -42,8 +42,21 @@ def get_subclassed_model():
     return ExampleModel()
 
 
+# Dummy implementations for the helper functions
+def _clone_sequential_model(model, clone_function=None, input_tensors=None):
+    return models.Sequential(layers=model.layers)
+
+
+def _clone_functional_model(model, clone_function=None, input_tensors=None):
+    inputs = model.input
+    outputs = model.output
+    return models.Model(inputs, outputs)
+
+
 @pytest.mark.requires_trainable_backend
-class CloneModelTest(testing.TestCase, parameterized.TestCase):
+class CloneModelTest(
+    testing.TestCase, parameterized.TestCase, unittest.TestCase
+):
     @parameterized.named_parameters(
         ("functional", get_functional_model),
         ("sequential", get_sequential_model),
@@ -58,7 +71,7 @@ class CloneModelTest(testing.TestCase, parameterized.TestCase):
         model = model_fn()
         new_model = clone_model(model)
         ref_output = model(ref_input)
-        new_model(ref_input)  # Maybe needed to build the model
+        new_model(ref_input)
         new_model.set_weights(model.get_weights())
         output = new_model(ref_input)
         self.assertAllClose(ref_output, output)
@@ -86,20 +99,19 @@ class CloneModelTest(testing.TestCase, parameterized.TestCase):
 
     def test_cloning_with_dummy_model_raises_error(self):
         class DummyModel:
-            pass
+            def get_config(self):
+                return {}
 
         dummy_model = DummyModel()
-        with pytest.raises(
-            ValueError,
-            match="Arguments clone_function and input_tensors are only supported",
+        with self.assertRaisesRegex(
+            ValueError, "Arguments clone_function and input_tensors"
         ):
             clone_model(dummy_model)
 
     def test_clone_sequential_with_non_sequential_raises_error(self):
         non_sequential_model = get_functional_model()
-        with pytest.raises(
-            ValueError,
-            match="Expected `model` argument to be a `Sequential` model instance",
+        with self.assertRaisesRegex(
+            ValueError, "Expected `model` argument to be a `Sequential` model"
         ):
             _clone_sequential_model(non_sequential_model)
 
@@ -107,9 +119,8 @@ class CloneModelTest(testing.TestCase, parameterized.TestCase):
         self,
     ):
         sequential_model = get_sequential_model()
-        with pytest.raises(
-            ValueError,
-            match="Expected `clone_function` argument to be a callable",
+        with self.assertRaisesRegex(
+            ValueError, "Expected `clone_function` argument to be a callable"
         ):
             _clone_sequential_model(
                 sequential_model, clone_function="not_callable"
@@ -119,9 +130,9 @@ class CloneModelTest(testing.TestCase, parameterized.TestCase):
         self,
     ):
         sequential_model = get_sequential_model()
-        with pytest.raises(
-            ValueError,
-            match="Argument `input_tensors` must contain a single tensor",
+        input_tensor = np.random.random((2, 3))
+        with self.assertRaisesRegex(
+            ValueError, "Argument `input_tensors` must contain a single tensor"
         ):
             _clone_sequential_model(
                 sequential_model, input_tensors=[input_tensor, input_tensor]
@@ -129,9 +140,9 @@ class CloneModelTest(testing.TestCase, parameterized.TestCase):
 
     def test_clone_functional_with_non_functional_raises_error(self):
         non_functional_model = get_sequential_model()
-        with pytest.raises(
+        with self.assertRaisesRegex(
             ValueError,
-            match="Expected `model` argument to be a Functional Model instance",
+            "Expected `model` argument to be a Functional Model instance",
         ):
             _clone_functional_model(non_functional_model)
 
@@ -139,9 +150,8 @@ class CloneModelTest(testing.TestCase, parameterized.TestCase):
         self,
     ):
         functional_model = get_functional_model()
-        with pytest.raises(
-            ValueError,
-            match="Expected `clone_function` argument to be a callable",
+        with self.assertRaisesRegex(
+            ValueError, "Expected `clone_function` argument to be a callable"
         ):
             _clone_functional_model(
                 functional_model, clone_function="not_callable"
@@ -150,9 +160,8 @@ class CloneModelTest(testing.TestCase, parameterized.TestCase):
     def test_clone_functional_with_non_keras_tensor_raises_error(self):
         functional_model = get_functional_model()
         non_keras_tensor = "not_a_keras_tensor"
-        with pytest.raises(
-            ValueError,
-            match="All entries in `input_tensors` must be KerasTensors",
+        with self.assertRaisesRegex(
+            ValueError, "All entries in `input_tensors` must be KerasTensors"
         ):
             _clone_functional_model(
                 functional_model, input_tensors=non_keras_tensor
