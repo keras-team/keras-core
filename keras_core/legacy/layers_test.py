@@ -1,6 +1,7 @@
 import unittest
-import pytest
+
 import numpy as np
+import pytest
 
 from keras_core import backend
 from keras_core.legacy.layers import AlphaDropout
@@ -46,6 +47,7 @@ class TestAlphaDropout(unittest.TestCase):
         result = layer(data, training=False)
         self.assertTrue((result.numpy() == 1.0).all())
 
+    @pytest.mark.skipif(backend.backend() == "tensorflow", reason="for all()")
     def test_alpha_dropout_test_phase_for_others(self):
         layer = AlphaDropout(rate=0.2)
         data = np.ones((10, 10))
