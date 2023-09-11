@@ -36,7 +36,7 @@ class TestStatelessScope(testing.TestCase):
         self.assertAllClose(var_out_value, 2 * np.ones((2,)))
 
     def test_invalid_key_in_state_mapping(self):
-        var1 = backend.Variable(np.zeros((2,)))
+        #var1 = backend.Variable(np.zeros((2,)))
         invalid_key = "not_a_keras_variable"
         value1 = ops.ones(shape=(2,))
 

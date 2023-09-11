@@ -3,6 +3,8 @@ import numpy as np
 from keras_core import backend
 from keras_core import initializers
 from keras_core.backend.common.variables import AutocastScope
+from keras_core.backend.common.variables import KerasVariable
+from keras_core.backend.common.variables import standardize_shape
 from keras_core.testing import test_case
 
 
@@ -67,3 +69,61 @@ class VariablesTest(test_case.TestCase):
 
         x = torch.randn(4, 4)
         backend.standardize_dtype(x.dtype)
+
+    def test_name_validation(self):
+        # Test when name is not a string
+        with self.assertRaisesRegex(
+            ValueError, "Argument `name` must be a string"
+        ):
+            KerasVariable(initializer=initializers.RandomNormal(), name=12345)
+
+        # Test when name contains a '/'
+        with self.assertRaisesRegex(ValueError, "cannot contain character `/`"):
+            KerasVariable(
+                initializer=initializers.RandomNormal(), name="invalid/name"
+            )
+
+    def test_initializer_with_no_shape(self):
+        """Tests that a ValueError is raised when using
+        a callable initializer without specifying shape."""
+        callable_initializer = lambda shape, dtype=None: np.ones(
+            shape, dtype=dtype
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "When creating a Variable from an initializer, "
+            "the `shape` argument should be specified.",
+        ):
+            _ = KerasVariable(initializer=callable_initializer)
+
+    def test_standardize_shape_with_none(self):
+        with self.assertRaisesRegex(
+            ValueError, "Undefined shapes are not supported."
+        ):
+            standardize_shape(None)
+
+    def test_standardize_shape_with_non_iterable(self):
+        with self.assertRaisesRegex(
+            ValueError, "Cannot convert '42' to a shape."
+        ):
+            standardize_shape(42)
+
+    def test_standardize_shape_with_valid_input(self):
+        shape = [3, 4, 5]
+        standardized_shape = standardize_shape(shape)
+        self.assertEqual(standardized_shape, (3, 4, 5))
+
+    def test_standardize_shape_with_non_integer_entry(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            "Cannot convert '\\(3, 4, 'a'\\)' to a shape. Found invalid entry 'a'.",
+        ):
+            standardize_shape([3, 4, "a"])
+
+    def test_standardize_shape_with_negative_entry(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            "Cannot convert '\\(3, 4, -5\\)' to a shape. Negative dimensions are not allowed.",
+        ):
+            standardize_shape([3, 4, -5])
