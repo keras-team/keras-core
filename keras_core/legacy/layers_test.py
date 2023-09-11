@@ -2,12 +2,10 @@ import unittest
 
 import numpy as np
 
-from keras_core.legacy.layers import (
-    AlphaDropout,
-    RandomHeight,
-    RandomWidth,
-    ThresholdedReLU,
-)
+from keras_core.legacy.layers import AlphaDropout
+from keras_core.legacy.layers import RandomHeight
+from keras_core.legacy.layers import RandomWidth
+from keras_core.legacy.layers import ThresholdedReLU
 
 
 class TestAlphaDropout(unittest.TestCase):
@@ -15,14 +13,14 @@ class TestAlphaDropout(unittest.TestCase):
         layer = AlphaDropout(rate=0.2)
         data = np.ones((10, 10))
         result = layer(data, training=True)
-        self.assertTrue((result.numpy() <= 1.0).all())
-        self.assertTrue((result.numpy() >= -0.5).all())
+        self.assertTrue((result <= 1.0).all())
+        self.assertTrue((result >= -0.5).all())
 
     def test_alpha_dropout_test_phase(self):
         layer = AlphaDropout(rate=0.2)
         data = np.ones((10, 10))
         result = layer(data, training=False)
-        self.assertTrue((result.numpy() == 1.0).all())
+        self.assertTrue((result == 1.0).all())
 
 
 class TestRandomHeight(unittest.TestCase):
@@ -30,13 +28,13 @@ class TestRandomHeight(unittest.TestCase):
         layer = RandomHeight(factor=0.2)
         data = np.ones((10, 64, 64, 3))
         result = layer(data, training=True)
-        self.assertEqual(result.shape, data.shape)
+        self.assertTrue(0.8 * 64 <= result.shape[1] <= 1.2 * 64)
 
     def test_random_height_test_phase(self):
         layer = RandomHeight(factor=0.2)
         data = np.ones((10, 64, 64, 3))
         result = layer(data, training=False)
-        self.assertTrue((result.numpy() == 1.0).all())
+        self.assertTrue((result == 1.0).all())
 
 
 class TestRandomWidth(unittest.TestCase):
@@ -44,13 +42,13 @@ class TestRandomWidth(unittest.TestCase):
         layer = RandomWidth(factor=0.2)
         data = np.ones((10, 64, 64, 3))
         result = layer(data, training=True)
-        self.assertEqual(result.shape, data.shape)
+        self.assertTrue(0.8 * 64 <= result.shape[2] <= 1.2 * 64)
 
     def test_random_width_test_phase(self):
         layer = RandomWidth(factor=0.2)
         data = np.ones((10, 64, 64, 3))
         result = layer(data, training=False)
-        self.assertTrue((result.numpy() == 1.0).all())
+        self.assertTrue((result == 1.0).all())
 
 
 class TestThresholdedReLU(unittest.TestCase):
@@ -58,7 +56,7 @@ class TestThresholdedReLU(unittest.TestCase):
         layer = ThresholdedReLU(theta=0.5)
         data = np.array([-0.5, 0.5, 1.0])
         result = layer(data)
-        expected_result = np.array([0.0, 0.5, 1.0])
+        expected_result = np.array([0.0, 0.0, 1.0])
         np.testing.assert_array_equal(result.numpy(), expected_result)
 
     def test_thresholded_relu_config(self):

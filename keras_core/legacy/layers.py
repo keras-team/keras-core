@@ -35,11 +35,11 @@ class AlphaDropout(Layer):
                 noise_shape = tf.shape(inputs)
             else:
                 noise_shape = self.noise_shape
-            kept_idx = tf.greater_equal(
-                backend.random.uniform(noise_shape),
-                self.rate,
-                seed=self.seed_generator,
+            random_tensor = backend.random.uniform(
+                noise_shape, seed=self.seed_generator()
             )
+            kept_idx = tf.greater_equal(random_tensor, self.rate)
+
             kept_idx = tf.cast(kept_idx, inputs.dtype)
 
             # Get affine transformation params
