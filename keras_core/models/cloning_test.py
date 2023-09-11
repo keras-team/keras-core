@@ -83,3 +83,77 @@ class CloneModelTest(testing.TestCase, parameterized.TestCase):
         model = get_functional_model(shared_layers=True)
         new_model = clone_model(model)
         self.assertLen(new_model.layers, 4)
+
+    def test_cloning_with_dummy_model_raises_error(self):
+        class DummyModel:
+            pass
+
+        dummy_model = DummyModel()
+        with pytest.raises(
+            ValueError,
+            match="Arguments clone_function and input_tensors are only supported",
+        ):
+            clone_model(dummy_model)
+
+    def test_clone_sequential_with_non_sequential_raises_error(self):
+        non_sequential_model = get_functional_model()
+        with pytest.raises(
+            ValueError,
+            match="Expected `model` argument to be a `Sequential` model instance",
+        ):
+            _clone_sequential_model(non_sequential_model)
+
+    def test_clone_sequential_with_non_callable_clone_function_raises_error(
+        self,
+    ):
+        sequential_model = get_sequential_model()
+        with pytest.raises(
+            ValueError,
+            match="Expected `clone_function` argument to be a callable",
+        ):
+            _clone_sequential_model(
+                sequential_model, clone_function="not_callable"
+            )
+
+    def test_clone_sequential_with_incorrect_input_tensors_format_raises_error(
+        self,
+    ):
+        sequential_model = get_sequential_model()
+        with pytest.raises(
+            ValueError,
+            match="Argument `input_tensors` must contain a single tensor",
+        ):
+            _clone_sequential_model(
+                sequential_model, input_tensors=[input_tensor, input_tensor]
+            )
+
+    def test_clone_functional_with_non_functional_raises_error(self):
+        non_functional_model = get_sequential_model()
+        with pytest.raises(
+            ValueError,
+            match="Expected `model` argument to be a Functional Model instance",
+        ):
+            _clone_functional_model(non_functional_model)
+
+    def test_clone_functional_with_non_callable_clone_function_raises_error(
+        self,
+    ):
+        functional_model = get_functional_model()
+        with pytest.raises(
+            ValueError,
+            match="Expected `clone_function` argument to be a callable",
+        ):
+            _clone_functional_model(
+                functional_model, clone_function="not_callable"
+            )
+
+    def test_clone_functional_with_non_keras_tensor_raises_error(self):
+        functional_model = get_functional_model()
+        non_keras_tensor = "not_a_keras_tensor"
+        with pytest.raises(
+            ValueError,
+            match="All entries in `input_tensors` must be KerasTensors",
+        ):
+            _clone_functional_model(
+                functional_model, input_tensors=non_keras_tensor
+            )
