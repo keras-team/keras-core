@@ -1,7 +1,7 @@
 import os
-import pytest
 
 import numpy as np
+import pytest
 
 from keras_core import layers
 from keras_core import models
