@@ -2,6 +2,7 @@ import unittest
 
 import numpy as np
 
+from keras_core import backend
 from keras_core.legacy.layers import AlphaDropout
 from keras_core.legacy.layers import RandomHeight
 from keras_core.legacy.layers import RandomWidth
@@ -38,11 +39,18 @@ class TestAlphaDropout(unittest.TestCase):
         theoretical_min = _get_theoretical_min_value(0.2)
         self.assertTrue((result.numpy() >= theoretical_min).all())
 
-    def test_alpha_dropout_test_phase(self):
+    @pytest.mark.skipif(backend.backend() != "tensorflow", reason="for all()")
+    def test_alpha_dropout_test_phase_for_tf(self):
         layer = AlphaDropout(rate=0.2)
         data = np.ones((10, 10))
         result = layer(data, training=False)
         self.assertTrue((result.numpy() == 1.0).all())
+
+    def test_alpha_dropout_test_phase_for_others(self):
+        layer = AlphaDropout(rate=0.2)
+        data = np.ones((10, 10))
+        result = layer(data, training=False)
+        self.assertTrue((result == 1.0).all())
 
 
 class TestRandomHeight(unittest.TestCase):
