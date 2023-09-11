@@ -55,7 +55,6 @@ class KerasTensorTest(testing.TestCase):
             tf.convert_to_tensor(x)
 
     def test_bool(self):
-        # Test the __bool__ method
         tensor = keras_tensor.KerasTensor(shape=(3, 4), dtype="float32")
         with self.assertRaisesRegex(TypeError, "cannot be used as a boolean."):
             bool(tensor)
