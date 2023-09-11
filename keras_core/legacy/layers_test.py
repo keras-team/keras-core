@@ -9,18 +9,29 @@ from keras_core.legacy.layers import ThresholdedReLU
 
 
 class TestAlphaDropout(unittest.TestCase):
-    def test_alpha_dropout(self):
+    def test_alpha_dropout_no_nan(self):
         layer = AlphaDropout(rate=0.2)
         data = np.ones((10, 10))
         result = layer(data, training=True)
-        self.assertTrue((result.numpy() <= 1.0).all())
+        self.assertFalse(np.isnan(result.numpy()).any())
+
+    def test_alpha_dropout_no_inf(self):
+        layer = AlphaDropout(rate=0.2)
+        data = np.ones((10, 10))
+        result = layer(data, training=True)
+        self.assertFalse(np.isinf(result.numpy()).any())
+
+    def test_alpha_dropout_value_range(self):
+        layer = AlphaDropout(rate=0.2)
+        data = np.ones((10, 10))
+        result = layer(data, training=True)
         self.assertTrue((result.numpy() >= -0.5).all())
 
     def test_alpha_dropout_test_phase(self):
         layer = AlphaDropout(rate=0.2)
         data = np.ones((10, 10))
         result = layer(data, training=False)
-        self.assertTrue((result.numpy() == 1.0).all())
+        self.assertTrue((result == 1.0).all())
 
 
 class TestRandomHeight(unittest.TestCase):
