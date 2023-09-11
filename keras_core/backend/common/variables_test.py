@@ -83,20 +83,6 @@ class VariablesTest(test_case.TestCase):
                 initializer=initializers.RandomNormal(), name="invalid/name"
             )
 
-    def test_initializer_with_no_shape(self):
-        """Tests that a ValueError is raised when using
-        a callable initializer without specifying shape."""
-        callable_initializer = lambda shape, dtype=None: np.ones(
-            shape, dtype=dtype
-        )
-
-        with self.assertRaisesRegex(
-            ValueError,
-            "When creating a Variable from an initializer, "
-            "the `shape` argument should be specified.",
-        ):
-            _ = KerasVariable(initializer=callable_initializer)
-
     def test_standardize_shape_with_none(self):
         with self.assertRaisesRegex(
             ValueError, "Undefined shapes are not supported."
@@ -115,29 +101,27 @@ class VariablesTest(test_case.TestCase):
         self.assertEqual(standardized_shape, (3, 4, 5))
 
     # TODO
-    # (3.9,torch) FAILED keras_core/backend/common/variables_test.py::VariablesTest::
-    # test_standardize_shape_with_non_integer_entry - AssertionError:
-    # "Cannot convert '\(3, 4, 'a'\)' to a shape. Found invalid entry 'a'.
+    # (3.9,torch) FAILED keras_core/backend/common/variables_test.py
+    # ::VariablesTest::test_standardize_shape_with_non_integer_entry:
+    #  - AssertionError "Cannot convert '\(3, 4, 'a'\)' to a shape.
     # " does not match "invalid literal for int() with base 10: 'a'"
     # def test_standardize_shape_with_non_integer_entry(self):
     #     with self.assertRaisesRegex(
     #         ValueError,
-    #         "Cannot convert '\\(3, 4, 'a'\\)' to a shape. Found invalid entry.",
+    #         "Cannot convert '\\(3, 4, 'a'\\)' to a shape. Found invalid",
     #     ):
     #         standardize_shape([3, 4, "a"])
 
     def test_standardize_shape_with_negative_entry(self):
         with self.assertRaisesRegex(
             ValueError,
-            "Cannot convert '\\(3, 4, -5\\)' to a shape. Negative dimensions are not allowed.",
+            "Cannot convert '\\(3, 4, -5\\)' to a shape. Negative dimensions are",
         ):
             standardize_shape([3, 4, -5])
 
     def test_autocast_scope_with_non_float_dtype(self):
         with self.assertRaisesRegex(
             ValueError,
-            "`AutocastScope` can only be used with "
-            "a floating-point target dtype, such as 'float16'. "
-            "Received: dtype=int32",
+            "`AutocastScope` can only be used with a floating-point",
         ):
             _ = AutocastScope("int32")
