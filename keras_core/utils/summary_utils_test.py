@@ -1,14 +1,16 @@
 import os
+import pytest
 
 import numpy as np
 
-from keras_core import models
 from keras_core import layers
+from keras_core import models
 from keras_core import testing
 from keras_core.utils import summary_utils
 
 
 class SummaryUtilsTest(testing.TestCase):
+    @pytest.mark.requires_trainable_backend
     def test_print_model_summary(self):
         inputs = layers.Input((2,))
         outputs = layers.Dense(3)(inputs)
