@@ -13,14 +13,14 @@ class TestAlphaDropout(unittest.TestCase):
         layer = AlphaDropout(rate=0.2)
         data = np.ones((10, 10))
         result = layer(data, training=True)
-        self.assertTrue((result <= 1.0).all())
-        self.assertTrue((result >= -0.5).all())
+        self.assertTrue((result.numpy() <= 1.0).all())
+        self.assertTrue((result.numpy() >= -0.5).all())
 
     def test_alpha_dropout_test_phase(self):
         layer = AlphaDropout(rate=0.2)
         data = np.ones((10, 10))
         result = layer(data, training=False)
-        self.assertTrue((result == 1.0).all())
+        self.assertTrue((result.numpy() == 1.0).all())
 
 
 class TestRandomHeight(unittest.TestCase):
@@ -34,7 +34,7 @@ class TestRandomHeight(unittest.TestCase):
         layer = RandomHeight(factor=0.2)
         data = np.ones((10, 64, 64, 3))
         result = layer(data, training=False)
-        self.assertTrue((result == 1.0).all())
+        self.assertTrue((result.numpy() == 1.0).all())
 
 
 class TestRandomWidth(unittest.TestCase):
@@ -48,7 +48,7 @@ class TestRandomWidth(unittest.TestCase):
         layer = RandomWidth(factor=0.2)
         data = np.ones((10, 64, 64, 3))
         result = layer(data, training=False)
-        self.assertTrue((result == 1.0).all())
+        self.assertTrue((result.numpy() == 1.0).all())
 
 
 class TestThresholdedReLU(unittest.TestCase):
