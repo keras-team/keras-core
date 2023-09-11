@@ -42,7 +42,7 @@ class TestAlphaDropout(unittest.TestCase):
         layer = AlphaDropout(rate=0.2)
         data = np.ones((10, 10))
         result = layer(data, training=False)
-        self.assertTrue((result == 1.0).all())
+        self.assertTrue((result.numpy() == 1.0).all())
 
 
 class TestRandomHeight(unittest.TestCase):
