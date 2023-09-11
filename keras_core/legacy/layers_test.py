@@ -8,61 +8,60 @@ from keras_core.legacy.layers import (
     RandomWidth,
     ThresholdedReLU,
 )
-from keras_core.legacy.losses import Reduction
 
 
 class TestAlphaDropout(unittest.TestCase):
-    def test_call(self):
-        alpha_dropout = AlphaDropout(rate=0.5, seed=0)
-        inputs = np.ones((2, 3, 4))
-        output = alpha_dropout(inputs, training=True)
-        self.assertEqual(output.shape, inputs.shape)
+    def test_alpha_dropout(self):
+        layer = AlphaDropout(rate=0.2)
+        data = np.ones((10, 10))
+        result = layer(data, training=True)
+        self.assertTrue((result.numpy() <= 1.0).all())
+        self.assertTrue((result.numpy() >= -0.5).all())
 
-    def test_get_config(self):
-        alpha_dropout = AlphaDropout(rate=0.5, seed=0)
-        config = alpha_dropout.get_config()
-        self.assertEqual(config["rate"], 0.5)
-        self.assertEqual(config["seed"], 0)
+    def test_alpha_dropout_test_phase(self):
+        layer = AlphaDropout(rate=0.2)
+        data = np.ones((10, 10))
+        result = layer(data, training=False)
+        self.assertTrue((result.numpy() == 1.0).all())
 
 
 class TestRandomHeight(unittest.TestCase):
-    def test_call(self):
-        random_height = RandomHeight(factor=0.5)
-        inputs = np.ones((2, 3, 4))
-        output = random_height(inputs, training=True)
-        self.assertEqual(output.shape, (2, 3, 4))
+    def test_random_height(self):
+        layer = RandomHeight(factor=0.2)
+        data = np.ones((10, 64, 64, 3))
+        result = layer(data, training=True)
+        self.assertEqual(result.shape, data.shape)
 
-    def test_get_config(self):
-        random_height = RandomHeight(factor=0.5)
-        config = random_height.get_config()
-        self.assertEqual(config["factor"], 0.5)
-        self.assertEqual(config["interpolation"], "bilinear")
-        self.assertIsNone(config["seed"])
+    def test_random_height_test_phase(self):
+        layer = RandomHeight(factor=0.2)
+        data = np.ones((10, 64, 64, 3))
+        result = layer(data, training=False)
+        self.assertTrue((result.numpy() == 1.0).all())
 
 
 class TestRandomWidth(unittest.TestCase):
-    def test_call(self):
-        random_width = RandomWidth(factor=0.5)
-        inputs = np.ones((2, 3, 4))
-        output = random_width(inputs, training=True)
-        self.assertEqual(output.shape, (2, 3, 4))
+    def test_random_width(self):
+        layer = RandomWidth(factor=0.2)
+        data = np.ones((10, 64, 64, 3))
+        result = layer(data, training=True)
+        self.assertEqual(result.shape, data.shape)
 
-    def test_get_config(self):
-        random_width = RandomWidth(factor=0.5)
-        config = random_width.get_config()
-        self.assertEqual(config["factor"], 0.5)
-        self.assertEqual(config["interpolation"], "bilinear")
-        self.assertIsNone(config["seed"])
+    def test_random_width_test_phase(self):
+        layer = RandomWidth(factor=0.2)
+        data = np.ones((10, 64, 64, 3))
+        result = layer(data, training=False)
+        self.assertTrue((result.numpy() == 1.0).all())
 
 
 class TestThresholdedReLU(unittest.TestCase):
-    def test_call(self):
-        thresholded_relu = ThresholdedReLU(theta=0.5)
-        inputs = np.ones((2, 3, 4))
-        output = thresholded_relu(inputs)
-        self.assertEqual(output.shape, (2, 3, 4))
+    def test_thresholded_relu(self):
+        layer = ThresholdedReLU(theta=0.5)
+        data = np.array([-0.5, 0.5, 1.0])
+        result = layer(data)
+        expected_result = np.array([0.0, 0.5, 1.0])
+        np.testing.assert_array_equal(result.numpy(), expected_result)
 
-    def test_get_config(self):
-        thresholded_relu = ThresholdedReLU(theta=0.5)
-        config = thresholded_relu.get_config()
+    def test_thresholded_relu_config(self):
+        layer = ThresholdedReLU(theta=0.5)
+        config = layer.get_config()
         self.assertEqual(config["theta"], 0.5)
