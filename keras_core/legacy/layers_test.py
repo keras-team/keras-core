@@ -36,7 +36,7 @@ class TestAlphaDropout(unittest.TestCase):
         result = layer(data, training=True)
 
         theoretical_min = _get_theoretical_min_value(0.2)
-        self.assertTrue((result >= theoretical_min).all())
+        self.assertTrue((result.numpy() >= theoretical_min).all())
 
     def test_alpha_dropout_test_phase(self):
         layer = AlphaDropout(rate=0.2)
