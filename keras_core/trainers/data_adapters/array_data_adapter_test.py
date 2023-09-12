@@ -9,30 +9,29 @@ from keras_core.trainers.data_adapters import array_data_adapter
 
 
 class TestArrayDataAdapter(testing.TestCase, parameterized.TestCase):
-    @parameterized.parameters([("np",), ("tf",), ("backend",), ("pandas",)])
-    def test_basic_flow(self, array_type):
+    def make_array(self, array_type, shape, dtype="float32"):
         if array_type == "np":
-            x = np.random.random((34, 4))
-            y = np.random.random((34, 2))
+            return np.ones(shape, dtype=dtype)
         elif array_type == "tf":
-            x = tf.random.normal((34, 4))
-            y = tf.random.normal((34, 2))
+            return tf.ones(shape, dtype=dtype)
         elif array_type == "backend":
             if backend.backend() == "jax":
                 import jax
 
-                x = jax.numpy.ones((34, 4))
-                y = jax.numpy.ones((34, 2))
+                return jax.numpy.ones(shape, dtype=dtype)
             elif backend.backend() == "torch":
                 import torch
 
-                x = torch.ones((34, 4))
-                y = torch.ones((34, 2))
+                return torch.tensor(np.ones(shape, dtype=dtype))
             else:
-                return  # skip TF already addressed
+                return tf.ones(shape, dtype=dtype)
         elif array_type == "pandas":
-            x = pandas.DataFrame(np.random.random((34, 4)))
-            y = pandas.DataFrame(np.random.random((34, 2)))
+            return pandas.DataFrame(np.ones(shape, dtype=dtype))
+
+    @parameterized.parameters([("np",), ("tf",), ("backend",), ("pandas",)])
+    def test_basic_flow(self, array_type):
+        x = self.make_array(array_type, (34, 4))
+        y = self.make_array(array_type, (34, 2))
 
         adapter = array_data_adapter.ArrayDataAdapter(
             x,
@@ -185,3 +184,22 @@ class TestArrayDataAdapter(testing.TestCase, parameterized.TestCase):
     def test_errors(self):
         # TODO
         pass
+
+    @parameterized.parameters([("np",), ("tf",), ("backend",), ("pandas",)])
+    def test_integer_inputs(self, array_type):
+        x1 = self.make_array(array_type, (4, 4), dtype="float64")
+        x2 = self.make_array(array_type, (4, 4), dtype="int32")
+        y = self.make_array(array_type, (4, 2))
+
+        adapter = array_data_adapter.ArrayDataAdapter(
+            (x1, x2),
+            y=y,
+            sample_weight=None,
+            batch_size=4,
+            steps=None,
+            shuffle=False,
+        )
+
+        (x1, x2), y = next(adapter.get_numpy_iterator())
+        self.assertEqual(x1.dtype, backend.floatx())
+        self.assertEqual(x2.dtype, "int32")
