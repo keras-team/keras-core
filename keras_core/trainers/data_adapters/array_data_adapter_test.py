@@ -1,5 +1,6 @@
 import numpy as np
 import pandas
+import pytest
 import tensorflow as tf
 from absl.testing import parameterized
 
@@ -203,3 +204,53 @@ class TestArrayDataAdapter(testing.TestCase, parameterized.TestCase):
         (x1, x2), y = next(adapter.get_numpy_iterator())
         self.assertEqual(x1.dtype, backend.floatx())
         self.assertEqual(x2.dtype, "int32")
+
+    def test_pandas_series(self):
+        x = pandas.Series(np.ones((10,)))
+        y = np.ones((10,))
+
+        adapter = array_data_adapter.ArrayDataAdapter(
+            x,
+            y=y,
+            sample_weight=None,
+            batch_size=4,
+            steps=None,
+            shuffle=False,
+        )
+
+        self.assertEqual(adapter.num_batches, 3)
+        self.assertEqual(adapter.batch_size, 4)
+        self.assertEqual(adapter.has_partial_batch, True)
+        self.assertEqual(adapter.partial_batch_size, 2)
+
+        x, y = next(adapter.get_numpy_iterator())
+        self.assertEqual(x.dtype, backend.floatx())
+        self.assertIsInstance(x, np.ndarray)
+        self.assertEqual(x.shape, (4, 1))
+
+    @pytest.mark.skipif(
+        backend.backend() != "tensorflow",
+        reason="Only tensorflow supports raggeds",
+    )
+    def test_tf_ragged(self):
+        x = tf.ragged.constant([[1, 2], [1, 2, 3], [1, 2], [1], []], "float64")
+        y = np.ones((5,))
+
+        adapter = array_data_adapter.ArrayDataAdapter(
+            x,
+            y=y,
+            sample_weight=None,
+            batch_size=2,
+            steps=None,
+            shuffle=False,
+        )
+
+        self.assertEqual(adapter.num_batches, 3)
+        self.assertEqual(adapter.batch_size, 2)
+        self.assertEqual(adapter.has_partial_batch, True)
+        self.assertEqual(adapter.partial_batch_size, 1)
+
+        x, y = next(adapter.get_numpy_iterator())
+        self.assertEqual(x.dtype, backend.floatx())
+        self.assertIsInstance(x, tf.RaggedTensor)
+        self.assertEqual(x.shape, (2, None))

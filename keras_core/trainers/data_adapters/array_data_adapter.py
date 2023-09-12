@@ -308,7 +308,7 @@ def convert_to_arrays(arrays):
                 backend.is_float_dtype(x.dtype)
                 and not backend.standardize_dtype(x.dtype) == backend.floatx()
             ):
-                return tf.cast(x, backend.floatx())
+                x = tf.cast(x, backend.floatx())
             return x
         if not isinstance(x, np.ndarray):
             # Using `__array__` should handle `tf.Tensor`, `jax.np.ndarray`,
