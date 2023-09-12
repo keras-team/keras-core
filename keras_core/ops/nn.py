@@ -1552,7 +1552,6 @@ def multi_hot(inputs, num_tokens, axis=-1, dtype=None):
     Returns:
         Tensor: The multi-hot encoded tensor.
 
-
     Example:
 
     >>> data = keras_core.ops.convert_to_tensor([0, 4])
@@ -1609,7 +1608,6 @@ def moments(x, axes, keepdims=False):
 
     Returns:
         A tuple containing two tensors - mean and variance.
-
 
     Example:
 
