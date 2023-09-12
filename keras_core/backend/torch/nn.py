@@ -3,6 +3,7 @@ import torch
 import torch.nn.functional as tnn
 
 from keras_core.backend import standardize_data_format
+from keras_core.backend import standardize_dtype
 from keras_core.backend.common.backend_utils import (
     compute_conv_transpose_padding_args_for_torch,
 )
@@ -609,3 +610,36 @@ def binary_crossentropy(target, output, from_logits=False):
     else:
         output = torch.clip(output, epsilon(), 1.0 - epsilon())
         return tnn.binary_cross_entropy(output, target, reduction="none")
+
+
+def moments(x, axes, keepdims=False):
+    x = convert_to_tensor(x)
+    # The dynamic range of fp16 is too limited to support the collection of
+    # sufficient statistics. As a workaround we simply perform the operations
+    # on 32-bit floats before converting the mean and variance back to fp16
+    need_cast = False
+    ori_dtype = standardize_dtype(x.dtype)
+    if ori_dtype == "float16":
+        need_cast = True
+        x = cast(x, "float32")
+
+    # Compute true mean while keeping the dims for proper broadcasting
+    mean = torch.mean(x, dim=axes, keepdim=True)
+
+    # Sample variance, not unbiased variance
+    # Note: detach does not change the gradient that gets
+    #       backpropagated to the mean from the variance calculation,
+    #       because that gradient is zero
+    variance = torch.mean(
+        torch.square(x - mean.detach()),
+        dim=axes,
+        keepdim=True,
+    )
+
+    if not keepdims:
+        mean = torch.squeeze(mean, axes)
+        variance = torch.squeeze(variance, axes)
+    if need_cast:
+        mean = cast(mean, ori_dtype)
+        variance = cast(variance, ori_dtype)
+    return mean, variance

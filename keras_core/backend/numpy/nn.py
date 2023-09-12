@@ -4,6 +4,7 @@ from jax import lax
 from jax import numpy as jnp
 
 from keras_core.backend import standardize_data_format
+from keras_core.backend import standardize_dtype
 from keras_core.backend.common.backend_utils import (
     compute_conv_transpose_padding_args_for_jax,
 )
@@ -519,3 +520,29 @@ def binary_crossentropy(target, output, from_logits=False):
     bce = target * np.log(output)
     bce += (1.0 - target) * np.log(1.0 - output)
     return -bce
+
+
+def moments(x, axes, keepdims=False):
+    axes = tuple(axes) if isinstance(axes, list) else axes
+    # The dynamic range of fp16 is too limited to support the collection of
+    # sufficient statistics. As a workaround we simply perform the operations
+    # on 32-bit floats before converting the mean and variance back to fp16
+    need_cast = False
+    ori_dtype = standardize_dtype(x.dtype)
+    if ori_dtype == "float16":
+        need_cast = True
+        x = cast(x, "float32")
+
+    # Compute true mean while keeping the dims for proper broadcasting
+    mean = np.mean(x, axes, keepdims=True)
+
+    # Sample variance, not unbiased variance
+    variance = np.mean(np.square(x - mean), axis=axes, keepdims=True)
+
+    if not keepdims:
+        mean = np.squeeze(mean, axes)
+        variance = np.squeeze(variance, axes)
+    if need_cast:
+        mean = cast(mean, ori_dtype)
+        variance = cast(variance, ori_dtype)
+    return mean, variance

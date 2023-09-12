@@ -646,3 +646,7 @@ def binary_crossentropy(target, output, from_logits=False):
     bce = target * tf.math.log(output)
     bce += (1 - target) * tf.math.log(1 - output)
     return -bce
+
+
+def moments(x, axes, keepdims=False):
+    return tf.nn.moments(x, axes, keepdims=keepdims)
