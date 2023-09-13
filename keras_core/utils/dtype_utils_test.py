@@ -119,5 +119,5 @@ class CastToCommonDtype(test_case.TestCase):
         tensor1 = KerasTensor([1, 2, 3], dtype="int32")
         tensor2 = KerasTensor([4, 5, 6], dtype="uint8")
         casted_tensors = dtype_utils.cast_to_common_dtype([tensor1, tensor2])
-        for tensor in casted_tensors:
-            assert tensor.dtype == tensor.dtype
+        self.assertEqual(casted_tensors[0].dtype, "int32")
+        self.assertEqual(casted_tensors[1].dtype, "uint8")
