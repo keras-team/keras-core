@@ -96,4 +96,28 @@ class CastToCommonDtype(test_case.TestCase):
         tensor2 = KerasTensor([4, 5, 6], dtype="bfloat16")
         casted_tensors = dtype_utils.cast_to_common_dtype([tensor1, tensor2])
         for tensor in casted_tensors:
-            assert tensor.dtype in {"float16", "float32"}
+            assert tensor.dtype == "float16"
+
+    def test_cast_to_common_dtype_float16_uint8(self):
+        tensor1 = KerasTensor([1, 2, 3], dtype="float16")
+        tensor2 = KerasTensor([4, 5, 6], dtype="uint8")
+        casted_tensors = dtype_utils.cast_to_common_dtype([tensor1, tensor2])
+        for tensor in casted_tensors:
+            assert tensor.dtype == "float16"
+
+    def test_cast_to_common_dtype_mixed_types(self):
+        tensor1 = KerasTensor([1, 2, 3], dtype="float32")
+        tensor2 = KerasTensor([4, 5, 6], dtype="int32")
+        tensor3 = KerasTensor([7, 8, 9], dtype="bool")
+        casted_tensors = dtype_utils.cast_to_common_dtype(
+            [tensor1, tensor2, tensor3]
+        )
+        for tensor in casted_tensors:
+            assert tensor.dtype == "float32"
+
+    def test_cast_to_common_dtype_no_float(self):
+        tensor1 = KerasTensor([1, 2, 3], dtype="int32")
+        tensor2 = KerasTensor([4, 5, 6], dtype="uint8")
+        casted_tensors = dtype_utils.cast_to_common_dtype([tensor1, tensor2])
+        for tensor in casted_tensors:
+            assert tensor.dtype == tensor.dtype
