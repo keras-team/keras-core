@@ -506,10 +506,8 @@ def moments(x, axes, keepdims=False):
     # Note: stop_gradient does not change the gradient that gets
     #       backpropagated to the mean from the variance calculation,
     #       because that gradient is zero
-    variance = jnp.mean(
-        jnp.square(x - jax.lax.stop_gradient(mean)),
-        axis=axes,
-        keepdims=True,
+    variance = jnp.mean(jnp.square(x), axis=axes, keepdims=True) - jnp.square(
+        jax.lax.stop_gradient(mean)
     )
 
     if not keepdims:

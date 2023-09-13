@@ -631,10 +631,8 @@ def moments(x, axes, keepdims=False):
     #       backpropagated to the mean from the variance calculation,
     #       because that gradient is zero
     variance = torch.mean(
-        torch.square(x - mean.detach()),
-        dim=axes,
-        keepdim=True,
-    )
+        torch.square(x), dim=axes, keepdim=True
+    ) - torch.square(mean.detach())
 
     if not keepdims:
         mean = torch.squeeze(mean, axes)

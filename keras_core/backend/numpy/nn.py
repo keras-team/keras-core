@@ -537,7 +537,7 @@ def moments(x, axes, keepdims=False):
     mean = np.mean(x, axes, keepdims=True)
 
     # Sample variance, not unbiased variance
-    variance = np.mean(np.square(x - mean), axis=axes, keepdims=True)
+    variance = np.mean(np.square(x), axis=axes, keepdims=True) - np.square(mean)
 
     if not keepdims:
         mean = np.squeeze(mean, axes)
