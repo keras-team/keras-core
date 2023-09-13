@@ -19,16 +19,16 @@ jobs:
       PYTHON: ${{ matrix.python-version }}
       KERAS_BACKEND: ${{ matrix.backend }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
       - name: Check for changes in keras_core/applications
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50 # v2.11.1
         id: filter
         with:
           filters: |
             applications:
               - 'keras_core/applications/**'
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1 # v4.7.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Get pip cache dir
@@ -37,7 +37,7 @@ jobs:
           python -m pip install --upgrade pip setuptools
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
       - name: pip cache
-        uses: actions/cache@v3
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}-${{ hashFiles('requirements.txt') }}
@@ -52,7 +52,7 @@ jobs:
           coverage xml --include='keras_core/applications/*' -o apps-coverage.xml
       - name: Codecov keras_core.applications
         if: ${{ steps.filter.outputs.applications == 'true' }}
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3.1.4
         with:
           env_vars: PYTHON,KERAS_BACKEND
           flags: keras_core.applications
@@ -62,7 +62,7 @@ jobs:
           pytest keras_core --ignore keras_core/applications --cov=keras_core
           coverage xml --omit='keras_core/applications/*' -o core-coverage.xml
       - name: Codecov keras_core
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3.1.4
         with:
           env_vars: PYTHON,KERAS_BACKEND
           flags: keras_core
@@ -72,9 +72,9 @@ jobs:
     name: Check the code format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
       - name: Set up Python 3.9
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1 # v4.7.0
         with:
           python-version: '3.9'
       - name: Get pip cache dir
@@ -83,7 +83,7 @@ jobs:
           python -m pip install --upgrade pip setuptools
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
       - name: pip cache
-        uses: actions/cache@v3
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}-${{ hashFiles('requirements.txt') }}
