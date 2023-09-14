@@ -650,22 +650,21 @@ def binary_crossentropy(target, output, from_logits=False):
 
 
 def moments(x, axes, keepdims=False):
-    # The dynamic range of fp16 is too limited to support the collection of
-    # sufficient statistics. As a workaround we simply perform the operations
-    # on 32-bit floats before converting the mean and variance back to fp16
+    # The dynamic range of float16 is too limited for statistics. As a
+    # workaround, we simply perform the operations on float32 and convert back
+    # to float16
     need_cast = False
     ori_dtype = standardize_dtype(x.dtype)
     if ori_dtype == "float16":
         need_cast = True
         x = cast(x, "float32")
 
-    # Compute true mean while keeping the dims for proper broadcasting
     mean = tf.reduce_mean(x, axes, keepdims=True)
 
-    # Sample variance, not unbiased variance
-    # Note: stop_gradient does not change the gradient that gets
-    #       backpropagated to the mean from the variance calculation,
-    #       because that gradient is zero
+    # The variance is computed using $Var = E[|x|^2] - |E[x]|^2$, It is faster
+    # but less numerically stable.
+    # Note: stop_gradient does not change the gradient to the mean, because that
+    # gradient is zero.
     variance = tf.reduce_mean(
         tf.square(x), axis=axes, keepdims=True
     ) - tf.square(tf.stop_gradient(mean))
@@ -674,6 +673,9 @@ def moments(x, axes, keepdims=False):
         mean = tf.squeeze(mean, axes)
         variance = tf.squeeze(variance, axes)
     if need_cast:
+        # avoid overflow and underflow when casting from float16 to float32
+        mean = tf.clip_by_value(mean, tf.float16.min, tf.float16.max)
+        variance = tf.clip_by_value(variance, tf.float16.min, tf.float16.max)
         mean = cast(mean, ori_dtype)
         variance = cast(variance, ori_dtype)
     return mean, variance

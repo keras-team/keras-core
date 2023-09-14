@@ -1186,13 +1186,13 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(mean, np.mean(x))
         self.assertAllClose(variance, np.var(x))
 
-        # Test batch statics for 4D moments (batch, height, width, channels)
+        # Test batch statistics for 4D moments (batch, height, width, channels)
         x = np.random.uniform(size=(2, 28, 28, 3))
         mean, variance = knn.moments(x, axes=[0])
         self.assertAllClose(mean, np.mean(x, axis=0))
         self.assertAllClose(variance, np.var(x, axis=0))
 
-        # Test global statics for 4D moments (batch, height, width, channels)
+        # Test global statistics for 4D moments (batch, height, width, channels)
         x = np.random.uniform(size=(2, 28, 28, 3))
         mean, variance = knn.moments(x, axes=[0, 1, 2])
         self.assertAllClose(mean, np.mean(x, axis=(0, 1, 2)))
@@ -1204,12 +1204,15 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(mean, np.mean(x, axis=(0, 1, 2), keepdims=True))
         self.assertAllClose(variance, np.var(x, axis=(0, 1, 2), keepdims=True))
 
-        # Test float16
-        x = np.random.uniform(size=(2, 28, 28, 3)).astype(np.float16)
-        mean, variance = knn.moments(x, axes=[0])
-        expected_mean = np.mean(x.astype(np.float32), axis=0).astype(np.float16)
-        expected_variance = np.var(x.astype(np.float32), axis=0).astype(
-            np.float16
+        # Test float16 which causes overflow
+        x = np.array(
+            [-741.0, 353.2, 1099.0, -1807.0, 502.8, -83.4, 333.5, -130.9],
+            dtype=np.float16,
         )
+        mean, variance = knn.moments(x, axes=[0])
+        expected_mean = np.mean(x.astype(np.float32)).astype(np.float16)
+        # the output variance is clipped to the max value of np.float16 because
+        # it is overflowed
+        expected_variance = np.finfo(np.float16).max
         self.assertAllClose(mean, expected_mean)
         self.assertAllClose(variance, expected_variance)
