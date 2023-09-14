@@ -1,4 +1,5 @@
 from keras_core.backend.tensorflow import core
+from keras_core.backend.tensorflow import distribution_lib
 from keras_core.backend.tensorflow import image
 from keras_core.backend.tensorflow import math
 from keras_core.backend.tensorflow import nn
