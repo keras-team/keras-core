@@ -13,9 +13,7 @@ class TestJaxUtils(unittest.TestCase):
         self.assertFalse(jax_utils.is_in_jax_tracing_scope())
 
     @patch("keras_core.utils.jax_utils.backend")
-    def test_not_in_jax_tracing_and_no_tracer_detected(
-        self, mock_backend
-    ):
+    def test_not_in_jax_tracing_and_no_tracer_detected(self, mock_backend):
         mock_backend.backend.return_value = "jax"
         mock_backend.numpy.ones.return_value = (
             object()
