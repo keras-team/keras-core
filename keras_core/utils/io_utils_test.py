@@ -1,10 +1,10 @@
-import unittest
 from unittest.mock import patch
 
+from keras_core.testing import test_case
 from keras_core.utils import io_utils
 
 
-class TestIoUtils(unittest.TestCase):
+class TestIoUtils(test_case.TestCase):
     def test_enable_interactive_logging(self):
         io_utils.enable_interactive_logging()
         self.assertTrue(io_utils.is_interactive_logging_enabled())
