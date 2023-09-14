@@ -119,3 +119,24 @@ class TestCountLoc(test_case.TestCase):
         self.create_file("multiline_in_middle.py", content)
         loc = count_loc(self.test_dir)
         self.assertEqual(loc, 2)  # Both print statements should count
+
+    def test_line_starting_with_triple_quotes_not_ending(self):
+        content = '"""\nThis is a multiline string\n'
+        self.create_file("test_file_2.py", content)
+        path = os.path.join(self.test_dir, "test_file_2.py")
+        self.assertEqual(count_loc(path), 0)
+        # Because it's part of a multiline string
+
+    def test_line_starting_and_ending_with_triple_quotes(self):
+        content = '"""This is a one-liner docstring."""\n'
+        self.create_file("test_file_3.py", content)
+        path = os.path.join(self.test_dir, "test_file_3.py")
+        self.assertEqual(count_loc(path), 0)
+        # This is still considered a comment/docstring
+
+    def test_string_open_true_line_starting_with_triple_quotes(self):
+        content = '"""\nEnd of the multiline string."""\n'
+        self.create_file("test_file_4.py", content)
+        path = os.path.join(self.test_dir, "test_file_4.py")
+        self.assertEqual(count_loc(path), 0)
+        # Entire content is a multiline string/comment
