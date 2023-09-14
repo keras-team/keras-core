@@ -128,7 +128,7 @@ class TestCountLoc(test_case.TestCase):
         self.assertIn("Count LoCs in", output)
 
     def test_multiline_string_same_line(self):
-        content = '''"""This is a multiline string ending on the same line""" 
+        content = '''"""This is a multiline string ending on the same line"""
         print("Outside string")'''
         self.create_file("same_line_multiline.py", content)
         loc = count_loc(self.test_dir)
