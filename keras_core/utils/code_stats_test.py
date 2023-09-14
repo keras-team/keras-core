@@ -133,3 +133,18 @@ class TestCountLoc(test_case.TestCase):
         self.create_file("same_line_multiline.py", content)
         loc = count_loc(self.test_dir)
         self.assertEqual(loc, 1)  # Only the print statement should count
+
+    def test_multiline_string_ends_on_same_line(self):
+        content = '"""a multiline string end on same line"""\nprint("Outstr")'
+        self.create_file("same_line_multiline.py", content)
+        loc = count_loc(self.test_dir)
+        self.assertEqual(loc, 1)  # Only the print statement should count
+
+    def test_multiline_string_ends_in_middle_of_line(self):
+        content = '''print("Start")
+        """This is a multiline string ending in the middle of a line"""
+        """This is another multiline string."""
+        print("End")'''
+        self.create_file("multiline_in_middle.py", content)
+        loc = count_loc(self.test_dir)
+        self.assertEqual(loc, 2)  # Both print statements should count
