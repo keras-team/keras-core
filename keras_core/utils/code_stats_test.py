@@ -47,7 +47,7 @@ class TestCountLoc(test_case.TestCase):
         self.assertEqual(loc, 1)
 
     def test_multiline_strings(self):
-        content = '"""\nMultiline string\nAnother line\n"""\nprint("Outside string")\n'
+        content = '"""\nMultiline str\nAnother line\n"""\nprint("Out str")\n'
         self.create_file("sample.py", content)
         loc = count_loc(self.test_dir)
         self.assertEqual(loc, 1)
@@ -83,9 +83,7 @@ class TestCountLoc(test_case.TestCase):
         '''
         self.create_file("nested_sample.py", content)
         loc = count_loc(self.test_dir)
-        self.assertEqual(
-            loc, 3
-        )  # Only the print("Start"), Second line outside any multiline, and print("End")
+        self.assertEqual(loc, 3)
 
     def test_inline_comments_after_code(self):
         content = 'print("Hello") # This is an inline comment'

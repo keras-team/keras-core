@@ -1,27 +1,24 @@
 import os
 
 
-def count_loc(
-    directory: str,
-    exclude: tuple = ("_test",),
-    extensions: tuple = (".py",),
-    verbose: int = 0,
-) -> int:
-    """Count the Lines of Code (LOC) in a directory.
+def count_loc(directory, exclude=("_test",), extensions=(".py",), verbose=0):
+    """Count lines of code (LOC) within files in a specified directory.
 
-    This function traverses a specified directory and calculates the number of lines of code
-    present in files with given extensions. It excludes lines from multiline strings,
-    comments, and blank lines. The function also provides the ability to exclude certain
-    files or directories.
+    This function will recursively walk through a directory, inspecting files
+    for actual lines of code while ignoring comments, whitespace, and lines
+    inside multi-line strings.
 
     Args:
-        directory (str): Path of the directory to count LOC.
-        exclude (tuple): Patterns to exclude files or directories. Default is `("_test",)`.
-        extensions (tuple): File extensions to consider for counting. Default is `(".py",)`.
-        verbose (int): If set to 1, displays the files being processed. Defaults to 0.
+        directory (str): The root directory from which to start counting LOC.
+        exclude (tuple): File or directory patterns to exclude from LOC count.
+            Default is `("_test",)`.
+        extensions (tuple): File extensions to include in LOC count.
+            Default is `(".py",)`.
+        verbose (int): If set to 1, the function will print the names of
+            the files being analyzed. Default is 0.
 
     Returns:
-        int: Total number of lines of code in the directory.
+        int: The total lines of actual code in the directory.
     """
     loc = 0
     for root, _, fnames in os.walk(directory):
