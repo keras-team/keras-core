@@ -3,6 +3,11 @@ from keras_core.utils import naming
 
 
 class NamingUtilsTest(test_case.TestCase):
+    def test_uniquify_unique_name(self):
+        name = "the_unique_name"
+        unique_name = naming.uniquify(name)
+        self.assertEqual(unique_name, name)
+
     def test_auto_name(self):
         self.assertEqual(naming.auto_name("unique_name"), "unique_name")
         self.assertEqual(naming.auto_name("unique_name"), "unique_name_1")
@@ -13,27 +18,16 @@ class NamingUtilsTest(test_case.TestCase):
         self.assertEqual(naming.get_uid("very_unique_name"), 2)
         self.assertEqual(naming.get_uid("very_unique_name"), 3)
 
-    # """TODO FAILED keras_core/utils/naming_test.py::NamingUtilsTest::
-    # test_uniquify_unique_name - AssertionError:
-    #   'unique_name_2' != 'unique_name'"""
-    # def test_uniquify_unique_name(self):
-    #     name = "unique_name"
-    #     unique_name = naming.uniquify(name)
-    #     self.assertEqual(unique_name, name)
-
     def test_uniquify_non_unique_name(self):
         name = "non_unique_name"
         naming.uniquify(name)
         unique_name = naming.uniquify(name)
         self.assertEqual(unique_name, name + "_1")
 
-    # """TODO FAILED keras_core/utils/naming_test.py::NamingUtilsTest::
-    # test_to_snake_case_non_alphabetical_characters - AssertionError:
-    #  'non_alphabeticalcharacters' != 'non_alphabetical_characters'"""
-    #     def test_to_snake_case_non_alphabetical_characters(self):
-    #         name = "non_alphabetical-characters"
-    #         snake_case_name = naming.to_snake_case(name)
-    #         self.assertEqual(snake_case_name, "non_alphabetical_characters")
+    def test_to_snake_case_non_alphabetical_characters(self):
+        name = "non_alphabetical-characters"
+        snake_case_name = naming.to_snake_case(name)
+        self.assertEqual(snake_case_name, "non_alphabetical_characters")
 
     def test_to_snake_case_snake_case_name(self):
         name = "snake_case_name"
@@ -73,3 +67,38 @@ class NamingUtilsTest(test_case.TestCase):
         unique_name = naming.uniquify(name)
         new_unique_name = naming.uniquify(unique_name)
         self.assertEqual(new_unique_name, unique_name)
+
+    def test_to_snake_case_non_alphanumeric_characters(self):
+        name = "name!!with*special&&characters--here"
+        snake_case_name = naming.to_snake_case(name)
+        self.assertEqual(snake_case_name, "name_with_special_characters_here")
+
+    def test_to_snake_case_capital_after_any_character(self):
+        name = "myVariableNameHere"
+        snake_case_name = naming.to_snake_case(name)
+        self.assertEqual(snake_case_name, "my_variable_name_here")
+
+    def test_to_snake_case_lower_before_upper(self):
+        name = "convertTHIS"
+        snake_case_name = naming.to_snake_case(name)
+        self.assertEqual(snake_case_name, "convert_this")
+
+    def test_to_snake_case_mixed(self):
+        name = "MixOf-AllThe_ThingsInAVarName"
+        snake_case_name = naming.to_snake_case(name)
+        self.assertEqual(snake_case_name, "mix_of_all_the_things_in_a_var_name")
+
+    def test_to_snake_case_already_snake_cased(self):
+        name = "already_snake_cased"
+        snake_case_name = naming.to_snake_case(name)
+        self.assertEqual(snake_case_name, name)
+
+    def test_to_snake_case_no_changes(self):
+        name = "lowercase"
+        snake_case_name = naming.to_snake_case(name)
+        self.assertEqual(snake_case_name, name)
+
+    def test_to_snake_case_single_uppercase_word(self):
+        name = "UPPERCASE"
+        snake_case_name = naming.to_snake_case(name)
+        self.assertEqual(snake_case_name, "uppercase")
