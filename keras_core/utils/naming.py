@@ -25,41 +25,9 @@ def uniquify(name):
 
 
 def to_snake_case(name):
-    """Convert a string into snake_case format.
-
-    1. Insert underscores before capitals preceded by a character and
-    followed by lowercase (e.g., "MyName" to "my_name").
-    2. Insert underscores between lowercase (or digits) and following
-    capitals (e.g., "nameZ" to "name_z").
-    3. Replace non-alphanumeric sequences and hyphens with "_"
-    (e.g., "name!!name" to "name_name").
-    4. Reduce consecutive underscores to one.
-    5. Convert the entire string to lowercase.
-
-    Args:
-        name (str): The input string to be converted into snake_case format.
-
-    Returns:
-        str: The transformed string in snake_case format.
-
-    Examples:
-        >>> to_snake_case("MyName")
-        "my_name"
-
-        >>> to_snake_case("nameZ")
-        "name_z"
-
-        >>> to_snake_case("name!!name--name")
-        "name_name_name"
-
-        >>> to_snake_case("name__name")
-        "name_name"
-    """
+    name = re.sub(r"\W+", "", name)
     name = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
-    name = re.sub("([a-z0-9])([A-Z])", r"\1_\2", name).lower()
-    name = re.sub(r"[\W-]+", "_", name)
-    name = re.sub(r"__+", "_", name)
-
+    name = re.sub("([a-z])([A-Z])", r"\1_\2", name).lower()
     return name
 
 

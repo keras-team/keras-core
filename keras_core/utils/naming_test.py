@@ -24,11 +24,6 @@ class NamingUtilsTest(test_case.TestCase):
         unique_name = naming.uniquify(name)
         self.assertEqual(unique_name, name + "_1")
 
-    def test_to_snake_case_non_alphabetical_characters(self):
-        name = "non_alphabetical-characters"
-        snake_case_name = naming.to_snake_case(name)
-        self.assertEqual(snake_case_name, "non_alphabetical_characters")
-
     def test_to_snake_case_snake_case_name(self):
         name = "snake_case_name"
         snake_case_name = naming.to_snake_case(name)
@@ -68,11 +63,6 @@ class NamingUtilsTest(test_case.TestCase):
         new_unique_name = naming.uniquify(unique_name)
         self.assertEqual(new_unique_name, unique_name)
 
-    def test_to_snake_case_non_alphanumeric_characters(self):
-        name = "name!!with*special&&characters--here"
-        snake_case_name = naming.to_snake_case(name)
-        self.assertEqual(snake_case_name, "name_with_special_characters_here")
-
     def test_to_snake_case_capital_after_any_character(self):
         name = "myVariableNameHere"
         snake_case_name = naming.to_snake_case(name)
@@ -82,11 +72,6 @@ class NamingUtilsTest(test_case.TestCase):
         name = "convertTHIS"
         snake_case_name = naming.to_snake_case(name)
         self.assertEqual(snake_case_name, "convert_this")
-
-    def test_to_snake_case_mixed(self):
-        name = "MixOf-AllThe_ThingsInAVarName"
-        snake_case_name = naming.to_snake_case(name)
-        self.assertEqual(snake_case_name, "mix_of_all_the_things_in_a_var_name")
 
     def test_to_snake_case_already_snake_cased(self):
         name = "already_snake_cased"
