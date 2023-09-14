@@ -1,10 +1,10 @@
-import unittest
 from unittest.mock import patch
 
+from keras_core.testing import test_case
 from keras_core.utils import jax_utils
 
 
-class TestJaxUtils(unittest.TestCase):
+class TestJaxUtils(test_case.TestCase):
     @patch("keras_core.utils.jax_utils.backend")
     def test_not_in_jax_tracing_scope_when_backend_is_not_jax(
         self, mock_backend
