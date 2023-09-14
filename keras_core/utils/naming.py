@@ -29,13 +29,13 @@ def to_snake_case(name):
 
     1. Insert underscores before capitals preceded by a character and
     followed by lowercase (e.g., "MyName" to "my_name").
-    2. Insert underscores between lowercase (or digits) and following 
+    2. Insert underscores between lowercase (or digits) and following
     capitals (e.g., "nameZ" to "name_z").
     3. Replace non-alphanumeric sequences and hyphens with "_"
     (e.g., "name!!name" to "name_name").
     4. Reduce consecutive underscores to one.
     5. Convert the entire string to lowercase.
-    
+
     Args:
         name (str): The input string to be converted into snake_case format.
 
