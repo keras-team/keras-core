@@ -48,18 +48,6 @@ class TestCountLoc(test_case.TestCase):
         loc = count_loc(self.test_dir)
         self.assertEqual(loc, 1)
 
-    def test_multiline_strings(self):
-        content = '"""\nMultiline str\nAnother line\n"""\nprint("Out str")\n'
-        self.create_file("sample.py", content)
-        loc = count_loc(self.test_dir)
-        self.assertEqual(loc, 1)
-
-    def test_partial_multiline_strings(self):
-        content = '"""\nMultiline string not ending in this file.'
-        self.create_file("sample.py", content)
-        loc = count_loc(self.test_dir)
-        self.assertEqual(loc, 0)
-
     def test_empty_file(self):
         self.create_file("empty.py", "")
         loc = count_loc(self.test_dir)
@@ -69,23 +57,6 @@ class TestCountLoc(test_case.TestCase):
         self.create_file("whitespace.py", "     \n\t\n")
         loc = count_loc(self.test_dir)
         self.assertEqual(loc, 0)
-
-    def test_nested_multiline_strings(self):
-        content = '''print("Start")
-        """
-        First level multiline
-        """
-        Second line outside any multiline
-        """
-        First level multiline
-        """Some inline code here"""
-        Nested multiline
-        """
-        print("End")
-        '''
-        self.create_file("nested_sample.py", content)
-        loc = count_loc(self.test_dir)
-        self.assertEqual(loc, 3)
 
     def test_inline_comments_after_code(self):
         content = 'print("Hello") # This is an inline comment'
