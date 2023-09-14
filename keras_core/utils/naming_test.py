@@ -87,3 +87,27 @@ class NamingUtilsTest(test_case.TestCase):
         name = "UPPERCASE"
         snake_case_name = naming.to_snake_case(name)
         self.assertEqual(snake_case_name, "uppercase")
+
+    def test_get_object_name_for_keras_objects(self):
+        class MockKerasObject:
+            name = "mock_object"
+
+        obj = MockKerasObject()
+        result = naming.get_object_name(obj)
+        self.assertEqual(
+            result, "mock_object", f"Expected 'mock_object' but got {result}"
+        )
+
+    # Test for function objects that have a `__name__` attribute.
+    def test_get_object_name_for_functions(self):
+        def mock_function():
+            pass
+
+        result = naming.get_object_name(mock_function)
+        # Assumes to_snake_case works correctly.
+        expected_name = naming.to_snake_case(mock_function.__name__)
+        self.assertEqual(
+            result,
+            expected_name,
+            f"Expected '{expected_name}' but got {result}",
+        )
