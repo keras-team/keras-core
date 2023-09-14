@@ -1,4 +1,6 @@
 import os
+import sys
+from io import StringIO
 
 from keras_core.testing import test_case
 from keras_core.utils.code_stats import count_loc
@@ -99,3 +101,35 @@ class TestCountLoc(test_case.TestCase):
         self.create_file(os.path.join("subdir", "sample2.py"), content2)
         loc = count_loc(self.test_dir)
         self.assertEqual(loc, 2)  # Both files should be counted
+
+    def test_normal_directory_name(self):
+        content = 'print("Hello from a regular directory")'
+        os.makedirs(os.path.join(self.test_dir, "some_test_dir"))
+        self.create_file(os.path.join("some_test_dir", "sample.py"), content)
+        loc = count_loc(self.test_dir)
+        self.assertEqual(loc, 1)  # Should count normally
+
+    def test_exclude_directory_name(self):
+        content = 'print("Hello from an excluded directory")'
+        os.makedirs(os.path.join(self.test_dir, "dir_test"))
+        self.create_file(os.path.join("dir_test", "sample.py"), content)
+        loc = count_loc(self.test_dir)
+        self.assertEqual(loc, 0)
+        # Shouldn't count the file in dir_test due to the exclusion pattern
+
+    def test_verbose_output(self):
+        content = 'print("Hello")'
+        self.create_file("sample.py", content)
+        original_stdout = sys.stdout
+        sys.stdout = StringIO()
+        count_loc(self.test_dir, verbose=1)
+        output = sys.stdout.getvalue()
+        sys.stdout = original_stdout
+        self.assertIn("Count LoCs in", output)
+
+    def test_multiline_string_same_line(self):
+        content = '''"""This is a multiline string ending on the same line""" 
+        print("Outside string")'''
+        self.create_file("same_line_multiline.py", content)
+        loc = count_loc(self.test_dir)
+        self.assertEqual(loc, 1)  # Only the print statement should count
