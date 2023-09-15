@@ -3,16 +3,16 @@ import json
 import os
 import warnings
 
-
 from absl import logging
+
 from keras_core import backend
 from keras_core import utils
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
+from keras_core.legacy.saving import legacy_h5_format
 from keras_core.models.variable_mapping import map_trackable_variables
 from keras_core.saving import saving_api
 from keras_core.saving import saving_lib
-from keras_core.legacy.saving import legacy_h5_format
 from keras_core.trainers import trainer as base_trainer
 from keras_core.utils import io_utils
 from keras_core.utils import summary_utils
@@ -319,15 +319,15 @@ class Model(Trainer, Layer):
         if save_format:
             if save_format in ["tf"]:
                 raise ValueError(
-                    "The`'tf'` saved_model format are no longer supported via the "
-                    "`save_format` option. Please use the new `'keras'` format "
-                    "or the legacy `'h5'` format."
+                    "The`'tf'` saved_model format are no longer supported "
+                    "via the `save_format` option. Please use the new "
+                    "`'keras'` format or the legacy `'h5'` format."
                     f"Received: save_format={save_format}"
                 )
             if save_format not in ["keras", "keras_v3", "h5"]:
                 raise ValueError(
-                    "Unknown `save_format` value. Only the `'keras'` and `'h5'` "
-                    "format are currently supported. "
+                    "Unknown `save_format` value. Only the `'keras'` and "
+                    "`'h5'` format are currently supported. "
                     f"Received: save_format={save_format}"
                 )
         try:
@@ -356,11 +356,10 @@ class Model(Trainer, Layer):
                 "Invalid filepath extension for saving. "
                 "Please add either a `.keras` extension for the native Keras "
                 f"format (recommended) or a `.h5` extension. "
-                "Use `tf.saved_model.save()` if you want to export a SavedModel "
-                "for use with TFLite/TFServing/etc. "
+                "Use `tf.saved_model.save()` if you want to export a "
+                "SavedModel for use with TFLite/TFServing/etc. "
                 f"Received: filepath={filepath}."
             )
-
 
     @traceback_utils.filter_traceback
     def save_weights(self, filepath, overwrite=True):
