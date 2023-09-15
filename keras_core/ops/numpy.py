@@ -751,6 +751,7 @@ class Arccosh(Operation):
         return KerasTensor(x.shape, dtype=x.dtype)
 
 
+@keras_core_export(["keras_core.ops.arccosh", "keras_core.ops.numpy.arccosh"])
 def arccosh(x):
     """Inverse hyperbolic cosine, element-wise.
 
@@ -4162,7 +4163,7 @@ class Reshape(Operation):
         output_shape = operation_utils.compute_reshape_output_shape(
             x.shape, self.new_shape, "new_shape"
         )
-        return KerasTensor(output_shape, dtype=x.dtype)
+        return KerasTensor(output_shape, dtype=x.dtype, sparse=x.sparse)
 
 
 @keras_core_export(["keras_core.ops.reshape", "keras_core.ops.numpy.reshape"])
@@ -4369,6 +4370,8 @@ def sort(x, axis=-1):
 class Split(Operation):
     def __init__(self, indices_or_sections, axis=0):
         super().__init__()
+        if not isinstance(indices_or_sections, int):
+            indices_or_sections = tuple(indices_or_sections)
         self.indices_or_sections = indices_or_sections
         self.axis = axis
 
@@ -4399,7 +4402,7 @@ class Split(Operation):
                 for _ in range(self.indices_or_sections)
             ]
 
-        indices_or_sections = [0] + self.indices_or_sections
+        indices_or_sections = (0, *self.indices_or_sections, x_size_on_axis)
         output_size = np.diff(indices_or_sections)
         outputs = []
         for i in range(len(output_size)):
@@ -5282,18 +5285,18 @@ class Squeeze(Operation):
     def call(self, x):
         return backend.numpy.squeeze(x, axis=self.axis)
 
-    def compute_output_spec(self, x, axis=None):
+    def compute_output_spec(self, x):
         input_shape = list(x.shape)
-        if axis is None:
+        if self.axis is None:
             output_shape = list(filter((1).__ne__, input_shape))
             return KerasTensor(output_shape)
         else:
-            if input_shape[axis] != 1:
+            if input_shape[self.axis] != 1:
                 raise ValueError(
-                    f"Cannot squeeze axis {axis}, because the dimension is not "
-                    "1."
+                    f"Cannot squeeze axis {self.axis}, because the dimension "
+                    "is not 1."
                 )
-            del input_shape[axis]
+            del input_shape[self.axis]
             return KerasTensor(input_shape, dtype=x.dtype)
 
 
@@ -5310,7 +5313,7 @@ def squeeze(x, axis=None):
         length 1 removed.
     """
     if any_symbolic_tensors((x,)):
-        return Squeeze().symbolic_call(x, axis=axis)
+        return Squeeze(axis=axis).symbolic_call(x)
     return backend.numpy.squeeze(x, axis=axis)
 
 
@@ -5325,7 +5328,7 @@ class Transpose(Operation):
     def compute_output_spec(self, x):
         x_shape = x.shape
         if self.axes is None:
-            return KerasTensor(x_shape[::-1])
+            return KerasTensor(x_shape[::-1], dtype=x.dtype, sparse=x.sparse)
 
         if len(self.axes) != len(x_shape):
             raise ValueError(
@@ -5335,7 +5338,7 @@ class Transpose(Operation):
         output_shape = []
         for ax in self.axes:
             output_shape.append(x_shape[ax])
-        return KerasTensor(output_shape, dtype=x.dtype)
+        return KerasTensor(output_shape, dtype=x.dtype, sparse=x.sparse)
 
 
 @keras_core_export(

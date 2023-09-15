@@ -24,8 +24,8 @@ class FunctionalTest(testing.TestCase):
         model.summary()
 
         self.assertEqual(model.name, "basic")
-        self.assertTrue(isinstance(model, Functional))
-        self.assertTrue(isinstance(model, Model))
+        self.assertIsInstance(model, Functional)
+        self.assertIsInstance(model, Model)
 
         # Eager call
         in_val = [np.random.random((2, 3)), np.random.random((2, 3))]
@@ -52,6 +52,16 @@ class FunctionalTest(testing.TestCase):
         self.assertAllClose(out_val, np.ones((2, 3)))
 
     @pytest.mark.requires_trainable_backend
+    def test_mutable_state(self):
+        inputs = Input(shape=(3,), batch_size=2, name="input")
+        x = layers.Dense(5)(inputs)
+        outputs = layers.Dense(5)(x)
+        model = Functional(inputs, outputs)
+        # Allow attaching state to a model that isn't directly part of the DAG.
+        # Most useful for functional subclasses.
+        model.extra_layer = layers.Dense(5)
+
+    @pytest.mark.requires_trainable_backend
     def test_basic_flow_multi_output(self):
         inputs = Input(shape=(3,), batch_size=2, name="input")
         x = layers.Dense(5)(inputs)
@@ -62,14 +72,14 @@ class FunctionalTest(testing.TestCase):
         # Eager call
         in_val = np.random.random((2, 3))
         out_val = model(in_val)
-        self.assertTrue(isinstance(out_val, list))
+        self.assertIsInstance(out_val, list)
         self.assertEqual(len(out_val), 2)
         self.assertEqual(out_val[0].shape, (2, 4))
         self.assertEqual(out_val[1].shape, (2, 5))
 
         # Symbolic call
         out_val = model(Input(shape=(3,), batch_size=2))
-        self.assertTrue(isinstance(out_val, list))
+        self.assertIsInstance(out_val, list)
         self.assertEqual(len(out_val), 2)
         self.assertEqual(out_val[0].shape, (2, 4))
         self.assertEqual(out_val[1].shape, (2, 5))

@@ -3,8 +3,9 @@ import torch
 import torch.nn.functional as tnn
 
 from keras_core.backend import standardize_data_format
+from keras_core.backend import standardize_dtype
 from keras_core.backend.common.backend_utils import (
-    compute_conv_transpose_padding,
+    compute_conv_transpose_padding_args_for_torch,
 )
 from keras_core.backend.config import epsilon
 from keras_core.backend.torch.core import cast
@@ -446,40 +447,32 @@ def conv_transpose(
     strides = standardize_tuple(strides, num_spatial_dims, "strides")
 
     data_format = standardize_data_format(data_format)
-    padding_values = compute_conv_transpose_padding(
-        inputs.shape,
-        kernel.shape,
-        strides,
-        padding,
-        output_padding,
-        data_format,
-        dilation_rate,
+    (
+        torch_padding,
+        torch_output_padding,
+    ) = compute_conv_transpose_padding_args_for_torch(
+        input_shape=inputs.shape,
+        kernel_shape=kernel.shape,
+        strides=strides,
+        padding=padding,
+        output_padding=output_padding,
+        dilation_rate=dilation_rate,
     )
     if data_format == "channels_last":
         inputs = _transpose_spatial_inputs(inputs)
     # Transpose kernel from keras format to torch format.
     kernel = _transpose_conv_kernel(kernel)
     kernel_spatial_shape = kernel.shape[2:]
-    padding_arg = []
-    output_padding_arg = []
     if isinstance(dilation_rate, int):
         dilation_rate = [dilation_rate] * len(kernel_spatial_shape)
-    for i, value in enumerate(padding_values):
-        both_side_padding = value[0]
-        longer_side_padding = value[1] - value[0]
-        padding_arg.append(
-            dilation_rate[i] * (kernel_spatial_shape[i] - 1)
-            - both_side_padding,
-        )
-        output_padding_arg.append(longer_side_padding)
 
     if num_spatial_dims == 1:
         outputs = tnn.conv_transpose1d(
             inputs,
             kernel,
             stride=strides,
-            padding=padding_arg,
-            output_padding=output_padding_arg,
+            padding=torch_padding,
+            output_padding=torch_output_padding,
             dilation=dilation_rate,
         )
     elif num_spatial_dims == 2:
@@ -487,8 +480,8 @@ def conv_transpose(
             inputs,
             kernel,
             stride=strides,
-            padding=padding_arg,
-            output_padding=output_padding_arg,
+            padding=torch_padding,
+            output_padding=torch_output_padding,
             dilation=dilation_rate,
         )
     elif num_spatial_dims == 3:
@@ -496,8 +489,8 @@ def conv_transpose(
             inputs,
             kernel,
             stride=strides,
-            padding=padding_arg,
-            output_padding=output_padding_arg,
+            padding=torch_padding,
+            output_padding=torch_output_padding,
             dilation=dilation_rate,
         )
     else:
@@ -617,3 +610,44 @@ def binary_crossentropy(target, output, from_logits=False):
     else:
         output = torch.clip(output, epsilon(), 1.0 - epsilon())
         return tnn.binary_cross_entropy(output, target, reduction="none")
+
+
+def moments(x, axes, keepdims=False):
+    x = convert_to_tensor(x)
+    # The dynamic range of float16 is too limited for statistics. As a
+    # workaround, we simply perform the operations on float32 and convert back
+    # to float16
+    need_cast = False
+    ori_dtype = standardize_dtype(x.dtype)
+    if ori_dtype == "float16":
+        need_cast = True
+        x = cast(x, "float32")
+
+    mean = torch.mean(x, dim=axes, keepdim=True)
+
+    # The variance is computed using $Var = E[|x|^2] - |E[x]|^2$, It is faster
+    # but less numerically stable.
+    # Note: stop_gradient does not change the gradient to the mean, because that
+    # gradient is zero.
+    variance = torch.mean(
+        torch.square(x), dim=axes, keepdim=True
+    ) - torch.square(mean.detach())
+
+    if not keepdims:
+        mean = torch.squeeze(mean, axes)
+        variance = torch.squeeze(variance, axes)
+    if need_cast:
+        # avoid overflow and underflow when casting from float16 to float32
+        mean = torch.clip(
+            mean,
+            torch.finfo(torch.float16).min,
+            torch.finfo(torch.float16).max,
+        )
+        variance = torch.clip(
+            variance,
+            torch.finfo(torch.float16).min,
+            torch.finfo(torch.float16).max,
+        )
+        mean = cast(mean, ori_dtype)
+        variance = cast(variance, ori_dtype)
+    return mean, variance

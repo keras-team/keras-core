@@ -18,6 +18,7 @@ And some more magic:
 import collections
 import inspect
 import warnings
+from functools import wraps
 
 import tree
 
@@ -206,6 +207,28 @@ class Layer(BackendLayer, Operation):
     ```
     """
 
+    def __new__(cls, *args, **kwargs):
+        # Wrap the user-provided build method in the build_decorator
+        # to add name scope support and serialization support.
+        obj = super().__new__(cls, *args, **kwargs)
+
+        original_build_method = obj.build
+
+        @wraps(original_build_method)
+        def build_wrapper(*args, **kwargs):
+            with backend.name_scope(obj.name, caller=obj):
+                original_build_method(*args, **kwargs)
+            # Record build config.
+            signature = inspect.signature(original_build_method)
+            obj._build_shapes_dict = signature.bind(*args, **kwargs).arguments
+            # Set built, post build actions, and lock state.
+            obj.built = True
+            obj._post_build()
+            obj._lock_state()
+
+        obj.build = build_wrapper
+        return obj
+
     def __init__(
         self,
         *,
@@ -244,6 +267,7 @@ class Layer(BackendLayer, Operation):
         self.dtype_policy = mixed_precision.resolve_policy(dtype)
         self.autocast = autocast
         self._input_spec = None
+        self._called = False
         self.supports_jit = True
 
         self._trainable = trainable
@@ -338,6 +362,19 @@ class Layer(BackendLayer, Operation):
             )
         self.built = True
 
+    def _lock_state(self):
+        """Prevent further state updates, called automatically in `build()`."""
+        if not self._tracker.locked:
+            self._tracker.lock(
+                msg=(
+                    "You cannot add new elements of state "
+                    "(variables or sub-layers) "
+                    "to a layer that is already built. All state "
+                    "must be created in the `__init__()` method or "
+                    "in the `build()` method."
+                )
+            )
+
     def get_build_config(self):
         """Returns a dictionary with the layer's input shape.
 
@@ -376,10 +413,8 @@ class Layer(BackendLayer, Operation):
         if config:
             if "input_shape" in config:
                 self.build(config["input_shape"])
-                self._build_shapes_dict = config
             elif "shapes_dict" in config:
                 self.build(**config["shapes_dict"])
-                self._build_shapes_dict = config["shapes_dict"]
             self.built = True
 
     def add_variable(
@@ -436,7 +471,6 @@ class Layer(BackendLayer, Operation):
             name: String name of the variable. Useful
                 for debugging purposes.
         """
-        # TODO: handle layout
         self._check_super_called()
         initializer = initializers.get(initializer)
         with backend.name_scope(self.name, caller=self):
@@ -626,6 +660,7 @@ class Layer(BackendLayer, Operation):
     @traceback_utils.filter_traceback
     def __call__(self, *args, **kwargs):
         self._check_super_called()
+        self._called = True
 
         #####################################
         # 1. Convert any array arguments to tensors of correct dtype.
@@ -683,7 +718,7 @@ class Layer(BackendLayer, Operation):
         self._assert_input_compatibility(call_spec.first_arg)
 
         ################
-        # 4. Call build.
+        # 4. Call build
         with backend.name_scope(self.name, caller=self):
             self._maybe_build(call_spec)
 
@@ -740,10 +775,24 @@ class Layer(BackendLayer, Operation):
         # 7. Call the layer.
         try:
             with backend.name_scope(self.name, caller=self):
-                if self.autocast and self.compute_dtype != self.variable_dtype:
-                    # For mixed precision, we automatically cast layer variables
-                    # (float ones only) to the compute dtype upon access.
-                    with backend.AutocastScope(self.compute_dtype):
+                current_scope = backend.get_autocast_scope()
+                new_scope = None
+                if current_scope is not None:
+                    # Clear or update the current scope if necessary.
+                    if not self.autocast:
+                        new_scope = backend.AutocastScope(None)
+                    elif not backend.is_float_dtype(self.compute_dtype):
+                        # Some preprocessing layers might have a non-float
+                        # dtype, we should not autocast in this case.
+                        new_scope = backend.AutocastScope(None)
+                    elif current_scope.dtype != self.compute_dtype:
+                        new_scope = backend.AutocastScope(self.compute_dtype)
+                elif self.compute_dtype != self.variable_dtype:
+                    # Enter a new scope if our dtypes are "mixed".
+                    new_scope = backend.AutocastScope(self.compute_dtype)
+
+                if new_scope is not None:
+                    with new_scope:
                         outputs = super().__call__(*args, **kwargs)
                 else:
                     outputs = super().__call__(*args, **kwargs)
@@ -1081,66 +1130,63 @@ class Layer(BackendLayer, Operation):
         return summary_utils.count_params(self.weights)
 
     def _maybe_build(self, call_spec):
-        if not self.built:
-            shapes_dict = get_shapes_dict(call_spec)
-            self._build_shapes_dict = shapes_dict
+        if self.built:
+            return
 
-            if not utils.is_default(self.build):
-                shapes_dict = update_shapes_dict_for_target_fn(
-                    self.build,
-                    shapes_dict=shapes_dict,
-                    call_spec=call_spec,
-                    class_name=self.__class__.__name__,
-                )
-                self.build(**shapes_dict)
-            elif might_have_unbuilt_state(self):
-                if len(shapes_dict) == 1:
-                    # Single arg: pass it positionally
-                    success = self._build_by_run_for_single_pos_arg(
-                        tuple(shapes_dict.values())[0]
-                    )
-                else:
-                    success = self._build_by_run_for_kwargs(shapes_dict)
-                if not success:
-                    if call_spec.eager:
-                        # Will let the actual eager call do state-building
-                        return
-                    raise ValueError(
-                        f"Layer '{self.name}' looks like it has "
-                        "unbuilt state, but Keras is not able to "
-                        "trace the layer `call()` in order to "
-                        "build it automatically. Possible causes:\n"
-                        "1. The `call()` method of your layer may be "
-                        "crashing. Try to `__call__()` the layer "
-                        "eagerly on some test input "
-                        "first to see if it works. "
-                        "E.g. `x = np.random.random((3, 4)); "
-                        "y = layer(x)`\n"
-                        "2. If the `call()` method is correct, "
-                        "then you may need to implement "
-                        "the `def build(self, input_shape)` method on your "
-                        "layer. It should create all variables used by the "
-                        "layer (e.g. by calling `layer.build()` on all its "
-                        "children layers)."
-                    )
-            self.built = True
+        shapes_dict = get_shapes_dict(call_spec)
+        first_shape = next(iter(shapes_dict.values()), None)
 
+        # If the layer has a build method, call it with our input shapes.
+        if not utils.is_default(self.build):
+            shapes_dict = update_shapes_dict_for_target_fn(
+                self.build,
+                shapes_dict=shapes_dict,
+                call_spec=call_spec,
+                class_name=self.__class__.__name__,
+            )
+            self.build(**shapes_dict)
             # Check input spec again (after build, since self.input_spec
             # may have been updated
             self._assert_input_compatibility(call_spec.first_arg)
-            # Hook used to do post-build actions
-            self._post_build()
-        if not self._tracker.locked:
-            # No state updates past this point.
-            self._tracker.lock(
-                msg=(
-                    "You cannot add new elements of state "
-                    "(variables or sub-layers) "
-                    "to a layer that is already built. All state "
-                    "must be created in the `__init__()` method or "
-                    "in the`build()` method."
+            return
+
+        # Otherwise, attempt to build the layer by calling it on symbolic input.
+        if might_have_unbuilt_state(self):
+            if len(shapes_dict) == 1:
+                success = self._build_by_run_for_single_pos_arg(first_shape)
+            else:
+                success = self._build_by_run_for_kwargs(shapes_dict)
+            if not success:
+                if call_spec.eager:
+                    # Will let the actual eager call do state-building
+                    return
+                raise ValueError(
+                    f"Layer '{self.name}' looks like it has unbuilt state, but "
+                    "Keras is not able to trace the layer `call()` in order to "
+                    "build it automatically. Possible causes:\n"
+                    "1. The `call()` method of your layer may be crashing. Try "
+                    "to `__call__()` the layer eagerly on some test input "
+                    "first to see if it works. "
+                    "E.g. `x = np.random.random((3, 4)); y = layer(x)`\n"
+                    "2. If the `call()` method is correct, then you may need "
+                    "to implement the `def build(self, input_shape)` method on "
+                    "your layer. It should create all variables used by the "
+                    "layer (e.g. by calling `layer.build()` on all its "
+                    "children layers)."
                 )
+
+        self.build(first_shape)
+
+    def _build_by_run(self, *args, **kwargs):
+        call_spec = CallSpec(self._call_signature, args, kwargs)
+        shapes_dict = get_shapes_dict(call_spec)
+        if len(shapes_dict) == 1:
+            success = self._build_by_run_for_single_pos_arg(
+                tuple(shapes_dict.values())[0]
             )
+        else:
+            success = self._build_by_run_for_kwargs(shapes_dict)
+        return success
 
     def _build_by_run_for_single_pos_arg(self, input_shape):
         # Case: all inputs are in the first arg (possibly nested).
@@ -1185,6 +1231,7 @@ class Layer(BackendLayer, Operation):
 
     def __setattr__(self, name, value):
         # Track Variables, Layers, Metrics, SeedGenerators.
+        name, value = self._setattr_hook(name, value)
         if hasattr(self, "_tracker"):
             value = self._tracker.track(value)
         elif name != "_tracker":

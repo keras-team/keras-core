@@ -6,15 +6,21 @@ on:
   pull_request:
   release:
     types: [created]
+
+permissions:
+  contents: read
+
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
+        python-version: [3.9]
         backend: [tensorflow, jax, torch, numpy]
     name: Run tests
     runs-on: ubuntu-latest
     env:
+      PYTHON: ${{ matrix.python-version }}
       KERAS_BACKEND: ${{ matrix.backend }}
     steps:
       - uses: actions/checkout@v3
@@ -25,10 +31,10 @@ jobs:
           filters: |
             applications:
               - 'keras_core/applications/**'
-      - name: Set up Python 3.8
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.8'
+          python-version: ${{ matrix.python-version }}
       - name: Get pip cache dir
         id: pip-cache
         run: |
@@ -46,20 +52,35 @@ jobs:
       - name: Test applications with pytest
         if: ${{ steps.filter.outputs.applications == 'true' }}
         run: |
-          pytest keras_core/applications
+          pytest keras_core/applications --cov=keras_core.applications
+          coverage xml --include='keras_core/applications/*' -o apps-coverage.xml
+      - name: Codecov keras_core.applications
+        if: ${{ steps.filter.outputs.applications == 'true' }}
+        uses: codecov/codecov-action@v3
+        with:
+          env_vars: PYTHON,KERAS_BACKEND
+          flags: keras_core.applications
+          files: apps-coverage.xml
       - name: Test with pytest
         run: |
-          pytest keras_core --ignore keras_core/applications
+          pytest keras_core --ignore keras_core/applications --cov=keras_core
+          coverage xml --omit='keras_core/applications/*' -o core-coverage.xml
+      - name: Codecov keras_core
+        uses: codecov/codecov-action@v3
+        with:
+          env_vars: PYTHON,KERAS_BACKEND
+          flags: keras_core
+          files: core-coverage.xml
 
   format:
     name: Check the code format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.8
+      - name: Set up Python 3.9
         uses: actions/setup-python@v4
         with:
-          python-version: '3.8'
+          python-version: '3.9'
       - name: Get pip cache dir
         id: pip-cache
         run: |

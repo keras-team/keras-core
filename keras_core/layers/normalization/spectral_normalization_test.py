@@ -12,11 +12,10 @@ class SpectralNormalizationTest(testing.TestCase):
         self.run_layer_test(
             layers.SpectralNormalization,
             init_kwargs={"layer": layers.Dense(2)},
-            input_shape=None,
             input_data=np.random.uniform(size=(10, 3, 4)),
             expected_output_shape=(10, 3, 2),
             expected_num_trainable_weights=2,
-            expected_num_non_trainable_weights=2,
+            expected_num_non_trainable_weights=1,
             expected_num_seed_generators=0,
             expected_num_losses=0,
             supports_masking=False,
@@ -28,6 +27,7 @@ class SpectralNormalizationTest(testing.TestCase):
             layers.Conv2D(
                 1, (2, 2), kernel_initializer=initializers.Constant(value=1)
             ),
+            power_iterations=8,
         )
 
         result = sn_wrapper(images, training=False)

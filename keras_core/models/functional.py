@@ -154,13 +154,18 @@ class Functional(Function, Model):
             self.trainable = trainable
 
         self._layers = self.layers
-        self.built = True
+        self.build(None)
         # We will convert directly (to the correct dtype per input).
         self._convert_input_args = False
         self._allow_non_tensor_positional_args = True
         output_layers = [x._keras_history[0] for x in self.outputs]
         self.output_names = [x.name for x in output_layers]
-        self._post_build()
+
+    def _lock_state(self):
+        # Unlike other layers, we allow Functional state to be mutable after
+        # build. E.g. to attach a layer to a model that is not part of the
+        # functional DAG.
+        pass
 
     @property
     def layers(self):

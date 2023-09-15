@@ -9,10 +9,6 @@ class TFLayer(tf.__internal__.tracking.AutoTrackable):
         self._saved_model_inputs_spec = None
         self._saved_model_arg_spec = None
 
-    def _post_build(self):
-        """Can be overriden to perform post-build actions."""
-        pass
-
     @tf.__internal__.tracking.no_automatic_dependency_tracking
     def _set_save_spec(self, inputs, args=None, kwargs=None):
         """Defines the save spec so that serialization can trace layer calls.
@@ -44,16 +40,6 @@ class TFLayer(tf.__internal__.tracking.AutoTrackable):
             [inputs_spec] + list(args_spec),
             kwargs_spec,
         )
-
-    def _get_save_spec(self, dynamic_batch=True, inputs_only=True):
-        if self._saved_model_inputs_spec is None:
-            return None
-
-        spec = tf.nest.map_structure(
-            lambda t: tf_utils.get_tensor_spec(t, dynamic_batch=dynamic_batch),
-            self._saved_model_arg_spec,
-        )
-        return spec[0][0] if inputs_only else spec
 
     def _trackable_children(self, save_type="checkpoint", **kwargs):
         if save_type == "savedmodel":

@@ -1,5 +1,6 @@
 import numpy as np
 
+from keras_core.api_export import keras_core_export
 from keras_core.backend import config
 from keras_core.backend.common import global_state
 from keras_core.backend.common.name_scope import current_path
@@ -390,25 +391,22 @@ ALLOWED_DTYPES = {
 
 PYTHON_DTYPES_MAP = {
     bool: "bool",
-    int: "int",  # TBD by backend
+    int: "int64" if config.backend() == "tensorflow" else "int32",
     float: "float32",
     str: "string",
+    # special case for string value
+    "int": "int64" if config.backend() == "tensorflow" else "int32",
 }
 
 
+@keras_core_export("keras_core.backend.standardize_dtype")
 def standardize_dtype(dtype):
     if dtype is None:
         return config.floatx()
-    if dtype in PYTHON_DTYPES_MAP:
-        dtype = PYTHON_DTYPES_MAP.get(dtype)
-    if dtype == "int":
-        if config.backend() == "tensorflow":
-            dtype = "int64"
-        else:
-            dtype = "int32"
+    dtype = PYTHON_DTYPES_MAP.get(dtype, dtype)
     if hasattr(dtype, "name"):
         dtype = dtype.name
-    elif config.backend() == "torch":
+    elif hasattr(dtype, "__str__") and "torch" in str(dtype):
         dtype = str(dtype).split(".")[-1]
 
     if dtype not in ALLOWED_DTYPES:
@@ -431,6 +429,9 @@ def standardize_shape(shape):
 
     for e in shape:
         if e is None:
+            continue
+        if config.backend() == "jax" and str(e) == "b":
+            # JAX2TF tracing represents `None` dimensions as `b`
             continue
         if not isinstance(e, int):
             raise ValueError(
@@ -455,11 +456,13 @@ def shape_equal(a, b):
     return True
 
 
+@keras_core_export("keras_core.backend.is_float_dtype")
 def is_float_dtype(dtype):
     dtype = standardize_dtype(dtype)
     return dtype.startswith("float") or dtype.startswith("bfloat")
 
 
+@keras_core_export("keras_core.backend.is_int_dtype")
 def is_int_dtype(dtype):
     dtype = standardize_dtype(dtype)
     return dtype.startswith("int") or dtype.startswith("uint")
@@ -477,20 +480,21 @@ class AutocastScope:
     """
 
     def __init__(self, dtype):
-        dtype = standardize_dtype(dtype)
-        if not is_float_dtype(dtype):
-            raise ValueError(
-                "`AutocastScope` can only be used with "
-                "a floating-point target dtype, such as 'float16'. "
-                f"Received: dtype={dtype}"
-            )
+        if dtype is not None:
+            dtype = standardize_dtype(dtype)
+            if not is_float_dtype(dtype):
+                raise ValueError(
+                    "`AutocastScope` can only be used with "
+                    "a floating-point target dtype, such as 'float16'. "
+                    f"Received: dtype={dtype}"
+                )
         self.dtype = dtype
         self.original_scope = None
 
     def maybe_cast(self, value):
         from keras_core import backend
 
-        if is_float_dtype(value.dtype):
+        if self.dtype is not None and is_float_dtype(value.dtype):
             return backend.cast(value, dtype=self.dtype)
         return value
 

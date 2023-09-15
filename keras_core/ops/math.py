@@ -691,11 +691,6 @@ class STFT(Operation):
         self.center = center
 
     def compute_output_spec(self, x):
-        if len(x.shape) not in {1, 2}:
-            raise ValueError(
-                f"Input should have rank 1 (single sequence) or 2 "
-                f"(batched sequences). Received: input shape = {x.shape}"
-            )
         if x.shape[-1] is not None:
             padded = 0 if self.center is False else (self.fft_length // 2) * 2
             num_sequences = (
@@ -763,7 +758,11 @@ def stft(
     """
     if any_symbolic_tensors((x,)):
         return STFT(
-            sequence_length, sequence_stride, fft_length, center, window
+            sequence_length=sequence_length,
+            sequence_stride=sequence_stride,
+            fft_length=fft_length,
+            window=window,
+            center=center,
         ).symbolic_call(x)
     return backend.math.stft(
         x,
@@ -883,7 +882,11 @@ def istft(
     """
     if any_symbolic_tensors(x):
         return ISTFT(
-            sequence_length, sequence_stride, fft_length, length, center, window
+            sequence_length=sequence_length,
+            sequence_stride=sequence_stride,
+            fft_length=fft_length,
+            window=window,
+            center=center,
         ).symbolic_call(x)
     return backend.math.istft(
         x,
