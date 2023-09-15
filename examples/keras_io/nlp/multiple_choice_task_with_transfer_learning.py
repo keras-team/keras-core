@@ -489,10 +489,10 @@ def build_model():
     # Define input layers
     inputs = {
         "token_ids": keras.Input(
-            shape=(4, None), dtype=tf.int32, name="token_ids"
+            shape=(4, None), dtype=t"int32", name="token_ids"
         ),
         "padding_mask": keras.Input(
-            shape=(4, None), dtype=tf.int32, name="padding_mask"
+            shape=(4, None), dtype="int32", name="padding_mask"
         ),
     }
     # Create a DebertaV3Classifier model
