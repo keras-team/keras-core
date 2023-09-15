@@ -411,6 +411,15 @@ class SavingTest(testing.TestCase):
         model = keras_core.saving.load_model(temp_filepath)
         self.assertAllClose(model.predict(ref_input), ref_output, atol=1e-6)
 
+    def test_load_h5_model_api_endpoint(self):
+        temp_filepath = Path(os.path.join(self.get_temp_dir(), "mymodel.h5"))
+        model = _get_basic_functional_model()
+        ref_input = np.random.random((2, 4))
+        ref_output = model.predict(ref_input)
+        model.save(temp_filepath)
+        model = keras_core.saving.load_model(temp_filepath)
+        self.assertAllClose(model.predict(ref_input), ref_output, atol=1e-6)
+
     def test_save_load_weights_only(self):
         temp_filepath = Path(
             os.path.join(self.get_temp_dir(), "mymodel.weights.h5")

@@ -3,6 +3,8 @@ import json
 import os
 import warnings
 
+
+from absl import logging
 from keras_core import backend
 from keras_core import utils
 from keras_core.api_export import keras_core_export
@@ -10,6 +12,7 @@ from keras_core.layers.layer import Layer
 from keras_core.models.variable_mapping import map_trackable_variables
 from keras_core.saving import saving_api
 from keras_core.saving import saving_lib
+from keras_core.legacy.saving import legacy_h5_format
 from keras_core.trainers import trainer as base_trainer
 from keras_core.utils import io_utils
 from keras_core.utils import summary_utils
@@ -263,7 +266,7 @@ class Model(Trainer, Layer):
         )
 
     @traceback_utils.filter_traceback
-    def save(self, filepath, overwrite=True, save_format="keras"):
+    def save(self, filepath, overwrite=True, **kwargs):
         """Saves a model as a `.keras` file.
 
         Args:
@@ -301,22 +304,32 @@ class Model(Trainer, Layer):
 
         Thus models can be reinstantiated in the exact same state.
         """
-        if save_format in ["h5", "tf"]:
+        include_optimizer = kwargs.pop("include_optimizer", True)
+        save_format = kwargs.pop("save_format", None)
+        if kwargs:
             raise ValueError(
-                "`'h5'` and `'t5'` formats are no longer supported via the "
-                "`save_format` option. Please use the new `'keras'` format. "
-                f"Received: save_format={save_format}"
+                "The following argument(s) are not supported: "
+                f"{list(kwargs.keys())}"
             )
-        if save_format not in ["keras", "keras_v3"]:
+        if not str(filepath).endswith((".keras", ".h5", ".hdf5")):
             raise ValueError(
-                "Unknown `save_format` value. Only the `'keras'` format is "
-                f"currently supported. Received: save_format={save_format}"
-            )
-        if not str(filepath).endswith(".keras"):
-            raise ValueError(
-                "The filename must end in `.keras`. "
+                "The filename must end in `.keras` or `.h5`. "
                 f"Received: filepath={filepath}"
             )
+        if save_format:
+            if save_format in ["tf"]:
+                raise ValueError(
+                    "The`'tf'` saved_model format are no longer supported via the "
+                    "`save_format` option. Please use the new `'keras'` format "
+                    "or the legacy `'h5'` format."
+                    f"Received: save_format={save_format}"
+                )
+            if save_format not in ["keras", "keras_v3", "h5"]:
+                raise ValueError(
+                    "Unknown `save_format` value. Only the `'keras'` and `'h5'` "
+                    "format are currently supported. "
+                    f"Received: save_format={save_format}"
+                )
         try:
             exists = os.path.exists(filepath)
         except TypeError:
@@ -325,7 +338,29 @@ class Model(Trainer, Layer):
             proceed = io_utils.ask_to_proceed_with_overwrite(filepath)
             if not proceed:
                 return
-        saving_lib.save_model(self, filepath)
+        if str(filepath).endswith(".keras"):
+            saving_lib.save_model(self, filepath)
+        elif str(filepath).endswith((".h5", ".hdf5")):
+            # Deprecation warnings
+            logging.warning(
+                "You are saving your model as an HDF5 file via `model.save()`. "
+                "This file format is considered legacy. "
+                "We recommend using instead the native Keras format, "
+                "e.g. `model.save('my_model.keras')`."
+            )
+            legacy_h5_format.save_model_to_hdf5(
+                self, filepath, overwrite, include_optimizer
+            )
+        else:
+            raise ValueError(
+                "Invalid filepath extension for saving. "
+                "Please add either a `.keras` extension for the native Keras "
+                f"format (recommended) or a `.h5` extension. "
+                "Use `tf.saved_model.save()` if you want to export a SavedModel "
+                "for use with TFLite/TFServing/etc. "
+                f"Received: filepath={filepath}."
+            )
+
 
     @traceback_utils.filter_traceback
     def save_weights(self, filepath, overwrite=True):
