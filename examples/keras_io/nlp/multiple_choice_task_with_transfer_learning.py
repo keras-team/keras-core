@@ -26,14 +26,10 @@ unlike question answering. We will use SWAG dataset to demonstrate this example.
 """
 
 import os
-
 os.environ["KERAS_BACKEND"] = "jax"  # or "tensorflow" or "torch"
 
 import keras_nlp
 import keras_core as keras
-import keras_core.backend as K
-
-import jax
 import tensorflow as tf
 
 import numpy as np
