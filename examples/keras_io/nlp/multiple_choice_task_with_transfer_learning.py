@@ -217,14 +217,14 @@ def preprocess_fn(text, label=None):
 ## Augmentation
 
 In this notebook, we'll experiment with an interesting augmentation technique,
-`OptionShuffle`. Since we're providing the model with one option at a time, we can
+`option_shuffle`. Since we're providing the model with one option at a time, we can
 introduce a shuffle to the order of options. For instance, options `[A, C, E, D, B]`
 would be rearranged as `[D, B, A, E, C]`. This practice will help the model focus on the
 content of the options themselves, rather than being influenced by their positions.
 """
 
 
-def OptionShuffle(options, labels, prob=0.50, seed=None):
+def option_shuffle(options, labels, prob=0.50, seed=None):
     if tf.random.uniform([]) > prob:  # Shuffle probability check
         return options, labels
     # Shuffle indices of options and labels in the same order
@@ -243,7 +243,7 @@ approach.
 
 
 def augment_fn(text, label=None):
-    text, label = OptionShuffle(text, label, prob=0.5)  # Apply OptionShuffle
+    text, label = option_shuffle(text, label, prob=0.5  # Shuffle the options
     return (text, label) if label is not None else text
 
 
