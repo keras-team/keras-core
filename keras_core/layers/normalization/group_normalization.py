@@ -178,12 +178,12 @@ class GroupNormalization(Layer):
 
         # Compute the batch normalization.
         inv = ops.rsqrt(variance + self.epsilon)
-        res = -mean * inv
-
         if self.scale:
             gamma = ops.reshape(self.gamma, broadcast_shape)
             gamma = ops.cast(gamma, reshaped_inputs.dtype)
             inv = inv * gamma
+
+        res = -mean * inv
         if self.center:
             beta = ops.reshape(self.beta, broadcast_shape)
             beta = ops.cast(beta, reshaped_inputs.dtype)

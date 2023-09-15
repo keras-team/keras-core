@@ -228,12 +228,12 @@ class BatchNormalization(Layer):
             variance = moving_variance
 
         inv = ops.rsqrt(variance + self.epsilon)
-        res = -mean * inv
-
         if self.scale:
             gamma = ops.reshape(self.gamma, broadcast_shape)
             gamma = ops.cast(gamma, inputs.dtype)
             inv = inv * gamma
+
+        res = -mean * inv
         if self.center:
             beta = ops.reshape(self.beta, broadcast_shape)
             beta = ops.cast(beta, inputs.dtype)
