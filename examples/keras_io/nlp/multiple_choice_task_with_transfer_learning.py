@@ -72,36 +72,6 @@ Sets value for random seed to produce similar result in each run.
 
 keras.utils.set_random_seed(CFG.seed)
 
-"""
-## Accelerator
-Following codes automatically detects hardware (TPU or GPU).
-"""
-
-
-def init_device():
-    gpus = tf.config.list_logical_devices("GPU")
-    ngpu = len(gpus)
-    # Check number of GPUs
-    if ngpu:
-        # Set GPU strategy
-        strategy = tf.distribute.MirroredStrategy(
-            gpus
-        )  # single-GPU or multi-GPU
-        # Print GPU details
-        print("> Running on GPU", end=" | ")
-        print("Num of GPUs: ", ngpu)
-        device = "GPU"
-    else:
-        # If no GPUs are available, use CPU
-        print("> Running on CPU")
-        strategy = tf.distribute.get_strategy()
-        device = "CPU"
-    return strategy
-
-
-# Initialize accelerator
-strategy = init_device()
-CFG.replicas = strategy.num_replicas_in_sync
 
 """
 ## Meta Data
@@ -375,7 +345,7 @@ def get_lr_callback(batch_size=8, mode="cos", epochs=10, plot=False):
     )  # Create lr callback
 
 
-_ = get_lr_callback(CFG.batch_size * CFG.replicas, plot=True)
+_ = get_lr_callback(CFG.batch_size, plot=True)
 
 """
 ## Callbacks
@@ -387,7 +357,7 @@ The function below will gather all the training callbacks, such as `lr_scheduler
 
 def get_callbacks():
     callbacks = []
-    lr_cb = get_lr_callback(CFG.batch_size * CFG.replicas)  # Get lr callback
+    lr_cb = get_lr_callback(CFG.batch_size)  # Get lr callback
     ckpt_cb = keras.callbacks.ModelCheckpoint(
         f"best.keras",
         monitor="val_accuracy",
@@ -530,8 +500,7 @@ def build_model():
 
 
 # Build the Build
-with strategy.scope():
-    model = build_model()
+model = build_model()
 
 """
 Let's checkout the model summary to have a better insight on the model.
@@ -555,7 +524,7 @@ history = model.fit(
     epochs=CFG.epochs,
     validation_data=valid_ds,
     callbacks=callbacks,
-    steps_per_epoch=int(len(train_df) / CFG.batch_size / CFG.replicas),
+    steps_per_epoch=int(len(train_df) / CFG.batch_size),
     verbose=1,
 )
 
@@ -566,7 +535,7 @@ history = model.fit(
 # Make predictions using the trained model on last validation data
 predictions = model.predict(
     valid_ds,
-    batch_size=CFG.batch_size * CFG.replicas,  # max batch size = valid size
+    batch_size=CFG.batch_size,  # max batch size = valid size
     verbose=1,
 )
 
