@@ -3,8 +3,6 @@ import json
 import os
 import warnings
 
-from absl import logging
-
 from keras_core import backend
 from keras_core import utils
 from keras_core.api_export import keras_core_export
@@ -311,23 +309,21 @@ class Model(Trainer, Layer):
                 "The following argument(s) are not supported: "
                 f"{list(kwargs.keys())}"
             )
-        if not str(filepath).endswith((".keras", ".h5", ".hdf5")):
-            raise ValueError(
-                "The filename must end in `.keras` or `.h5`. "
-                f"Received: filepath={filepath}"
-            )
         if save_format:
-            if save_format in ["tf"]:
-                raise ValueError(
-                    "The`'tf'` saved_model format are no longer supported "
-                    "via the `save_format` option. Please use the new "
-                    "`'keras'` format or the legacy `'h5'` format."
+            if str(filepath).endswith((".h5", ".hdf5")) or str(
+                filepath
+            ).endswith(".keras"):
+                warnings.warn(
+                    "The `save_format` argument is deprecated in Keras Core. "
+                    "We recommend removing this argument as it can be inferred "
+                    "from the file path. "
                     f"Received: save_format={save_format}"
                 )
-            if save_format not in ["keras", "keras_v3", "h5"]:
+            else:
                 raise ValueError(
-                    "Unknown `save_format` value. Only the `'keras'` and "
-                    "`'h5'` format are currently supported. "
+                    "The `save_format` argument is deprecated in Keras Core. "
+                    "Please remove this argument and pass a file path with "
+                    "either `.keras` or `.h5` extension."
                     f"Received: save_format={save_format}"
                 )
         try:
@@ -342,7 +338,7 @@ class Model(Trainer, Layer):
             saving_lib.save_model(self, filepath)
         elif str(filepath).endswith((".h5", ".hdf5")):
             # Deprecation warnings
-            logging.warning(
+            warnings.warn(
                 "You are saving your model as an HDF5 file via `model.save()`. "
                 "This file format is considered legacy. "
                 "We recommend using instead the native Keras format, "
