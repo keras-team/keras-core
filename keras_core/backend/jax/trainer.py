@@ -239,7 +239,6 @@ class JAXTrainer(base_trainer.Trainer):
             train_step = one_train_step
 
         if not self.run_eagerly and self.jit_compile:
-
             # Note that we mark the state and data to be donated to jax,
             # so that jax will reuse the memory buffer for outputs.
             # This will reduce the memory usage of the training function by
@@ -272,7 +271,6 @@ class JAXTrainer(base_trainer.Trainer):
             test_step = one_test_step
 
         if not self.run_eagerly and self.jit_compile:
-
             # Note that we mark the state and data to be donated to jax,
             # so that jax will reuse the memory buffer for outputs.
             # This will reduce the memory usage of the training function by
@@ -588,9 +586,11 @@ class JAXTrainer(base_trainer.Trainer):
             )
             data = self._distribute_data(data)
             logs, state = self.test_function(state, data)
-            (trainable_variables, 
-             non_trainable_variables, 
-             metrics_variables) = state
+            (
+                trainable_variables,
+                non_trainable_variables,
+                metrics_variables,
+            ) = state
 
             # Setting _jax_state enables callbacks to force a state sync
             # if they need to.
