@@ -1,7 +1,6 @@
 from keras_core import backend
 from keras_core import ops
 
-
 DTYPE_TO_SIZE = {
     **{f"float{i}": i for i in (16, 32, 64)},
     **{f"int{i}": i for i in (8, 16, 32, 64)},
@@ -9,6 +8,7 @@ DTYPE_TO_SIZE = {
     "bfloat16": 16,
     "bool": 1,
 }
+
 
 def dtype_size(dtype):
     size = DTYPE_TO_SIZE.get(dtype, None)
