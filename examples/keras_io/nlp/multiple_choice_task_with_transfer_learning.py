@@ -191,6 +191,10 @@ In this notebook, we'll experiment with an interesting augmentation technique,
 introduce a shuffle to the order of options. For instance, options `[A, C, E, D, B]`
 would be rearranged as `[D, B, A, E, C]`. This practice will help the model focus on the
 content of the options themselves, rather than being influenced by their positions.
+
+> It is noteworthy that, even though `option_shuffle` function is written in pure
+tensorflow, it can be used with any backend (e.g. JAX, PyTorch) as it is only used
+in `tf.data.Dataset` pipeline which is compatible with Keras Core routines.
 """
 
 
