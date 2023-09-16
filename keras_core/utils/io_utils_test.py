@@ -22,11 +22,9 @@ class TestIoUtils(test_case.TestCase):
         with self.assertRaises(ValueError):
             io_utils.set_logging_verbosity("INVALID")
 
-    # TODO used to work but now it doesn't afte
-    # commit 77629fee45aeb7deb4c64b6aeec8975ba08e1304
-    # @patch("builtins.input", side_effect=["y"])
-    # def test_ask_to_proceed_with_overwrite_yes(self, _):
-    #     self.assertTrue(io_utils.ask_to_proceed_with_overwrite("test_path"))
+    @patch("builtins.input", side_effect=["y"])
+    def test_ask_to_proceed_with_overwrite_yes(self, _):
+        self.assertTrue(io_utils.ask_to_proceed_with_overwrite("test_path"))
 
     @patch("builtins.input", side_effect=["n"])
     def test_ask_to_proceed_with_overwrite_no(self, _):
@@ -50,11 +48,9 @@ class TestIoUtils(test_case.TestCase):
         io_utils.print_msg("Hello")
         mock_logging.assert_called_once_with("Hello")
 
-    # TODO used to work but now it doesn't afte
-    # commit 77629fee45aeb7deb4c64b6aeec8975ba08e1304
-    # @patch("builtins.input", side_effect=["invalid", "invalid", "y"])
-    # def test_ask_to_proceed_with_overwrite_invalid_then_yes(self, _):
-    #     self.assertTrue(io_utils.ask_to_proceed_with_overwrite("test_path"))
+    @patch("builtins.input", side_effect=["invalid", "invalid", "y"])
+    def test_ask_to_proceed_with_overwrite_invalid_then_yes(self, _):
+        self.assertTrue(io_utils.ask_to_proceed_with_overwrite("test_path"))
 
     @patch("builtins.input", side_effect=["invalid", "n"])
     def test_ask_to_proceed_with_overwrite_invalid_then_no(self, _):
