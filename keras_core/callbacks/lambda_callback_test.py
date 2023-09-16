@@ -96,9 +96,10 @@ class LambdaCallbackTest(testing.TestCase):
             x, y, batch_size=BATCH_SIZE, epochs=1, verbose=0
         )  # Train briefly for evaluation to work.
 
-        custom_on_test_begin = lambda logs: logging.warning(
-            "custom_on_test_begin_executed"
-        )
+        # Replacing lambda with a proper function definition
+        def custom_on_test_begin(logs):
+            logging.warning("custom_on_test_begin_executed")
+
         lambda_log_callback = callbacks.LambdaCallback(
             on_test_begin=custom_on_test_begin
         )
