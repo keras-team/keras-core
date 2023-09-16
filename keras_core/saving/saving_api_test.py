@@ -6,6 +6,7 @@ import numpy as np
 from keras_core import layers
 from keras_core.models import Sequential
 from keras_core.saving import saving_api
+from keras_core.utils import io_utils
 
 
 class SaveModelTests(unittest.TestCase):
@@ -34,7 +35,7 @@ class SaveModelTests(unittest.TestCase):
 
     def test_overwrite_prompt(self):
         original_mtime = os.path.getmtime(self.filepath)
-        saving_api.io_utils.ask_to_proceed_with_overwrite = lambda x: False
+        io_utils.ask_to_proceed_with_overwrite = lambda x: False
         saving_api.save_model(self.model, self.filepath, overwrite=False)
         new_mtime = os.path.getmtime(self.filepath)
         self.assertEqual(original_mtime, new_mtime)
