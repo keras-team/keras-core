@@ -3,7 +3,6 @@ import numpy as np
 from keras_core.backend import standardize_dtype
 from keras_core.backend.jax.math import fft as jax_fft
 from keras_core.backend.jax.math import fft2 as jax_fft2
-from keras_core.backend.jax.math import rsqrt as jax_rsqrt
 from keras_core.backend.numpy.core import convert_to_tensor
 from keras_core.utils.module_utils import scipy
 
@@ -302,4 +301,4 @@ def istft(
 
 
 def rsqrt(x):
-    return np.array(jax_rsqrt(x))
+    return 1.0 / np.sqrt(x)
