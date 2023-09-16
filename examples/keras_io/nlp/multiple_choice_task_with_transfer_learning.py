@@ -496,7 +496,6 @@ def build_model():
         loss=keras.losses.CategoricalCrossentropy(label_smoothing=0.02),
         metrics=[
             keras.metrics.CategoricalAccuracy(name="accuracy"),
-            keras.metrics.TopKCategoricalAccuracy(k=3, name="accuracy@3"),
         ],
         jit_compile=True,
     )
