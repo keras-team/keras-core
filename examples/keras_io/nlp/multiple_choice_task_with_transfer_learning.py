@@ -21,8 +21,8 @@ unlike question answering. We will use SWAG dataset to demonstrate this example.
 """
 
 """shell
-!pip install -q keras-core --upgrade
-!pip install -q keras-nlp --upgrade
+pip install -q keras-core --upgrade
+pip install -q keras-nlp --upgrade
 """
 
 import os
@@ -43,12 +43,12 @@ In this example we'll use **SWAG** dataset for multiplechoice task.
 """
 
 """shell
-!wget "https://github.com/rowanz/swagaf/archive/refs/heads/master.zip" -O swag.zip
-!unzip -q /content/swag.zip
+wget "https://github.com/rowanz/swagaf/archive/refs/heads/master.zip" -O swag.zip
+unzip -q /content/swag.zip
 """
 
 """shell
-!ls /content/swagaf-master/data
+ls /content/swagaf-master/data
 """
 
 """
