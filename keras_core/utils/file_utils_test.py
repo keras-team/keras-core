@@ -214,6 +214,33 @@ class ExtractArchiveTest(test_case.TestCase):
             self.assertEqual(f.read(), self.file_content)
 
 
+class TestHashFile(test_case.TestCase):
+    def setUp(self):
+        self.test_content = b"Hello, World!"
+        self.temp_file = tempfile.NamedTemporaryFile(delete=False)
+        self.temp_file.write(self.test_content)
+        self.temp_file.close()
+
+    def tearDown(self):
+        os.remove(self.temp_file.name)
+
+    def test_hash_file_sha256(self):
+        expected_sha256 = (
+            "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f"
+        )
+        calculated_sha256 = file_utils.hash_file(
+            self.temp_file.name, algorithm="sha256"
+        )
+        self.assertEqual(expected_sha256, calculated_sha256)
+
+    def test_hash_file_md5(self):
+        expected_md5 = "65a8e27d8879283831b664bd8b7f0ad4"
+        calculated_md5 = file_utils.hash_file(
+            self.temp_file.name, algorithm="md5"
+        )
+        self.assertEqual(expected_md5, calculated_md5)
+
+
 class TestGetFile(test_case.TestCase):
     def setUp(self):
         self.temp_dir = self.get_temp_dir()
