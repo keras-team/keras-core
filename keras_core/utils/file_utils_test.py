@@ -1,5 +1,6 @@
 import os
 import tarfile
+import unittest
 import urllib
 import zipfile
 
@@ -266,3 +267,25 @@ class TestGetFile(test_case.TestCase):
         file_utils.makedirs(complex_dir)
         file_utils.rmtree(complex_dir)
         self.assertFalse(os.path.exists(complex_dir))
+
+
+class TestFilterSafePaths(unittest.TestCase):
+    def setUp(self):
+        # Assuming the temp directory is the base dir for our tests
+        self.base_dir = os.path.join(os.getcwd(), "temp_dir")
+        os.makedirs(self.base_dir, exist_ok=True)
+        self.tar_path = os.path.join(self.base_dir, "test.tar")
+
+    def tearDown(self):
+        os.remove(self.tar_path)
+        os.rmdir(self.base_dir)
+
+    def test_member_within_base_dir(self):
+        with tarfile.open(self.tar_path, "w") as tar:
+            tar.add(
+                __file__, arcname="safe_path.txt"
+            )  # Adds this test file to the tar archive
+        with tarfile.open(self.tar_path, "r") as tar:
+            members = list(file_utils.filter_safe_paths(tar.getmembers()))
+            self.assertEqual(len(members), 1)
+            self.assertEqual(members[0].name, "safe_path.txt")
