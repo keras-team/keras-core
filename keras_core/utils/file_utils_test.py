@@ -1,13 +1,10 @@
 import os
 import tarfile
 import urllib
-
+import zipfile
 
 from keras_core.testing import test_case
 from keras_core.utils import file_utils
-
-
-import zipfile
 
 
 class TestGetFile(test_case.TestCase):
