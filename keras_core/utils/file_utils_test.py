@@ -3,7 +3,6 @@ import pathlib
 import shutil
 import tarfile
 import tempfile
-import unittest
 import urllib
 import zipfile
 
@@ -121,7 +120,6 @@ class IsLinkInDirTest(test_case.TestCase):
         self.assertTrue(file_utils.is_link_in_dir(info, base_dir))
 
     def tearDown(self):
-        # This method will be called after each test, ensuring we leave no leftovers.
         self._cleanup("test_path/to/base_dir")
         self._cleanup("./base_dir")
 
