@@ -241,6 +241,51 @@ class TestHashFile(test_case.TestCase):
         self.assertEqual(expected_md5, calculated_md5)
 
 
+class TestValidateFile(test_case.TestCase):
+    def setUp(self):
+        self.tmp_file = tempfile.NamedTemporaryFile(delete=False)
+        self.tmp_file.write(b"Hello, World!")
+        self.tmp_file.close()
+
+        self.sha256_hash = (
+            "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f"
+        )
+        self.md5_hash = "65a8e27d8879283831b664bd8b7f0ad4"
+
+    def test_validate_file_sha256(self):
+        self.assertTrue(
+            file_utils.validate_file(
+                self.tmp_file.name, self.sha256_hash, "sha256"
+            )
+        )
+
+    def test_validate_file_md5(self):
+        self.assertTrue(
+            file_utils.validate_file(self.tmp_file.name, self.md5_hash, "md5")
+        )
+
+    def test_validate_file_auto_sha256(self):
+        self.assertTrue(
+            file_utils.validate_file(
+                self.tmp_file.name, self.sha256_hash, "auto"
+            )
+        )
+
+    def test_validate_file_auto_md5(self):
+        self.assertTrue(
+            file_utils.validate_file(self.tmp_file.name, self.md5_hash, "auto")
+        )
+
+    def test_validate_file_wrong_hash(self):
+        wrong_hash = "deadbeef" * 8  #
+        self.assertFalse(
+            file_utils.validate_file(self.tmp_file.name, wrong_hash, "sha256")
+        )
+
+    def tearDown(self):
+        os.remove(self.tmp_file.name)
+
+
 class TestGetFile(test_case.TestCase):
     def setUp(self):
         self.temp_dir = self.get_temp_dir()
