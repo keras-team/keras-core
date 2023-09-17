@@ -1,10 +1,13 @@
 import os
 import tarfile
 import urllib
-import zipfile
+
 
 from keras_core.testing import test_case
 from keras_core.utils import file_utils
+
+
+import zipfile
 
 
 class TestGetFile(test_case.TestCase):
@@ -167,3 +170,131 @@ class TestGetFile(test_case.TestCase):
             ValueError, "Incomplete or corrupted file.*"
         ):
             _ = file_utils.get_file("test.txt", origin, file_hash=hashval)
+
+    def test_is_remote_path(self):
+        self.assertTrue(file_utils.is_remote_path("gs://bucket/path"))
+        self.assertTrue(file_utils.is_remote_path("http://example.com/path"))
+        self.assertFalse(file_utils.is_remote_path("/local/path"))
+        self.assertFalse(file_utils.is_remote_path("./relative/path"))
+
+    def test_exists(self):
+        temp_dir = self.get_temp_dir()
+        file_path = os.path.join(temp_dir, "test_exists.txt")
+
+        with open(file_path, "w") as f:
+            f.write("test")
+
+        self.assertTrue(file_utils.exists(file_path))
+        self.assertFalse(
+            file_utils.exists(os.path.join(temp_dir, "non_existent.txt"))
+        )
+
+    def test_file_open_read(self):
+        temp_dir = self.get_temp_dir()
+        file_path = os.path.join(temp_dir, "test_file.txt")
+        content = "test content"
+
+        with open(file_path, "w") as f:
+            f.write(content)
+
+        with file_utils.File(file_path, "r") as f:
+            self.assertEqual(f.read(), content)
+
+    def test_file_open_write(self):
+        temp_dir = self.get_temp_dir()
+        file_path = os.path.join(temp_dir, "test_file_write.txt")
+        content = "test write content"
+
+        with file_utils.File(file_path, "w") as f:
+            f.write(content)
+
+        with open(file_path, "r") as f:
+            self.assertEqual(f.read(), content)
+
+    def test_isdir(self):
+        temp_dir = self.get_temp_dir()
+        self.assertTrue(file_utils.isdir(temp_dir))
+
+        file_path = os.path.join(temp_dir, "test_isdir.txt")
+        with open(file_path, "w") as f:
+            f.write("test")
+        self.assertFalse(file_utils.isdir(file_path))
+
+    def test_join_simple(self):
+        self.assertEqual(file_utils.join("/path", "to", "dir"), "/path/to/dir")
+
+    def test_join_single_directory(self):
+        self.assertEqual(file_utils.join("/path"), "/path")
+
+    def setUp(self):
+        self.temp_dir = self.get_temp_dir()
+        self.file_path = os.path.join(self.temp_dir, "sample_file.txt")
+        with open(self.file_path, "w") as f:
+            f.write("Sample content")
+
+    def test_is_remote_path(self):
+        self.assertTrue(file_utils.is_remote_path("gcs://bucket/path"))
+        self.assertFalse(file_utils.is_remote_path("/local/path"))
+
+    def test_exists(self):
+        self.assertTrue(file_utils.exists(self.file_path))
+        self.assertFalse(file_utils.exists("/path/that/does/not/exist"))
+
+    def test_isdir(self):
+        self.assertTrue(file_utils.isdir(self.temp_dir))
+        self.assertFalse(file_utils.isdir(self.file_path))
+
+    def test_listdir(self):
+        content = file_utils.listdir(self.temp_dir)
+        self.assertIn("sample_file.txt", content)
+
+    def test_makedirs_and_rmtree(self):
+        new_dir = os.path.join(self.temp_dir, "new_directory")
+        file_utils.makedirs(new_dir)
+        self.assertTrue(os.path.isdir(new_dir))
+        file_utils.rmtree(new_dir)
+        self.assertFalse(os.path.exists(new_dir))
+
+    def test_copy(self):
+        dest_path = os.path.join(self.temp_dir, "copy_sample_file.txt")
+        file_utils.copy(self.file_path, dest_path)
+        self.assertTrue(os.path.exists(dest_path))
+        with open(dest_path, "r") as f:
+            content = f.read()
+        self.assertEqual(content, "Sample content")
+
+    def test_file_open_read(self):
+        with file_utils.File(self.file_path, "r") as f:
+            content = f.read()
+        self.assertEqual(content, "Sample content")
+
+    def test_file_open_write(self):
+        with file_utils.File(self.file_path, "w") as f:
+            f.write("New content")
+        with open(self.file_path, "r") as f:
+            content = f.read()
+        self.assertEqual(content, "New content")
+
+    def test_remove_sub_directory(self):
+        parent_dir = os.path.join(self.get_temp_dir(), "parent_directory")
+        child_dir = os.path.join(parent_dir, "child_directory")
+        file_utils.makedirs(child_dir)
+        file_utils.rmtree(parent_dir)
+        self.assertFalse(os.path.exists(parent_dir))
+        self.assertFalse(os.path.exists(child_dir))
+
+    def test_remove_files_inside_directory(self):
+        dir_path = os.path.join(self.get_temp_dir(), "test_directory")
+        file_path = os.path.join(dir_path, "test.txt")
+        file_utils.makedirs(dir_path)
+        with open(file_path, "w") as f:
+            f.write("Test content")
+        file_utils.rmtree(dir_path)
+        self.assertFalse(os.path.exists(dir_path))
+        self.assertFalse(os.path.exists(file_path))
+
+    def test_handle_complex_paths(self):
+        complex_dir = os.path.join(self.get_temp_dir(), "complex dir@#%&!")
+        file_utils.makedirs(complex_dir)
+        file_utils.rmtree(complex_dir)
+        self.assertFalse(os.path.exists(complex_dir))

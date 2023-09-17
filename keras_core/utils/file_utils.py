@@ -445,7 +445,7 @@ def rmtree(path):
             return gfile.rmtree(path)
         else:
             _raise_if_no_gfile(path)
-    return shutil.rmtree
+    return shutil.rmtree(path)
 
 
 def listdir(path):
