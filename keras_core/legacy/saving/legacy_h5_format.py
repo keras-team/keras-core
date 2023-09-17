@@ -39,7 +39,7 @@ def save_model_to_hdf5(model, filepath, overwrite=True, include_optimizer=True):
 
         dirpath = os.path.dirname(filepath)
         if dirpath and not os.path.exists(dirpath):
-            os.makedirs(dirpath)
+            os.makedirs(dirpath, exist_ok=True)
 
         f = h5py.File(filepath, mode="w")
         opened_new_file = True

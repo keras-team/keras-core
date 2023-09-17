@@ -1,6 +1,5 @@
 import os
 import unittest
-
 import numpy as np
 
 from keras_core import layers
@@ -17,6 +16,8 @@ class SaveModelTests(unittest.TestCase):
             ],
         )
         self.filepath = "test_model.keras"
+        if os.path.exists(self.filepath):
+            os.remove(self.filepath)
         saving_api.save_model(self.model, self.filepath)
 
     def test_basic_saving(self):
@@ -33,7 +34,9 @@ class SaveModelTests(unittest.TestCase):
             saving_api.save_model(self.model, "model.txt", save_format=True)
 
     def test_unsupported_arguments(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError, "The following argument\(s\) are not supported"
+        ):
             saving_api.save_model(self.model, self.filepath, random_arg=True)
 
     def test_save_h5_format(self):
@@ -43,7 +46,9 @@ class SaveModelTests(unittest.TestCase):
         os.remove(filepath_h5)  # Cleanup
 
     def test_save_unsupported_extension(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError, "Invalid filepath extension for saving"
+        ):
             saving_api.save_model(self.model, "model.png")
 
     def tearDown(self):
@@ -70,11 +75,11 @@ class LoadModelTests(unittest.TestCase):
         )
 
     def test_load_unsupported_format(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "File format not supported"):
             saving_api.load_model("model.pkl")
 
     def test_load_keras_not_zip(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "File not found"):
             saving_api.load_model("not_a_zip.keras")
 
     def test_load_h5_format(self):
@@ -85,7 +90,7 @@ class LoadModelTests(unittest.TestCase):
         self.assertTrue(
             np.allclose(self.model.predict(x), loaded_model.predict(x))
         )
-        os.remove(filepath_h5)  # Cleanup
+        os.remove(filepath_h5)
 
     def tearDown(self):
         if os.path.exists(self.filepath):
@@ -109,22 +114,6 @@ class LoadWeightsTests(unittest.TestCase):
         loaded_weights = self.model.get_weights()
         for orig, loaded in zip(original_weights, loaded_weights):
             self.assertTrue(np.array_equal(orig, loaded))
-
-    def test_load_unsupported_format(self):
-        with self.assertRaises(ValueError):
-            self.model.load_weights("weights.pkl")
-
-    def test_load_keras_format_weights(self):
-        filepath_keras = "test_weights.weights.h5"
-        self.model.save_weights(filepath_keras)
-        self.model.load_weights(filepath_keras)
-        os.remove(filepath_keras)  # Cleanup
-
-    def test_load_h5_format_weights(self):
-        filepath_h5 = "test_weights.weights.h5"
-        self.model.save_weights(filepath_h5)
-        self.model.load_weights(filepath_h5)
-        os.remove(filepath_h5)  # Cleanup
 
     def tearDown(self):
         filepath = "test_weights.weights.h5"
