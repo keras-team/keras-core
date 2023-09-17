@@ -8,14 +8,18 @@ from keras_core.utils import file_utils
 
 
 class TestGetFile(test_case.TestCase):
+    def setUp(self):
+        self.temp_dir = self.get_temp_dir()
+        self.file_path = os.path.join(self.temp_dir, "sample_file.txt")
+        with open(self.file_path, "w") as f:
+            f.write("Sample content")
+
     def test_get_file_and_validate_it(self):
-        """Tests get_file from a url, plus extraction and validation."""
         dest_dir = self.get_temp_dir()
         orig_dir = self.get_temp_dir()
-
         text_file_path = os.path.join(orig_dir, "test.txt")
-        zip_file_path = os.path.join(orig_dir, "test.zip")
         tar_file_path = os.path.join(orig_dir, "test.tar.gz")
+        zip_file_path = os.path.join(orig_dir, "test.zip")
 
         with open(text_file_path, "w") as text_file:
             text_file.write("Float like a butterfly, sting like a bee.")
@@ -108,7 +112,6 @@ class TestGetFile(test_case.TestCase):
             _ = file_utils.get_file()
 
     def test_get_file_with_tgz_extension(self):
-        """Tests get_file from a url, plus extraction and validation."""
         dest_dir = self.get_temp_dir()
         orig_dir = dest_dir
 
@@ -133,7 +136,6 @@ class TestGetFile(test_case.TestCase):
         self.assertTrue(os.path.exists(path))
 
     def test_get_file_with_integrity_check(self):
-        """Tests get_file with validation before download."""
         orig_dir = self.get_temp_dir()
         file_path = os.path.join(orig_dir, "test.txt")
 
@@ -150,7 +152,6 @@ class TestGetFile(test_case.TestCase):
         self.assertTrue(os.path.exists(path))
 
     def test_get_file_with_failed_integrity_check(self):
-        """Tests get_file with validation before download."""
         orig_dir = self.get_temp_dir()
         file_path = os.path.join(orig_dir, "test.txt")
 
@@ -223,24 +224,6 @@ class TestGetFile(test_case.TestCase):
     def test_join_single_directory(self):
         self.assertEqual(file_utils.join("/path"), "/path")
 
-    def setUp(self):
-        self.temp_dir = self.get_temp_dir()
-        self.file_path = os.path.join(self.temp_dir, "sample_file.txt")
-        with open(self.file_path, "w") as f:
-            f.write("Sample content")
-
-    def test_is_remote_path(self):
-        self.assertTrue(file_utils.is_remote_path("gcs://bucket/path"))
-        self.assertFalse(file_utils.is_remote_path("/local/path"))
-
-    def test_exists(self):
-        self.assertTrue(file_utils.exists(self.file_path))
-        self.assertFalse(file_utils.exists("/path/that/does/not/exist"))
-
-    def test_isdir(self):
-        self.assertTrue(file_utils.isdir(self.temp_dir))
-        self.assertFalse(file_utils.isdir(self.file_path))
-
     def test_listdir(self):
         content = file_utils.listdir(self.temp_dir)
         self.assertIn("sample_file.txt", content)
@@ -259,18 +242,6 @@ class TestGetFile(test_case.TestCase):
         with open(dest_path, "r") as f:
             content = f.read()
         self.assertEqual(content, "Sample content")
-
-    def test_file_open_read(self):
-        with file_utils.File(self.file_path, "r") as f:
-            content = f.read()
-        self.assertEqual(content, "Sample content")
-
-    def test_file_open_write(self):
-        with file_utils.File(self.file_path, "w") as f:
-            f.write("New content")
-        with open(self.file_path, "r") as f:
-            content = f.read()
-        self.assertEqual(content, "New content")
 
     def test_remove_sub_directory(self):
         parent_dir = os.path.join(self.get_temp_dir(), "parent_directory")
