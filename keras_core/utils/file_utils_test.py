@@ -1,11 +1,219 @@
 import os
+import pathlib
+import shutil
 import tarfile
+import tempfile
 import unittest
 import urllib
 import zipfile
 
 from keras_core.testing import test_case
 from keras_core.utils import file_utils
+
+
+class PathToStringTest(test_case.TestCase):
+    def test_path_to_string_with_string_path(self):
+        path = "/path/to/file.txt"
+        string_path = file_utils.path_to_string(path)
+        self.assertEqual(string_path, path)
+
+    def test_path_to_string_with_PathLike_object(self):
+        path = pathlib.Path("/path/to/file.txt")
+        string_path = file_utils.path_to_string(path)
+        self.assertEqual(string_path, str(path))
+
+    def test_path_to_string_with_non_string_typed_path_object(self):
+        class NonStringTypedPathObject:
+            def __fspath__(self):
+                return "/path/to/file.txt"
+
+        path = NonStringTypedPathObject()
+        string_path = file_utils.path_to_string(path)
+        self.assertEqual(string_path, "/path/to/file.txt")
+
+    def test_path_to_string_with_none_path(self):
+        string_path = file_utils.path_to_string(None)
+        self.assertEqual(string_path, None)
+
+
+class ResolvePathTest(test_case.TestCase):
+    def test_resolve_path_with_absolute_path(self):
+        path = "/path/to/file.txt"
+        resolved_path = file_utils.resolve_path(path)
+        self.assertEqual(resolved_path, os.path.realpath(os.path.abspath(path)))
+
+    def test_resolve_path_with_relative_path(self):
+        path = "./file.txt"
+        resolved_path = file_utils.resolve_path(path)
+        self.assertEqual(resolved_path, os.path.realpath(os.path.abspath(path)))
+
+
+class IsPathInDirTest(test_case.TestCase):
+    def test_is_path_in_dir_with_absolute_paths(self):
+        base_dir = "/path/to/base_dir"
+        path = "/path/to/base_dir/file.txt"
+        self.assertTrue(file_utils.is_path_in_dir(path, base_dir))
+
+
+class IsLinkInDirTest(test_case.TestCase):
+    def setUp(self):
+        # This setup method runs before each test.
+        # Ensuring both base directories are clean before the tests are run.
+        self._cleanup("test_path/to/base_dir")
+        self._cleanup("./base_dir")
+
+    def _cleanup(self, base_dir):
+        if os.path.exists(base_dir):
+            shutil.rmtree(base_dir)
+
+    def test_is_link_in_dir_with_absolute_paths(self):
+        base_dir = "test_path/to/base_dir"
+        link_path = os.path.join(base_dir, "symlink")
+        target_path = os.path.join(base_dir, "file.txt")
+
+        # Create the base_dir directory if it does not exist.
+        os.makedirs(base_dir, exist_ok=True)
+
+        # Create the file.txt file.
+        with open(target_path, "w") as f:
+            f.write("Hello, world!")
+
+        os.symlink(target_path, link_path)
+
+        # Creating a stat_result-like object with a name attribute
+        info = os.lstat(link_path)
+        info = type(
+            "stat_with_name",
+            (object,),
+            {
+                "name": os.path.basename(link_path),
+                "linkname": os.readlink(link_path),
+            },
+        )
+
+        self.assertTrue(file_utils.is_link_in_dir(info, base_dir))
+
+    def test_is_link_in_dir_with_relative_paths(self):
+        base_dir = "./base_dir"
+        link_path = os.path.join(base_dir, "symlink")
+        target_path = os.path.join(base_dir, "file.txt")
+
+        # Create the base_dir directory if it does not exist.
+        os.makedirs(base_dir, exist_ok=True)
+
+        # Create the file.txt file.
+        with open(target_path, "w") as f:
+            f.write("Hello, world!")
+
+        os.symlink(target_path, link_path)
+
+        # Creating a stat_result-like object with a name attribute
+        info = os.lstat(link_path)
+        info = type(
+            "stat_with_name",
+            (object,),
+            {
+                "name": os.path.basename(link_path),
+                "linkname": os.readlink(link_path),
+            },
+        )
+
+        self.assertTrue(file_utils.is_link_in_dir(info, base_dir))
+
+    def tearDown(self):
+        # This method will be called after each test, ensuring we leave no leftovers.
+        self._cleanup("test_path/to/base_dir")
+        self._cleanup("./base_dir")
+
+
+class TestFilterSafePaths(test_case.TestCase):
+    def setUp(self):
+        # Assuming the temp directory is the base dir for our tests
+        self.base_dir = os.path.join(os.getcwd(), "temp_dir")
+        os.makedirs(self.base_dir, exist_ok=True)
+        self.tar_path = os.path.join(self.base_dir, "test.tar")
+
+    def tearDown(self):
+        os.remove(self.tar_path)
+        os.rmdir(self.base_dir)
+
+    def test_member_within_base_dir(self):
+        with tarfile.open(self.tar_path, "w") as tar:
+            tar.add(
+                __file__, arcname="safe_path.txt"
+            )  # Adds this test file to the tar archive
+        with tarfile.open(self.tar_path, "r") as tar:
+            members = list(file_utils.filter_safe_paths(tar.getmembers()))
+            self.assertEqual(len(members), 1)
+            self.assertEqual(members[0].name, "safe_path.txt")
+
+
+class ExtractArchiveTest(test_case.TestCase):
+    def setUp(self):
+        """Create temporary directories and files for testing."""
+        self.temp_dir = tempfile.mkdtemp()
+        self.file_content = "Hello, world!"
+
+        # Create sample files to be archived
+        with open(os.path.join(self.temp_dir, "sample.txt"), "w") as f:
+            f.write(self.file_content)
+
+    def tearDown(self):
+        """Clean up temporary directories."""
+        shutil.rmtree(self.temp_dir)
+
+    def create_tar(self):
+        archive_path = os.path.join(self.temp_dir, "sample.tar")
+        with tarfile.open(archive_path, "w") as archive:
+            archive.add(
+                os.path.join(self.temp_dir, "sample.txt"), arcname="sample.txt"
+            )
+        return archive_path
+
+    def create_zip(self):
+        archive_path = os.path.join(self.temp_dir, "sample.zip")
+        with zipfile.ZipFile(archive_path, "w") as archive:
+            archive.write(
+                os.path.join(self.temp_dir, "sample.txt"), arcname="sample.txt"
+            )
+        return archive_path
+
+    def test_extract_tar(self):
+        archive_path = self.create_tar()
+        extract_path = os.path.join(self.temp_dir, "extract_tar")
+        result = file_utils.extract_archive(archive_path, extract_path, "tar")
+        self.assertTrue(result)
+        with open(os.path.join(extract_path, "sample.txt"), "r") as f:
+            self.assertEqual(f.read(), self.file_content)
+
+    def test_extract_zip(self):
+        archive_path = self.create_zip()
+        extract_path = os.path.join(self.temp_dir, "extract_zip")
+        result = file_utils.extract_archive(archive_path, extract_path, "zip")
+        self.assertTrue(result)
+        with open(os.path.join(extract_path, "sample.txt"), "r") as f:
+            self.assertEqual(f.read(), self.file_content)
+
+    def test_extract_auto(self):
+        # This will test the 'auto' functionality
+        tar_archive_path = self.create_tar()
+        zip_archive_path = self.create_zip()
+
+        extract_tar_path = os.path.join(self.temp_dir, "extract_auto_tar")
+        extract_zip_path = os.path.join(self.temp_dir, "extract_auto_zip")
+
+        self.assertTrue(
+            file_utils.extract_archive(tar_archive_path, extract_tar_path)
+        )
+        self.assertTrue(
+            file_utils.extract_archive(zip_archive_path, extract_zip_path)
+        )
+
+        with open(os.path.join(extract_tar_path, "sample.txt"), "r") as f:
+            self.assertEqual(f.read(), self.file_content)
+
+        with open(os.path.join(extract_zip_path, "sample.txt"), "r") as f:
+            self.assertEqual(f.read(), self.file_content)
 
 
 class TestGetFile(test_case.TestCase):
@@ -267,25 +475,3 @@ class TestGetFile(test_case.TestCase):
         file_utils.makedirs(complex_dir)
         file_utils.rmtree(complex_dir)
         self.assertFalse(os.path.exists(complex_dir))
-
-
-class TestFilterSafePaths(unittest.TestCase):
-    def setUp(self):
-        # Assuming the temp directory is the base dir for our tests
-        self.base_dir = os.path.join(os.getcwd(), "temp_dir")
-        os.makedirs(self.base_dir, exist_ok=True)
-        self.tar_path = os.path.join(self.base_dir, "test.tar")
-
-    def tearDown(self):
-        os.remove(self.tar_path)
-        os.rmdir(self.base_dir)
-
-    def test_member_within_base_dir(self):
-        with tarfile.open(self.tar_path, "w") as tar:
-            tar.add(
-                __file__, arcname="safe_path.txt"
-            )  # Adds this test file to the tar archive
-        with tarfile.open(self.tar_path, "r") as tar:
-            members = list(file_utils.filter_safe_paths(tar.getmembers()))
-            self.assertEqual(len(members), 1)
-            self.assertEqual(members[0].name, "safe_path.txt")
