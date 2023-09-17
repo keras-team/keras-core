@@ -1,3 +1,7 @@
+import functools
+import itertools
+import operator
+
 import torch
 import torch.nn.functional as tnn
 
@@ -263,3 +267,119 @@ def affine_transform(
     if need_squeeze:
         affined = affined.squeeze(dim=0)
     return affined
+
+
+def _unzip3(xyzs):
+    """Unzip sequence of length-3 tuples into three tuples."""
+    # Note: we deliberately don't use zip(*xyzs) because it is lazily evaluated,
+    # is too permissive about inputs, and does not guarantee a length-3 output.
+    xs = []
+    ys = []
+    zs = []
+    for x, y, z in xyzs:
+        xs.append(x)
+        ys.append(y)
+        zs.append(z)
+    return tuple(xs), tuple(ys), tuple(zs)
+
+
+def _mirror_index_fixer(index, size):
+    s = size - 1  # Half-wavelength of triangular wave
+    # Scaled, integer-valued version of the triangular wave |x - round(x)|
+    return torch.abs((index + s) % (2 * s) - s)
+
+
+def _reflect_index_fixer(index, size):
+    return torch.floor_divide(
+        _mirror_index_fixer(2 * index + 1, 2 * size + 1) - 1, 2
+    )
+
+
+_INDEX_FIXERS = {
+    "constant": lambda index, size: index,
+    "nearest": lambda index, size: torch.clip(index, 0, size - 1),
+    "wrap": lambda index, size: index % size,
+    "mirror": _mirror_index_fixer,
+    "reflect": _reflect_index_fixer,
+}
+
+
+def _round_half_away_from_zero(a):
+    return (
+        a
+        if (not torch.is_floating_point(a) and not torch.is_complex(a))
+        else torch.round(a)
+    )
+
+
+def _nearest_indices_and_weights(coordinate):
+    index = _round_half_away_from_zero(coordinate).to(torch.int32)
+    weight = torch.tensor(1).to(torch.int32)
+    return [(index, weight)]
+
+
+def _linear_indices_and_weights(coordinate):
+    lower = torch.floor(coordinate)
+    upper_weight = coordinate - lower
+    lower_weight = 1 - upper_weight
+    index = lower.to(torch.int32)
+    return [(index, lower_weight), (index + 1, upper_weight)]
+
+
+def map_coordinates(input, coordinates, order, mode="constant", cval=0.0):
+    input_arr = convert_to_tensor(input)
+    coordinate_arrs = convert_to_tensor(coordinates)
+    cval = convert_to_tensor(cval, input_arr.dtype)
+
+    if len(coordinates) != input_arr.ndim:
+        raise ValueError(
+            "coordinates must be a sequence of length input.ndim, but "
+            "{} != {}".format(len(coordinates), input_arr.ndim)
+        )
+
+    index_fixer = _INDEX_FIXERS.get(mode)
+    if index_fixer is None:
+        raise NotImplementedError(
+            "map_coordinates does not yet support mode {}. "
+            "Currently supported modes are {}.".format(mode, set(_INDEX_FIXERS))
+        )
+
+    def is_valid(index, size):
+        if mode == "constant":
+            return (0 <= index) & (index < size)
+        else:
+            return True
+
+    if order == 0:
+        interp_fun = _nearest_indices_and_weights
+    elif order == 1:
+        interp_fun = _linear_indices_and_weights
+    else:
+        raise NotImplementedError("map_coordinates currently requires order<=1")
+
+    valid_1d_interpolations = []
+    for coordinate, size in zip(coordinate_arrs, input_arr.shape):
+        interp_nodes = interp_fun(coordinate)
+        valid_interp = []
+        for index, weight in interp_nodes:
+            fixed_index = index_fixer(index, size)
+            valid = is_valid(index, size)
+            valid_interp.append((fixed_index, valid, weight))
+        valid_1d_interpolations.append(valid_interp)
+
+    outputs = []
+    for items in itertools.product(*valid_1d_interpolations):
+        indices, validities, weights = _unzip3(items)
+        if all(valid is True for valid in validities):
+            # fast path
+            contribution = input_arr[indices]
+        else:
+            all_valid = functools.reduce(operator.and_, validities)
+            contribution = torch.where(all_valid, input_arr[indices], cval)
+        outputs.append(functools.reduce(operator.mul, weights) * contribution)
+    result = functools.reduce(operator.add, outputs)
+    if not torch.is_floating_point(input_arr) and not torch.is_complex(
+        input_arr
+    ):
+        result = _round_half_away_from_zero(result)
+    return result.to(input_arr.dtype)

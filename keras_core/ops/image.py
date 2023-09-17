@@ -418,3 +418,101 @@ def _extract_patches(
     if _unbatched:
         patches = backend.numpy.squeeze(patches, axis=0)
     return patches
+
+
+class MapCoordinates(Operation):
+    def __init__(self, order, mode, cval=0.0):
+        super().__init__()
+        self.order = order
+        self.mode = mode
+        self.cval = cval
+
+    def call(self, image, coordinates):
+        return backend.image.map_coordinates(
+            image,
+            coordinates,
+            order=self.order,
+            mode=self.mode,
+            cval=self.cval,
+        )
+
+    def compute_output_spec(self, image, coordinates):
+        if coordinates.shape[0] != len(image.shape):
+            raise ValueError(
+                "First dim of `coordinates` must be the same as the rank of "
+                "`image`. "
+                f"Received image with shape: {image.shape} and coordinate "
+                f"leading dim of {coordinates.shape[0]}"
+            )
+        if len(coordinates.shape) < 2:
+            raise ValueError(
+                "Invalid coordinates rank: expected at least rank 2."
+                f" Received input with shape: {coordinates.shape}"
+            )
+        return KerasTensor(coordinates.shape[1:], dtype=image.dtype)
+
+
+@keras_core_export("keras_core.ops.image.map_coordinates")
+def map_coordinates(input, coordinates, order, mode="constant", cval=0.0):
+    """Applies the image(s) onto a set of coordinates.
+
+    Args:
+        image: Input image or batch of images. Must be 3D or 4D.
+        transform: Projective transform matrix/matrices. A vector of length 8 or
+            tensor of size N x 8. If one row of transform is
+            `[a0, a1, a2, b0, b1, b2, c0, c1]`, then it maps the output point
+            `(x, y)` to a transformed input point
+            `(x', y') = ((a0 x + a1 y + a2) / k, (b0 x + b1 y + b2) / k)`,
+            where `k = c0 x + c1 y + 1`. The transform is inverted compared to
+            the transform mapping input points to output points. Note that
+            gradients are not backpropagated into transformation parameters.
+            Note that `c0` and `c1` are only effective when using TensorFlow
+            backend and will be considered as `0` when using other backends.
+        interpolation: Interpolation method. Available methods are `"nearest"`,
+            and `"bilinear"`. Defaults to `"bilinear"`.
+        fill_mode: Points outside the boundaries of the input are filled
+            according to the given mode. Available methods are `"constant"`,
+            `"nearest"`, `"wrap"` and `"reflect"`. Defaults to `"constant"`.
+            - `"reflect"`: `(d c b a | a b c d | d c b a)`
+                The input is extended by reflecting about the edge of the last
+                pixel.
+            - `"constant"`: `(k k k k | a b c d | k k k k)`
+                The input is extended by filling all values beyond
+                the edge with the same constant value k specified by
+                `fill_value`.
+            - `"wrap"`: `(a b c d | a b c d | a b c d)`
+                The input is extended by wrapping around to the opposite edge.
+            - `"nearest"`: `(a a a a | a b c d | d d d d)`
+                The input is extended by the nearest pixel.
+            Note that when using torch backend, `"reflect"` is redirected to
+            `"mirror"` `(c d c b | a b c d | c b a b)` because torch does not
+            support `"reflect"`.
+            Note that torch backend does not support `"wrap"`.
+        fill_value: Value used for points outside the boundaries of the input if
+            `fill_mode="constant"`. Defaults to `0`.
+        data_format: string, either `"channels_last"` or `"channels_first"`.
+            The ordering of the dimensions in the inputs. `"channels_last"`
+            corresponds to inputs with shape `(batch, height, width, channels)`
+            while `"channels_first"` corresponds to inputs with shape
+            `(batch, channels, height, weight)`. It defaults to the
+            `image_data_format` value found in your Keras config file at
+            `~/.keras/keras.json`. If you never set it, then it will be
+            `"channels_last"`.
+
+    Returns:
+        Applied affine transform image or batch of images.
+
+    """
+    if any_symbolic_tensors((input, coordinates)):
+        return MapCoordinates(
+            order,
+            mode,
+            cval,
+        ).symbolic_call(input, coordinates)
+    return backend.image.map_coordinates(
+        input,
+        coordinates,
+        order,
+        mode,
+        cval,
+    )

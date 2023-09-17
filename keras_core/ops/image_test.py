@@ -350,3 +350,11 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(
             patches_ref.numpy(), backend.convert_to_numpy(patches_out), atol=0.3
         )
+
+    def test_map_coordinates(self):
+        data = np.arange(12).reshape((4, 3))
+        coordinates = np.array([[0.5, 2], [0.5, 1]])
+        expected = np.array([2.0, 7.0])
+        map_coordinates_out = kimage.map_coordinates(data, coordinates, 1)
+
+        self.assertAllClose(map_coordinates_out, expected)

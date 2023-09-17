@@ -173,3 +173,52 @@ def affine_transform(
     if input_dtype == "float16":
         affined = affined.astype(input_dtype)
     return affined
+
+
+MAP_COORDINATES_MODES = {
+    "constant",
+    "nearest",
+    "wrap",
+    "mirror",
+    "reflect",
+}
+
+
+def map_coordinates(input, coordinates, order, mode="constant", cval=0.0):
+    if mode not in MAP_COORDINATES_MODES:
+        raise ValueError(
+            "Invalid value for argument `mode`. Expected one of "
+            f"{set(MAP_COORDINATES_MODES.keys())}. Received: "
+            f"mode={mode}"
+        )
+    if order not in range(2):
+        raise ValueError(
+            "Invalid value for argument `order`. Expected one of "
+            f"{[0, 1]}. Received: "
+            f"mode={mode}"
+        )
+    # SciPy's implementation of map_coordinates handles boundaries incorrectly,
+    # unless mode='reflect'. For order=1, this only affects interpolation
+    # outside the bounds of the original array.
+    # https://github.com/scipy/scipy/issues/2640
+    padding = [
+        (
+            max(-np.floor(c.min()).astype(int) + 1, 0),
+            max(np.ceil(c.max()).astype(int) + 1 - size, 0),
+        )
+        for c, size in zip(coordinates, input.shape)
+    ]
+    shifted_coords = [c + p[0] for p, c in zip(padding, coordinates)]
+    pad_mode = {
+        "nearest": "edge",
+        "mirror": "reflect",
+        "reflect": "symmetric",
+    }.get(mode, mode)
+    if mode == "constant":
+        padded = np.pad(input, padding, mode=pad_mode, constant_values=cval)
+    else:
+        padded = np.pad(input, padding, mode=pad_mode)
+    result = scipy.ndimage.map_coordinates(
+        padded, shifted_coords, order=order, mode=mode, cval=cval
+    )
+    return result
