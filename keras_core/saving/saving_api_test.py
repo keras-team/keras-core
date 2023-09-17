@@ -36,7 +36,7 @@ class SaveModelTests(unittest.TestCase):
 
     def test_unsupported_arguments(self):
         with self.assertRaisesRegex(
-            ValueError, "The following argument\(s\) are not supported"
+            ValueError, r"The following argument\(s\) are not supported"
         ):
             saving_api.save_model(self.model, self.filepath, random_arg=True)
 
