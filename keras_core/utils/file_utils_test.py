@@ -286,6 +286,44 @@ class TestValidateFile(test_case.TestCase):
         os.remove(self.tmp_file.name)
 
 
+class TestIsRemotePath(test_case.TestCase):
+    def test_gcs_remote_path(self):
+        self.assertTrue(file_utils.is_remote_path("/gcs/some/path/to/file.txt"))
+        self.assertTrue(file_utils.is_remote_path("/gcs/another/directory/"))
+
+    def test_cns_remote_path(self):
+        self.assertTrue(file_utils.is_remote_path("/cns/some/path/to/file.txt"))
+        self.assertTrue(file_utils.is_remote_path("/cns/another/directory/"))
+
+    def test_cfs_remote_path(self):
+        self.assertTrue(file_utils.is_remote_path("/cfs/some/path/to/file.txt"))
+        self.assertTrue(file_utils.is_remote_path("/cfs/another/directory/"))
+
+    def test_http_remote_path(self):
+        self.assertTrue(
+            file_utils.is_remote_path("http://example.com/path/to/file.txt")
+        )
+        self.assertTrue(
+            file_utils.is_remote_path("https://secure.example.com/directory/")
+        )
+        self.assertTrue(
+            file_utils.is_remote_path("ftp://files.example.com/somefile.txt")
+        )
+
+    def test_non_remote_paths(self):
+        self.assertFalse(file_utils.is_remote_path("/local/path/to/file.txt"))
+        self.assertFalse(
+            file_utils.is_remote_path("C:\\local\\path\\on\\windows\\file.txt")
+        )
+        self.assertFalse(file_utils.is_remote_path("~/relative/path/"))
+        self.assertFalse(file_utils.is_remote_path("./another/relative/path"))
+
+    def test_edge_cases(self):
+        self.assertFalse(file_utils.is_remote_path(""))
+        self.assertFalse(file_utils.is_remote_path(None))
+        self.assertFalse(file_utils.is_remote_path(12345))
+
+
 class TestGetFile(test_case.TestCase):
     def setUp(self):
         self.temp_dir = self.get_temp_dir()
