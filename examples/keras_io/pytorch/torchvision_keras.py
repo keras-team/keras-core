@@ -31,14 +31,6 @@ PyTorch](https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html)
 ](https://wandb.ai/ml-colabs/keras-torch/reports/Fine-tuning-a-TorchVision-Model-using-Keras--Vmlldzo1NDE5NDE1)
 
 ## Setup
-
-We need to install the `main` branch of KerasCore for this example.
-"""
-
-"""shell
-pip install -qq namex
-apt install python3.10-venv
-git clone https://github.com/soumik12345/keras-core.git && cd keras-core && python pip_build.py --install
 """
 
 import os
@@ -56,7 +48,7 @@ import torchvision
 from torchvision import datasets, models, transforms
 
 import keras_core as keras
-from keras_core.utils import TorchModuleWrapper
+from keras_core.layers import TorchModuleWrapper
 
 """
 ## Define the Hyperparameters
@@ -173,7 +165,7 @@ resnet_18 = models.resnet18(weights="IMAGENET1K_V1")
 resnet_18.fc = nn.Identity()
 
 """
-ven though Keras supports PyTorch as a backend, it does not mean that we can nest torch
+Even though Keras supports PyTorch as a backend, it does not mean that we can nest torch
 modules inside a [`keras_core.Model`](https://keras.io/keras_core/api/models/), because
 trainable variables inside a Keras Model is tracked exclusively via [Keras
 Layers](https://keras.io/keras_core/api/layers/).
