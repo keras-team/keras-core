@@ -407,12 +407,6 @@ class GetFileTest(test_case.TestCase):
         self.assertTrue(file_utils.validate_file(path, hashval_md5))
         os.remove(path)
 
-    def test_is_remote_path(self):
-        self.assertTrue(file_utils.is_remote_path("gs://bucket/path"))
-        self.assertTrue(file_utils.is_remote_path("http://example.com/path"))
-        self.assertFalse(file_utils.is_remote_path("/local/path"))
-        self.assertFalse(file_utils.is_remote_path("./relative/path"))
-
     def test_exists(self):
         temp_dir = self.get_temp_dir()
         file_path = os.path.join(temp_dir, "test_exists.txt")
@@ -638,8 +632,69 @@ class IsRemotePath(test_case.TestCase):
         )
         self.assertFalse(file_utils.is_remote_path("~/relative/path/"))
         self.assertFalse(file_utils.is_remote_path("./another/relative/path"))
+        self.assertFalse(file_utils.is_remote_path("/local/path"))
+        self.assertFalse(file_utils.is_remote_path("./relative/path"))
+        self.assertFalse(file_utils.is_remote_path("~/relative/path"))
 
     def test_edge_cases(self):
         self.assertFalse(file_utils.is_remote_path(""))
         self.assertFalse(file_utils.is_remote_path(None))
         self.assertFalse(file_utils.is_remote_path(12345))
+
+    def test_special_characters(self):
+        self.assertTrue(file_utils.is_remote_path("/gcs/some/päth"))
+        self.assertTrue(file_utils.is_remote_path("/gcs/some/path#anchor"))
+        self.assertTrue(file_utils.is_remote_path("/gcs/some/path?query=value"))
+
+
+class IsRemotePathRefactoredTests(test_case.TestCase):
+    def test_additional_protocols(self):
+        # Ensure other protocols are not identified as remote
+        self.assertFalse(file_utils.is_remote_path("mailto:user@example.com"))
+        self.assertFalse(
+            file_utils.is_remote_path(
+                "data:text/plain;charset=utf-8,Hello%20World!"
+            )
+        )
+
+    def test_case_sensitivity(self):
+        # Ensure function handles different casing
+        self.assertTrue(file_utils.is_remote_path("/GcS/sOme/Path"))
+        self.assertTrue(file_utils.is_remote_path("HTTP://eXample.Com"))
+        self.assertTrue(file_utils.is_remote_path("hTtP://exaMple.cOm"))
+
+    def test_whitespace_paths(self):
+        # Ensure function handles paths with spaces correctly
+        self.assertTrue(file_utils.is_remote_path("  /gcs/some/path  "))
+        self.assertTrue(file_utils.is_remote_path("/gcs/ some /path"))
+
+    def test_special_characters(self):
+        # Ensure function handles special characters correctly
+        self.assertTrue(file_utils.is_remote_path("/gcs/some/päth"))
+        self.assertTrue(file_utils.is_remote_path("/gcs/some/path#anchor"))
+        self.assertTrue(file_utils.is_remote_path("/gcs/some/path?query=value"))
+        self.assertTrue(file_utils.is_remote_path("/gcs/some/path with spaces"))
+
+    # def test_http_protocol(self):
+    #     self.assertTrue(file_utils.is_remote_path("http://example.com"))
+    #     self.assertFalse(file_utils.is_remote_path("/http/some/local/path"))
+
+    # def test_https_protocol(self):
+    #     self.assertTrue(file_utils.is_remote_path("https://example.com"))
+    #     self.assertFalse(file_utils.is_remote_path("/https/some/local/path"))
+
+    # def test_ftp_protocol(self):
+    #     self.assertTrue(file_utils.is_remote_path("ftp://files.example.com/somefile.txt"))
+    #     self.assertFalse(file_utils.is_remote_path("/ftp/some/local/path"))
+
+    # def test_gcs_protocol(self):
+    #     self.assertTrue(file_utils.is_remote_path("/gcs/some/path/to/file.txt"))
+    #     self.assertFalse(file_utils.is_remote_path("gcs://bucket/some/file.txt"))
+
+    # def test_cns_protocol(self):
+    #     self.assertTrue(file_utils.is_remote_path("/cns/some/path/to/file.txt"))
+    #     self.assertFalse(file_utils.is_remote_path("cns://some/directory/"))
+
+    # def test_cfs_protocol(self):
+    #     self.assertTrue(file_utils.is_remote_path("/cfs/some/path/to/file.txt"))
+    #     self.assertFalse(file_utils.is_remote_path("cfs://some/directory/"))
