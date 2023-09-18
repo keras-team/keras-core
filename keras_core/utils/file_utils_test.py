@@ -178,6 +178,32 @@ class FilterSafePathsTest(test_case.TestCase):
                 mock_warn.assert_called_with(warning_msg, stacklevel=2)
         os.remove(invalid_path)
 
+    def test_symbolic_link_in_base_dir(self):
+        """Test a symbolic link within the base directory is correctly processed."""
+        symlink_path = os.path.join(self.base_dir, "symlink.txt")
+        target_path = os.path.join(self.base_dir, "target.txt")
+
+        # Create a target file and then a symbolic link pointing to it.
+        with open(target_path, "w") as f:
+            f.write("target")
+        os.symlink(target_path, symlink_path)
+
+        # Add the symbolic link to the tar archive.
+        with tarfile.open(self.tar_path, "w") as tar:
+            tar.add(symlink_path, arcname="symlink.txt")
+
+        # Open the tar archive and check if the symbolic link is correctly processed.
+        with tarfile.open(self.tar_path, "r") as tar:
+            members = list(file_utils.filter_safe_paths(tar.getmembers()))
+            self.assertEqual(len(members), 1)
+            self.assertEqual(members[0].name, "symlink.txt")
+            self.assertTrue(
+                members[0].issym()
+            )  # Explicitly assert it's a symbolic link.
+
+        os.remove(symlink_path)
+        os.remove(target_path)
+
 
 class ExtractArchiveTest(test_case.TestCase):
     def setUp(self):
@@ -256,6 +282,30 @@ class ExtractArchiveTest(test_case.TestCase):
         extract_path = os.path.join(self.temp_dir, "none_format")
         result = file_utils.extract_archive(archive_path, extract_path, None)
         self.assertFalse(result)
+
+    def test_runtime_error_during_extraction(self):
+        tar_path = self.create_tar()
+        extract_path = os.path.join(self.temp_dir, "runtime_error_extraction")
+
+        with patch.object(
+            tarfile.TarFile, "extractall", side_effect=RuntimeError
+        ):
+            with self.assertRaises(RuntimeError):
+                file_utils.extract_archive(tar_path, extract_path, "tar")
+        self.assertFalse(os.path.exists(extract_path))
+
+    def test_keyboard_interrupt_during_extraction(self):
+        tar_path = self.create_tar()
+        extract_path = os.path.join(
+            self.temp_dir, "keyboard_interrupt_extraction"
+        )
+
+        with patch.object(
+            tarfile.TarFile, "extractall", side_effect=KeyboardInterrupt
+        ):
+            with self.assertRaises(KeyboardInterrupt):
+                file_utils.extract_archive(tar_path, extract_path, "tar")
+        self.assertFalse(os.path.exists(extract_path))
 
 
 class GetFileTest(test_case.TestCase):
