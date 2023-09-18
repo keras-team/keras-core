@@ -400,7 +400,9 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
     @parameterized.product(
         # (input_shape, coordinates_shape)
         shape=[((5,), (7,)), ((3, 4, 5), (2, 3, 4))],
-        dtype=["uint8", "float16", "float32"],
+        # TODO: scipy.ndimage.map_coordinates does not support float16
+        # TODO: torch cpu does not support round & floor for float16
+        dtype=["uint8", "int32", "float32"],
         order=[0, 1],
         fill_mode=["constant", "nearest", "wrap", "mirror", "reflect"],
     )
@@ -418,10 +420,6 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
             for size in input_shape
         ]
         output = kimage.map_coordinates(input, coordinates, order, fill_mode)
-        if dtype == "float16":
-            self.skipTest(
-                "scipy.ndimage.map_coordinates does not support float16"
-            )
         expected = _map_coordinates(input, coordinates, order, fill_mode)
 
         self.assertAllClose(output, expected)
