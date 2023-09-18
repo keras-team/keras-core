@@ -269,20 +269,6 @@ def affine_transform(
     return affined
 
 
-def _unzip3(xyzs):
-    """Unzip sequence of length-3 tuples into three tuples."""
-    # Note: we deliberately don't use zip(*xyzs) because it is lazily evaluated,
-    # is too permissive about inputs, and does not guarantee a length-3 output.
-    xs = []
-    ys = []
-    zs = []
-    for x, y, z in xyzs:
-        xs.append(x)
-        ys.append(y)
-        zs.append(z)
-    return tuple(xs), tuple(ys), tuple(zs)
-
-
 def _mirror_index_fixer(index, size):
     s = size - 1  # Half-wavelength of triangular wave
     # Scaled, integer-valued version of the triangular wave |x - round(x)|
@@ -304,16 +290,17 @@ _INDEX_FIXERS = {
 }
 
 
-def _round_half_away_from_zero(a):
-    return (
-        a
-        if (not torch.is_floating_point(a) and not torch.is_complex(a))
-        else torch.round(a)
-    )
+def _is_integer(a):
+    if not torch.is_floating_point(a) and not torch.is_complex(a):
+        return True
+    return False
 
 
 def _nearest_indices_and_weights(coordinate):
-    index = _round_half_away_from_zero(coordinate).to(torch.int32)
+    coordinate = (
+        coordinate if _is_integer(coordinate) else torch.round(coordinate)
+    )
+    index = coordinate.to(torch.int32)
     weight = torch.tensor(1).to(torch.int32)
     return [(index, weight)]
 
@@ -326,26 +313,29 @@ def _linear_indices_and_weights(coordinate):
     return [(index, lower_weight), (index + 1, upper_weight)]
 
 
-def map_coordinates(input, coordinates, order, mode="constant", cval=0.0):
+def map_coordinates(
+    input, coordinates, order, fill_mode="constant", fill_value=0.0
+):
     input_arr = convert_to_tensor(input)
-    coordinate_arrs = convert_to_tensor(coordinates)
-    cval = convert_to_tensor(cval, input_arr.dtype)
+    coordinate_arrs = [convert_to_tensor(c) for c in coordinates]
+    fill_value = convert_to_tensor(fill_value, input_arr.dtype)
 
-    if len(coordinates) != input_arr.ndim:
+    if len(coordinates) != len(input_arr.shape):
         raise ValueError(
-            "coordinates must be a sequence of length input.ndim, but "
-            "{} != {}".format(len(coordinates), input_arr.ndim)
+            "coordinates must be a sequence of length input.shape, but "
+            f"{len(coordinates)} != {len(input_arr.shape)}"
         )
 
-    index_fixer = _INDEX_FIXERS.get(mode)
+    index_fixer = _INDEX_FIXERS.get(fill_mode)
     if index_fixer is None:
-        raise NotImplementedError(
-            "map_coordinates does not yet support mode {}. "
-            "Currently supported modes are {}.".format(mode, set(_INDEX_FIXERS))
+        raise ValueError(
+            "Invalid value for argument `fill_mode`. Expected one of "
+            f"{set(_INDEX_FIXERS.keys())}. Received: "
+            f"fill_mode={fill_mode}"
         )
 
     def is_valid(index, size):
-        if mode == "constant":
+        if fill_mode == "constant":
             return (0 <= index) & (index < size)
         else:
             return True
@@ -369,17 +359,17 @@ def map_coordinates(input, coordinates, order, mode="constant", cval=0.0):
 
     outputs = []
     for items in itertools.product(*valid_1d_interpolations):
-        indices, validities, weights = _unzip3(items)
+        indices, validities, weights = zip(*items)
         if all(valid is True for valid in validities):
             # fast path
             contribution = input_arr[indices]
         else:
             all_valid = functools.reduce(operator.and_, validities)
-            contribution = torch.where(all_valid, input_arr[indices], cval)
+            contribution = torch.where(
+                all_valid, input_arr[indices], fill_value
+            )
         outputs.append(functools.reduce(operator.mul, weights) * contribution)
     result = functools.reduce(operator.add, outputs)
-    if not torch.is_floating_point(input_arr) and not torch.is_complex(
-        input_arr
-    ):
-        result = _round_half_away_from_zero(result)
+    if _is_integer(input_arr):
+        result = result if _is_integer(result) else torch.round(result)
     return result.to(input_arr.dtype)

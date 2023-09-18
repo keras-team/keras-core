@@ -164,7 +164,7 @@ def affine_transform(
     return affined
 
 
-MAP_COORDINATES_MODES = {
+MAP_COORDINATES_FILL_MODES = {
     "constant",
     "nearest",
     "wrap",
@@ -173,19 +173,20 @@ MAP_COORDINATES_MODES = {
 }
 
 
-def map_coordinates(input, coordinates, order, mode="constant", cval=0.0):
-    if mode not in MAP_COORDINATES_MODES:
+def map_coordinates(
+    input, coordinates, order, fill_mode="constant", fill_value=0.0
+):
+    if fill_mode not in MAP_COORDINATES_FILL_MODES:
         raise ValueError(
-            "Invalid value for argument `mode`. Expected one of "
-            f"{set(MAP_COORDINATES_MODES.keys())}. Received: "
-            f"mode={mode}"
+            "Invalid value for argument `fill_mode`. Expected one of "
+            f"{set(MAP_COORDINATES_FILL_MODES)}. Received: "
+            f"fill_mode={fill_mode}"
         )
     if order not in range(2):
         raise ValueError(
             "Invalid value for argument `order`. Expected one of "
-            f"{[0, 1]}. Received: "
-            f"mode={mode}"
+            f"{[0, 1]}. Received: order={order}"
         )
     return jax.scipy.ndimage.map_coordinates(
-        input, coordinates, order, mode, cval
+        input, coordinates, order, fill_mode, fill_value
     )

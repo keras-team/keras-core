@@ -1,4 +1,6 @@
+import functools
 import itertools
+import operator
 
 import tensorflow as tf
 
@@ -125,20 +127,6 @@ def affine_transform(
     return affined
 
 
-def _unzip3(xyzs):
-    """Unzip sequence of length-3 tuples into three tuples."""
-    # Note: we deliberately don't use zip(*xyzs) because it is lazily evaluated,
-    # is too permissive about inputs, and does not guarantee a length-3 output.
-    xs = []
-    ys = []
-    zs = []
-    for x, y, z in xyzs:
-        xs.append(x)
-        ys.append(y)
-        zs.append(z)
-    return tuple(xs), tuple(ys), tuple(zs)
-
-
 def _mirror_index_fixer(index, size):
     s = size - 1  # Half-wavelength of triangular wave
     # Scaled, integer-valued version of the triangular wave |x - round(x)|
@@ -160,12 +148,11 @@ _INDEX_FIXERS = {
 }
 
 
-def _round_half_away_from_zero(a):
-    return a if a.dtype.is_integer else tf.round(a)
-
-
 def _nearest_indices_and_weights(coordinate):
-    index = tf.cast(_round_half_away_from_zero(coordinate), tf.int32)
+    coordinate = (
+        coordinate if coordinate.dtype.is_integer else tf.round(coordinate)
+    )
+    index = tf.cast(coordinate, tf.int32)
     weight = tf.constant(1, coordinate.dtype)
     return [(index, weight)]
 
@@ -178,26 +165,31 @@ def _linear_indices_and_weights(coordinate):
     return [(index, lower_weight), (index + 1, upper_weight)]
 
 
-def map_coordinates(input, coordinates, order, mode="constant", cval=0.0):
+def map_coordinates(
+    input, coordinates, order, fill_mode="constant", fill_value=0.0
+):
     input_arr = convert_to_tensor(input)
     coordinate_arrs = convert_to_tensor(coordinates)
-    cval = convert_to_tensor(tf.cast(cval, input_arr.dtype))
+    # unstack into a list of tensors for following operations
+    coordinate_arrs = tf.unstack(coordinate_arrs, axis=0)
+    fill_value = convert_to_tensor(tf.cast(fill_value, input_arr.dtype))
 
-    if coordinates.shape[0] != len(input_arr.shape):
+    if len(coordinates) != len(input_arr.shape):
         raise ValueError(
-            "coordinates must be a sequence of length input.ndim, but "
-            f"{coordinates.shape[0]} != {len(input_arr.shape)}"
+            "coordinates must be a sequence of length input.shape, but "
+            f"{len(coordinates)} != {len(input_arr.shape)}"
         )
 
-    index_fixer = _INDEX_FIXERS.get(mode)
+    index_fixer = _INDEX_FIXERS.get(fill_mode)
     if index_fixer is None:
-        raise NotImplementedError(
-            f"map_coordinates does not yet support mode {mode}. "
-            f"Currently supported modes are {set(_INDEX_FIXERS)}."
+        raise ValueError(
+            "Invalid value for argument `fill_mode`. Expected one of "
+            f"{set(_INDEX_FIXERS.keys())}. Received: "
+            f"fill_mode={fill_mode}"
         )
 
     def is_valid(index, size):
-        if mode == "constant":
+        if fill_mode == "constant":
             return (0 <= index) & (index < size)
         else:
             return True
@@ -221,21 +213,26 @@ def map_coordinates(input, coordinates, order, mode="constant", cval=0.0):
 
     outputs = []
     for items in itertools.product(*valid_1d_interpolations):
-        indices, validities, weights = _unzip3(items)
+        indices, validities, weights = zip(*items)
         indices = tf.transpose(tf.stack(indices))
-        if tf.reduce_all(validities):
-            # fast path
-            contribution = tf.gather_nd(input_arr, indices)
-        else:
-            all_valid = tf.reduce_all(validities)
-            contribution = tf.where(
-                all_valid, tf.gather_nd(input_arr, indices), cval
+
+        def fast_path():
+            return tf.transpose(tf.gather_nd(input_arr, indices))
+
+        def slow_path():
+            all_valid = functools.reduce(operator.and_, validities)
+            return tf.where(
+                all_valid,
+                tf.transpose(tf.gather_nd(input_arr, indices)),
+                fill_value,
             )
+
+        contribution = tf.cond(tf.reduce_all(validities), fast_path, slow_path)
         outputs.append(
-            tf.reduce_prod(weights, axis=0)
+            functools.reduce(operator.mul, weights)
             * tf.cast(contribution, weights[0].dtype)
         )
-    result = tf.reduce_sum(outputs, axis=0)
+    result = functools.reduce(operator.add, outputs)
     if input_arr.dtype.is_integer:
-        result = _round_half_away_from_zero(result)
+        result = result if result.dtype.is_integer else tf.round(result)
     return tf.cast(result, input_arr.dtype)
