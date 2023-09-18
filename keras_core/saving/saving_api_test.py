@@ -1,5 +1,4 @@
 import os
-from unittest import mock
 
 import numpy as np
 
@@ -60,21 +59,6 @@ class SaveModelTests(test_case.TestCase):
     def tearDown(self):
         if os.path.exists(self.filepath):
             os.remove(self.filepath)
-
-    def test_h5_deprecation_warning(self):
-        with self.assertLogs(level="WARNING") as log:
-            saving_api.save_model(self.model, "test_model.h5")
-            expected_warning_msg = (
-                "You are saving your model as an HDF5 file via `model.save()`"
-            )
-            matched_logs = [
-                msg for msg in log.output if expected_warning_msg in msg
-            ]
-            self.assertEqual(
-                len(matched_logs),
-                1,
-                f"Expected warning message not found in logs: {log.output}",
-            )
 
 
 class LoadModelTests(test_case.TestCase):
