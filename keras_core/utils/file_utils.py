@@ -343,9 +343,10 @@ def hash_file(fpath, algorithm="sha256", chunk_size=65535):
     'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 
     Args:
-        fpath: Path to the file being validated.
-        algorithm: Hash algorithm, one of `"sha256"` or `"md5"`.
-        chunk_size: Bytes to read at a time, important for large files
+            fpath: Path to the file being validated.
+            algorithm: Hash algorithm, one of `"auto"`, `"sha256"`, or `"md5"`.
+                The default `"auto"` detects the hash algorithm in use.
+            chunk_size: Bytes to read at a time, important for large files.
 
     Returns:
         The file hash.

@@ -171,10 +171,11 @@ class FilterSafePathsTest(test_case.TestCase):
         with tarfile.open(self.tar_path, "r") as tar:
             with patch("warnings.warn") as mock_warn:
                 _ = list(file_utils.filter_safe_paths(tar.getmembers()))
-                mock_warn.assert_called_with(
-                    "Skipping invalid path during archive extraction: '../../invalid.txt'.",
-                    stacklevel=2,
+                warning_msg = (
+                    "Skipping invalid path during archive extraction: "
+                    "'../../invalid.txt'."
                 )
+                mock_warn.assert_called_with(warning_msg, stacklevel=2)
 
 
 class ExtractArchiveTest(test_case.TestCase):
