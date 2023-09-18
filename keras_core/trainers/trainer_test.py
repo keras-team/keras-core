@@ -29,7 +29,7 @@ else:
 
 
 # A model is just a layer mixed in with a Trainer.
-class ExampleModel(layers.Dense, Trainer):
+class ExampleModel(Trainer, layers.Dense):
     def __init__(self, units):
         layers.Dense.__init__(
             self,
@@ -40,7 +40,7 @@ class ExampleModel(layers.Dense, Trainer):
         Trainer.__init__(self)
 
 
-class StructModel(layers.Layer, Trainer):
+class StructModel(Trainer, layers.Layer):
     def __init__(self, units):
         layers.Layer.__init__(self)
         Trainer.__init__(self)
@@ -62,7 +62,7 @@ class StructModel(layers.Layer, Trainer):
         }
 
 
-class ListModel(layers.Layer, Trainer):
+class ListModel(Trainer, layers.Layer):
     def __init__(self, units):
         layers.Layer.__init__(self)
         Trainer.__init__(self)
@@ -82,7 +82,7 @@ class ListModel(layers.Layer, Trainer):
         return self.dense_1(x[0]) + self.dense_2(x[1])
 
 
-class TrainingTestingLayer(layers.Layer, Trainer):
+class TrainingTestingLayer(Trainer, layers.Layer):
     def __init__(self, **kwargs):
         layers.Layer.__init__(self, **kwargs)
         Trainer.__init__(self)
@@ -362,7 +362,7 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
         reason="half precision unsupported on torch CPU.",
     )
     def test_loss_scaling_prevents_underflow(self):
-        class DeepModel(layers.Layer, Trainer):
+        class DeepModel(Trainer, layers.Layer):
             def __init__(self):
                 layers.Layer.__init__(self, dtype="mixed_float16")
                 Trainer.__init__(self)
