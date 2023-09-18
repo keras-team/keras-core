@@ -1,21 +1,11 @@
 """
-Title: FILLME
-Author: FILLME
-Date created: FILLME
-Last modified: FILLME
-Description: FILLME
-"""
-"""
-# Fine-tuning a pre-trained TorchVision Model
-
-**Author:** [Ayush Thakur](https://twitter.com/ayushthakur0), [Soumik
-Rakshit](https://twitter.com/soumikRakshit96)<br>
-**Date created:** 2023/09/17<br>
-**Last modified:** 2023/09/17<br>
-**Description:** Fine-tuning a pre-trained Torch model from TorchVision for image
+Title: Fine-tuning a pre-trained TorchVision Model
+Author: [Ayush Thakur](https://twitter.com/ayushthakur0), [Soumik Rakshit](https://twitter.com/soumikRakshit96)
+Date created: 2023/09/18
+Last modified: 2023/09/18
+Description: Fine-tuning a pre-trained Torch model from TorchVision for image
 classification using Keras.
 """
-
 """
 ## Introduction
 
