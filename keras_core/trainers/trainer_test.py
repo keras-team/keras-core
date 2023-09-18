@@ -96,7 +96,7 @@ class TrainingTestingLayer(layers.Layer, Trainer):
 class TestTrainer(testing.TestCase, parameterized.TestCase):
     @pytest.mark.requires_trainable_backend
     def test_metric_tracking(self):
-        class ModelWithMetric(layers.Dense, Trainer):
+        class ModelWithMetric(Trainer, layers.Dense):
             def __init__(self, units):
                 layers.Dense.__init__(
                     self,
@@ -132,6 +132,7 @@ class TestTrainer(testing.TestCase, parameterized.TestCase):
 
         # And those weights are tracked at the model level
         self.assertEqual(len(model.metrics_variables), 6)
+        self.assertLen(model.non_trainable_variables, 0)
 
         # Models with only weighted_metrics should have the same 3 metrics
         model_weighted = ModelWithMetric(units=3)
