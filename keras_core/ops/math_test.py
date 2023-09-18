@@ -837,7 +837,7 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(kmath.Rsqrt()(x), 1 / np.sqrt(x))
 
 
-class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
+class ErfFunctionTests(testing.TestCase, parameterized.TestCase):
     def test_erf_operation_basic(self):
         # Sample values for testing
         sample_values = np.array([-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0])

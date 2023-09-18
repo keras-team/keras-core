@@ -938,7 +938,7 @@ class Erf(Operation):
         input_tensor: A tensor of type `float32` or `float64`.
 
     Returns:
-        A tensor of the same shape and type as `input_tensor`, containing the error function values.
+        A tensor of the same shape and type as `input_tensor`.
 
     Examples:
 
