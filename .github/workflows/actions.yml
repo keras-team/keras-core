@@ -59,8 +59,9 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           env_vars: PYTHON,KERAS_BACKEND
-          flags: keras_core.applications
+          flags: keras_core.applications,keras_core.applications-${{ matrix.backend }}
           files: apps-coverage.xml
+          fail_ci_if_error: true
       - name: Test with pytest
         run: |
           pytest keras_core --ignore keras_core/applications --cov=keras_core
@@ -69,8 +70,9 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           env_vars: PYTHON,KERAS_BACKEND
-          flags: keras_core
+          flags: keras_core,keras_core-${{ matrix.backend }}
           files: core-coverage.xml
+          fail_ci_if_error: true
 
   format:
     name: Check the code format
