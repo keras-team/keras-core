@@ -257,145 +257,6 @@ class ExtractArchiveTest(test_case.TestCase):
         self.assertFalse(result)
 
 
-class HashFileTest(test_case.TestCase):
-    def setUp(self):
-        self.test_content = b"Hello, World!"
-        self.temp_file = tempfile.NamedTemporaryFile(delete=False)
-        self.temp_file.write(self.test_content)
-        self.temp_file.close()
-
-    def tearDown(self):
-        os.remove(self.temp_file.name)
-
-    def test_hash_file_sha256(self):
-        """Test SHA256 hashing of a file."""
-        expected_sha256 = (
-            "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f"
-        )
-        calculated_sha256 = file_utils.hash_file(
-            self.temp_file.name, algorithm="sha256"
-        )
-        self.assertEqual(expected_sha256, calculated_sha256)
-
-    def test_hash_file_md5(self):
-        """Test MD5 hashing of a file."""
-        expected_md5 = "65a8e27d8879283831b664bd8b7f0ad4"
-        calculated_md5 = file_utils.hash_file(
-            self.temp_file.name, algorithm="md5"
-        )
-        self.assertEqual(expected_md5, calculated_md5)
-
-
-class TestValidateFile(test_case.TestCase):
-    def setUp(self):
-        self.tmp_file = tempfile.NamedTemporaryFile(delete=False)
-        self.tmp_file.write(b"Hello, World!")
-        self.tmp_file.close()
-
-        self.sha256_hash = (
-            "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f"
-        )
-        self.md5_hash = "65a8e27d8879283831b664bd8b7f0ad4"
-
-    def test_validate_file_sha256(self):
-        """Validate SHA256 hash of a file."""
-        self.assertTrue(
-            file_utils.validate_file(
-                self.tmp_file.name, self.sha256_hash, "sha256"
-            )
-        )
-
-    def test_validate_file_md5(self):
-        """Validate MD5 hash of a file."""
-        self.assertTrue(
-            file_utils.validate_file(self.tmp_file.name, self.md5_hash, "md5")
-        )
-
-    def test_validate_file_auto_sha256(self):
-        """Auto-detect and validate SHA256 hash."""
-        self.assertTrue(
-            file_utils.validate_file(
-                self.tmp_file.name, self.sha256_hash, "auto"
-            )
-        )
-
-    def test_validate_file_auto_md5(self):
-        """Auto-detect and validate MD5 hash."""
-        self.assertTrue(
-            file_utils.validate_file(self.tmp_file.name, self.md5_hash, "auto")
-        )
-
-    def test_validate_file_wrong_hash(self):
-        """Test validation with incorrect hash."""
-        wrong_hash = "deadbeef" * 8
-        self.assertFalse(
-            file_utils.validate_file(self.tmp_file.name, wrong_hash, "sha256")
-        )
-
-    def tearDown(self):
-        os.remove(self.tmp_file.name)
-
-
-class ResolveHasherTest(test_case.TestCase):
-    def test_resolve_hasher_sha256(self):
-        """Test resolving hasher for sha256 algorithm."""
-        hasher = file_utils.resolve_hasher("sha256")
-        self.assertIsInstance(hasher, type(hashlib.sha256()))
-
-    def test_resolve_hasher_auto_sha256(self):
-        """Auto-detect and resolve hasher for sha256."""
-        hasher = file_utils.resolve_hasher("auto", file_hash="a" * 64)
-        self.assertIsInstance(hasher, type(hashlib.sha256()))
-
-    def test_resolve_hasher_auto_md5(self):
-        """Auto-detect and resolve hasher for md5."""
-        hasher = file_utils.resolve_hasher("auto", file_hash="a" * 32)
-        self.assertIsInstance(hasher, type(hashlib.md5()))
-
-    def test_resolve_hasher_default(self):
-        """Resolve hasher with a random algorithm value."""
-        hasher = file_utils.resolve_hasher("random_value")
-        self.assertIsInstance(hasher, type(hashlib.md5()))
-
-
-class IsRemotePath(test_case.TestCase):
-    def test_gcs_remote_path(self):
-        self.assertTrue(file_utils.is_remote_path("/gcs/some/path/to/file.txt"))
-        self.assertTrue(file_utils.is_remote_path("/gcs/another/directory/"))
-
-    def test_cns_remote_path(self):
-        self.assertTrue(file_utils.is_remote_path("/cns/some/path/to/file.txt"))
-        self.assertTrue(file_utils.is_remote_path("/cns/another/directory/"))
-
-    def test_cfs_remote_path(self):
-        self.assertTrue(file_utils.is_remote_path("/cfs/some/path/to/file.txt"))
-        self.assertTrue(file_utils.is_remote_path("/cfs/another/directory/"))
-
-    def test_http_remote_path(self):
-        self.assertTrue(
-            file_utils.is_remote_path("http://example.com/path/to/file.txt")
-        )
-        self.assertTrue(
-            file_utils.is_remote_path("https://secure.example.com/directory/")
-        )
-        self.assertTrue(
-            file_utils.is_remote_path("ftp://files.example.com/somefile.txt")
-        )
-
-    def test_non_remote_paths(self):
-        self.assertFalse(file_utils.is_remote_path("/local/path/to/file.txt"))
-        self.assertFalse(
-            file_utils.is_remote_path("C:\\local\\path\\on\\windows\\file.txt")
-        )
-        self.assertFalse(file_utils.is_remote_path("~/relative/path/"))
-        self.assertFalse(file_utils.is_remote_path("./another/relative/path"))
-
-    def test_edge_cases(self):
-        self.assertFalse(file_utils.is_remote_path(""))
-        self.assertFalse(file_utils.is_remote_path(None))
-        self.assertFalse(file_utils.is_remote_path(12345))
-
-
 class GetFileTest(test_case.TestCase):
     def setUp(self):
         """Set up temporary directories and sample files."""
@@ -643,3 +504,142 @@ class GetFileTest(test_case.TestCase):
         file_utils.makedirs(complex_dir)
         file_utils.rmtree(complex_dir)
         self.assertFalse(os.path.exists(complex_dir))
+
+
+class HashFileTest(test_case.TestCase):
+    def setUp(self):
+        self.test_content = b"Hello, World!"
+        self.temp_file = tempfile.NamedTemporaryFile(delete=False)
+        self.temp_file.write(self.test_content)
+        self.temp_file.close()
+
+    def tearDown(self):
+        os.remove(self.temp_file.name)
+
+    def test_hash_file_sha256(self):
+        """Test SHA256 hashing of a file."""
+        expected_sha256 = (
+            "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f"
+        )
+        calculated_sha256 = file_utils.hash_file(
+            self.temp_file.name, algorithm="sha256"
+        )
+        self.assertEqual(expected_sha256, calculated_sha256)
+
+    def test_hash_file_md5(self):
+        """Test MD5 hashing of a file."""
+        expected_md5 = "65a8e27d8879283831b664bd8b7f0ad4"
+        calculated_md5 = file_utils.hash_file(
+            self.temp_file.name, algorithm="md5"
+        )
+        self.assertEqual(expected_md5, calculated_md5)
+
+
+class TestValidateFile(test_case.TestCase):
+    def setUp(self):
+        self.tmp_file = tempfile.NamedTemporaryFile(delete=False)
+        self.tmp_file.write(b"Hello, World!")
+        self.tmp_file.close()
+
+        self.sha256_hash = (
+            "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f"
+        )
+        self.md5_hash = "65a8e27d8879283831b664bd8b7f0ad4"
+
+    def test_validate_file_sha256(self):
+        """Validate SHA256 hash of a file."""
+        self.assertTrue(
+            file_utils.validate_file(
+                self.tmp_file.name, self.sha256_hash, "sha256"
+            )
+        )
+
+    def test_validate_file_md5(self):
+        """Validate MD5 hash of a file."""
+        self.assertTrue(
+            file_utils.validate_file(self.tmp_file.name, self.md5_hash, "md5")
+        )
+
+    def test_validate_file_auto_sha256(self):
+        """Auto-detect and validate SHA256 hash."""
+        self.assertTrue(
+            file_utils.validate_file(
+                self.tmp_file.name, self.sha256_hash, "auto"
+            )
+        )
+
+    def test_validate_file_auto_md5(self):
+        """Auto-detect and validate MD5 hash."""
+        self.assertTrue(
+            file_utils.validate_file(self.tmp_file.name, self.md5_hash, "auto")
+        )
+
+    def test_validate_file_wrong_hash(self):
+        """Test validation with incorrect hash."""
+        wrong_hash = "deadbeef" * 8
+        self.assertFalse(
+            file_utils.validate_file(self.tmp_file.name, wrong_hash, "sha256")
+        )
+
+    def tearDown(self):
+        os.remove(self.tmp_file.name)
+
+
+class ResolveHasherTest(test_case.TestCase):
+    def test_resolve_hasher_sha256(self):
+        """Test resolving hasher for sha256 algorithm."""
+        hasher = file_utils.resolve_hasher("sha256")
+        self.assertIsInstance(hasher, type(hashlib.sha256()))
+
+    def test_resolve_hasher_auto_sha256(self):
+        """Auto-detect and resolve hasher for sha256."""
+        hasher = file_utils.resolve_hasher("auto", file_hash="a" * 64)
+        self.assertIsInstance(hasher, type(hashlib.sha256()))
+
+    def test_resolve_hasher_auto_md5(self):
+        """Auto-detect and resolve hasher for md5."""
+        hasher = file_utils.resolve_hasher("auto", file_hash="a" * 32)
+        self.assertIsInstance(hasher, type(hashlib.md5()))
+
+    def test_resolve_hasher_default(self):
+        """Resolve hasher with a random algorithm value."""
+        hasher = file_utils.resolve_hasher("random_value")
+        self.assertIsInstance(hasher, type(hashlib.md5()))
+
+
+class IsRemotePath(test_case.TestCase):
+    def test_gcs_remote_path(self):
+        self.assertTrue(file_utils.is_remote_path("/gcs/some/path/to/file.txt"))
+        self.assertTrue(file_utils.is_remote_path("/gcs/another/directory/"))
+
+    def test_cns_remote_path(self):
+        self.assertTrue(file_utils.is_remote_path("/cns/some/path/to/file.txt"))
+        self.assertTrue(file_utils.is_remote_path("/cns/another/directory/"))
+
+    def test_cfs_remote_path(self):
+        self.assertTrue(file_utils.is_remote_path("/cfs/some/path/to/file.txt"))
+        self.assertTrue(file_utils.is_remote_path("/cfs/another/directory/"))
+
+    def test_http_remote_path(self):
+        self.assertTrue(
+            file_utils.is_remote_path("http://example.com/path/to/file.txt")
+        )
+        self.assertTrue(
+            file_utils.is_remote_path("https://secure.example.com/directory/")
+        )
+        self.assertTrue(
+            file_utils.is_remote_path("ftp://files.example.com/somefile.txt")
+        )
+
+    def test_non_remote_paths(self):
+        self.assertFalse(file_utils.is_remote_path("/local/path/to/file.txt"))
+        self.assertFalse(
+            file_utils.is_remote_path("C:\\local\\path\\on\\windows\\file.txt")
+        )
+        self.assertFalse(file_utils.is_remote_path("~/relative/path/"))
+        self.assertFalse(file_utils.is_remote_path("./another/relative/path"))
+
+    def test_edge_cases(self):
+        self.assertFalse(file_utils.is_remote_path(""))
+        self.assertFalse(file_utils.is_remote_path(None))
+        self.assertFalse(file_utils.is_remote_path(12345))
