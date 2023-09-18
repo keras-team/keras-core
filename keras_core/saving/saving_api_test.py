@@ -1,6 +1,8 @@
 import os
+import unittest.mock as mock
 
 import numpy as np
+from absl import logging
 
 from keras_core import layers
 from keras_core.models import Sequential
@@ -20,10 +22,6 @@ class SaveModelTests(test_case.TestCase):
         if os.path.exists(self.filepath):
             os.remove(self.filepath)
         saving_api.save_model(self.model, self.filepath)
-
-    def test_h5_deprecation_warning(self):
-        with self.assertWarns(UserWarning):
-            saving_api.save_model(self.model, "test_model.h5")
 
     def test_basic_saving(self):
         loaded_model = saving_api.load_model(self.filepath)
@@ -147,3 +145,31 @@ class LoadWeightsTests(test_case.TestCase):
     def test_load_weights_invalid_extension(self):
         with self.assertRaisesRegex(ValueError, "File format not supported"):
             self.model.load_weights("invalid_extension.pkl")
+
+
+class SaveModelTestsWarning(test_case.TestCase):
+    def setUp(self):
+        self.model = Sequential(
+            [
+                layers.Dense(5, input_shape=(3,)),
+                layers.Softmax(),
+            ],
+        )
+        self.filepath = "test_model.keras"
+        if os.path.exists(self.filepath):
+            os.remove(self.filepath)
+        saving_api.save_model(self.model, self.filepath)
+
+    def test_h5_deprecation_warning(self):
+        with mock.patch.object(logging, "warning") as mock_warn:
+            saving_api.save_model(self.model, "test_model.h5")
+            mock_warn.assert_called_once_with(
+                "You are saving your model as an HDF5 file via `model.save()`. "
+                "This file format is considered legacy. "
+                "We recommend using instead the native Keras format, "
+                "e.g. `model.save('my_model.keras')`."
+            )
+
+    def tearDown(self):
+        if os.path.exists(self.filepath):
+            os.remove(self.filepath)
