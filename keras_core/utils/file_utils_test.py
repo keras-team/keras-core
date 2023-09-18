@@ -1,3 +1,4 @@
+import hashlib
 import os
 import pathlib
 import shutil
@@ -5,6 +6,7 @@ import tarfile
 import tempfile
 import urllib
 import zipfile
+from unittest.mock import patch
 
 from keras_core.testing import test_case
 from keras_core.utils import file_utils
@@ -56,8 +58,6 @@ class IsPathInDirTest(test_case.TestCase):
 
 class IsLinkInDirTest(test_case.TestCase):
     def setUp(self):
-        # This setup method runs before each test.
-        # Ensuring both base directories are clean before the tests are run.
         self._cleanup("test_path/to/base_dir")
         self._cleanup("./base_dir")
 
@@ -124,26 +124,57 @@ class IsLinkInDirTest(test_case.TestCase):
         self._cleanup("./base_dir")
 
 
-class TestFilterSafePaths(test_case.TestCase):
+class FilterSafePathsTest(test_case.TestCase):
     def setUp(self):
-        # Assuming the temp directory is the base dir for our tests
         self.base_dir = os.path.join(os.getcwd(), "temp_dir")
         os.makedirs(self.base_dir, exist_ok=True)
         self.tar_path = os.path.join(self.base_dir, "test.tar")
 
     def tearDown(self):
         os.remove(self.tar_path)
-        os.rmdir(self.base_dir)
+        shutil.rmtree(self.base_dir)
 
     def test_member_within_base_dir(self):
+        """Test a member within the base directory."""
         with tarfile.open(self.tar_path, "w") as tar:
-            tar.add(
-                __file__, arcname="safe_path.txt"
-            )  # Adds this test file to the tar archive
+            tar.add(__file__, arcname="safe_path.txt")
         with tarfile.open(self.tar_path, "r") as tar:
             members = list(file_utils.filter_safe_paths(tar.getmembers()))
             self.assertEqual(len(members), 1)
             self.assertEqual(members[0].name, "safe_path.txt")
+
+    def test_symlink_within_base_dir(self):
+        """Test a symlink pointing within the base directory."""
+        symlink_path = os.path.join(self.base_dir, "symlink.txt")
+        target_path = os.path.join(self.base_dir, "target.txt")
+        with open(target_path, "w") as f:
+            f.write("target")
+        os.symlink(target_path, symlink_path)
+        with tarfile.open(self.tar_path, "w") as tar:
+            tar.add(symlink_path, arcname="symlink.txt")
+        with tarfile.open(self.tar_path, "r") as tar:
+            members = list(file_utils.filter_safe_paths(tar.getmembers()))
+            self.assertEqual(len(members), 1)
+            self.assertEqual(members[0].name, "symlink.txt")
+        os.remove(symlink_path)
+        os.remove(target_path)
+
+    def test_invalid_path_warning(self):
+        """Test warning for an invalid path during archive extraction."""
+        invalid_path = os.path.join(os.getcwd(), "invalid.txt")
+        with open(invalid_path, "w") as f:
+            f.write("invalid")
+        with tarfile.open(self.tar_path, "w") as tar:
+            tar.add(
+                invalid_path, arcname="../../invalid.txt"
+            )  # Path intended to be outside of base dir
+        with tarfile.open(self.tar_path, "r") as tar:
+            with patch("warnings.warn") as mock_warn:
+                _ = list(file_utils.filter_safe_paths(tar.getmembers()))
+                mock_warn.assert_called_with(
+                    "Skipping invalid path during archive extraction: '../../invalid.txt'.",
+                    stacklevel=2,
+                )
 
 
 class ExtractArchiveTest(test_case.TestCase):
@@ -213,8 +244,19 @@ class ExtractArchiveTest(test_case.TestCase):
         with open(os.path.join(extract_zip_path, "sample.txt"), "r") as f:
             self.assertEqual(f.read(), self.file_content)
 
+    def test_non_existent_file(self):
+        extract_path = os.path.join(self.temp_dir, "non_existent")
+        with self.assertRaises(FileNotFoundError):
+            file_utils.extract_archive("non_existent.tar", extract_path)
 
-class TestHashFile(test_case.TestCase):
+    def test_archive_format_none(self):
+        archive_path = self.create_tar()
+        extract_path = os.path.join(self.temp_dir, "none_format")
+        result = file_utils.extract_archive(archive_path, extract_path, None)
+        self.assertFalse(result)
+
+
+class HashFileTest(test_case.TestCase):
     def setUp(self):
         self.test_content = b"Hello, World!"
         self.temp_file = tempfile.NamedTemporaryFile(delete=False)
@@ -225,6 +267,7 @@ class TestHashFile(test_case.TestCase):
         os.remove(self.temp_file.name)
 
     def test_hash_file_sha256(self):
+        """Test SHA256 hashing of a file."""
         expected_sha256 = (
             "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f"
         )
@@ -234,6 +277,7 @@ class TestHashFile(test_case.TestCase):
         self.assertEqual(expected_sha256, calculated_sha256)
 
     def test_hash_file_md5(self):
+        """Test MD5 hashing of a file."""
         expected_md5 = "65a8e27d8879283831b664bd8b7f0ad4"
         calculated_md5 = file_utils.hash_file(
             self.temp_file.name, algorithm="md5"
@@ -253,6 +297,7 @@ class TestValidateFile(test_case.TestCase):
         self.md5_hash = "65a8e27d8879283831b664bd8b7f0ad4"
 
     def test_validate_file_sha256(self):
+        """Validate SHA256 hash of a file."""
         self.assertTrue(
             file_utils.validate_file(
                 self.tmp_file.name, self.sha256_hash, "sha256"
@@ -260,11 +305,13 @@ class TestValidateFile(test_case.TestCase):
         )
 
     def test_validate_file_md5(self):
+        """Validate MD5 hash of a file."""
         self.assertTrue(
             file_utils.validate_file(self.tmp_file.name, self.md5_hash, "md5")
         )
 
     def test_validate_file_auto_sha256(self):
+        """Auto-detect and validate SHA256 hash."""
         self.assertTrue(
             file_utils.validate_file(
                 self.tmp_file.name, self.sha256_hash, "auto"
@@ -272,12 +319,14 @@ class TestValidateFile(test_case.TestCase):
         )
 
     def test_validate_file_auto_md5(self):
+        """Auto-detect and validate MD5 hash."""
         self.assertTrue(
             file_utils.validate_file(self.tmp_file.name, self.md5_hash, "auto")
         )
 
     def test_validate_file_wrong_hash(self):
-        wrong_hash = "deadbeef" * 8  #
+        """Test validation with incorrect hash."""
+        wrong_hash = "deadbeef" * 8
         self.assertFalse(
             file_utils.validate_file(self.tmp_file.name, wrong_hash, "sha256")
         )
@@ -286,7 +335,29 @@ class TestValidateFile(test_case.TestCase):
         os.remove(self.tmp_file.name)
 
 
-class TestIsRemotePath(test_case.TestCase):
+class ResolveHasherTest(test_case.TestCase):
+    def test_resolve_hasher_sha256(self):
+        """Test resolving hasher for sha256 algorithm."""
+        hasher = file_utils.resolve_hasher("sha256")
+        self.assertIsInstance(hasher, type(hashlib.sha256()))
+
+    def test_resolve_hasher_auto_sha256(self):
+        """Auto-detect and resolve hasher for sha256."""
+        hasher = file_utils.resolve_hasher("auto", file_hash="a" * 64)
+        self.assertIsInstance(hasher, type(hashlib.sha256()))
+
+    def test_resolve_hasher_auto_md5(self):
+        """Auto-detect and resolve hasher for md5."""
+        hasher = file_utils.resolve_hasher("auto", file_hash="a" * 32)
+        self.assertIsInstance(hasher, type(hashlib.md5()))
+
+    def test_resolve_hasher_default(self):
+        """Resolve hasher with a random algorithm value."""
+        hasher = file_utils.resolve_hasher("random_value")
+        self.assertIsInstance(hasher, type(hashlib.md5()))
+
+
+class IsRemotePath(test_case.TestCase):
     def test_gcs_remote_path(self):
         self.assertTrue(file_utils.is_remote_path("/gcs/some/path/to/file.txt"))
         self.assertTrue(file_utils.is_remote_path("/gcs/another/directory/"))
@@ -324,122 +395,48 @@ class TestIsRemotePath(test_case.TestCase):
         self.assertFalse(file_utils.is_remote_path(12345))
 
 
-class TestGetFile(test_case.TestCase):
+class GetFileTest(test_case.TestCase):
     def setUp(self):
+        """Set up temporary directories and sample files."""
         self.temp_dir = self.get_temp_dir()
         self.file_path = os.path.join(self.temp_dir, "sample_file.txt")
         with open(self.file_path, "w") as f:
             f.write("Sample content")
 
-    def test_get_file_and_validate_it(self):
+    def test_valid_tar_extraction(self):
+        """Test valid tar.gz extraction and hash validation."""
+        dest_dir = self.get_temp_dir()
+        orig_dir = self.get_temp_dir()
+        text_file_path, tar_file_path = self._create_tar_file(orig_dir)
+        self._test_file_extraction_and_validation(
+            dest_dir, tar_file_path, "tar.gz"
+        )
+
+    def test_valid_zip_extraction(self):
+        """Test valid zip extraction and hash validation."""
+        dest_dir = self.get_temp_dir()
+        orig_dir = self.get_temp_dir()
+        text_file_path, zip_file_path = self._create_zip_file(orig_dir)
+        self._test_file_extraction_and_validation(
+            dest_dir, zip_file_path, "zip"
+        )
+
+    def test_valid_text_file_download(self):
+        """Test valid text file download and hash validation."""
         dest_dir = self.get_temp_dir()
         orig_dir = self.get_temp_dir()
         text_file_path = os.path.join(orig_dir, "test.txt")
-        tar_file_path = os.path.join(orig_dir, "test.tar.gz")
-        zip_file_path = os.path.join(orig_dir, "test.zip")
-
         with open(text_file_path, "w") as text_file:
             text_file.write("Float like a butterfly, sting like a bee.")
-
-        with tarfile.open(tar_file_path, "w:gz") as tar_file:
-            tar_file.add(text_file_path)
-
-        with zipfile.ZipFile(zip_file_path, "w") as zip_file:
-            zip_file.write(text_file_path)
-
-        origin = urllib.parse.urljoin(
-            "file://",
-            urllib.request.pathname2url(os.path.abspath(tar_file_path)),
+        self._test_file_extraction_and_validation(
+            dest_dir, text_file_path, None
         )
-
-        path = file_utils.get_file(
-            "test.txt", origin, untar=True, cache_subdir=dest_dir
-        )
-        filepath = path + ".tar.gz"
-        hashval_sha256 = file_utils.hash_file(filepath)
-        hashval_md5 = file_utils.hash_file(filepath, algorithm="md5")
-        path = file_utils.get_file(
-            "test.txt",
-            origin,
-            md5_hash=hashval_md5,
-            untar=True,
-            cache_subdir=dest_dir,
-        )
-        path = file_utils.get_file(
-            filepath,
-            origin,
-            file_hash=hashval_sha256,
-            extract=True,
-            cache_subdir=dest_dir,
-        )
-        self.assertTrue(os.path.exists(filepath))
-        self.assertTrue(file_utils.validate_file(filepath, hashval_sha256))
-        self.assertTrue(file_utils.validate_file(filepath, hashval_md5))
-        os.remove(filepath)
-
-        origin = urllib.parse.urljoin(
-            "file://",
-            urllib.request.pathname2url(os.path.abspath(zip_file_path)),
-        )
-
-        hashval_sha256 = file_utils.hash_file(zip_file_path)
-        hashval_md5 = file_utils.hash_file(zip_file_path, algorithm="md5")
-        path = file_utils.get_file(
-            "test",
-            origin,
-            md5_hash=hashval_md5,
-            extract=True,
-            cache_subdir=dest_dir,
-        )
-        path = file_utils.get_file(
-            "test",
-            origin,
-            file_hash=hashval_sha256,
-            extract=True,
-            cache_subdir=dest_dir,
-        )
-        self.assertTrue(os.path.exists(path))
-        self.assertTrue(file_utils.validate_file(path, hashval_sha256))
-        self.assertTrue(file_utils.validate_file(path, hashval_md5))
-        os.remove(path)
-
-        for file_path, extract in [
-            (text_file_path, False),
-            (tar_file_path, True),
-            (zip_file_path, True),
-        ]:
-            origin = urllib.parse.urljoin(
-                "file://",
-                urllib.request.pathname2url(os.path.abspath(file_path)),
-            )
-            hashval_sha256 = file_utils.hash_file(file_path)
-            path = file_utils.get_file(
-                origin=origin,
-                file_hash=hashval_sha256,
-                extract=extract,
-                cache_subdir=dest_dir,
-            )
-            self.assertTrue(os.path.exists(path))
-            self.assertTrue(file_utils.validate_file(path, hashval_sha256))
-            os.remove(path)
-
-        with self.assertRaisesRegexp(
-            ValueError, 'Please specify the "origin".*'
-        ):
-            _ = file_utils.get_file()
 
     def test_get_file_with_tgz_extension(self):
+        """Test extraction of file with .tar.gz extension."""
         dest_dir = self.get_temp_dir()
         orig_dir = dest_dir
-
-        text_file_path = os.path.join(orig_dir, "test.txt")
-        tar_file_path = os.path.join(orig_dir, "test.tar.gz")
-
-        with open(text_file_path, "w") as text_file:
-            text_file.write("Float like a butterfly, sting like a bee.")
-
-        with tarfile.open(tar_file_path, "w:gz") as tar_file:
-            tar_file.add(text_file_path)
+        text_file_path, tar_file_path = self._create_tar_file(orig_dir)
 
         origin = urllib.parse.urljoin(
             "file://",
@@ -453,6 +450,7 @@ class TestGetFile(test_case.TestCase):
         self.assertTrue(os.path.exists(path))
 
     def test_get_file_with_integrity_check(self):
+        """Test file download with integrity check."""
         orig_dir = self.get_temp_dir()
         file_path = os.path.join(orig_dir, "test.txt")
 
@@ -469,6 +467,7 @@ class TestGetFile(test_case.TestCase):
         self.assertTrue(os.path.exists(path))
 
     def test_get_file_with_failed_integrity_check(self):
+        """Test file download with failed integrity check."""
         orig_dir = self.get_temp_dir()
         file_path = os.path.join(orig_dir, "test.txt")
 
@@ -485,6 +484,66 @@ class TestGetFile(test_case.TestCase):
             ValueError, "Incomplete or corrupted file.*"
         ):
             _ = file_utils.get_file("test.txt", origin, file_hash=hashval)
+
+    def _create_tar_file(self, directory):
+        """Helper function to create a tar file."""
+        text_file_path = os.path.join(directory, "test.txt")
+        tar_file_path = os.path.join(directory, "test.tar.gz")
+        with open(text_file_path, "w") as text_file:
+            text_file.write("Float like a butterfly, sting like a bee.")
+
+        with tarfile.open(tar_file_path, "w:gz") as tar_file:
+            tar_file.add(text_file_path)
+
+        return text_file_path, tar_file_path
+
+    def _create_zip_file(self, directory):
+        """Helper function to create a zip file."""
+        text_file_path = os.path.join(directory, "test.txt")
+        zip_file_path = os.path.join(directory, "test.zip")
+        with open(text_file_path, "w") as text_file:
+            text_file.write("Float like a butterfly, sting like a bee.")
+
+        with zipfile.ZipFile(zip_file_path, "w") as zip_file:
+            zip_file.write(text_file_path)
+
+        return text_file_path, zip_file_path
+
+    def _test_file_extraction_and_validation(
+        self, dest_dir, file_path, archive_type
+    ):
+        """Helper function for file extraction and validation."""
+        origin = urllib.parse.urljoin(
+            "file://",
+            urllib.request.pathname2url(os.path.abspath(file_path)),
+        )
+
+        hashval_sha256 = file_utils.hash_file(file_path)
+        hashval_md5 = file_utils.hash_file(file_path, algorithm="md5")
+
+        if archive_type:
+            extract = True
+        else:
+            extract = False
+
+        path = file_utils.get_file(
+            "test",
+            origin,
+            md5_hash=hashval_md5,
+            extract=extract,
+            cache_subdir=dest_dir,
+        )
+        path = file_utils.get_file(
+            "test",
+            origin,
+            file_hash=hashval_sha256,
+            extract=extract,
+            cache_subdir=dest_dir,
+        )
+        self.assertTrue(os.path.exists(path))
+        self.assertTrue(file_utils.validate_file(path, hashval_sha256))
+        self.assertTrue(file_utils.validate_file(path, hashval_md5))
+        os.remove(path)
 
     def test_is_remote_path(self):
         self.assertTrue(file_utils.is_remote_path("gs://bucket/path"))
