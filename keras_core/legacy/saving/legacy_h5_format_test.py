@@ -486,6 +486,7 @@ class LegacyH5BackwardsCompatTest(testing.TestCase):
 @pytest.mark.requires_trainable_backend
 class DirectoryCreationTest(testing.TestCase):
     def test_directory_creation_on_save(self):
+        """Test if directory is created on model save."""
         model = get_sequential_model(keras_core)
         nested_dirpath = os.path.join(
             self.get_temp_dir(), "dir1", "dir2", "dir3"
