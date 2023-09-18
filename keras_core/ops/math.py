@@ -963,6 +963,7 @@ class Erf(Operation):
         return backend.erf(input_tensor)
 
 
+@keras_core_export("keras_core.ops.erf")
 def erf(x):
     """Functional interface to the `Erf` operation."""
     return Erf()(x)
