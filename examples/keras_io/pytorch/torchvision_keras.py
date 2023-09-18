@@ -28,7 +28,6 @@ Dataloaders](https://pytorch.org/tutorials/beginner/basics/data_tutorial.html)
 PyTorch](https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html)
 - [Fine-tuning a TorchVision Model using Keras
 ](https://wandb.ai/ml-colabs/keras-torch/reports/Fine-tuning-a-TorchVision-Model-using-Keras--Vmlldzo1NDE5NDE1)
-](https://wandb.ai/ml-colabs/keras-torch/reports/Fine-tuning-a-TorchVision-Model-using-Keras--Vmlldzo1NDE5NDE1)
 
 ## Setup
 """
