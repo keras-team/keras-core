@@ -936,7 +936,7 @@ class Erf(Operation):
 
     Args:
         input_tensor: A tensor of type `float32` or `float64`.
-    
+
     Returns:
         A tensor of the same shape and type as `input_tensor`, containing the error function values.
 
@@ -952,6 +952,7 @@ class Erf(Operation):
     >>> x_large = np.array([1e10, -1e10])
     >>> y_large = Erf()(x_large)
     """
+
     def __init__(self):
         super().__init__()
 
@@ -960,6 +961,7 @@ class Erf(Operation):
 
     def call(self, input_tensor):
         return backend.erf(input_tensor)
+
 
 def erf(x):
     """Functional interface to the `Erf` operation."""

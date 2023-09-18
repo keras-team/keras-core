@@ -838,13 +838,14 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
 
 
 class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
-
     def test_erf_operation_basic(self):
         # Sample values for testing
         sample_values = np.array([-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0])
 
         # Expected output using numpy's approximation of the error function
-        expected_output = (2 / np.sqrt(np.pi)) * np.vectorize(math.erf)(sample_values)
+        expected_output = (2 / np.sqrt(np.pi)) * np.vectorize(math.erf)(
+            sample_values
+        )
 
         # Output from the erf operation in keras_core
         output_from_erf_op = kmath.erf(sample_values).numpy()
@@ -855,14 +856,22 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
     def test_erf_operation_dtype(self):
         # Test for float32 and float64 data types
         for dtype in [np.float32, np.float64]:
-            sample_values = np.array([-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0], dtype=dtype)
-            expected_output = (2 / np.sqrt(np.pi)) * np.vectorize(math.erf)(sample_values)
+            sample_values = np.array(
+                [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0], dtype=dtype
+            )
+            expected_output = (2 / np.sqrt(np.pi)) * np.vectorize(math.erf)(
+                sample_values
+            )
             output_from_erf_op = kmath.erf(sample_values).numpy()
             self.assertAllClose(expected_output, output_from_erf_op, atol=1e-5)
 
     def test_erf_operation_edge_cases(self):
         # Test for edge cases
         edge_values = np.array([1e10, -1e10, 1e-10, -1e-10], dtype=np.float64)
-        expected_edge_output = (2 / np.sqrt(np.pi)) * np.vectorize(math.erf)(edge_values)
+        expected_edge_output = (2 / np.sqrt(np.pi)) * np.vectorize(math.erf)(
+            edge_values
+        )
         output_from_edge_erf_op = kmath.erf(edge_values).numpy()
-        self.assertAllClose(expected_edge_output, output_from_edge_erf_op, atol=1e-5)
+        self.assertAllClose(
+            expected_edge_output, output_from_edge_erf_op, atol=1e-5
+        )
