@@ -1,14 +1,15 @@
 import os
-import unittest
+from unittest import mock
 
 import numpy as np
 
 from keras_core import layers
 from keras_core.models import Sequential
 from keras_core.saving import saving_api
+from keras_core.testing import test_case
 
 
-class SaveModelTests(unittest.TestCase):
+class SaveModelTests(test_case.TestCase):
     def setUp(self):
         self.model = Sequential(
             [
@@ -20,6 +21,10 @@ class SaveModelTests(unittest.TestCase):
         if os.path.exists(self.filepath):
             os.remove(self.filepath)
         saving_api.save_model(self.model, self.filepath)
+
+    def test_h5_deprecation_warning(self):
+        with self.assertWarns(UserWarning):
+            saving_api.save_model(self.model, "test_model.h5")
 
     def test_basic_saving(self):
         loaded_model = saving_api.load_model(self.filepath)
@@ -44,7 +49,7 @@ class SaveModelTests(unittest.TestCase):
         filepath_h5 = "test_model.h5"
         saving_api.save_model(self.model, filepath_h5)
         self.assertTrue(os.path.exists(filepath_h5))
-        os.remove(filepath_h5)  # Cleanup
+        os.remove(filepath_h5)
 
     def test_save_unsupported_extension(self):
         with self.assertRaisesRegex(
@@ -56,8 +61,23 @@ class SaveModelTests(unittest.TestCase):
         if os.path.exists(self.filepath):
             os.remove(self.filepath)
 
+    def test_h5_deprecation_warning(self):
+        with self.assertLogs(level="WARNING") as log:
+            saving_api.save_model(self.model, "test_model.h5")
+            expected_warning_msg = (
+                "You are saving your model as an HDF5 file via `model.save()`"
+            )
+            matched_logs = [
+                msg for msg in log.output if expected_warning_msg in msg
+            ]
+            self.assertEqual(
+                len(matched_logs),
+                1,
+                f"Expected warning message not found in logs: {log.output}",
+            )
 
-class LoadModelTests(unittest.TestCase):
+
+class LoadModelTests(test_case.TestCase):
     def setUp(self):
         self.model = Sequential(
             [
@@ -97,8 +117,21 @@ class LoadModelTests(unittest.TestCase):
         if os.path.exists(self.filepath):
             os.remove(self.filepath)
 
+    def test_load_model_with_custom_objects(self):
+        class CustomLayer(layers.Layer):
+            def call(self, inputs):
+                return inputs
 
-class LoadWeightsTests(unittest.TestCase):
+        model = Sequential([CustomLayer(input_shape=(3,))])
+        model.save("custom_model.keras")
+        loaded_model = saving_api.load_model(
+            "custom_model.keras", custom_objects={"CustomLayer": CustomLayer}
+        )
+        self.assertIsInstance(loaded_model.layers[0], CustomLayer)
+        os.remove("custom_model.keras")
+
+
+class LoadWeightsTests(test_case.TestCase):
     def setUp(self):
         self.model = Sequential(
             [
@@ -120,3 +153,13 @@ class LoadWeightsTests(unittest.TestCase):
         filepath = "test_weights.weights.h5"
         if os.path.exists(filepath):
             os.remove(filepath)
+
+    def test_load_h5_weights_by_name(self):
+        filepath = "test_weights.weights.h5"
+        self.model.save_weights(filepath)
+        with self.assertRaisesRegex(ValueError, "Invalid keyword arguments"):
+            self.model.load_weights(filepath, by_name=True)
+
+    def test_load_weights_invalid_extension(self):
+        with self.assertRaisesRegex(ValueError, "File format not supported"):
+            self.model.load_weights("invalid_extension.pkl")

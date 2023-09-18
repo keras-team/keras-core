@@ -179,7 +179,7 @@ class FilterSafePathsTest(test_case.TestCase):
         os.remove(invalid_path)
 
     def test_symbolic_link_in_base_dir(self):
-        """Test a symbolic link within the base directory is correctly processed."""
+        """symbolic link within the base directory is correctly processed."""
         symlink_path = os.path.join(self.base_dir, "symlink.txt")
         target_path = os.path.join(self.base_dir, "target.txt")
 
@@ -192,7 +192,6 @@ class FilterSafePathsTest(test_case.TestCase):
         with tarfile.open(self.tar_path, "w") as tar:
             tar.add(symlink_path, arcname="symlink.txt")
 
-        # Open the tar archive and check if the symbolic link is correctly processed.
         with tarfile.open(self.tar_path, "r") as tar:
             members = list(file_utils.filter_safe_paths(tar.getmembers()))
             self.assertEqual(len(members), 1)
