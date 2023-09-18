@@ -1,7 +1,5 @@
 import warnings
 
-from keras_core import ops
-
 
 def _convert_conv_tranpose_padding_args_from_keras_to_jax(
     kernel_size, stride, dilation_rate, padding, output_padding
@@ -267,6 +265,7 @@ def encode_categorical_inputs(
     sparse=False,
     count_weights=None,
 ):
+    from keras_core import ops
     """Encodes categoical inputs according to output_mode."""
     if output_mode == "int":
         return ops.identity(ops.cast(inputs, dtype))
