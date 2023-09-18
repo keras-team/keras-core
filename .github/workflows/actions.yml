@@ -59,7 +59,7 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           env_vars: PYTHON,KERAS_BACKEND
-          flags: keras_core.applications
+          flags: keras_core.applications,keras_core.applications-${{ matrix.backend }}
           files: apps-coverage.xml
       - name: Test with pytest
         run: |
@@ -69,7 +69,7 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           env_vars: PYTHON,KERAS_BACKEND
-          flags: keras_core
+          flags: keras_core,keras_core-${{ matrix.backend }}
           files: core-coverage.xml
 
   format:
