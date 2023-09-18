@@ -387,33 +387,19 @@ def validate_file(fpath, file_hash, algorithm="auto", chunk_size=65535):
 
 def is_remote_path(filepath):
     """Returns `True` for paths that represent a remote location."""
-    SUPPORTED_PROTOCOLS = ["http", "https", "ftp", "gcs", "cns", "cfs"]
-    PROTOCOL_PATTERN = re.compile(r"^(?P<protocol>\w+)://", re.IGNORECASE)
-
     # Convert to string in case the filepath is in a different format
     filepath_str = str(filepath).strip()
 
-    # Check for "protocol://" pattern using case-insensitive matching
-    match = PROTOCOL_PATTERN.match(filepath_str)
-    if match and match.group("protocol").lower() in SUPPORTED_PROTOCOLS:
-        return True
+    # Specific patterns for supported remote paths
+    supported_patterns = [
+        re.compile(r"^(gs|cns|cfs|http|https|ftp|s3)://.*$", re.IGNORECASE)
+    ]
 
-    # Check for known remote path prefixes using case-insensitive matching
-    for protocol in SUPPORTED_PROTOCOLS:
-        if filepath_str.lower().startswith(
-            "/" + protocol + "/"
-        ) or filepath_str.startswith("/" + protocol + "/"):
+    for pattern in supported_patterns:
+        if pattern.match(filepath_str):
             return True
 
     return False
-
-
-# def is_remote_path(filepath):
-#     """Returns `True` for paths that represent a remote GCS location."""
-#     # TODO: improve generality.
-#     if re.match(r"^(/cns|/cfs|/gcs|.*://).*$", str(filepath)):
-#         return True
-#     return False
 
 
 # Below are gfile-replacement utils.
