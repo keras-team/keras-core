@@ -602,7 +602,7 @@ class ResolveHasherTest(test_case.TestCase):
         self.assertIsInstance(hasher, type(hashlib.md5()))
 
 
-class IsRemotePath(test_case.TestCase):
+class IsRemotePathTest(test_case.TestCase):
     def test_gs_remote_path(self):
         self.assertFalse(file_utils.is_remote_path("/gs/some/path/to/file.txt"))
         self.assertFalse(file_utils.is_remote_path("/gs/another/directory/"))
@@ -691,3 +691,14 @@ class IsRemotePath(test_case.TestCase):
         self.assertFalse(file_utils.is_remote_path("/gslocal/some/path"))
         self.assertFalse(file_utils.is_remote_path("/cnslocal/some/path"))
         self.assertFalse(file_utils.is_remote_path("/cfslocal/some/path"))
+
+
+class TestRaiseIfNoGFile(test_case.TestCase):
+    def test_raise_if_no_gfile_raises_correct_message(self):
+        path = "gs://bucket/some/file.txt"
+        expected_error_msg = (
+            "Handling remote paths requires installing TensorFlow "
+            f".*Received path: {path}"
+        )
+        with self.assertRaisesRegex(ValueError, expected_error_msg):
+            file_utils._raise_if_no_gfile(path)
