@@ -543,6 +543,18 @@ class ExportArchiveTest(testing.TestCase):
 
 
 @pytest.mark.skipif(
+    backend.backend() != "jax" or sys.modules["jax"].__version__ <= "0.4.15",
+    reason="This test is for invalid JAX versions, i.e. versions > 0.4.15.",
+)
+class VersionTest(testing.TestCase):
+    def test_invalid_jax_version(self):
+        with self.assertRaisesRegex(
+            ValueError, "only compatible with JAX version"
+        ):
+            _ = export_lib.ExportArchive()
+
+
+@pytest.mark.skipif(
     backend.backend() != "tensorflow",
     reason="TFSM Layer reloading is only for the TF backend.",
 )
