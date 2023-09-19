@@ -813,10 +813,11 @@ def split(x, indices_or_sections, axis=0):
     else:
         if dim % indices_or_sections != 0:
             raise ValueError(
-                "`indices_or_sections` is given as an integar, but it cannot "
-                "split the array into equal division. Received: "
-                f"indices_or_sections={indices_or_sections}, "
-                f"x.shape[axis]={x.shape[axis]}"
+                f"Received indices_or_sections={indices_or_sections} "
+                f"(interpreted as a number of sections) and axis={axis}, "
+                f"but input dimension x.shape[{axis}]={x.shape[axis]} "
+                f"is not divisible by {indices_or_sections}. "
+                f"Full input shape: x.shape={x.shape}"
             )
         chunk_sizes = dim // indices_or_sections
     out = torch.split(
