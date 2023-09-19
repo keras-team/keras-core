@@ -35,7 +35,7 @@ def to_dtensor_mesh(device_mesh):
         device_mesh: DeviceMesh instance to convert.
 
     Returns:
-        A `dtensor.Mesh` instance.
+        A `tf.dtensor.Mesh` instance.
     """
     mesh_dims = list(zip(device_mesh.axis_names, device_mesh.shape))
     return dtensor.create_mesh(mesh_dims=mesh_dims, devices=device_mesh.devices.flatten())
@@ -48,7 +48,7 @@ def to_dtensor_layout(tensor_layout):
         tensor_layout: TensorLayout instance to convert.
 
     Returns:
-        A `dtensor.Layout` instance.
+        A `tf.dtensor.Layout` instance.
     """
     if tensor_layout.device_mesh is None:
         raise ValueError(

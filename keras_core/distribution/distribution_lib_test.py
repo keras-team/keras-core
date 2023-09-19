@@ -41,7 +41,7 @@ class DeviceMeshTest(testing.TestCase):
         self.assertEqual(mesh.devices.shape, shape)
 
     def test_input_validation(self):
-        devices = ["CPU:{i}" for i in range(4)]
+        devices = [f"CPU:{i}" for i in range(4)]
         with self.assertRaisesRegex(
             ValueError, "Shape and axis_names cannot be empty"
         ):
@@ -106,7 +106,7 @@ class TensorLayoutTest(testing.TestCase):
 class DistributionTest(testing.TestCase):
     def setUp(self):
         super().setUp()
-        devices = ["CPU:{i}" for i in range(8)]
+        devices = [f"CPU:{i}" for i in range(8)]
         shape = (4, 2)
         axis_names = ["batch", "model"]
 
@@ -136,7 +136,7 @@ class DistributionTest(testing.TestCase):
 class DataParallelDistributionTest(testing.TestCase):
     def setUp(self):
         super().setUp()
-        self.devices = ["CPU:{i}" for i in range(8)]
+        self.devices = [f"CPU:{i}" for i in range(8)]
         shape = (8,)
         axis_names = ["data"]
 
@@ -164,7 +164,7 @@ class DataParallelDistributionTest(testing.TestCase):
     @mock.patch.object(
         distribution_lib,
         "list_devices",
-        return_value=["CPU:{i}" for i in range(8)],
+        return_value=[f"CPU:{i}" for i in range(8)],
     )
     def test_create_with_list_devices(self, mock_list_devices):
         distribution = distribution_lib.DataParallel()
@@ -199,7 +199,7 @@ class DataParallelDistributionTest(testing.TestCase):
 class ModelParallelDistributionTest(testing.TestCase):
     def setUp(self):
         super().setUp()
-        self.devices = ["CPU:{i}" for i in range(8)]
+        self.devices = [f"CPU:{i}" for i in range(8)]
         shape = (2, 4)
         axis_names = ["data", "model"]
 
@@ -246,7 +246,7 @@ class ModelParallelDistributionTest(testing.TestCase):
 class LayoutMapTest(testing.TestCase):
     def setUp(self):
         super().setUp()
-        self.devices = ["CPU:{i}" for i in range(8)]
+        self.devices = [f"CPU:{i}" for i in range(8)]
         shape = (4, 2)
         axis_names = ["data", "model"]
 
@@ -360,7 +360,7 @@ class JaxDistributionLibTest(testing.TestCase):
         self.assertEqual(len(distribution_lib.list_devices("CPU")), 8)
 
     def test_to_jax_mesh(self):
-        devices = ["CPU:{i}" for i in range(8)]
+        devices = [f"CPU:{i}" for i in range(8)]
         shape = (4, 2)
         axis_names = ["batch", "model"]
 
