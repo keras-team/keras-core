@@ -231,17 +231,7 @@ class Discretization(TFDataLayer):
         return
 
     def call(self, inputs):
-        if not isinstance(
-            inputs,
-            (
-                np.ndarray,
-                backend.KerasTensor,
-            ),
-        ):
-            self._convert_input_args = True
-
         indices = ops.digitize(inputs, self.bin_boundaries)
-
         outputs = encode_categorical_inputs(
             indices,
             output_mode=self.output_mode,
