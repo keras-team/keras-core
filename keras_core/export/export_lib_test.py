@@ -1,6 +1,7 @@
 """Tests for inference-only model/layer exporting utilities."""
 import os
 import sys
+
 import numpy as np
 import pytest
 import tensorflow as tf
@@ -29,7 +30,7 @@ def get_model():
     reason="Export only currently supports the TF and JAX backends.",
 )
 @pytest.mark.skipif(
-    backend.backend()=="jax" and sys.modules["jax"].__version__ > "0.4.15",
+    backend.backend() == "jax" and sys.modules["jax"].__version__ > "0.4.15",
     reason="The export API is only compatible with JAX version <= 0.4.15.",
 )
 class ExportArchiveTest(testing.TestCase):
