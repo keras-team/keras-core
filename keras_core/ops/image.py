@@ -460,7 +460,7 @@ def map_coordinates(
 
     Note that interpolation near boundaries differs from the scipy function,
     because we fixed an outstanding bug
-    https://github.com/scipy/scipy/issues/2640.
+    [scipy/issues/2640](https://github.com/scipy/scipy/issues/2640).
 
     Args:
         input: The input array.
