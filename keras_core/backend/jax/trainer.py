@@ -584,9 +584,7 @@ class JAXTrainer(base_trainer.Trainer):
         ]
         metrics_variables = [v.value for v in self.metrics_variables]
 
-        self._purge_model_variables(
-            trainable_variables=False, optimizer_variables=False
-        )
+        self._purge_model_variables(optimizer_variables=False)
         for step, data in epoch_iterator.enumerate_epoch(return_type="np"):
             callbacks.on_test_batch_begin(step)
 
