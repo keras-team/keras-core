@@ -192,10 +192,10 @@ def dropout(inputs, rate, noise_shape=None, seed=None):
 
 @keras_core_export("keras_core.random.shuffle")
 def shuffle(x, axis=0, seed=None):
-    """Shuffle the elements of an array uniformly at random along an axis.
+    """Shuffle the elements of a tensor uniformly at random along an axis.
 
     Args:
-        x: The array to be shuffled.
+        x: The tensor to be shuffled.
         axis: An integer specifying the axis along which to shuffle. Defaults to
             `0`.
         seed: A Python integer or instance of
