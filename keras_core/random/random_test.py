@@ -221,15 +221,15 @@ class RandomTest(testing.TestCase, parameterized.TestCase):
         x = np.arange(100).reshape(10, 10)
 
         # Test axis=0
-        expected = random.shuffle(x, seed=0)
+        y = random.shuffle(x, seed=0)
 
-        self.assertFalse(np.all(x == ops.convert_to_numpy(expected)))
-        self.assertAllClose(np.sum(x, axis=0), ops.sum(expected, axis=0))
-        self.assertNotAllClose(np.sum(x, axis=1), ops.sum(expected, axis=1))
+        self.assertFalse(np.all(x == ops.convert_to_numpy(y)))
+        self.assertAllClose(np.sum(x, axis=0), ops.sum(y, axis=0))
+        self.assertNotAllClose(np.sum(x, axis=1), ops.sum(y, axis=1))
 
         # Test axis=1
-        expected = random.shuffle(x, axis=1, seed=0)
+        y = random.shuffle(x, axis=1, seed=0)
 
-        self.assertFalse(np.all(x == ops.convert_to_numpy(expected)))
-        self.assertAllClose(np.sum(x, axis=1), ops.sum(expected, axis=1))
-        self.assertNotAllClose(np.sum(x, axis=0), ops.sum(expected, axis=0))
+        self.assertFalse(np.all(x == ops.convert_to_numpy(y)))
+        self.assertAllClose(np.sum(x, axis=1), ops.sum(y, axis=1))
+        self.assertNotAllClose(np.sum(x, axis=0), ops.sum(y, axis=0))
