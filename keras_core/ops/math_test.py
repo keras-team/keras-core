@@ -853,7 +853,7 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
 
     def test_erf_operation_dtype(self):
         # Test for float32 and float64 data types
-        for dtype in [np.float32, np.float64]:
+        for dtype in ("float32", "float64"):
             sample_values = np.array(
                 [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0], dtype=dtype
             )

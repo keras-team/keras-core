@@ -411,6 +411,5 @@ def rsqrt(x):
 
 
 def erf(x):
-    if not isinstance(x, torch.Tensor):
-        x = torch.tensor(x)
+    x = convert_to_tensor(x)
     return torch.erf(x)

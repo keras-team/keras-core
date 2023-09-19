@@ -932,13 +932,22 @@ def rsqrt(x):
 
 
 class Erf(Operation):
+    def compute_output_spec(self, x):
+        return KerasTensor(shape=x.shape, dtype=x.dtype)
+
+    def call(self, x):
+        return backend.erf(x)
+
+
+@keras_core_export("keras_core.ops.erf")
+def erf(x):
     """Computes the error function of x element-wise.
 
     Args:
-        input_tensor: A tensor of type `float32` or `float64`.
+        x: input tensor
 
     Returns:
-        A tensor of the same shape and type as `input_tensor`.
+        A tensor with the same type as `x`.
 
     Examples:
 
@@ -953,17 +962,4 @@ class Erf(Operation):
     >>> y_large = Erf()(x_large)
     """
 
-    def __init__(self):
-        super().__init__()
-
-    def compute_output_spec(self, input_tensor):
-        return KerasTensor(shape=input_tensor.shape, dtype=input_tensor.dtype)
-
-    def call(self, input_tensor):
-        return backend.erf(input_tensor)
-
-
-@keras_core_export("keras_core.ops.erf")
-def erf(x):
-    """Functional interface to the `Erf` operation."""
     return Erf()(x)
