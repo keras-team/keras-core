@@ -183,16 +183,15 @@ def rnn(
 
             scan_xs = inputs
 
-        # We must use a stateless scope because `scan` will involve
-        # JAX tracing -- any variable update at this stage would
-        # be a leak.
         if stateless_scope.in_stateless_scope():
-            # Leverage the parent scope.
+            # Reuse the existing parent stateless scope.
             scope = contextlib.nullcontext()
         else:
             scope = stateless_scope.StatelessScope()
-
         with scope:
+            # We must use a stateless scope because `scan` will involve
+            # JAX tracing -- any variable update at this stage would
+            # be a leak.
             new_states, outputs = lax.scan(
                 f=_step,
                 init=initial_states,
