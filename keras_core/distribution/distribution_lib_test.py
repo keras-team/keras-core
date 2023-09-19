@@ -502,15 +502,13 @@ class JaxDistributionLibTest(testing.TestCase):
     reason="Backend specific test",
 )
 class TensorflowDistributionLibTest(testing.TestCase):
-
     def setUp(self):
         super().setUp()
         # Config virtual devices for testing.
         cpus = tf.config.list_physical_devices("CPU")
         context._reset_context()
         tf.config.set_logical_device_configuration(
-            cpus[0],
-            [tf.config.LogicalDeviceConfiguration()] * 8
+            cpus[0], [tf.config.LogicalDeviceConfiguration()] * 8
         )
 
     def test_list_devices(self):

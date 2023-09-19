@@ -5,15 +5,14 @@ Distribution related class for Tensorflow backend.
 This is just a prototype and we might want to unify it
 with other backends in the future.
 """
-import tensorflow as tf
 from tensorflow.experimental import dtensor
 
 
 def list_devices(device_type=None):
     """Return all the available devices based on the device type.
-    
+
     Note that this should return the global devices in a distributed setting.
-    
+
     Args:
         device_type: string of `"cpu"`, `"gpu"` or `"tpu"`. Default to `gpu` or
         `tpu` if available when device_type is not provided. Otherwise will
@@ -38,7 +37,9 @@ def to_dtensor_mesh(device_mesh):
         A `tf.dtensor.Mesh` instance.
     """
     mesh_dims = list(zip(device_mesh.axis_names, device_mesh.shape))
-    return dtensor.create_mesh(mesh_dims=mesh_dims, devices=device_mesh.devices.flatten())
+    return dtensor.create_mesh(
+        mesh_dims=mesh_dims, devices=device_mesh.devices.flatten()
+    )
 
 
 def to_dtensor_layout(tensor_layout):
