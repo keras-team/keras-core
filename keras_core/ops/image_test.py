@@ -262,10 +262,10 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
 
         # Unbatched case
         if data_format == "channels_first":
-            x = np.random.random((3, 50, 50)) * 255
+            x = np.random.random((3, 50, 50)).astype("float32") * 255
         else:
-            x = np.random.random((50, 50, 3)) * 255
-        transform = np.random.random(size=(6))
+            x = np.random.random((50, 50, 3)).astype("float32") * 255
+        transform = np.random.random(size=(6)).astype("float32")
         transform = np.pad(transform, (0, 2))  # makes c0, c1 always 0
         out = kimage.affine_transform(
             x,
@@ -290,10 +290,10 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
 
         # Batched case
         if data_format == "channels_first":
-            x = np.random.random((2, 3, 50, 50)) * 255
+            x = np.random.random((2, 3, 50, 50)).astype("float32") * 255
         else:
-            x = np.random.random((2, 50, 50, 3)) * 255
-        transform = np.random.random(size=(2, 6))
+            x = np.random.random((2, 50, 50, 3)).astype("float32") * 255
+        transform = np.random.random(size=(2, 6)).astype("float32")
         transform = np.pad(transform, [(0, 0), (0, 2)])  # makes c0, c1 always 0
         out = kimage.affine_transform(
             x,
