@@ -1187,19 +1187,19 @@ class NNOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         self.assertAllClose(variance, np.var(x))
 
         # Test batch statistics for 4D moments (batch, height, width, channels)
-        x = np.random.uniform(size=(2, 28, 28, 3))
+        x = np.random.uniform(size=(2, 28, 28, 3)).astype(np.float32)
         mean, variance = knn.moments(x, axes=[0])
         self.assertAllClose(mean, np.mean(x, axis=0))
         self.assertAllClose(variance, np.var(x, axis=0))
 
         # Test global statistics for 4D moments (batch, height, width, channels)
-        x = np.random.uniform(size=(2, 28, 28, 3))
+        x = np.random.uniform(size=(2, 28, 28, 3)).astype(np.float32)
         mean, variance = knn.moments(x, axes=[0, 1, 2])
         self.assertAllClose(mean, np.mean(x, axis=(0, 1, 2)))
         self.assertAllClose(variance, np.var(x, axis=(0, 1, 2)))
 
         # Test keepdims
-        x = np.random.uniform(size=(2, 28, 28, 3))
+        x = np.random.uniform(size=(2, 28, 28, 3)).astype(np.float32)
         mean, variance = knn.moments(x, axes=[0, 1, 2], keepdims=True)
         self.assertAllClose(mean, np.mean(x, axis=(0, 1, 2), keepdims=True))
         self.assertAllClose(variance, np.var(x, axis=(0, 1, 2), keepdims=True))
