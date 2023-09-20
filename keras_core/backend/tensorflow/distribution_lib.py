@@ -5,6 +5,7 @@ Distribution related class for Tensorflow backend.
 This is just a prototype and we might want to unify it
 with other backends in the future.
 """
+import tensorflow as tf
 from tensorflow.experimental import dtensor
 
 
@@ -24,7 +25,7 @@ def list_devices(device_type=None):
     device_type = (
         device_type.lower() if device_type else dtensor.preferred_device_type()
     )
-    return dtensor.local_devices(device_type=device_type)
+    return tf.config.list_logical_devices(device_type=device_type)
 
 
 def to_dtensor_mesh(device_mesh):
