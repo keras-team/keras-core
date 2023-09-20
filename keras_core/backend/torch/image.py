@@ -111,8 +111,7 @@ def affine_transform(
     if fill_mode not in AFFINE_TRANSFORM_FILL_MODES:
         raise ValueError(
             "Invalid value for argument `fill_mode`. Expected of one "
-            f"{AFFINE_TRANSFORM_FILL_MODES}. "
-            f"Received: fill_mode={fill_mode}"
+            f"{AFFINE_TRANSFORM_FILL_MODES}. Received: fill_mode={fill_mode}"
         )
 
     image = convert_to_tensor(image)
