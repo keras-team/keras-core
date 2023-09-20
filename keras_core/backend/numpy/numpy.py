@@ -80,7 +80,13 @@ def append(
 
 
 def arange(start, stop=None, step=None, dtype=None):
-    dtype = dtype or "int32"
+    if dtype is None:
+        if hasattr(start, "dtype"):
+            dtype = start.dtype
+        elif isinstance(start, int):
+            dtype = "int32"
+        else:
+            dtype = config.floatx()
     return np.arange(start, stop, step=step, dtype=dtype)
 
 
@@ -281,7 +287,6 @@ def full(shape, fill_value, dtype=None):
 
 
 def full_like(x, fill_value, dtype=None):
-    dtype = dtype or config.floatx()
     return np.full_like(x, fill_value, dtype=dtype)
 
 
@@ -377,7 +382,6 @@ def logical_or(x1, x2):
 
 
 def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
-    dtype = dtype or config.floatx()
     return np.logspace(
         start,
         stop,
@@ -431,12 +435,10 @@ def not_equal(x1, x2):
 
 
 def zeros_like(x, dtype=None):
-    dtype = dtype or config.floatx()
     return np.zeros_like(x, dtype=dtype)
 
 
 def ones_like(x, dtype=None):
-    dtype = dtype or config.floatx()
     return np.ones_like(x, dtype=dtype)
 
 
@@ -449,7 +451,6 @@ def pad(x, pad_width, mode="constant"):
 
 
 def prod(x, axis=None, keepdims=False, dtype=None):
-    dtype = dtype or config.floatx()
     axis = tuple(axis) if isinstance(axis, list) else axis
     return np.prod(x, axis=axis, keepdims=keepdims, dtype=dtype)
 
