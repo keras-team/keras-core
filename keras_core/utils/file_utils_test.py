@@ -657,43 +657,9 @@ class IsRemotePathTest(test_case.TestCase):
         self.assertFalse(file_utils.is_remote_path("/gs/another/directory/"))
         self.assertTrue(file_utils.is_remote_path("gs://bucket/some/file.txt"))
 
-    def test_cns_remote_path(self):
-        self.assertFalse(
-            file_utils.is_remote_path("/cns/some/path/to/file.txt")
-        )
-        self.assertFalse(file_utils.is_remote_path("/cns/another/directory/"))
-        self.assertTrue(file_utils.is_remote_path("cns://some/directory/"))
-
-    def test_cfs_remote_path(self):
-        self.assertFalse(
-            file_utils.is_remote_path("/cfs/some/path/to/file.txt")
-        )
-        self.assertFalse(file_utils.is_remote_path("/cfs/another/directory/"))
-        self.assertTrue(file_utils.is_remote_path("cfs://some/directory/"))
-
-    def test_s3_remote_path(self):
-        self.assertTrue(file_utils.is_remote_path("s3://bucket/some/file.txt"))
-        self.assertTrue(
-            file_utils.is_remote_path("s3://bucket/another/directory/")
-        )
-        self.assertFalse(file_utils.is_remote_path("/s3/some/path/to/file.txt"))
-        self.assertFalse(file_utils.is_remote_path("/s3/another/directory/"))
-
-    def test_http_and_https_remote_path(self):
-        self.assertTrue(
-            file_utils.is_remote_path("http://example.com/path/to/file.txt")
-        )
-        self.assertTrue(
-            file_utils.is_remote_path("https://secure.example.com/directory/")
-        )
-        self.assertFalse(file_utils.is_remote_path("/http/some/local/path"))
-        self.assertFalse(file_utils.is_remote_path("/https/some/local/path"))
-
-    def test_ftp_remote_path(self):
-        self.assertTrue(
-            file_utils.is_remote_path("ftp://files.example.com/somefile.txt")
-        )
-        self.assertFalse(file_utils.is_remote_path("/ftp/some/local/path"))
+    def test_hdfs_remote_path(self):
+        self.assertTrue(file_utils.is_remote_path("hdfs://some/path/on/hdfs"))
+        self.assertFalse(file_utils.is_remote_path("/hdfs/some/local/path"))
 
     def test_non_remote_paths(self):
         self.assertFalse(file_utils.is_remote_path("/local/path/to/file.txt"))
@@ -717,19 +683,9 @@ class IsRemotePathTest(test_case.TestCase):
         self.assertTrue(file_utils.is_remote_path("gs://some/path?query=value"))
         self.assertTrue(file_utils.is_remote_path("gs://some/path with spaces"))
 
-    def test_unsupported_protocols(self):
-        self.assertFalse(file_utils.is_remote_path("mailto:user@example.com"))
-        self.assertFalse(
-            file_utils.is_remote_path(
-                "data:text/plain;charset=utf-8,Hello%20World!"
-            )
-        )
-        self.assertFalse(file_utils.is_remote_path("file://local/path"))
-
     def test_case_sensitivity(self):
         self.assertTrue(file_utils.is_remote_path("gs://sOme/Path"))
-        self.assertTrue(file_utils.is_remote_path("HTTP://eXample.Com"))
-        self.assertTrue(file_utils.is_remote_path("hTtP://exaMple.cOm"))
+        self.assertTrue(file_utils.is_remote_path("hdfS://some/Path"))
 
     def test_whitespace_in_paths(self):
         self.assertTrue(file_utils.is_remote_path("  gs://some/path  "))
