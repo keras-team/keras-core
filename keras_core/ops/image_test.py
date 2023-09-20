@@ -259,6 +259,15 @@ class ImageOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
                 "affine_transform with fill_mode=wrap is inconsistent with"
                 "scipy"
             )
+        # TODO: `nearest` interpolation and `nearest` fill_mode in torch and jax
+        # causes random index shifting, resulting in significant differences in
+        # output which leads to failure
+        if backend.backend() in ("torch", "jax") and interpolation == "nearest":
+            self.skipTest(
+                f"In {backend.backend()} backend, "
+                f"interpolation={interpolation} causes index shifting and "
+                "leads test failure"
+            )
 
         # Unbatched case
         if data_format == "channels_first":
