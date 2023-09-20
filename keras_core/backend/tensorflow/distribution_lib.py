@@ -23,7 +23,7 @@ def list_devices(device_type=None):
         List of devices that are available for distribute computation.
     """
     device_type = (
-        device_type.lower() if device_type else dtensor.preferred_device_type()
+        device_type.upper() if device_type else dtensor.preferred_device_type()
     )
     return tf.config.list_logical_devices(device_type=device_type)
 
