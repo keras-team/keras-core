@@ -1,5 +1,8 @@
 import numpy as np
 
+from keras_core.backend import config
+from keras_core.backend import standardize_dtype
+
 
 def add(x1, x2):
     return np.add(x1, x2)
@@ -77,6 +80,7 @@ def append(
 
 
 def arange(start, stop=None, step=None, dtype=None):
+    dtype = dtype or "int32"
     return np.arange(start, stop, step=step, dtype=dtype)
 
 
@@ -124,6 +128,7 @@ def argsort(x, axis=-1):
 
 
 def array(x, dtype=None):
+    dtype = dtype or config.floatx()
     return np.array(x, dtype=dtype)
 
 
@@ -271,10 +276,12 @@ def floor(x):
 
 
 def full(shape, fill_value, dtype=None):
+    dtype = dtype or config.floatx()
     return np.full(shape, fill_value, dtype=dtype)
 
 
 def full_like(x, fill_value, dtype=None):
+    dtype = dtype or config.floatx()
     return np.full_like(x, fill_value, dtype=dtype)
 
 
@@ -370,6 +377,7 @@ def logical_or(x1, x2):
 
 
 def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
+    dtype = dtype or config.floatx()
     return np.logspace(
         start,
         stop,
@@ -423,10 +431,12 @@ def not_equal(x1, x2):
 
 
 def zeros_like(x, dtype=None):
+    dtype = dtype or config.floatx()
     return np.zeros_like(x, dtype=dtype)
 
 
 def ones_like(x, dtype=None):
+    dtype = dtype or config.floatx()
     return np.ones_like(x, dtype=dtype)
 
 
@@ -439,6 +449,7 @@ def pad(x, pad_width, mode="constant"):
 
 
 def prod(x, axis=None, keepdims=False, dtype=None):
+    dtype = dtype or config.floatx()
     axis = tuple(axis) if isinstance(axis, list) else axis
     return np.prod(x, axis=axis, keepdims=keepdims, dtype=dtype)
 
@@ -592,7 +603,11 @@ def square(x):
 
 
 def sqrt(x):
-    return np.sqrt(x)
+    dtype = None
+    if hasattr(x, "dtype"):
+        if standardize_dtype(x.dtype).startswith("int"):
+            dtype = config.floatx()
+    return np.sqrt(x, dtype=dtype)
 
 
 def squeeze(x, axis=None):

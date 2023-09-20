@@ -5,6 +5,7 @@ import warnings
 import tensorflow as tf
 from tensorflow.experimental import numpy as tfnp
 
+from keras_core.backend import config
 from keras_core.backend.tensorflow.core import convert_to_tensor
 
 
@@ -749,6 +750,9 @@ def square(x):
 
 
 def sqrt(x):
+    x = convert_to_tensor(x)
+    if x.dtype.is_integer:
+        x = tf.cast(x, dtype=config.floatx())
     return tfnp.sqrt(x)
 
 
