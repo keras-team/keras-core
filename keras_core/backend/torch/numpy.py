@@ -245,7 +245,9 @@ def average(x, axis=None, weights=None):
 
 def bincount(x, weights=None, minlength=0):
     x = convert_to_tensor(x, dtype=int)
-    weights = convert_to_tensor(weights)
+    if weights is not None:
+      weights = convert_to_tensor(weights)
+
     return torch.bincount(x, weights, minlength)
 
 

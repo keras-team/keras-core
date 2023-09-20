@@ -139,16 +139,16 @@ def encode_categorical_inputs(
         )
 
     binary_output = output_mode in ("multi_hot", "one_hot")
-    bincounts = backend_module.numpy.bincount(
-        inputs,
-        weights=count_weights,
-        minlength=depth,
-    )
     if binary_output:
-        one_hot_input = backend_module.nn.one_hot(inputs, depth)
-        bincounts = backend_module.numpy.where(
-            backend_module.numpy.any(one_hot_input, axis=-2), 1, 0
-        )
+      one_hot_input = backend_module.nn.one_hot(inputs, depth)
+      bincounts = backend_module.numpy.where(
+          backend_module.numpy.any(one_hot_input, axis=-2), 1, 0
+      )
+    else:
+      bincounts = backend_module.numpy.bincount(
+          inputs,
+          minlength=depth,
+      )
     bincounts = backend_module.cast(bincounts, dtype)
 
     return bincounts
