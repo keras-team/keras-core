@@ -27,6 +27,7 @@ class Loss:
     def __init__(self, name=None, reduction="sum_over_batch_size", dtype=None):
         self.name = name or auto_name(self.__class__.__name__)
         self.reduction = standardize_reduction(reduction)
+        self._dtype_config = dtype
         self.dtype = dtype or backend.floatx()
 
     def __call__(self, y_true, y_pred, sample_weight=None):
@@ -64,7 +65,7 @@ class Loss:
         raise NotImplementedError
 
     def get_config(self):
-        return {"name": self.name, "reduction": self.reduction}
+        return {"name": self.name, "reduction": self.reduction, "dtype": self._dtype_config}
 
     @classmethod
     def from_config(cls, config):
