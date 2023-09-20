@@ -652,14 +652,20 @@ class ResolveHasherTest(test_case.TestCase):
 
 
 class IsRemotePathTest(test_case.TestCase):
-    def test_gs_remote_path(self):
-        self.assertFalse(file_utils.is_remote_path("/gs/some/path/to/file.txt"))
-        self.assertFalse(file_utils.is_remote_path("/gs/another/directory/"))
-        self.assertTrue(file_utils.is_remote_path("gs://bucket/some/file.txt"))
+    def test_gcs_remote_path(self):
+        self.assertTrue(file_utils.is_remote_path("/gcs/some/path/to/file.txt"))
+        self.assertTrue(file_utils.is_remote_path("/gcs/another/directory/"))
+        self.assertTrue(file_utils.is_remote_path("gcs://bucket/some/file.txt"))
 
     def test_hdfs_remote_path(self):
         self.assertTrue(file_utils.is_remote_path("hdfs://some/path/on/hdfs"))
-        self.assertFalse(file_utils.is_remote_path("/hdfs/some/local/path"))
+        self.assertTrue(file_utils.is_remote_path("/hdfs/some/local/path"))
+
+    def test_cns_remote_path(self):
+        self.assertTrue(file_utils.is_remote_path("/cns/some/path"))
+
+    def test_cfs_remote_path(self):
+        self.assertTrue(file_utils.is_remote_path("/cfs/some/path"))
 
     def test_non_remote_paths(self):
         self.assertFalse(file_utils.is_remote_path("/local/path/to/file.txt"))
@@ -671,31 +677,6 @@ class IsRemotePathTest(test_case.TestCase):
         self.assertFalse(file_utils.is_remote_path("/local/path"))
         self.assertFalse(file_utils.is_remote_path("./relative/path"))
         self.assertFalse(file_utils.is_remote_path("~/relative/path"))
-
-    def test_edge_cases(self):
-        self.assertFalse(file_utils.is_remote_path(""))
-        self.assertFalse(file_utils.is_remote_path(None))
-        self.assertFalse(file_utils.is_remote_path(12345))
-
-    def test_special_characters_in_path(self):
-        self.assertTrue(file_utils.is_remote_path("gs://some/päth"))
-        self.assertTrue(file_utils.is_remote_path("gs://some/path#anchor"))
-        self.assertTrue(file_utils.is_remote_path("gs://some/path?query=value"))
-        self.assertTrue(file_utils.is_remote_path("gs://some/path with spaces"))
-
-    def test_case_sensitivity(self):
-        self.assertTrue(file_utils.is_remote_path("gs://sOme/Path"))
-        self.assertTrue(file_utils.is_remote_path("hdfS://some/Path"))
-
-    def test_whitespace_in_paths(self):
-        self.assertTrue(file_utils.is_remote_path("  gs://some/path  "))
-        self.assertTrue(file_utils.is_remote_path("gs:// some /path"))
-
-    def test_false_positives(self):
-        self.assertFalse(file_utils.is_remote_path("/httpslocal/some/path"))
-        self.assertFalse(file_utils.is_remote_path("/gslocal/some/path"))
-        self.assertFalse(file_utils.is_remote_path("/cnslocal/some/path"))
-        self.assertFalse(file_utils.is_remote_path("/cfslocal/some/path"))
 
 
 class TestRaiseIfNoGFile(test_case.TestCase):

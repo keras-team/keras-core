@@ -386,21 +386,20 @@ def validate_file(fpath, file_hash, algorithm="auto", chunk_size=65535):
 
 
 def is_remote_path(filepath):
-    filepath_str = str(filepath).strip()
-    supported_patterns = [re.compile(r"^(gs|hdfs)://.*$", re.IGNORECASE)]
+    """
+    Determines if a given filepath indicates a remote location.
 
-    for pattern in supported_patterns:
-        if pattern.match(filepath_str):
-            return True
+    This function checks if the filepath represents a known remote pattern
+    such as GCS (`/gcs`), CNS (`/cns`), CFS (`/cfs`), HDFS (`/hdfs`)
 
-    # Log or print the error message without raising an exception
-    warning_msg = (
-        f"Warning: The path '{filepath_str}' is not recognized as a "
-        f"supported remote path by gfile. Supported paths are: "
-        f"{', '.join(['gs://', 'hdfs://'])}"
-    )
-    print(warning_msg)
+    Args:
+        filepath (str): The path to be checked.
 
+    Returns:
+        bool: True if the filepath is a recognized remote path, otherwise False
+    """
+    if re.match(r"^(/cns|/cfs|/gcs|/hdfs|.*://).*$", str(filepath)):
+        return True
     return False
 
 
