@@ -134,10 +134,13 @@ def average(x, axis=None, weights=None):
 
 def bincount(x, weights=None, minlength=0):
     if len(x.shape) == 2:
-        bincounts = [
-            np.bincount(arr, weights=weights, minlength=minlength)
-            for arr in list(x)
-        ]
+        if weights is None:
+            bincounts = [np.bincount(arr, minlength=minlength) for arr in x]
+        else:
+            bincounts = [
+                np.bincount(arr, weights=w, minlength=minlength)
+                for arr, w in zip(x, weights)
+            ]
         return np.stack(bincounts)
     return np.bincount(x, weights, minlength)
 

@@ -248,10 +248,14 @@ def bincount(x, weights=None, minlength=0):
     if weights is not None:
         weights = convert_to_tensor(weights)
     if len(x.shape) == 2:
-        bincounts = [
-            torch.bincount(arr, weights=weights, minlength=minlength)
-            for arr in list(x)
-        ]
+        if weights is None:
+            bincounts = [torch.bincount(arr, minlength=minlength) for arr in x]
+        else:
+            bincounts = [
+                torch.bincount(arr, weights=w, minlength=minlength)
+                for arr, w in zip(x, weights)
+            ]
+
         return torch.stack(bincounts)
     return torch.bincount(x, weights, minlength)
 
