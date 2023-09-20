@@ -64,9 +64,9 @@ class DicretizationTest(testing.TestCase):
         layer = layers.Discretization(
             bin_boundaries=[0.0, 0.5, 1.0], output_mode="count"
         )
-        output = layer(np.array([0.1, 0.8, 0.9]))
+        output = layer(np.array([[0.1, 0.8, 0.9]]))
         self.assertTrue(backend.is_tensor(output))
-        self.assertAllClose(output, np.array([0, 1, 2, 0]))
+        self.assertAllClose(output, np.array([[0, 1, 2, 0]]))
 
     def test_tf_data_compatibility(self):
         # With fixed bins
