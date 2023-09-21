@@ -23,7 +23,7 @@ class DropoutRNNCell:
         if not hasattr(self, "_dropout_mask"):
             self._dropout_mask = None
         if self._dropout_mask is None and self.dropout > 0:
-            ones = ops.ones_like(step_input)
+            ones = ops.ones_like(step_input, "float32")
             self._dropout_mask = backend.random.dropout(
                 ones, rate=self.dropout, seed=self.seed_generator
             )
