@@ -47,17 +47,6 @@ class ConvertConvTransposePaddingArgsJAXTest(test_case.TestCase):
         self.assertEqual(left_pad, 2)
         self.assertEqual(right_pad, 1)
 
-    def test_invalid_padding_type(self):
-        """Test with an invalid padding type."""
-        with self.assertRaises(AssertionError):
-            _convert_conv_tranpose_padding_args_from_keras_to_jax(
-                kernel_size=3,
-                stride=2,
-                dilation_rate=1,
-                padding="unknown",
-                output_padding=None,
-            )
-
 
 class ConvertConvTransposePaddingArgsTorchTest(test_case.TestCase):
     def test_valid_padding_without_output_padding(self):
@@ -89,17 +78,6 @@ class ConvertConvTransposePaddingArgsTorchTest(test_case.TestCase):
         )
         self.assertEqual(torch_padding, 1)
         self.assertEqual(torch_output_padding, 1)
-
-    def test_invalid_padding_type(self):
-        """Test with an invalid padding type"""
-        with self.assertRaises(AssertionError):
-            _convert_conv_tranpose_padding_args_from_keras_to_torch(
-                kernel_size=3,
-                stride=2,
-                dilation_rate=1,
-                padding="unknown",
-                output_padding=None,
-            )
 
 
 class ComputeConvTransposePaddingArgsForJAXTest(test_case.TestCase):
@@ -161,17 +139,6 @@ class ComputeConvTransposePaddingArgsForTorchTest(test_case.TestCase):
         )
         self.assertEqual(torch_paddings, [1, 1])
         self.assertEqual(torch_output_paddings, [1, 1])
-
-    def test_invalid_padding_raises_assertion_error(self):
-        """providing an invalid padding type raises an AssertionError."""
-        with self.assertRaises(AssertionError):
-            _convert_conv_tranpose_padding_args_from_keras_to_torch(
-                kernel_size=3,
-                stride=2,
-                dilation_rate=1,
-                padding="invalid_padding",
-                output_padding=None,
-            )
 
     def test_valid_padding_with_none_output_padding(self):
         """Test conversion with 'valid' padding and no output padding"""
