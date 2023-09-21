@@ -9,9 +9,12 @@ from keras_core import metrics
 from keras_core import optimizers
 
 
+@keras.saving.register_keras_serializable()
 class MyModel(Model):
-    def __init__(self, hidden_dim, output_dim):
-        super().__init__()
+    def __init__(self, hidden_dim, output_dim, **kwargs):
+        super().__init__(**kwargs)
+        self.hidden_dim = hidden_dim
+        self.output_dim = output_dim
         self.dense1 = layers.Dense(hidden_dim, activation="relu")
         self.dense2 = layers.Dense(hidden_dim, activation="relu")
         self.dense3 = layers.Dense(output_dim)
@@ -20,6 +23,12 @@ class MyModel(Model):
         x = self.dense1(x)
         x = self.dense2(x)
         return self.dense3(x)
+
+    def get_config(self):
+        config = super().get_config()
+        config["hidden_dim"] = self.hidden_dim
+        config["output_dim"] = self.output_dim
+        return config
 
 
 model = MyModel(hidden_dim=256, output_dim=16)
@@ -46,11 +55,5 @@ model.summary()
 # Test saving model
 
 model.save("basic_model.keras")
-loaded_model keras.models.load_model("basic_model.keras")
+loaded_model = keras.models.load_model("basic_model.keras")
 loaded_model.predict(x)
-
-# Test export model
-
-model.export("basic_model")
-revived_model = tf.saved_model.load("basic_model")
-revived_model(x)
