@@ -72,7 +72,6 @@ class ConvertConvTransposePaddingArgsTorchTest(test_case.TestCase):
             padding="valid",
             output_padding=None,
         )
-        # Expected values based on the function's logic
         self.assertEqual(torch_padding, 0)
         self.assertEqual(torch_output_padding, 0)
 
@@ -88,7 +87,6 @@ class ConvertConvTransposePaddingArgsTorchTest(test_case.TestCase):
             padding="same",
             output_padding=None,
         )
-        # Expected values based on the function's logic
         self.assertEqual(torch_padding, 1)
         self.assertEqual(torch_output_padding, 1)
 
@@ -164,6 +162,47 @@ class ComputeConvTransposePaddingArgsForTorchTest(test_case.TestCase):
         self.assertEqual(torch_paddings, [1, 1])
         self.assertEqual(torch_output_paddings, [1, 1])
 
+    def test_invalid_padding_raises_assertion_error(self):
+        """providing an invalid padding type raises an AssertionError."""
+        with self.assertRaises(AssertionError):
+            _convert_conv_tranpose_padding_args_from_keras_to_torch(
+                kernel_size=3,
+                stride=2,
+                dilation_rate=1,
+                padding="invalid_padding",
+                output_padding=None,
+            )
+
+    def test_valid_padding_with_none_output_padding(self):
+        """Test conversion with 'valid' padding and no output padding"""
+        (
+            torch_padding,
+            torch_output_padding,
+        ) = _convert_conv_tranpose_padding_args_from_keras_to_torch(
+            kernel_size=3,
+            stride=2,
+            dilation_rate=1,
+            padding="valid",
+            output_padding=None,
+        )
+        self.assertEqual(torch_padding, 0)
+        self.assertEqual(torch_output_padding, 0)
+
+    def test_valid_padding_with_output_padding(self):
+        """Test conversion with 'valid' padding and output padding for Torch."""
+        (
+            torch_padding,
+            torch_output_padding,
+        ) = _convert_conv_tranpose_padding_args_from_keras_to_torch(
+            kernel_size=3,
+            stride=2,
+            dilation_rate=1,
+            padding="valid",
+            output_padding=1,
+        )
+        self.assertEqual(torch_padding, 0)
+        self.assertEqual(torch_output_padding, 1)
+
 
 class GetOutputShapeGivenTFPaddingTest(test_case.TestCase):
     def test_valid_padding_without_output_padding(self):
@@ -201,3 +240,31 @@ class GetOutputShapeGivenTFPaddingTest(test_case.TestCase):
             dilation_rate=1,
         )
         self.assertEqual(output_shape, 12)
+
+    def test_warning_for_inconsistencies(self):
+        """Test that a warning is raised for potential inconsistencies."""
+        with self.assertWarns(Warning):
+            _convert_conv_tranpose_padding_args_from_keras_to_torch(
+                kernel_size=3,
+                stride=2,
+                dilation_rate=1,
+                padding="same",
+                output_padding=1,
+            )
+
+    def test_same_padding_without_output_padding_for_torch_(self):
+        """Test conversion with 'same' padding and no output padding"""
+        (
+            torch_padding,
+            torch_output_padding,
+        ) = _convert_conv_tranpose_padding_args_from_keras_to_torch(
+            kernel_size=3,
+            stride=2,
+            dilation_rate=1,
+            padding="same",
+            output_padding=None,
+        )
+        print(f"torch_padding: {torch_padding}")
+        print(f"torch_output_padding: {torch_output_padding}")
+        self.assertEqual(torch_padding, max(-((3 % 2 - 3) // 2), 0))
+        self.assertEqual(torch_output_padding, 1)
