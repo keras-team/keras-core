@@ -242,7 +242,7 @@ class GetOutputShapeGivenTFPaddingTest(test_case.TestCase):
         self.assertEqual(output_shape, 12)
 
     def test_warning_for_inconsistencies(self):
-        """Test that a warning is raised for potential inconsistencies."""
+        """Test that a warning is raised for potential inconsistencies"""
         with self.assertWarns(Warning):
             _convert_conv_tranpose_padding_args_from_keras_to_torch(
                 kernel_size=3,
