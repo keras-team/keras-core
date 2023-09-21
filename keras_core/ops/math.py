@@ -936,7 +936,7 @@ class Erf(Operation):
         return KerasTensor(shape=x.shape, dtype=x.dtype)
 
     def call(self, x):
-        return backend.erf(x)
+        return backend.math.erf(x)
 
 
 @keras_core_export("keras_core.ops.erf")
@@ -951,13 +951,15 @@ def erf(x):
 
     Examples:
 
-    # Basic usage
+    Basic usage
     >>> x = np.array([-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0])
     >>> y = Erf()(x)
-    # Using `float32` data type
+
+    Using `float32` data type
     >>> x_float32 = np.array([-3.0, -2.0], dtype=np.float32)
     >>> y_float32 = Erf()(x_float32)
-    # Using large values
+    
+    Using large values
     >>> x_large = np.array([1e10, -1e10])
     >>> y_large = Erf()(x_large)
     """
