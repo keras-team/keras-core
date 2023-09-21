@@ -253,7 +253,7 @@ class GetOutputShapeGivenTFPaddingTest(test_case.TestCase):
             )
 
     def test_same_padding_without_output_padding_for_torch_(self):
-        """Test conversion with 'same' padding and no output padding"""
+        """Test conversion with 'same' padding and no output padding."""
         (
             torch_padding,
             torch_output_padding,
