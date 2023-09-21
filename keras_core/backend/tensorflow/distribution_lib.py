@@ -44,7 +44,7 @@ def to_dtensor_mesh(device_mesh):
     """
     mesh_dims = list(zip(device_mesh.axis_names, device_mesh.shape))
     return dtensor.create_distributed_mesh(
-        mesh_dims=mesh_dims, devices=device_mesh.devices.flatten()
+        mesh_dims=mesh_dims, local_devices=device_mesh.devices.flatten()
     )
 
 
