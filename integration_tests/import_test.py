@@ -8,6 +8,8 @@ BACKEND_REQ = {
     "jax": "jax[cpu]",
 }
 
+other_backends = set(BACKEND_REQ.keys())-{backend.backend()}
+
 commands = [
     # Create and activate virtual environment
     "python3 -m venv test_env",
@@ -18,7 +20,7 @@ commands = [
     "pip install -r requirements-common.txt",
 
     # Ensure other backends are uninstalled
-    "pip uninstall "+(set(BACKEND_REQ.keys())-{backend.backend()})
+    "pip uninstall "+ other_backends[0] +" "+ other_backends[1],
 
     # Installs the Keras Core package
     "python3 pip_build.py --install",
