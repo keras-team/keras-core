@@ -251,4 +251,4 @@ def rsqrt(x):
 
 
 def erf(x):
-    return jnp.erf(x)
+    return jax.lax.erf(x)

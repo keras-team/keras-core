@@ -305,4 +305,4 @@ def rsqrt(x):
 
 
 def erf(x):
-    return scipy.special.erf(x)
+    return np.array(scipy.special.erf(x))
