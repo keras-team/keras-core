@@ -958,7 +958,7 @@ def erf(x):
     Using `float32` data type
     >>> x_float32 = np.array([-3.0, -2.0], dtype=np.float32)
     >>> y_float32 = Erf()(x_float32)
-    
+
     Using large values
     >>> x_large = np.array([1e10, -1e10])
     >>> y_large = Erf()(x_large)
