@@ -29,7 +29,7 @@ model = MyModel(hidden_dim=256, output_dim=16)
 x = np.random.random((50000, 128))
 y = np.random.random((50000, 16))
 batch_size = 32
-epochs = 6
+epochs = 3
 
 model.compile(
     optimizer=optimizers.SGD(learning_rate=0.001),
