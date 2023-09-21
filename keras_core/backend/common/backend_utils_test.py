@@ -18,7 +18,7 @@ from keras_core.testing import test_case
 
 class ConvertConvTransposePaddingArgsJAXTest(test_case.TestCase):
     def test_valid_padding_without_output_padding(self):
-        """Test conversion with 'valid' padding and no output padding."""
+        """Test conversion with 'valid' padding and no output padding"""
         (
             left_pad,
             right_pad,
