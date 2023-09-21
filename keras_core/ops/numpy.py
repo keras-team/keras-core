@@ -303,7 +303,10 @@ class Add(Operation):
         x1_shape = getattr(x1, "shape", [])
         x2_shape = getattr(x2, "shape", [])
         output_shape = broadcast_shapes(x1_shape, x2_shape)
-        return KerasTensor(output_shape, dtype=x1.dtype)
+        x1_sparse = getattr(x1, "sparse", True)
+        x2_sparse = getattr(x2, "sparse", True)
+        output_sparse = x1_sparse and x2_sparse
+        return KerasTensor(output_shape, dtype=x1.dtype, sparse=output_sparse)
 
 
 @keras_core_export(["keras_core.ops.add", "keras_core.ops.numpy.add"])
@@ -1386,6 +1389,7 @@ class Concatenate(Operation):
     def compute_output_spec(self, xs):
         first_shape = xs[0].shape
         total_size_on_axis = 0
+        all_sparse = True
         for x in xs:
             if not shape_equal(
                 x.shape, first_shape, axis=[self.axis], allow_none=True
@@ -1400,9 +1404,11 @@ class Concatenate(Operation):
                 total_size_on_axis = None
             else:
                 total_size_on_axis += x.shape[self.axis]
+            if not x.sparse:
+                all_sparse = False
         output_shape = list(first_shape)
         output_shape[self.axis] = total_size_on_axis
-        return KerasTensor(output_shape, dtype=x.dtype)
+        return KerasTensor(output_shape, dtype=x.dtype, sparse=all_sparse)
 
 
 @keras_core_export(
@@ -2389,7 +2395,7 @@ class ExpandDims(Operation):
         else:
             axis = self.axis
         output_shape = x_shape[:axis] + [1] + x_shape[axis:]
-        return KerasTensor(output_shape, dtype=x.dtype)
+        return KerasTensor(output_shape, dtype=x.dtype, sparse=x.sparse)
 
 
 @keras_core_export(
@@ -2547,6 +2553,8 @@ def full_like(x, fill_value, dtype=None):
 
 class GetItem(Operation):
     def call(self, x, key):
+        if isinstance(key, list):
+            key = tuple(key)
         return x[key]
 
     def compute_output_spec(self, x, key):
@@ -3360,7 +3368,10 @@ class Matmul(Operation):
             del output_shape[-2]
         if len(x2.shape) == 1:
             del output_shape[-1]
-        return KerasTensor(output_shape, dtype=x1.dtype)
+        x1_sparse = getattr(x1, "sparse", True)
+        x2_sparse = getattr(x2, "sparse", True)
+        output_sparse = x1_sparse and x2_sparse
+        return KerasTensor(output_shape, dtype=x1.dtype, sparse=output_sparse)
 
 
 @keras_core_export(["keras_core.ops.matmul", "keras_core.ops.numpy.matmul"])
@@ -3443,7 +3454,10 @@ class Maximum(Operation):
         x1_shape = getattr(x1, "shape", [])
         x2_shape = getattr(x2, "shape", [])
         output_shape = broadcast_shapes(x1_shape, x2_shape)
-        return KerasTensor(output_shape, dtype=x1.dtype)
+        x1_sparse = getattr(x1, "sparse", True)
+        x2_sparse = getattr(x2, "sparse", True)
+        output_sparse = x1_sparse and x2_sparse
+        return KerasTensor(output_shape, dtype=x1.dtype, sparse=output_sparse)
 
 
 @keras_core_export(["keras_core.ops.maximum", "keras_core.ops.numpy.maximum"])
@@ -3582,7 +3596,10 @@ class Minimum(Operation):
         x1_shape = getattr(x1, "shape", [])
         x2_shape = getattr(x2, "shape", [])
         output_shape = broadcast_shapes(x1_shape, x2_shape)
-        return KerasTensor(output_shape, dtype=x1.dtype)
+        x1_sparse = getattr(x1, "sparse", True)
+        x2_sparse = getattr(x2, "sparse", True)
+        output_sparse = x1_sparse and x2_sparse
+        return KerasTensor(output_shape, dtype=x1.dtype, sparse=output_sparse)
 
 
 @keras_core_export(["keras_core.ops.minimum", "keras_core.ops.numpy.minimum"])
@@ -5080,7 +5097,10 @@ class Subtract(Operation):
         x1_shape = getattr(x1, "shape", [])
         x2_shape = getattr(x2, "shape", [])
         output_shape = broadcast_shapes(x1_shape, x2_shape)
-        return KerasTensor(output_shape, dtype=x1.dtype)
+        x1_sparse = getattr(x1, "sparse", True)
+        x2_sparse = getattr(x2, "sparse", True)
+        output_sparse = x1_sparse and x2_sparse
+        return KerasTensor(output_shape, dtype=x1.dtype, sparse=output_sparse)
 
 
 @keras_core_export(["keras_core.ops.subtract", "keras_core.ops.numpy.subtract"])
@@ -5107,7 +5127,10 @@ class Multiply(Operation):
         x1_shape = getattr(x1, "shape", [])
         x2_shape = getattr(x2, "shape", [])
         output_shape = broadcast_shapes(x1_shape, x2_shape)
-        return KerasTensor(output_shape, dtype=x1.dtype)
+        x1_sparse = getattr(x1, "sparse", True)
+        x2_sparse = getattr(x2, "sparse", True)
+        output_sparse = x1_sparse or x2_sparse
+        return KerasTensor(output_shape, dtype=x1.dtype, sparse=output_sparse)
 
 
 @keras_core_export(["keras_core.ops.multiply", "keras_core.ops.numpy.multiply"])
@@ -5289,7 +5312,7 @@ class Squeeze(Operation):
         input_shape = list(x.shape)
         if self.axis is None:
             output_shape = list(filter((1).__ne__, input_shape))
-            return KerasTensor(output_shape)
+            return KerasTensor(output_shape, dtype=x.dtype, sparse=x.sparse)
         else:
             if input_shape[self.axis] != 1:
                 raise ValueError(
@@ -5297,7 +5320,7 @@ class Squeeze(Operation):
                     "is not 1."
                 )
             del input_shape[self.axis]
-            return KerasTensor(input_shape, dtype=x.dtype)
+            return KerasTensor(input_shape, dtype=x.dtype, sparse=x.sparse)
 
 
 @keras_core_export(["keras_core.ops.squeeze", "keras_core.ops.numpy.squeeze"])

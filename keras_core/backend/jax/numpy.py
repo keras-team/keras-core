@@ -13,10 +13,21 @@ def add(x1, x2):
 
 def bincount(x, weights=None, minlength=0):
     if len(x.shape) == 2:
-        bincounts = [
-            jnp.bincount(arr, weights=weights, minlength=minlength)
-            for arr in list(x)
-        ]
+        if weights is None:
+
+            def bincount_fn(arr):
+                return jnp.bincount(arr, minlength=minlength)
+
+            bincounts = list(map(bincount_fn, x))
+        else:
+
+            def bincount_fn(arr_w):
+                return jnp.bincount(
+                    arr_w[0], weights=arr_w[1], minlength=minlength
+                )
+
+            bincounts = list(map(bincount_fn, zip(x, weights)))
+
         return jnp.stack(bincounts)
     return jnp.bincount(x, weights=weights, minlength=minlength)
 
@@ -102,6 +113,13 @@ def append(
 
 
 def arange(start, stop=None, step=1, dtype=None):
+    if dtype is None:
+        if hasattr(start, "dtype"):
+            dtype = start.dtype
+        elif isinstance(start, int):
+            dtype = "int32"
+        else:
+            dtype = config.floatx()
     return jnp.arange(start, stop, step=step, dtype=dtype)
 
 

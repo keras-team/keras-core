@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 
+from keras_core.backend import config
 from keras_core.backend.torch.core import cast
 from keras_core.backend.torch.core import convert_to_tensor
 from keras_core.backend.torch.core import get_device
@@ -91,7 +92,7 @@ def zeros(shape, dtype="float32"):
 
 def zeros_like(x, dtype=None):
     x = convert_to_tensor(x)
-    dtype = to_torch_dtype(dtype)
+    dtype = to_torch_dtype(dtype or x.dtype)
     return torch.zeros_like(x, dtype=dtype)
 
 
@@ -160,6 +161,13 @@ def append(
 
 
 def arange(start, stop=None, step=1, dtype=None):
+    if dtype is None:
+        if hasattr(start, "dtype"):
+            dtype = start.dtype
+        elif isinstance(start, int):
+            dtype = "int32"
+        else:
+            dtype = config.floatx()
     dtype = to_torch_dtype(dtype)
     if stop is None:
         return torch.arange(end=start, dtype=dtype, device=get_device())
@@ -245,7 +253,25 @@ def average(x, axis=None, weights=None):
 
 def bincount(x, weights=None, minlength=0):
     x = convert_to_tensor(x, dtype=int)
-    weights = convert_to_tensor(weights)
+    if weights is not None:
+        weights = convert_to_tensor(weights)
+    if len(x.shape) == 2:
+        if weights is None:
+
+            def bincount_fn(arr):
+                return torch.bincount(arr, minlength=minlength)
+
+            bincounts = list(map(bincount_fn, x))
+        else:
+
+            def bincount_fn(arr_w):
+                return torch.bincount(
+                    arr_w[0], weights=arr_w[1], minlength=minlength
+                )
+
+            bincounts = list(map(bincount_fn, zip(x, weights)))
+
+        return torch.stack(bincounts)
     return torch.bincount(x, weights, minlength)
 
 
