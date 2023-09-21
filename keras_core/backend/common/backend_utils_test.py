@@ -264,7 +264,5 @@ class GetOutputShapeGivenTFPaddingTest(test_case.TestCase):
             padding="same",
             output_padding=None,
         )
-        print(f"torch_padding: {torch_padding}")
-        print(f"torch_output_padding: {torch_output_padding}")
         self.assertEqual(torch_padding, max(-((3 % 2 - 3) // 2), 0))
         self.assertEqual(torch_output_padding, 1)
