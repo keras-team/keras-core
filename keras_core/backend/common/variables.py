@@ -386,6 +386,7 @@ ALLOWED_DTYPES = {
     "int64",
     "bfloat16",
     "bool",
+    "bool_",
     "string",
 }
 
@@ -401,17 +402,45 @@ PYTHON_DTYPES_MAP = {
 
 @keras_core_export("keras_core.backend.standardize_dtype")
 def standardize_dtype(dtype):
+    """Standardizes the data type.
+
+    Args:
+        dtype: Data type to be standardized.
+
+    Returns:
+        A standardized string representation of the data type.
+
+    Raises:
+        ValueError: If the data type is not recognized.
+    """
+    # Return default float type if dtype is None
     if dtype is None:
         return config.floatx()
-    dtype = PYTHON_DTYPES_MAP.get(dtype, dtype)
-    if hasattr(dtype, "name"):
-        dtype = dtype.name
-    elif hasattr(dtype, "__str__") and "torch" in str(dtype):
-        dtype = str(dtype).split(".")[-1]
 
-    if dtype not in ALLOWED_DTYPES:
-        raise ValueError(f"Invalid dtype: {dtype}")
-    return dtype
+    # Map to standard Python type, if applicable
+    dtype = PYTHON_DTYPES_MAP.get(dtype, dtype)
+
+    # Convert dtype to string for further checks
+    dtype_str = str(dtype)
+
+    # Use the 'name' attribute for numpy dtypes
+    if hasattr(dtype, "name"):
+        dtype_str = dtype.name
+    # Handle PyTorch dtypes
+    elif "torch" in dtype_str:
+        if dtype_str.startswith("<class 'torch."):
+            dtype_str = dtype_str.split("'")[-2].split(".")[-1]
+        else:
+            dtype_str = dtype_str.split(".")[-1]
+    # Handle numpy dtypes
+    elif dtype_str.startswith("<class 'numpy."):
+        dtype_str = dtype_str.split(".")[-1].replace("'>", "")
+
+    # Check if resulting dtype is allowed
+    if dtype_str not in ALLOWED_DTYPES:
+        raise ValueError(f"Invalid dtype: {dtype_str}")
+
+    return dtype_str
 
 
 def standardize_shape(shape):
