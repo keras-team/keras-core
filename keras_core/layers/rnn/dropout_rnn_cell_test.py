@@ -69,6 +69,7 @@ class DropoutRNNCellTest(testing.TestCase):
 
         # Custom mixed_float16 check
         # Never test mixed precision on torch CPU. Torch lacks support.
+        run_mixed_precision_check = True
         if backend.backend() == "torch":
             import torch
 
