@@ -30,15 +30,14 @@ def weight_memory_size(weights):
     Returns:
         The total memory size (in Bytes) of the weights.
     """
-    unique_weights_ids = set(id(w) for w in weights)
-    unique_weights = [w for w in weights if id(w) in unique_weights_ids]
+    unique_weights = {id(w): w for w in weights}.values()
     total_memory_size = 0
     for w in unique_weights:
         weight_shape = math.prod(w.shape)
         dtype = backend.standardize_dtype(w.dtype)
         per_param_size = dtype_utils.dtype_size(dtype)
         total_memory_size += weight_shape * per_param_size
-    return total_memory_size
+    return total_memory_size / 8
 
 
 def readable_memory_size(weight_memory_size):
@@ -309,8 +308,21 @@ def print_summary(
     non_trainable_count = count_params(model.non_trainable_weights)
     non_trainable_memory_size = weight_memory_size(model.non_trainable_weights)
 
-    total_count = trainable_count + non_trainable_count
-    total_memory_size = trainable_memory_size + non_trainable_memory_size
+    if model.compiled and model.optimizer and model.optimizer.built:
+        optimizer_weight_count = count_params(model.optimizer.variables)
+        optimizer_memory_size = weight_memory_size(model.optimizer.variables)
+        optimizer_built = True
+    else:
+        optimizer_weight_count = 0
+        optimizer_memory_size = 0
+        optimizer_built = False
+
+    total_count = trainable_count + non_trainable_count + optimizer_weight_count
+    total_memory_size = (
+        trainable_memory_size
+        + non_trainable_memory_size
+        + optimizer_memory_size
+    )
 
     # Create a rich console for printing. Capture for non-interactive logging.
     if print_fn:
@@ -339,6 +351,12 @@ def print_summary(
         + highlight_number(f"{non_trainable_count:,}")
         + f" ({readable_memory_size(non_trainable_memory_size)})"
     )
+    if optimizer_built:
+        console.print(
+            bold_text(" Optimizer params: ")
+            + highlight_number(f"{optimizer_weight_count:,}")
+            + f" ({readable_memory_size(optimizer_memory_size)})"
+        )
 
     # Output captured summary for non-interactive logging.
     if print_fn:

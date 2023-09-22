@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
-import tensorflow as tf
 from absl.testing import parameterized
+from tensorflow import data as tf_data
 
 from keras_core import backend
 from keras_core import layers
@@ -64,7 +64,7 @@ class NormalizationTest(testing.TestCase, parameterized.TestCase):
         elif input_type == "tensor":
             data = backend.convert_to_tensor(x)
         elif input_type == "tf.data":
-            data = tf.data.Dataset.from_tensor_slices(x).batch(8)
+            data = tf_data.Dataset.from_tensor_slices(x).batch(8)
 
         layer = layers.Normalization()
         layer.adapt(data)
@@ -81,7 +81,7 @@ class NormalizationTest(testing.TestCase, parameterized.TestCase):
         elif input_type == "tensor":
             data = backend.convert_to_tensor(x)
         elif input_type == "tf.data":
-            data = tf.data.Dataset.from_tensor_slices(x).batch(8)
+            data = tf_data.Dataset.from_tensor_slices(x).batch(8)
 
         layer = layers.Normalization(axis=(1, 2))
         layer.adapt(data)
@@ -94,3 +94,16 @@ class NormalizationTest(testing.TestCase, parameterized.TestCase):
     def test_normalization_errors(self):
         # TODO
         pass
+
+    @pytest.mark.skipif(
+        backend.backend() != "torch",
+        reason="Test symbolic call for torch meta device.",
+    )
+    def test_call_on_meta_device_after_built(self):
+        from keras_core.backend.torch import core
+
+        layer = layers.Normalization()
+        data = np.random.random((32, 4))
+        layer.adapt(data)
+        with core.device_scope("meta"):
+            layer(data)

@@ -1,8 +1,8 @@
 import jax
 import numpy as np
-import scipy.ndimage
 
 from keras_core.backend.numpy.core import convert_to_tensor
+from keras_core.utils.module_utils import scipy
 
 RESIZE_INTERPOLATIONS = (
     "bilinear",
@@ -57,11 +57,11 @@ AFFINE_TRANSFORM_INTERPOLATIONS = {  # map to order
     "bilinear": 1,
 }
 AFFINE_TRANSFORM_FILL_MODES = {
-    "constant": "grid-constant",
-    "nearest": "nearest",
-    "wrap": "grid-wrap",
-    "mirror": "mirror",
-    "reflect": "reflect",
+    "constant",
+    "nearest",
+    "wrap",
+    "mirror",
+    "reflect",
 }
 
 
@@ -79,11 +79,10 @@ def affine_transform(
             f"{set(AFFINE_TRANSFORM_INTERPOLATIONS.keys())}. Received: "
             f"interpolation={interpolation}"
         )
-    if fill_mode not in AFFINE_TRANSFORM_FILL_MODES.keys():
+    if fill_mode not in AFFINE_TRANSFORM_FILL_MODES:
         raise ValueError(
             "Invalid value for argument `fill_mode`. Expected of one "
-            f"{set(AFFINE_TRANSFORM_FILL_MODES.keys())}. "
-            f"Received: fill_mode={fill_mode}"
+            f"{AFFINE_TRANSFORM_FILL_MODES}. Received: fill_mode={fill_mode}"
         )
 
     transform = convert_to_tensor(transform)
@@ -100,6 +99,11 @@ def affine_transform(
             "or rank 2 (batch of transforms). Received input with shape: "
             f"transform.shape={transform.shape}"
         )
+
+    # scipy.ndimage.map_coordinates lacks support for half precision.
+    input_dtype = image.dtype
+    if input_dtype == "float16":
+        image = image.astype("float32")
 
     # unbatched case
     need_squeeze = False
@@ -148,13 +152,12 @@ def affine_transform(
     # apply affine transformation
     affined = np.stack(
         [
-            scipy.ndimage.map_coordinates(
+            map_coordinates(
                 image[i],
                 coordinates[i],
                 order=AFFINE_TRANSFORM_INTERPOLATIONS[interpolation],
-                mode=AFFINE_TRANSFORM_FILL_MODES[fill_mode],
-                cval=fill_value,
-                prefilter=False,
+                fill_mode=fill_mode,
+                fill_value=fill_value,
             )
             for i in range(batch_size)
         ],
@@ -165,4 +168,58 @@ def affine_transform(
         affined = np.transpose(affined, (0, 3, 1, 2))
     if need_squeeze:
         affined = np.squeeze(affined, axis=0)
+    if input_dtype == "float16":
+        affined = affined.astype(input_dtype)
     return affined
+
+
+MAP_COORDINATES_FILL_MODES = {
+    "constant",
+    "nearest",
+    "wrap",
+    "mirror",
+    "reflect",
+}
+
+
+def map_coordinates(
+    input, coordinates, order, fill_mode="constant", fill_value=0.0
+):
+    if fill_mode not in MAP_COORDINATES_FILL_MODES:
+        raise ValueError(
+            "Invalid value for argument `fill_mode`. Expected one of "
+            f"{set(MAP_COORDINATES_FILL_MODES.keys())}. Received: "
+            f"fill_mode={fill_mode}"
+        )
+    if order not in range(2):
+        raise ValueError(
+            "Invalid value for argument `order`. Expected one of "
+            f"{[0, 1]}. Received: order={order}"
+        )
+    # SciPy's implementation of map_coordinates handles boundaries incorrectly,
+    # unless mode='reflect'. For order=1, this only affects interpolation
+    # outside the bounds of the original array.
+    # https://github.com/scipy/scipy/issues/2640
+    padding = [
+        (
+            max(-np.floor(c.min()).astype(int) + 1, 0),
+            max(np.ceil(c.max()).astype(int) + 1 - size, 0),
+        )
+        for c, size in zip(coordinates, input.shape)
+    ]
+    shifted_coords = [c + p[0] for p, c in zip(padding, coordinates)]
+    pad_mode = {
+        "nearest": "edge",
+        "mirror": "reflect",
+        "reflect": "symmetric",
+    }.get(fill_mode, fill_mode)
+    if fill_mode == "constant":
+        padded = np.pad(
+            input, padding, mode=pad_mode, constant_values=fill_value
+        )
+    else:
+        padded = np.pad(input, padding, mode=pad_mode)
+    result = scipy.ndimage.map_coordinates(
+        padded, shifted_coords, order=order, mode=fill_mode, cval=fill_value
+    )
+    return result

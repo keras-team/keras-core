@@ -80,6 +80,7 @@ from keras_core.layers.preprocessing.center_crop import CenterCrop
 from keras_core.layers.preprocessing.discretization import Discretization
 from keras_core.layers.preprocessing.hashed_crossing import HashedCrossing
 from keras_core.layers.preprocessing.hashing import Hashing
+from keras_core.layers.preprocessing.index_lookup import IndexLookup
 from keras_core.layers.preprocessing.integer_lookup import IntegerLookup
 from keras_core.layers.preprocessing.normalization import Normalization
 from keras_core.layers.preprocessing.random_brightness import RandomBrightness
@@ -120,9 +121,12 @@ from keras_core.layers.rnn.conv_lstm1d import ConvLSTM1D
 from keras_core.layers.rnn.conv_lstm2d import ConvLSTM2D
 from keras_core.layers.rnn.conv_lstm3d import ConvLSTM3D
 from keras_core.layers.rnn.gru import GRU
+from keras_core.layers.rnn.gru import GRUCell
 from keras_core.layers.rnn.lstm import LSTM
+from keras_core.layers.rnn.lstm import LSTMCell
 from keras_core.layers.rnn.rnn import RNN
 from keras_core.layers.rnn.simple_rnn import SimpleRNN
+from keras_core.layers.rnn.simple_rnn import SimpleRNNCell
 from keras_core.layers.rnn.stacked_rnn_cells import StackedRNNCells
 from keras_core.layers.rnn.time_distributed import TimeDistributed
 from keras_core.saving import serialization_lib

@@ -1,5 +1,3 @@
-import numpy as np
-
 from keras_core import backend
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
@@ -212,7 +210,7 @@ class Hashing(Layer):
         if not isinstance(
             inputs, (tf.Tensor, tf.SparseTensor, tf.RaggedTensor)
         ):
-            inputs = tf.convert_to_tensor(np.array(inputs))
+            inputs = tf.convert_to_tensor(backend.convert_to_numpy(inputs))
         if isinstance(inputs, tf.SparseTensor):
             indices = tf.SparseTensor(
                 indices=inputs.indices,
@@ -244,7 +242,10 @@ class Hashing(Layer):
             hash_bins -= 1
             mask = tf.equal(values, self.mask_value)
         # Convert all values to strings before hashing.
-        if values.dtype.is_integer:
+        # Floats are first normalized to int64.
+        if values.dtype.is_floating:
+            values = tf.cast(values, dtype="int64")
+        if values.dtype != tf.string:
             values = tf.as_string(values)
         # Hash the strings.
         if self.strong_hash:

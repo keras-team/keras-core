@@ -20,7 +20,7 @@ class Adafactor(optimizer.Optimizer):
         learning_rate: A float, a
             `keras_core.optimizers.schedules.LearningRateSchedule` instance, or
             a callable that takes no arguments and returns the actual value to
-            use. The learning rate. Defaults to 0.001.
+            use. The learning rate. Defaults to `0.001`.
         beta_2_decay: float, defaults to -0.8. The decay rate of `beta_2`.
         epsilon_1: float, defaults to 1e-30. A small offset to keep demoninator
             away from 0.
@@ -57,6 +57,7 @@ class Adafactor(optimizer.Optimizer):
         ema_momentum=0.99,
         ema_overwrite_frequency=None,
         name="adafactor",
+        **kwargs,
     ):
         super().__init__(
             learning_rate=learning_rate,
@@ -68,6 +69,7 @@ class Adafactor(optimizer.Optimizer):
             use_ema=use_ema,
             ema_momentum=ema_momentum,
             ema_overwrite_frequency=ema_overwrite_frequency,
+            **kwargs,
         )
         self.beta_2_decay = beta_2_decay
         self.epsilon_1 = epsilon_1
@@ -94,12 +96,13 @@ class Adafactor(optimizer.Optimizer):
             if len(var.shape) < 2:
                 # Don't factor if variable is of dimension < 2, but we still
                 # need to create dummy variables as placeholder.
-                self._r.append(
-                    backend.Variable(0, name=var.name, trainable=False)
-                )
-                self._c.append(
-                    backend.Variable(0, name=var.name, trainable=False)
-                )
+                with backend.name_scope(self.name, caller=self):
+                    self._r.append(
+                        backend.Variable(0, name=var.name, trainable=False)
+                    )
+                    self._c.append(
+                        backend.Variable(0, name=var.name, trainable=False)
+                    )
             else:
                 # Always factor the last 2 dimenstions.
                 r_shape = var.shape[:-1]
@@ -120,7 +123,7 @@ class Adafactor(optimizer.Optimizer):
                 )
             self._v.append(
                 self.add_variable_from_reference(
-                    reference_variable=var, name="v"
+                    reference_variable=var, name="velocity"
                 )
             )
 

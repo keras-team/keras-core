@@ -37,7 +37,7 @@ class Adamax(optimizer.Optimizer):
         learning_rate: A float, a
             `keras_core.optimizers.schedules.LearningRateSchedule` instance, or
             a callable that takes no arguments and returns the actual value to
-            use. The learning rate. Defaults to 0.001.
+            use. The learning rate. Defaults to `0.001`.
         beta_1: A float value or a constant float tensor. The exponential decay
             rate for the 1st moment estimates.
         beta_2: A float value or a constant float tensor. The exponential decay
@@ -64,6 +64,7 @@ class Adamax(optimizer.Optimizer):
         ema_momentum=0.99,
         ema_overwrite_frequency=None,
         name="adamax",
+        **kwargs,
     ):
         super().__init__(
             learning_rate=learning_rate,
@@ -75,6 +76,7 @@ class Adamax(optimizer.Optimizer):
             use_ema=use_ema,
             ema_momentum=ema_momentum,
             ema_overwrite_frequency=ema_overwrite_frequency,
+            **kwargs,
         )
         self.beta_1 = beta_1
         self.beta_2 = beta_2
@@ -97,12 +99,12 @@ class Adamax(optimizer.Optimizer):
         for var in var_list:
             self._m.append(
                 self.add_variable_from_reference(
-                    reference_variable=var, name="m"
+                    reference_variable=var, name="momentum"
                 )
             )
             self._u.append(
                 self.add_variable_from_reference(
-                    reference_variable=var, name="u"
+                    reference_variable=var, name="norm"
                 )
             )
 

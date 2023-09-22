@@ -10,6 +10,7 @@ import zipfile
 from urllib.request import urlretrieve
 
 from keras_core.api_export import keras_core_export
+from keras_core.backend import config
 from keras_core.utils import io_utils
 from keras_core.utils.module_utils import gfile
 from keras_core.utils.progbar import Progbar
@@ -184,7 +185,8 @@ def get_file(
             The default `"auto"` corresponds to `["tar", "zip"]`.
             None or an empty list will return no matches found.
         cache_dir: Location to store cached files, when None it
-            defaults to the default directory `~/.keras/`.
+            defaults ether `$KERAS_HOME` if the `KERAS_HOME` environment
+            variable is set or `~/.keras/`.
 
     Returns:
         Path to the downloaded file.
@@ -204,7 +206,7 @@ def get_file(
         )
 
     if cache_dir is None:
-        cache_dir = os.path.join(os.path.expanduser("~"), ".keras")
+        cache_dir = config.keras_home()
     if md5_hash is not None and file_hash is None:
         file_hash = md5_hash
         hash_algorithm = "md5"
@@ -384,9 +386,19 @@ def validate_file(fpath, file_hash, algorithm="auto", chunk_size=65535):
 
 
 def is_remote_path(filepath):
-    """Returns `True` for paths that represent a remote GCS location."""
-    # TODO: improve generality.
-    if re.match(r"^(/cns|/cfs|/gcs|.*://).*$", str(filepath)):
+    """
+    Determines if a given filepath indicates a remote location.
+
+    This function checks if the filepath represents a known remote pattern
+    such as GCS (`/gcs`), CNS (`/cns`), CFS (`/cfs`), HDFS (`/hdfs`)
+
+    Args:
+        filepath (str): The path to be checked.
+
+    Returns:
+        bool: True if the filepath is a recognized remote path, otherwise False
+    """
+    if re.match(r"^(/cns|/cfs|/gcs|/hdfs|.*://).*$", str(filepath)):
         return True
     return False
 
@@ -443,7 +455,7 @@ def rmtree(path):
             return gfile.rmtree(path)
         else:
             _raise_if_no_gfile(path)
-    return shutil.rmtree
+    return shutil.rmtree(path)
 
 
 def listdir(path):

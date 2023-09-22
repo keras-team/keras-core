@@ -1,5 +1,5 @@
 import numpy as np
-import tensorflow as tf
+from tensorflow import data as tf_data
 
 from keras_core import backend
 from keras_core import layers
@@ -7,6 +7,8 @@ from keras_core import testing
 
 
 class StringLookupTest(testing.TestCase):
+    # TODO: increase coverage. Most features aren't being tested.
+
     def test_config(self):
         layer = layers.StringLookup(
             output_mode="int",
@@ -52,7 +54,7 @@ class StringLookupTest(testing.TestCase):
             vocabulary=["a", "b", "c"],
         )
         input_data = ["b", "c", "d"]
-        ds = tf.data.Dataset.from_tensor_slices(input_data).batch(3).map(layer)
+        ds = tf_data.Dataset.from_tensor_slices(input_data).batch(3).map(layer)
         for output in ds.take(1):
             output = output.numpy()
         self.assertAllClose(output, np.array([2, 3, 0]))

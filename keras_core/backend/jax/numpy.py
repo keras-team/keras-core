@@ -13,10 +13,21 @@ def add(x1, x2):
 
 def bincount(x, weights=None, minlength=0):
     if len(x.shape) == 2:
-        bincounts = [
-            jnp.bincount(arr, weights=weights, minlength=minlength)
-            for arr in list(x)
-        ]
+        if weights is None:
+
+            def bincount_fn(arr):
+                return jnp.bincount(arr, minlength=minlength)
+
+            bincounts = list(map(bincount_fn, x))
+        else:
+
+            def bincount_fn(arr_w):
+                return jnp.bincount(
+                    arr_w[0], weights=arr_w[1], minlength=minlength
+                )
+
+            bincounts = list(map(bincount_fn, zip(x, weights)))
+
         return jnp.stack(bincounts)
     return jnp.bincount(x, weights=weights, minlength=minlength)
 
@@ -96,10 +107,19 @@ def append(
     x2,
     axis=None,
 ):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.append(x1, x2, axis=axis)
 
 
 def arange(start, stop=None, step=1, dtype=None):
+    if dtype is None:
+        if hasattr(start, "dtype"):
+            dtype = start.dtype
+        elif isinstance(start, int):
+            dtype = "int32"
+        else:
+            dtype = config.floatx()
     return jnp.arange(start, stop, step=step, dtype=dtype)
 
 
@@ -238,6 +258,8 @@ def empty(shape, dtype="float32"):
 
 
 def equal(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.equal(x1, x2)
 
 
@@ -270,10 +292,14 @@ def full_like(x, fill_value, dtype=None):
 
 
 def greater(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.greater(x1, x2)
 
 
 def greater_equal(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.greater_equal(x1, x2)
 
 
@@ -290,6 +316,8 @@ def imag(x):
 
 
 def isclose(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.isclose(x1, x2)
 
 
@@ -306,10 +334,14 @@ def isnan(x):
 
 
 def less(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.less(x1, x2)
 
 
 def less_equal(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.less_equal(x1, x2)
 
 
@@ -344,10 +376,14 @@ def log2(x):
 
 
 def logaddexp(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.logaddexp(x1, x2)
 
 
 def logical_and(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.logical_and(x1, x2)
 
 
@@ -356,6 +392,8 @@ def logical_not(x):
 
 
 def logical_or(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.logical_or(x1, x2)
 
 
@@ -372,6 +410,8 @@ def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
 
 
 def maximum(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.maximum(x1, x2)
 
 
@@ -384,10 +424,14 @@ def min(x, axis=None, keepdims=False, initial=None):
 
 
 def minimum(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.minimum(x1, x2)
 
 
 def mod(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.mod(x1, x2)
 
 
@@ -408,6 +452,8 @@ def nonzero(x):
 
 
 def not_equal(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.not_equal(x1, x2)
 
 
@@ -558,10 +604,14 @@ def divide(x1, x2):
 
 
 def true_divide(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.true_divide(x1, x2)
 
 
 def power(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.power(x1, x2)
 
 
@@ -582,6 +632,7 @@ def squeeze(x, axis=None):
 
 
 def transpose(x, axes=None):
+    x = convert_to_tensor(x)
     return jnp.transpose(x, axes=axes)
 
 
@@ -606,8 +657,12 @@ def eye(N, M=None, k=0, dtype="float32"):
 
 
 def floor_divide(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.floor_divide(x1, x2)
 
 
 def logical_xor(x1, x2):
+    x1 = convert_to_tensor(x1)
+    x2 = convert_to_tensor(x2)
     return jnp.logical_xor(x1, x2)

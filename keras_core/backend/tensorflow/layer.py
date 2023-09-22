@@ -1,10 +1,45 @@
 import tensorflow as tf
 
+from keras_core.utils import tf_utils
+
 
 class TFLayer(tf.__internal__.tracking.AutoTrackable):
-    def _post_build(self):
-        """Can be overriden to perform post-build actions."""
-        pass
+    def __init__(self, *args, **kwargs):
+        # Export-related attributes
+        self._saved_model_inputs_spec = None
+        self._saved_model_arg_spec = None
+
+    @tf.__internal__.tracking.no_automatic_dependency_tracking
+    def _set_save_spec(self, inputs, args=None, kwargs=None):
+        """Defines the save spec so that serialization can trace layer calls.
+
+        The TensorSpecs of the call function `inputs`, `args`, and `kwargs` are
+        saved into a tuple of `([inputs] + args, kwargs)`.
+
+        Args:
+          inputs: possibly nested inputs passed into the call function.
+          args: a list of positional arguments passed into call.
+          kwargs: a dictionary of keyword arguments passed into call.
+        """
+        if self._saved_model_inputs_spec is not None:
+            return  # Already set.
+
+        inputs_spec = tf.nest.map_structure(tf_utils.get_tensor_spec, inputs)
+        args_spec = tf.nest.map_structure(tf_utils.get_tensor_spec, args or [])
+        kwargs_spec = {}
+        # Filter out non-tensor arguments from kwargs.
+        for key, kwarg in kwargs.items():
+            flat_kwarg = tf.nest.flatten(kwarg)
+            flat_specs = [tf_utils.get_tensor_spec(x) for x in flat_kwarg]
+            if any(s is None for s in flat_specs):
+                continue
+            kwargs_spec[key] = tf.nest.pack_sequence_as(kwarg, flat_specs)
+
+        self._saved_model_inputs_spec = inputs_spec
+        self._saved_model_arg_spec = (
+            [inputs_spec] + list(args_spec),
+            kwargs_spec,
+        )
 
     def _trackable_children(self, save_type="checkpoint", **kwargs):
         if save_type == "savedmodel":

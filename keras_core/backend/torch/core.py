@@ -1,4 +1,5 @@
 import contextlib
+import os
 
 import numpy as np
 import torch
@@ -11,8 +12,20 @@ from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.backend.common.stateless_scope import StatelessScope
 from keras_core.utils.nest import pack_sequence_as
 
-DYNAMIC_SHAPES_OK = True
-DEFAULT_DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+SUPPORTS_SPARSE_TENSORS = False
+
+# Some operators such as 'aten::_foreach_mul_.Scalar'
+# are not currently implemented for the MPS device.
+# check https://github.com/pytorch/pytorch/issues/77764.
+if (
+    torch.backends.mps.is_available()
+    and os.getenv("PYTORCH_ENABLE_MPS_FALLBACK") == "1"
+):
+    DEFAULT_DEVICE = "mps"
+elif torch.cuda.is_available():
+    DEFAULT_DEVICE = "cuda"
+else:
+    DEFAULT_DEVICE = "cpu"
 
 TORCH_DTYPES = {
     "float16": torch.float16,
@@ -107,8 +120,13 @@ class Variable(KerasVariable):
             return False
 
 
-def convert_to_tensor(x, dtype=None):
+def convert_to_tensor(x, dtype=None, sparse=False):
+    if sparse:
+        raise ValueError("`sparse=True` is not supported with torch backend")
     if is_tensor(x):
+        device = get_device()
+        if x.device != device:
+            x = x.to(device)
         if dtype is None:
             return x
         return x.to(to_torch_dtype(dtype))
@@ -142,7 +160,7 @@ def convert_to_numpy(x):
             if x.requires_grad:
                 x = x.detach()
             # Tensor has to be moved to CPU before converting to numpy.
-            if x.is_cuda:
+            if x.is_cuda or x.is_mps:
                 x = x.cpu()
         return np.array(x)
 
@@ -169,10 +187,6 @@ def cast(x, dtype):
         else:
             return x.to(dtype)
     return convert_to_tensor(x, dtype)
-
-
-def name_scope(name):
-    return contextlib.nullcontext()
 
 
 # Shape / dtype inference util

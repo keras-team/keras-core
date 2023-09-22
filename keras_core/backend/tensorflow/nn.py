@@ -3,6 +3,7 @@ import warnings
 import tensorflow as tf
 
 from keras_core.backend import standardize_data_format
+from keras_core.backend import standardize_dtype
 from keras_core.backend.common.backend_utils import (
     compute_conv_transpose_output_shape,
 )
@@ -41,10 +42,6 @@ def silu(x, beta=1.0):
     return tf.nn.silu(x, beta=beta)
 
 
-def swish(x):
-    return x * sigmoid(x)
-
-
 def log_sigmoid(x):
     return tf.math.log_sigmoid(x)
 
@@ -74,26 +71,27 @@ def gelu(x, approximate=True):
     return tf.nn.gelu(x, approximate)
 
 
-def softmax(x, axis=None):
+def softmax(x, axis=-1):
     logits = x
     if axis is None:
         # Unlike numpy, tf will handle axis=None as axis=-1.
         # We need this workaround for the reduction on every dim.
-        logits_exp = tf.exp(logits)
-        output = logits_exp / tf.reduce_sum(logits_exp, keepdims=True)
+        output = tf.reshape(x, [-1])
+        output = tf.nn.softmax(output, axis=-1)
+        output = tf.reshape(output, tf.shape(x))
     else:
         output = tf.nn.softmax(x, axis=axis)
     output._keras_logits = logits
     return output
 
 
-def log_softmax(x, axis=None):
+def log_softmax(x, axis=-1):
     if axis is None:
         # Unlike numpy, tf will handle axis=None as axis=-1.
         # We need this workaround for the reduction on every dim.
-        logits = x
-        logits_exp = tf.exp(logits)
-        return logits - tf.math.log(tf.reduce_sum(logits_exp, keepdims=True))
+        output = tf.reshape(x, [-1])
+        output = tf.nn.log_softmax(output, axis=-1)
+        return tf.reshape(output, tf.shape(x))
     return tf.nn.log_softmax(x, axis=axis)
 
 
@@ -649,3 +647,35 @@ def binary_crossentropy(target, output, from_logits=False):
     bce = target * tf.math.log(output)
     bce += (1 - target) * tf.math.log(1 - output)
     return -bce
+
+
+def moments(x, axes, keepdims=False):
+    # The dynamic range of float16 is too limited for statistics. As a
+    # workaround, we simply perform the operations on float32 and convert back
+    # to float16
+    need_cast = False
+    ori_dtype = standardize_dtype(x.dtype)
+    if ori_dtype == "float16":
+        need_cast = True
+        x = cast(x, "float32")
+
+    mean = tf.reduce_mean(x, axes, keepdims=True)
+
+    # The variance is computed using $Var = E[|x|^2] - |E[x]|^2$, It is faster
+    # but less numerically stable.
+    # Note: stop_gradient does not change the gradient to the mean, because that
+    # gradient is zero.
+    variance = tf.reduce_mean(
+        tf.square(x), axis=axes, keepdims=True
+    ) - tf.square(tf.stop_gradient(mean))
+
+    if not keepdims:
+        mean = tf.squeeze(mean, axes)
+        variance = tf.squeeze(variance, axes)
+    if need_cast:
+        # avoid overflow and underflow when casting from float16 to float32
+        mean = tf.clip_by_value(mean, tf.float16.min, tf.float16.max)
+        variance = tf.clip_by_value(variance, tf.float16.min, tf.float16.max)
+        mean = cast(mean, ori_dtype)
+        variance = cast(variance, ori_dtype)
+    return mean, variance

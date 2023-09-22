@@ -1,16 +1,42 @@
+import builtins
+import functools
+import math
+import warnings
+
 import tensorflow as tf
 from tensorflow.experimental import numpy as tfnp
+from tensorflow.python.ops.linalg.sparse import sparse_csr_matrix_ops
 
+from keras_core.backend import config
 from keras_core.backend.tensorflow.core import convert_to_tensor
 
 
 def add(x1, x2):
+    if isinstance(x1, tf.SparseTensor) or isinstance(x2, tf.SparseTensor):
+        return tf.sparse.add(x1, x2)
     return tfnp.add(x1, x2)
 
 
 def bincount(x, weights=None, minlength=None):
     if minlength is not None:
         x = tf.cast(x, tf.int32)
+    if isinstance(x, tf.SparseTensor):
+        result = tf.sparse.bincount(
+            x,
+            weights=weights,
+            minlength=minlength,
+            axis=-1,
+        )
+        if x.shape.rank == 1:
+            output_shape = (minlength,)
+        else:
+            batch_size = tf.shape(result)[0]
+            output_shape = (batch_size, minlength)
+        return tf.SparseTensor(
+            indices=result.indices,
+            values=result.values,
+            dense_shape=output_shape,
+        )
     return tf.math.bincount(x, weights=weights, minlength=minlength, axis=-1)
 
 
@@ -19,14 +45,129 @@ def einsum(subscripts, *operands, **kwargs):
 
 
 def subtract(x1, x2):
+    if isinstance(x1, tf.SparseTensor) or isinstance(x2, tf.SparseTensor):
+        if isinstance(x2, tf.SparseTensor):
+            return tf.sparse.add(x1, tf.sparse.map_values(tf.negative, x2))
+        else:
+            return tf.sparse.add(x1, tf.negative(x2))
     return tfnp.subtract(x1, x2)
 
 
 def matmul(x1, x2):
+    def with_combined_batch_dimensions(a, b, fn_3d):
+        batch_shape = (
+            b.shape[:-2] if isinstance(b, tf.SparseTensor) else a.shape[:-2]
+        )
+        batch_size = math.prod(batch_shape)
+        a_3d = reshape(a, [batch_size] + a.shape[-2:])
+        b_3d = reshape(b, [batch_size] + b.shape[-2:])
+        result = fn_3d(a_3d, b_3d)
+        return reshape(result, batch_shape + result.shape[1:])
+
+    def sparse_sparse_matmul(a, b):
+        dtype = a.values.dtype
+        # Convert SparseTensors to CSR SparseMatrix.
+        a_csr = sparse_csr_matrix_ops.sparse_tensor_to_csr_sparse_matrix(
+            a.indices, a.values, a.dense_shape
+        )
+        b_csr = sparse_csr_matrix_ops.sparse_tensor_to_csr_sparse_matrix(
+            b.indices, b.values, b.dense_shape
+        )
+        # Compute the CSR SparseMatrix matrix multiplication.
+        result_csr = sparse_csr_matrix_ops.sparse_matrix_sparse_mat_mul(
+            a_csr, b_csr, dtype
+        )
+        # Convert the CSR SparseMatrix to a SparseTensor.
+        res = sparse_csr_matrix_ops.csr_sparse_matrix_to_sparse_tensor(
+            result_csr, dtype
+        )
+        return tf.SparseTensor(res.indices, res.values, res.dense_shape)
+
+    def embedding_lookup_sparse_dense_matmul(a, b):
+        # We need at least one id per rows for embedding_lookup_sparse,
+        # otherwise there will be missing rows in the output.
+        a, _ = tf.sparse.fill_empty_rows(a, 0)
+        # We need to split x1 into separate ids and weights tensors. The ids
+        # should be the column indices of x1 and the values of the weights
+        # can continue to be the actual x1. The column arrangement of ids
+        # and weights does not matter as we sum over columns. See details in
+        # the documentation for sparse_ops.sparse_tensor_dense_matmul.
+        ids = tf.SparseTensor(
+            indices=a.indices,
+            values=a.indices[:, 1],
+            dense_shape=a.dense_shape,
+        )
+        return tf.nn.embedding_lookup_sparse(b, ids, a, combiner="sum")
+
+    # Either a or b is sparse
+    def sparse_dense_matmul_3d(a, b):
+        return tf.map_fn(
+            lambda x: tf.sparse.sparse_dense_matmul(x[0], x[1]),
+            elems=(a, b),
+            fn_output_signature=a.dtype,
+        )
+
+    x1_sparse = isinstance(x1, tf.SparseTensor)
+    x2_sparse = isinstance(x2, tf.SparseTensor)
+    if x1_sparse and x2_sparse:
+        if x1.shape.rank <= 3:
+            return sparse_sparse_matmul(x1, x2)
+        else:
+            return with_combined_batch_dimensions(x1, x2, sparse_sparse_matmul)
+    elif x1_sparse or x2_sparse:
+        # Sparse * dense or dense * sparse
+        sparse_rank = x1.shape.rank if x1_sparse else x2.shape.rank
+
+        # Special case: embedding_lookup_sparse for sparse * dense and rank 2
+        if x1_sparse and sparse_rank == 2:
+            return embedding_lookup_sparse_dense_matmul(x1, x2)
+        elif sparse_rank == 2:
+            return tf.sparse.sparse_dense_matmul(x1, x2)
+        elif sparse_rank == 3:
+            return sparse_dense_matmul_3d(x1, x2)
+        else:
+            return with_combined_batch_dimensions(
+                x1, x2, sparse_dense_matmul_3d
+            )
+
     return tfnp.matmul(x1, x2)
 
 
 def multiply(x1, x2):
+    if isinstance(x1, tf.SparseTensor):
+        if isinstance(x2, tf.SparseTensor):
+            ones_like_int8 = functools.partial(tf.ones_like, dtype=tf.int8)
+            zeros_like_int8 = functools.partial(tf.zeros_like, dtype=tf.int8)
+
+            # compute the intersection of indices in the form of a sparse tensor
+            # containing ones as values
+            ones1 = tf.sparse.map_values(ones_like_int8, x1)
+            ones2 = tf.sparse.map_values(ones_like_int8, x2)
+            # tf.sets.intersection ignores the last dimension when comparing,
+            # so we need to add a dummy extra dimension and then remove it
+            intersection = tf.sparse.reshape(
+                tf.sets.intersection(
+                    tf.sparse.expand_dims(ones1, axis=-1),
+                    tf.sparse.expand_dims(ones2, axis=-1),
+                ),
+                x1.dense_shape,
+            )
+
+            # compute the masks to remove indices in x1 and x2 that are not part
+            # of the intersection, then trim x1 and x2
+            zeros1 = tf.sparse.map_values(zeros_like_int8, x1)
+            zeros2 = tf.sparse.map_values(zeros_like_int8, x2)
+            mask1 = tf.sparse.add(zeros1, intersection)
+            mask2 = tf.sparse.add(zeros2, intersection)
+            x1_trimmed = tf.sparse.retain(x1, tf.cast(mask1.values, tf.bool))
+            x2_trimmed = tf.sparse.retain(x2, tf.cast(mask2.values, tf.bool))
+
+            # now it is an element-wise multiplication on the values
+            return tf.sparse.map_values(tf.multiply, x1_trimmed, x2_trimmed)
+        else:
+            return x1 * x2
+    elif isinstance(x2, tf.SparseTensor):
+        return x2 * x1
     return tfnp.multiply(x1, x2)
 
 
@@ -98,6 +239,13 @@ def append(
 def arange(start, stop=None, step=1, dtype=None):
     # tfnp.arange has trouble with dynamic Tensors in compiled function.
     # tf.range does not.
+    if dtype is None:
+        if hasattr(start, "dtype"):
+            dtype = start.dtype
+        elif isinstance(start, int):
+            dtype = "int32"
+        else:
+            dtype = config.floatx()
     return tf.range(start, stop, delta=step, dtype=dtype)
 
 
@@ -167,6 +315,15 @@ def clip(x, x_min, x_max):
 
 
 def concatenate(xs, axis=0):
+    sparse_count = builtins.sum(isinstance(x, tf.SparseTensor) for x in xs)
+    if sparse_count:
+        if sparse_count == len(xs):
+            return tf.sparse.concat(axis=axis, sp_inputs=xs)
+        else:
+            xs = [
+                tf.sparse.to_dense(x) if isinstance(x, tf.SparseTensor) else x
+                for x in xs
+            ]
     return tfnp.concatenate(xs, axis=axis)
 
 
@@ -227,8 +384,18 @@ def diagonal(x, offset=0, axis1=0, axis2=1):
 
 
 def digitize(x, bins):
-    x = convert_to_tensor(x)
     bins = list(bins)
+    if isinstance(x, tf.RaggedTensor):
+        return tf.ragged.map_flat_values(
+            lambda y: tf.raw_ops.Bucketize(input=y, boundaries=bins), x
+        )
+    elif isinstance(x, tf.SparseTensor):
+        return tf.SparseTensor(
+            indices=tf.identity(x.indices),
+            values=tf.raw_ops.Bucketize(input=x.values, boundaries=bins),
+            dense_shape=tf.identity(x.dense_shape),
+        )
+    x = convert_to_tensor(x)
     return tf.raw_ops.Bucketize(input=x, boundaries=bins)
 
 
@@ -249,6 +416,8 @@ def exp(x):
 
 
 def expand_dims(x, axis):
+    if isinstance(x, tf.SparseTensor):
+        return tf.sparse.expand_dims(x, axis)
     return tfnp.expand_dims(x, axis)
 
 
@@ -375,6 +544,13 @@ def logspace(start, stop, num=50, endpoint=True, base=10, dtype=None, axis=0):
 
 
 def maximum(x1, x2):
+    if isinstance(x1, tf.SparseTensor):
+        if isinstance(x2, tf.SparseTensor):
+            return tf.sparse.maximum(x1, x2)
+        else:
+            x1 = tf.sparse.to_dense(x1)
+    elif isinstance(x2, tf.SparseTensor):
+        x2 = tf.sparse.to_dense(x2)
     return tfnp.maximum(x1, x2)
 
 
@@ -404,6 +580,13 @@ def min(x, axis=None, keepdims=False, initial=None):
 
 
 def minimum(x1, x2):
+    if isinstance(x1, tf.SparseTensor):
+        if isinstance(x2, tf.SparseTensor):
+            return tf.sparse.minimum(x1, x2)
+        else:
+            x1 = tf.sparse.to_dense(x1)
+    elif isinstance(x2, tf.SparseTensor):
+        x2 = tf.sparse.to_dense(x2)
     return tfnp.minimum(x1, x2)
 
 
@@ -479,6 +662,8 @@ def repeat(x, repeats, axis=None):
 
 
 def reshape(x, new_shape):
+    if isinstance(x, tf.SparseTensor):
+        return tf.sparse.reshape(x, new_shape)
     return tfnp.reshape(x, new_shape)
 
 
@@ -523,6 +708,28 @@ def swapaxes(x, axis1, axis2):
 
 
 def take(x, indices, axis=None):
+    if isinstance(indices, tf.SparseTensor):
+        if x.dtype not in (tf.float16, tf.float32, tf.float64, tf.bfloat16):
+            warnings.warn(
+                "`take` with the TensorFlow backend does not support "
+                f"`x.dtype={x.dtype}` when `indices` is a sparse tensor; "
+                "densifying `indices`."
+            )
+            return tfnp.take(x, tf.sparse.to_dense(indices), axis=axis)
+        if axis is None:
+            x = tf.reshape(x, (-1,))
+        elif axis != 0:
+            warnings.warn(
+                "`take` with the TensorFlow backend does not support "
+                f"`axis={axis}` when `indices` is a sparse tensor; "
+                "densifying `indices`."
+            )
+            return tfnp.take(x, tf.sparse.to_dense(indices), axis=axis)
+        return tf.nn.safe_embedding_lookup_sparse(
+            embedding_weights=x,
+            sparse_ids=tf.sparse.expand_dims(indices, axis=-1),
+            default_id=0,
+        )
     return tfnp.take(x, indices, axis=axis)
 
 
@@ -614,14 +821,37 @@ def square(x):
 
 
 def sqrt(x):
+    x = convert_to_tensor(x)
+    if tf.as_dtype(x.dtype).is_integer:
+        x = tf.cast(x, dtype=config.floatx())
     return tfnp.sqrt(x)
 
 
 def squeeze(x, axis=None):
+    if isinstance(x, tf.SparseTensor):
+        new_shape = list(x.shape)
+        gather_indices = list(range(len(new_shape)))
+        if axis is None:
+            for i in range(len(new_shape) - 1, -1, -1):
+                if new_shape[i] == 1:
+                    del new_shape[i]
+                    del gather_indices[i]
+        else:
+            if new_shape[axis] != 1:
+                raise ValueError(
+                    f"Cannot squeeze axis {axis}, because the "
+                    "dimension is not 1."
+                )
+            del new_shape[axis]
+            del gather_indices[axis]
+        new_indices = tf.gather(x.indices, gather_indices, axis=1)
+        return tf.SparseTensor(new_indices, x.values, tuple(new_shape))
     return tfnp.squeeze(x, axis=axis)
 
 
 def transpose(x, axes=None):
+    if isinstance(x, tf.SparseTensor):
+        return tf.sparse.transpose(x, perm=axes)
     return tfnp.transpose(x, axes=axes)
 
 

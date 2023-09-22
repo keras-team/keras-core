@@ -130,7 +130,7 @@ class RandomTest(testing.TestCase, parameterized.TestCase):
             return x
 
         x = train_step(x)
-        self.assertTrue(isinstance(x, jnp.ndarray))
+        self.assertIsInstance(x, jnp.ndarray)
 
     def test_dropout_noise_shape(self):
         inputs = ops.ones((2, 3, 5, 7))
@@ -152,24 +152,35 @@ class RandomTest(testing.TestCase, parameterized.TestCase):
         self.assertEqual(rng.shape, (2,))
         self.assertEqual(rng.dtype, jnp.uint32)
         x = random.randint((3, 5), 0, 10, seed=rng)
-        self.assertTrue(isinstance(x, jnp.ndarray))
+        self.assertIsInstance(x, jnp.ndarray)
+
+    @pytest.mark.skipif(
+        keras_core.backend.backend() != "jax",
+        reason="This test requires `jax` as the backend.",
+    )
+    def test_jax_unseed_disallowed_during_tracing(self):
+        import jax
+
+        @jax.jit
+        def jit_fn():
+            return random.randint((2, 2), 0, 10, seed=None)
+
+        with self.assertRaisesRegex(
+            ValueError, "you should only use seeded random ops"
+        ):
+            jit_fn()
 
     def test_global_seed_generator(self):
         # Check that unseeded RNG calls use and update global_rng_state()
-        # and that this works across traced function boundaries
 
         def random_numbers(seed):
-            rng_state = seed_generator.global_rng_state()
+            rng_state = seed_generator.global_seed_generator().state
             rng_state.assign(seed)
             x = random.normal((), seed=None)
             y = random.normal((), seed=None)
             return x, y, rng_state.value
 
-        if backend.backend() == "jax":
-            import jax
-
-            random_numbers = jax.jit(random_numbers)
-        elif backend.backend() == "tensorflow":
+        if backend.backend() == "tensorflow":
             import tensorflow as tf
 
             random_numbers = tf.function(jit_compile=True)(random_numbers)
@@ -177,10 +188,16 @@ class RandomTest(testing.TestCase, parameterized.TestCase):
         seed = ops.zeros((2,))
         seed0 = ops.convert_to_numpy(seed)
         x1, y1, seed = random_numbers(seed)
+        x1 = ops.convert_to_numpy(x1)
+        y1 = ops.convert_to_numpy(y1)
         seed1 = ops.convert_to_numpy(seed)
         x2, y2, seed = random_numbers(seed)
+        x2 = ops.convert_to_numpy(x2)
+        y2 = ops.convert_to_numpy(y2)
         seed2 = ops.convert_to_numpy(seed)
         x3, y3, seed = random_numbers(seed)
+        x3 = ops.convert_to_numpy(x3)
+        y3 = ops.convert_to_numpy(y3)
         seed3 = ops.convert_to_numpy(seed)
 
         self.assertNotEqual(seed0[1], seed1[1])
@@ -198,4 +215,21 @@ class RandomTest(testing.TestCase, parameterized.TestCase):
         self.assertGreater(np.abs(y1 - y3), 1e-4)
         self.assertGreater(np.abs(y2 - y3), 1e-4)
 
-        seed_generator.global_rng_state().assign(seed)
+        seed_generator.global_seed_generator().state.assign(seed)
+
+    def test_shuffle(self):
+        x = np.arange(100).reshape(10, 10)
+
+        # Test axis=0
+        y = random.shuffle(x, seed=0)
+
+        self.assertFalse(np.all(x == ops.convert_to_numpy(y)))
+        self.assertAllClose(np.sum(x, axis=0), ops.sum(y, axis=0))
+        self.assertNotAllClose(np.sum(x, axis=1), ops.sum(y, axis=1))
+
+        # Test axis=1
+        y = random.shuffle(x, axis=1, seed=0)
+
+        self.assertFalse(np.all(x == ops.convert_to_numpy(y)))
+        self.assertAllClose(np.sum(x, axis=1), ops.sum(y, axis=1))
+        self.assertNotAllClose(np.sum(x, axis=0), ops.sum(y, axis=0))

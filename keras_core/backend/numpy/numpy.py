@@ -1,5 +1,8 @@
 import numpy as np
 
+from keras_core.backend import config
+from keras_core.backend import standardize_dtype
+
 
 def add(x1, x2):
     return np.add(x1, x2)
@@ -77,6 +80,13 @@ def append(
 
 
 def arange(start, stop=None, step=None, dtype=None):
+    if dtype is None:
+        if hasattr(start, "dtype"):
+            dtype = start.dtype
+        elif isinstance(start, int):
+            dtype = "int32"
+        else:
+            dtype = config.floatx()
     return np.arange(start, stop, step=step, dtype=dtype)
 
 
@@ -124,6 +134,7 @@ def argsort(x, axis=-1):
 
 
 def array(x, dtype=None):
+    dtype = dtype or config.floatx()
     return np.array(x, dtype=dtype)
 
 
@@ -133,6 +144,23 @@ def average(x, axis=None, weights=None):
 
 
 def bincount(x, weights=None, minlength=0):
+    if len(x.shape) == 2:
+        if weights is None:
+
+            def bincount_fn(arr):
+                return np.bincount(arr, minlength=minlength)
+
+            bincounts = list(map(bincount_fn, x))
+        else:
+
+            def bincount_fn(arr_w):
+                return np.bincount(
+                    arr_w[0], weights=arr_w[1], minlength=minlength
+                )
+
+            bincounts = list(map(bincount_fn, zip(x, weights)))
+
+        return np.stack(bincounts)
     return np.bincount(x, weights, minlength)
 
 
@@ -216,7 +244,7 @@ def diagonal(x, offset=0, axis1=0, axis2=1):
 
 
 def digitize(x, bins):
-    return np.digitize(x, bins)
+    return np.digitize(x, bins).astype(np.int32)
 
 
 def dot(x, y):
@@ -254,6 +282,7 @@ def floor(x):
 
 
 def full(shape, fill_value, dtype=None):
+    dtype = dtype or config.floatx()
     return np.full(shape, fill_value, dtype=dtype)
 
 
@@ -548,7 +577,10 @@ def vstack(xs):
 
 
 def where(condition, x1, x2):
-    return np.where(condition, x1, x2)
+    if x1 is not None and x2 is not None:
+        return np.where(condition, x1, x2)
+    else:
+        return np.where(condition)
 
 
 def divide(x1, x2):
@@ -572,7 +604,11 @@ def square(x):
 
 
 def sqrt(x):
-    return np.sqrt(x)
+    dtype = None
+    if hasattr(x, "dtype"):
+        if standardize_dtype(x.dtype).startswith("int"):
+            dtype = config.floatx()
+    return np.sqrt(x, dtype=dtype)
 
 
 def squeeze(x, axis=None):

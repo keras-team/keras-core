@@ -21,7 +21,7 @@ class RMSprop(optimizer.Optimizer):
         learning_rate: A float, a
             `keras_core.optimizers.schedules.LearningRateSchedule` instance, or
             a callable that takes no arguments and returns the actual value to
-            use. The learning rate. Defaults to 0.001.
+            use. The learning rate. Defaults to `0.001`.
         rho: float, defaults to 0.9. Discounting factor for the old gradients.
         momentum: float, defaults to 0.0. If not 0.0., the optimizer tracks the
             momentum value, with a decay rate equals to `1 - momentum`.
@@ -65,6 +65,7 @@ class RMSprop(optimizer.Optimizer):
         ema_momentum=0.99,
         ema_overwrite_frequency=100,
         name="rmsprop",
+        **kwargs,
     ):
         super().__init__(
             learning_rate=learning_rate,
@@ -76,6 +77,7 @@ class RMSprop(optimizer.Optimizer):
             ema_momentum=ema_momentum,
             ema_overwrite_frequency=ema_overwrite_frequency,
             name=name,
+            **kwargs,
         )
         self.rho = rho
         self.momentum = momentum

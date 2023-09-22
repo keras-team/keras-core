@@ -4,6 +4,7 @@ import tree
 
 from keras_core.api_export import keras_core_export
 from keras_core.backend import KerasTensor
+from keras_core.backend.config import backend
 from keras_core.ops.operation import Operation
 from keras_core.utils.nest import pack_sequence_as
 
@@ -46,10 +47,21 @@ class Function(Operation):
     def __init__(self, inputs, outputs, name=None):
         super().__init__(name=name)
 
+        if backend() == "tensorflow":
+            # Temporary work around for
+            # https://github.com/keras-team/keras-core/issues/931
+            # This stop tensorflow from wrapping tf.function output in a
+            # _DictWrapper object.
+            _self_setattr_tracking = getattr(
+                self, "_self_setattr_tracking", True
+            )
+            self._self_setattr_tracking = False
         self._inputs_struct = tree.map_structure(lambda x: x, inputs)
         self._outputs_struct = tree.map_structure(lambda x: x, outputs)
         self._inputs = tree.flatten(inputs)
         self._outputs = tree.flatten(outputs)
+        if backend() == "tensorflow":
+            self._self_setattr_tracking = _self_setattr_tracking
 
         (nodes, nodes_by_depth, operations, operations_by_depth) = map_graph(
             self._inputs, self._outputs
@@ -180,7 +192,7 @@ def map_graph(inputs, outputs):
 
     Returns:
         A tuple `(nodes, nodes_by_depth, operations, operations_by_depth)`.
-        - nodes: list of Node instances.
+        - network_nodes: dict mapping unique node keys to the Node instances
         - nodes_by_depth: dict mapping ints (depth) to lists of node instances.
         - operations: list of Operation instances.
         - operations_by_depth: dict mapping ints (depth) to lists of Operation

@@ -24,11 +24,11 @@ class Adadelta(optimizer.Optimizer):
         learning_rate: A float, a
             `keras_core.optimizers.schedules.LearningRateSchedule` instance, or
             a callable that takes no arguments and returns the actual value to
-            use. The learning rate. Defaults to 0.001. Note that `Adadelta`
+            use. The learning rate. Defaults to `0.001`. Note that `Adadelta`
             tends to benefit from higher initial learning rate values compared
             to other optimizers. To match the exact form in the original paper,
             use 1.0.
-        rho: A floating point value. The decay rate. Defaults to 0.95.
+        rho: A floating point value. The decay rate. Defaults to `0.95`.
         epsilon: Small floating point value for maintaining numerical stability.
         {{base_optimizer_keyword_args}}
 
@@ -50,6 +50,7 @@ class Adadelta(optimizer.Optimizer):
         ema_momentum=0.99,
         ema_overwrite_frequency=None,
         name="adadelta",
+        **kwargs,
     ):
         super().__init__(
             learning_rate=learning_rate,
@@ -61,6 +62,7 @@ class Adadelta(optimizer.Optimizer):
             ema_momentum=ema_momentum,
             ema_overwrite_frequency=ema_overwrite_frequency,
             name=name,
+            **kwargs,
         )
         self.rho = rho
         self.epsilon = epsilon

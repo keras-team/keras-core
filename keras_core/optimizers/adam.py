@@ -21,7 +21,7 @@ class Adam(optimizer.Optimizer):
         learning_rate: A float, a
             `keras_core.optimizers.schedules.LearningRateSchedule` instance, or
             a callable that takes no arguments and returns the actual value to
-            use. The learning rate. Defaults to 0.001.
+            use. The learning rate. Defaults to `0.001`.
         beta_1: A float value or a constant float tensor, or a callable
             that takes no arguments and returns the actual value to use. The
             exponential decay rate for the 1st moment estimates. Defaults to
@@ -55,6 +55,7 @@ class Adam(optimizer.Optimizer):
         ema_momentum=0.99,
         ema_overwrite_frequency=None,
         name="adam",
+        **kwargs,
     ):
         super().__init__(
             learning_rate=learning_rate,
@@ -66,6 +67,7 @@ class Adam(optimizer.Optimizer):
             use_ema=use_ema,
             ema_momentum=ema_momentum,
             ema_overwrite_frequency=ema_overwrite_frequency,
+            **kwargs,
         )
         self.beta_1 = beta_1
         self.beta_2 = beta_2
@@ -89,12 +91,12 @@ class Adam(optimizer.Optimizer):
         for var in var_list:
             self._momentums.append(
                 self.add_variable_from_reference(
-                    reference_variable=var, name="m"
+                    reference_variable=var, name="momentum"
                 )
             )
             self._velocities.append(
                 self.add_variable_from_reference(
-                    reference_variable=var, name="v"
+                    reference_variable=var, name="velocity"
                 )
             )
         if self.amsgrad:
@@ -102,7 +104,7 @@ class Adam(optimizer.Optimizer):
             for var in var_list:
                 self._velocity_hats.append(
                     self.add_variable_from_reference(
-                        reference_variable=var, name="vhat"
+                        reference_variable=var, name="velocity_hat"
                     )
                 )
 

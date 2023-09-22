@@ -59,11 +59,13 @@ class TensorFlowTrainer(base_trainer.Trainer):
             loss = self.compute_loss(
                 x=x, y=y, y_pred=y_pred, sample_weight=sample_weight
             )
-        self._loss_tracker.update_state(loss)
+            self._loss_tracker.update_state(loss)
+            if self.optimizer is not None:
+                loss = self.optimizer.scale_loss(loss)
 
         # Compute gradients
         if self.trainable_weights:
-            trainable_weights = [v.value for v in self.trainable_weights]
+            trainable_weights = self.trainable_weights
             gradients = tape.gradient(loss, trainable_weights)
 
             # Update weights
@@ -338,6 +340,8 @@ class TensorFlowTrainer(base_trainer.Trainer):
                         batch_size=validation_batch_size or batch_size,
                         distribute_strategy=self.distribute_strategy,
                         steps_per_execution=self.steps_per_execution,
+                        steps_per_epoch=validation_steps,
+                        shuffle=False,
                     )
                 val_logs = self.evaluate(
                     x=val_x,
@@ -560,7 +564,7 @@ class TensorFlowTrainer(base_trainer.Trainer):
 
     def predict_on_batch(self, x):
         self.make_predict_function()
-        batch_outputs = self.predict_function((x,))
+        batch_outputs = self.predict_function([(x,)])
         batch_outputs = tf.nest.map_structure(
             convert_to_np_if_not_ragged, batch_outputs
         )

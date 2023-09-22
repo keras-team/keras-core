@@ -7,19 +7,35 @@ import tree
 from jax.tree_util import Partial
 
 from keras_core.backend.common import KerasVariable
+from keras_core.backend.common import global_state
 from keras_core.backend.common import standardize_dtype
 from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.backend.common.stateless_scope import StatelessScope
+from keras_core.backend.jax import distribution_lib
 from keras_core.utils.nest import pack_sequence_as
 
-DYNAMIC_SHAPES_OK = True
+SUPPORTS_SPARSE_TENSORS = False
 
 
 class Variable(KerasVariable):
     def _initialize(self, value):
-        self._value = jnp.array(value, dtype=self._dtype)
+        value = jnp.array(value, dtype=self._dtype)
+        # Note that variable.shape is needed by distribution_lib
+        self._shape = tuple(value.shape)
+        # We can't import the keras_core/distribution/distribution_lib
+        # due to circular dependency.
+        distribution = global_state.get_global_attribute("distribution")
+        if distribution is not None:
+            self._layout = distribution_lib.to_jax_layout(
+                distribution.get_variable_layout(self)
+            )
+        else:
+            self._layout = None
+        self._direct_assign(value)
 
     def _direct_assign(self, value):
+        if getattr(self, "_layout", None) is not None:
+            value = distribution_lib.distribute_value(value, self._layout)
         self._value = value
 
     def _convert_to_tensor(self, value, dtype=None):
@@ -30,7 +46,9 @@ class Variable(KerasVariable):
         return self.value
 
 
-def convert_to_tensor(x, dtype=None):
+def convert_to_tensor(x, dtype=None, sparse=False):
+    if sparse:
+        raise ValueError("`sparse=True` is not supported with jax backend")
     if dtype is not None:
         dtype = standardize_dtype(dtype)
     if isinstance(x, Variable):
@@ -58,10 +76,6 @@ def shape(x):
 
 def cast(x, dtype):
     return convert_to_tensor(x, dtype=dtype)
-
-
-def name_scope(name):
-    return jax.named_scope(name)
 
 
 # Shape / dtype inference util

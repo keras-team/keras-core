@@ -48,7 +48,7 @@ class Accuracy(reduction_metrics.MeanMetricWrapper):
 
     ```python
     model.compile(optimizer='sgd',
-                  loss='mse',
+                  loss='binary_crossentropy',
                   metrics=[keras_core.metrics.Accuracy()])
     ```
     """
@@ -108,7 +108,7 @@ class BinaryAccuracy(reduction_metrics.MeanMetricWrapper):
 
     ```python
     model.compile(optimizer='sgd',
-                  loss='mse',
+                  loss='binary_crossentropy',
                   metrics=[keras_core.metrics.BinaryAccuracy()])
     ```
     """
@@ -194,7 +194,7 @@ class CategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
 
     ```python
     model.compile(optimizer='sgd',
-                  loss='mse',
+                  loss='categorical_crossentropy',
                   metrics=[keras_core.metrics.CategoricalAccuracy()])
     ```
     """
@@ -278,7 +278,7 @@ class SparseCategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
 
     ```python
     model.compile(optimizer='sgd',
-                  loss='mse',
+                  loss='sparse_categorical_crossentropy',
                   metrics=[keras_core.metrics.SparseCategoricalAccuracy()])
     ```
     """
@@ -326,7 +326,7 @@ class TopKCategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
 
     Args:
         k: (Optional) Number of top elements to look at for computing accuracy.
-            Defaults to 5.
+            Defaults to `5`.
         name: (Optional) string name of the metric instance.
         dtype: (Optional) data type of the metric result.
 
@@ -349,7 +349,7 @@ class TopKCategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
 
     ```python
     model.compile(optimizer='sgd',
-                  loss='mse',
+                  loss='categorical_crossentropy',
                   metrics=[keras_core.metrics.TopKCategoricalAccuracy()])
     ```
     """
@@ -402,7 +402,7 @@ class SparseTopKCategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
 
     Args:
         k: (Optional) Number of top elements to look at for computing accuracy.
-            Defaults to 5.
+            Defaults to `5`.
         name: (Optional) string name of the metric instance.
         dtype: (Optional) data type of the metric result.
 
@@ -423,7 +423,7 @@ class SparseTopKCategoricalAccuracy(reduction_metrics.MeanMetricWrapper):
 
     ```python
     model.compile(optimizer='sgd',
-                  loss='mse',
+                  loss='sparse_categorical_crossentropy',
                   metrics=[keras_core.metrics.SparseTopKCategoricalAccuracy()])
     ```
     """

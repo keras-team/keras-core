@@ -222,20 +222,18 @@ def reduce_shape(shape, axis=None, keepdims=False):
     shape = list(shape)
     if axis is None:
         if keepdims:
-            output_shape = [1 for _ in range(shape)]
+            return tuple([1 for _ in shape])
         else:
-            output_shape = []
-        return output_shape
+            return tuple([])
 
     if keepdims:
         for ax in axis:
             shape[ax] = 1
-        return shape
+        return tuple(shape)
     else:
-        for ax in axis:
-            shape[ax] = -1
-        output_shape = list(filter((-1).__ne__, shape))
-        return output_shape
+        for ax in sorted(axis, reverse=True):
+            del shape[ax]
+        return tuple(shape)
 
 
 @keras_core_export("keras_core.utils.get_source_inputs")
@@ -261,7 +259,7 @@ def get_source_inputs(tensor):
         node = operation._inbound_nodes[node_index]
         if node.is_input:
             # Reached input node, stop recursion.
-            return tree.flatten(node.input_tensors)
+            return tree.flatten(node.output_tensors)
         else:
             source_tensors = []
             for tensor in node.input_tensors:

@@ -5,12 +5,14 @@ import tensorflow as tf
 from tensorflow.compiler.tf2xla.python.xla import dynamic_update_slice
 
 from keras_core.backend.common import KerasVariable
+from keras_core.backend.common import global_state
 from keras_core.backend.common import standardize_dtype
 from keras_core.backend.common.keras_tensor import KerasTensor
+from keras_core.backend.common.name_scope import name_scope as base_name_scope
 from keras_core.backend.common.stateless_scope import StatelessScope
 from keras_core.utils.naming import auto_name
 
-DYNAMIC_SHAPES_OK = True
+SUPPORTS_SPARSE_TENSORS = True
 
 
 class Variable(
@@ -70,15 +72,28 @@ class Variable(
         return self.value._write_object_proto(proto, options)
 
 
-def convert_to_tensor(x, dtype=None):
+def convert_to_tensor(x, dtype=None, sparse=True):
+    """Convert to a TensorFlow tensor.
+
+    `sparse=True` means that `tf.SparseTensor`s are returned as-is, which is the
+    default with the TensorFlow backend. An explicit `sparse=False` densifies
+    `tf.SparseTensor`s.
+    """
+    if isinstance(x, tf.SparseTensor) and not sparse:
+        x = tf.sparse.to_dense(x)
     if dtype is not None:
         dtype = standardize_dtype(dtype)
-        if tf.is_tensor(x):
-            return tf.cast(x, dtype=dtype)
-    return tf.convert_to_tensor(x, dtype=dtype)
+    if not tf.is_tensor(x):
+        return tf.convert_to_tensor(x, dtype=dtype)
+    elif dtype is not None:
+        return tf.cast(x, dtype=dtype)
+    else:
+        return x
 
 
 def convert_to_numpy(x):
+    if isinstance(x, tf.SparseTensor):
+        x = tf.sparse.to_dense(x)
     return np.array(x)
 
 
@@ -87,16 +102,29 @@ def is_tensor(x):
 
 
 def shape(x):
-    return tf.shape(x)
+    """Always return a tuple shape.
+
+    `tf.shape` will return a `tf.Tensor`, which differs from the tuple return
+    type on the torch and jax backends. We write our own method instead which
+    always returns a tuple, with integer values when the shape is known, and
+    tensor values when the shape is unknown (this is tf specific, as dynamic
+    shapes do not apply in other backends).
+    """
+    if not tf.is_tensor(x):
+        x = tf.convert_to_tensor(x)
+    dynamic = tf.shape(x)
+    if x.shape == tf.TensorShape(None):
+        raise ValueError(
+            "All tensors passed to `ops.shape` must have a statically known "
+            f"rank. Received: x={x} with unknown rank."
+        )
+    static = x.shape.as_list()
+    return tuple(dynamic[i] if s is None else s for i, s in enumerate(static))
 
 
 def cast(x, dtype):
     dtype = standardize_dtype(dtype)
     return tf.cast(x, dtype=dtype)
-
-
-def name_scope(name):
-    return tf.name_scope(name)
 
 
 def compute_output_spec(fn, *args, **kwargs):
@@ -106,9 +134,14 @@ def compute_output_spec(fn, *args, **kwargs):
 
             def convert_keras_tensor_to_tf(x):
                 if isinstance(x, KerasTensor):
-                    return tf.compat.v1.placeholder(
-                        shape=x.shape, dtype=x.dtype
-                    )
+                    if x.sparse:
+                        return tf.compat.v1.sparse_placeholder(
+                            shape=x.shape, dtype=x.dtype
+                        )
+                    else:
+                        return tf.compat.v1.placeholder(
+                            shape=x.shape, dtype=x.dtype
+                        )
                 if isinstance(x, types.FunctionType):
 
                     def _fn(*x_args, **x_kwargs):
@@ -126,7 +159,9 @@ def compute_output_spec(fn, *args, **kwargs):
 
             def convert_tf_to_keras_tensor(x):
                 if tf.is_tensor(x):
-                    return KerasTensor(x.shape, x.dtype)
+                    return KerasTensor(
+                        x.shape, x.dtype, sparse=isinstance(x, tf.SparseTensor)
+                    )
                 return x
 
             output_spec = tf.nest.map_structure(
@@ -187,3 +222,32 @@ def stop_gradient(variable):
 
 def unstack(x, num=None, axis=0):
     return tf.unstack(x, num=num, axis=axis)
+
+
+class name_scope(base_name_scope):
+    def __init__(self, name, **kwargs):
+        super().__init__(name, **kwargs)
+        self._tf_name_scope = tf.name_scope(name)
+
+    def __enter__(self):
+        name_scope_stack = global_state.get_global_attribute(
+            "name_scope_stack", default=[], set_to_default=True
+        )
+        if self.deduplicate and name_scope_stack:
+            parent_caller = name_scope_stack[-1].caller
+            parent_name = name_scope_stack[-1].name
+            if (
+                self.caller is not None
+                and self.caller is parent_caller
+                and self.name == parent_name
+            ):
+                return self
+        name_scope_stack.append(self)
+        self._pop_on_exit = True
+        self._tf_name_scope.__enter__()
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        super().__exit__(*args, **kwargs)
+        if self._pop_on_exit:
+            self._tf_name_scope.__exit__(*args, **kwargs)

@@ -82,6 +82,10 @@ class LayerNormalization(Layer):
             When the next layer is linear (also e.g. `nn.relu`), this can be
             disabled since the scaling will be done by the next layer.
             Defaults to `True`.
+        rms_scaling: If True, `center` and `scale` are ignored, and the
+            inputs are scaled by `gamma` and the inverse square root
+            of the square of all inputs. This is an approximate and faster
+            approach that avoids ever computing the mean of the input.
         beta_initializer: Initializer for the beta weight. Defaults to zeros.
         gamma_initializer: Initializer for the gamma weight. Defaults to ones.
         beta_regularizer: Optional regularizer for the beta weight.
@@ -106,6 +110,7 @@ class LayerNormalization(Layer):
         epsilon=1e-3,
         center=True,
         scale=True,
+        rms_scaling=False,
         beta_initializer="zeros",
         gamma_initializer="ones",
         beta_regularizer=None,
@@ -128,6 +133,7 @@ class LayerNormalization(Layer):
         self.epsilon = epsilon
         self.center = center
         self.scale = scale
+        self.rms_scaling = rms_scaling
         self.beta_initializer = initializers.get(beta_initializer)
         self.gamma_initializer = initializers.get(gamma_initializer)
         self.beta_regularizer = regularizers.get(beta_regularizer)
@@ -136,6 +142,7 @@ class LayerNormalization(Layer):
         self.gamma_constraint = constraints.get(gamma_constraint)
 
         self.supports_masking = True
+        self.autocast = False
 
     def build(self, input_shape):
         if isinstance(self.axis, list):
@@ -143,7 +150,7 @@ class LayerNormalization(Layer):
         else:
             shape = (input_shape[self.axis],)
             self.axis = [self.axis]
-        if self.scale:
+        if self.scale or self.rms_scaling:
             self.gamma = self.add_weight(
                 name="gamma",
                 shape=shape,
@@ -155,7 +162,7 @@ class LayerNormalization(Layer):
         else:
             self.gamma = None
 
-        if self.center:
+        if self.center and not self.rms_scaling:
             self.beta = self.add_weight(
                 name="beta",
                 shape=shape,
@@ -196,31 +203,32 @@ class LayerNormalization(Layer):
             # this is at least as numerically stable as the fused version.
             inputs = ops.cast(inputs, "float32")
 
-        # Calculate the mean and variance last axis (layer activations).
-        mean = ops.mean(inputs, axis=self.axis, keepdims=True)
-        variance = ops.var(inputs, axis=self.axis, keepdims=True)
+        if self.rms_scaling:
+            # Calculate outputs with only variance and gamma if rms scaling
+            # is enabled
+            # Calculate the variance along self.axis (layer activations).
+            variance = ops.var(inputs, axis=self.axis, keepdims=True)
+            inv = ops.rsqrt(variance + self.epsilon)
 
-        scale, offset = _broadcast(self.gamma), _broadcast(self.beta)
+            outputs = inputs * inv * ops.cast(self.gamma, inputs.dtype)
+        else:
+            # Calculate the mean & variance along self.axis (layer activations).
+            mean, variance = ops.moments(inputs, axes=self.axis, keepdims=True)
+            gamma, beta = _broadcast(self.gamma), _broadcast(self.beta)
 
-        # Compute the batch normalization.
-        inv = 1 / ops.sqrt(variance + self.epsilon)
-        if scale is not None:
-            scale = ops.cast(scale, inputs.dtype)
-            inv = inv * scale
-        x = -mean * inv
-        if offset is not None:
-            offset = ops.cast(offset, inputs.dtype)
-            x = offset + x
-        outputs = inputs * ops.cast(inv, inputs.dtype) + ops.cast(
-            x, inputs.dtype
-        )
+            inv = ops.rsqrt(variance + self.epsilon)
+            if gamma is not None:
+                gamma = ops.cast(gamma, inputs.dtype)
+                inv = inv * gamma
 
-        outputs = ops.cast(outputs, input_dtype)
+            res = -mean * inv
+            if beta is not None:
+                beta = ops.cast(beta, inputs.dtype)
+                res = res + beta
 
-        # If some components of the shape got lost due to adjustments, fix that.
-        outputs = ops.reshape(outputs, ops.shape(inputs))
+            outputs = inputs * inv + res
 
-        return outputs
+        return ops.cast(outputs, input_dtype)
 
     def compute_output_shape(self, input_shape):
         return input_shape

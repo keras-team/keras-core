@@ -26,8 +26,10 @@ def floatx():
         String, the current default float type.
 
     Example:
+
     >>> keras_core.config.floatx()
     'float32'
+
     """
     return _FLOATX
 
@@ -47,12 +49,15 @@ def set_floatx(value):
     Args:
         value: String; `'float16'`, `'float32'`, or `'float64'`.
 
-    Example:
+    Examples:
     >>> keras_core.config.floatx()
     'float32'
+
     >>> keras_core.config.set_floatx('float64')
     >>> keras_core.config.floatx()
     'float64'
+
+    >>> # Set it back to float32
     >>> keras_core.config.set_floatx('float32')
 
     Raises:
@@ -76,8 +81,10 @@ def epsilon():
         A float.
 
     Example:
+
     >>> keras_core.config.epsilon()
     1e-07
+
     """
     return _EPSILON
 
@@ -91,13 +98,17 @@ def set_epsilon(value):
     Args:
         value: float. New value of epsilon.
 
-    Example:
+    Examples:
     >>> keras_core.config.epsilon()
     1e-07
+
     >>> keras_core.config.set_epsilon(1e-5)
     >>> keras_core.config.epsilon()
     1e-05
-     >>> keras_core.config.set_epsilon(1e-7)
+
+    >>> # Set it back to the default value.
+    >>> keras_core.config.set_epsilon(1e-7)
+
     """
     global _EPSILON
     _EPSILON = value
@@ -116,8 +127,10 @@ def image_data_format():
         A string, either `'channels_first'` or `'channels_last'`.
 
     Example:
+
     >>> keras_core.config.image_data_format()
     'channels_last'
+
     """
     return _IMAGE_DATA_FORMAT
 
@@ -134,13 +147,18 @@ def set_image_data_format(data_format):
     Args:
         data_format: string. `'channels_first'` or `'channels_last'`.
 
-    Example:
+    Examples:
+
     >>> keras_core.config.image_data_format()
     'channels_last'
+
     >>> keras_core.config.set_image_data_format('channels_first')
     >>> keras_core.config.image_data_format()
     'channels_first'
+
+    >>> # Set it back to `'channels_last'`
     >>> keras_core.config.set_image_data_format('channels_last')
+
     """
     global _IMAGE_DATA_FORMAT
     data_format = str(data_format).lower()
@@ -169,16 +187,21 @@ def standardize_data_format(data_format):
 # Set Keras base dir path given KERAS_HOME env variable, if applicable.
 # Otherwise either ~/.keras or /tmp.
 if "KERAS_HOME" in os.environ:
-    _keras_dir = os.environ.get("KERAS_HOME")
+    _KERAS_DIR = os.environ.get("KERAS_HOME")
 else:
     _keras_base_dir = os.path.expanduser("~")
     if not os.access(_keras_base_dir, os.W_OK):
         _keras_base_dir = "/tmp"
-    _keras_dir = os.path.join(_keras_base_dir, ".keras")
+    _KERAS_DIR = os.path.join(_keras_base_dir, ".keras")
+
+
+def keras_home():
+    # Private accessor for the keras home location.
+    return _KERAS_DIR
 
 
 # Attempt to read Keras config file.
-_config_path = os.path.expanduser(os.path.join(_keras_dir, "keras.json"))
+_config_path = os.path.expanduser(os.path.join(_KERAS_DIR, "keras.json"))
 if os.path.exists(_config_path):
     try:
         with open(_config_path) as f:
@@ -199,9 +222,9 @@ if os.path.exists(_config_path):
     _BACKEND = _backend
 
 # Save config file, if possible.
-if not os.path.exists(_keras_dir):
+if not os.path.exists(_KERAS_DIR):
     try:
-        os.makedirs(_keras_dir)
+        os.makedirs(_KERAS_DIR)
     except OSError:
         # Except permission denied and potential race conditions
         # in multi-threaded environments.
@@ -252,5 +275,6 @@ def backend():
 
     >>> keras.config.backend()
     'tensorflow'
+
     """
     return _BACKEND

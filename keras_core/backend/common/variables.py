@@ -1,7 +1,9 @@
 import numpy as np
 
+from keras_core.api_export import keras_core_export
 from keras_core.backend import config
 from keras_core.backend.common import global_state
+from keras_core.backend.common.name_scope import current_path
 from keras_core.backend.common.stateless_scope import get_stateless_scope
 from keras_core.backend.common.stateless_scope import in_stateless_scope
 from keras_core.utils.naming import auto_name
@@ -19,6 +21,11 @@ class KerasVariable:
                 f"Received: name={name}"
             )
         self.name = name
+        parent_path = current_path()
+        if parent_path:
+            self.path = current_path() + "/" + self.name
+        else:
+            self.path = self.name
         dtype = standardize_dtype(dtype)
         self._dtype = dtype
         self._shape = None
@@ -68,7 +75,7 @@ class KerasVariable:
 
     def _deferred_initialize(self):
         if self._value is not None:
-            raise ValueError(f"Variable {self.name} is already initialized.")
+            raise ValueError(f"Variable {self.path} is already initialized.")
 
         if in_stateless_scope():
             raise ValueError(
@@ -108,7 +115,7 @@ class KerasVariable:
 
     def assign(self, value):
         value = self._convert_to_tensor(value, dtype=self.dtype)
-        if not shape_equal(value, self.value):
+        if not shape_equal(value.shape, self.shape):
             raise ValueError(
                 "The shape of the target variable and "
                 "the shape of the target value in "
@@ -147,7 +154,7 @@ class KerasVariable:
     def __repr__(self):
         return (
             f"<KerasVariable shape={self.shape}, dtype={self.dtype}, "
-            f"name={self.name}>"
+            f"path={self.path}>"
         )
 
     def _initialize(self, value):
@@ -384,25 +391,22 @@ ALLOWED_DTYPES = {
 
 PYTHON_DTYPES_MAP = {
     bool: "bool",
-    int: "int",  # TBD by backend
+    int: "int64" if config.backend() == "tensorflow" else "int32",
     float: "float32",
     str: "string",
+    # special case for string value
+    "int": "int64" if config.backend() == "tensorflow" else "int32",
 }
 
 
+@keras_core_export("keras_core.backend.standardize_dtype")
 def standardize_dtype(dtype):
     if dtype is None:
         return config.floatx()
-    if dtype in PYTHON_DTYPES_MAP:
-        dtype = PYTHON_DTYPES_MAP.get(dtype)
-    if dtype == "int":
-        if config.backend() == "tensorflow":
-            dtype = "int64"
-        else:
-            dtype = "int32"
+    dtype = PYTHON_DTYPES_MAP.get(dtype, dtype)
     if hasattr(dtype, "name"):
         dtype = dtype.name
-    elif config.backend() == "torch":
+    elif hasattr(dtype, "__str__") and "torch" in str(dtype):
         dtype = str(dtype).split(".")[-1]
 
     if dtype not in ALLOWED_DTYPES:
@@ -410,9 +414,7 @@ def standardize_dtype(dtype):
     return dtype
 
 
-def standardize_shape(
-    shape, allow_dynamic_batch_size=True, allow_all_dynamic=True
-):
+def standardize_shape(shape):
     if not isinstance(shape, tuple):
         if shape is None:
             raise ValueError("Undefined shapes are not supported.")
@@ -420,23 +422,22 @@ def standardize_shape(
             raise ValueError(f"Cannot convert '{shape}' to a shape.")
         shape = tuple(shape)
 
-    for i, e in enumerate(shape):
-        if i == 0 and allow_dynamic_batch_size and e is None:
+    if config.backend() == "torch":
+        # `shape` might be `torch.Size`. We need to convert the items in it to
+        # either int or `None`
+        shape = tuple(map(lambda x: int(x) if x is not None else None, shape))
+
+    for e in shape:
+        if e is None:
             continue
-        if allow_all_dynamic and e is None:
+        if config.backend() == "jax" and str(e) == "b":
+            # JAX2TF tracing represents `None` dimensions as `b`
             continue
         if not isinstance(e, int):
-            msg = (
+            raise ValueError(
                 f"Cannot convert '{shape}' to a shape. "
                 f"Found invalid entry '{e}'. "
             )
-            if not allow_dynamic_batch_size and e is None:
-                msg += (
-                    "Dynamic shapes (shapes with `None` entries) "
-                    f"are not allowed with the {config.backend()} "
-                    "backend."
-                )
-            raise ValueError(msg)
         if e < 0:
             raise ValueError(
                 f"Cannot convert '{shape}' to a shape. "
@@ -445,21 +446,23 @@ def standardize_shape(
     return shape
 
 
-def shape_equal(a, b):
-    """Return whether a.shape == b.shape (allows None entries)."""
-    if len(a.shape) != len(b.shape):
+def shape_equal(a_shape, b_shape):
+    """Return whether a_shape == b_shape (allows None entries)."""
+    if len(a_shape) != len(b_shape):
         return False
-    for e1, e2 in zip(a.shape, b.shape):
+    for e1, e2 in zip(a_shape, b_shape):
         if e1 is not None and e2 is not None and e1 != e2:
             return False
     return True
 
 
+@keras_core_export("keras_core.backend.is_float_dtype")
 def is_float_dtype(dtype):
     dtype = standardize_dtype(dtype)
     return dtype.startswith("float") or dtype.startswith("bfloat")
 
 
+@keras_core_export("keras_core.backend.is_int_dtype")
 def is_int_dtype(dtype):
     dtype = standardize_dtype(dtype)
     return dtype.startswith("int") or dtype.startswith("uint")
@@ -477,20 +480,21 @@ class AutocastScope:
     """
 
     def __init__(self, dtype):
-        dtype = standardize_dtype(dtype)
-        if not is_float_dtype(dtype):
-            raise ValueError(
-                "`AutocastScope` can only be used with "
-                "a floating-point target dtype, such as 'float16'. "
-                f"Received: dtype={dtype}"
-            )
+        if dtype is not None:
+            dtype = standardize_dtype(dtype)
+            if not is_float_dtype(dtype):
+                raise ValueError(
+                    "`AutocastScope` can only be used with "
+                    "a floating-point target dtype, such as 'float16'. "
+                    f"Received: dtype={dtype}"
+                )
         self.dtype = dtype
         self.original_scope = None
 
     def maybe_cast(self, value):
         from keras_core import backend
 
-        if is_float_dtype(value.dtype):
+        if self.dtype is not None and is_float_dtype(value.dtype):
             return backend.cast(value, dtype=self.dtype)
         return value
 

@@ -4,13 +4,10 @@ from keras_core import backend
 from keras_core import ops
 from keras_core.api_export import keras_core_export
 from keras_core.layers.layer import Layer
+from keras_core.layers.rnn.dropout_rnn_cell import DropoutRNNCell
 from keras_core.layers.rnn.stacked_rnn_cells import StackedRNNCells
 from keras_core.saving import serialization_lib
 from keras_core.utils import tracking
-
-
-class DropoutRNNCellMixin:
-    pass
 
 
 @keras_core_export("keras_core.layers.RNN")
@@ -288,12 +285,16 @@ class RNN(Layer):
 
     @tracking.no_automatic_dependency_tracking
     def _create_state_variables(self, batch_size):
-        self.states = tree.map_structure(
-            lambda value: backend.Variable(
-                value, trainable=False, dtype=self.variable_dtype
-            ),
-            self.get_initial_state(batch_size),
-        )
+        with backend.name_scope(self.name, caller=self):
+            self.states = tree.map_structure(
+                lambda value: backend.Variable(
+                    value,
+                    trainable=False,
+                    dtype=self.variable_dtype,
+                    name="rnn_state",
+                ),
+                self.get_initial_state(batch_size),
+            )
 
     def get_initial_state(self, batch_size):
         get_initial_state_fn = getattr(self.cell, "get_initial_state", None)
@@ -301,7 +302,7 @@ class RNN(Layer):
             init_state = get_initial_state_fn(batch_size=batch_size)
         else:
             return [
-                ops.zeros((batch_size, d), dtype=self.compute_dtype)
+                ops.zeros((batch_size, d), dtype=self.cell.compute_dtype)
                 for d in self.state_size
             ]
 
@@ -383,15 +384,26 @@ class RNN(Layer):
         # Note that states may be deeply nested
         # (e.g. in the stacked cells case).
         initial_state = tree.map_structure(
-            lambda x: backend.convert_to_tensor(x, dtype=self.compute_dtype),
+            lambda x: backend.convert_to_tensor(
+                x, dtype=self.cell.compute_dtype
+            ),
             initial_state,
         )
+
+        # Prepopulate the dropout state so that the inner_loop is stateless
+        # this is particularly important for JAX backend.
+        self._maybe_config_dropout_masks(self.cell, sequences, initial_state)
 
         last_output, outputs, states = self.inner_loop(
             sequences=sequences,
             initial_state=initial_state,
             mask=mask,
             training=training,
+        )
+        last_output = ops.cast(last_output, self.compute_dtype)
+        outputs = ops.cast(outputs, self.compute_dtype)
+        states = tree.map_structure(
+            lambda x: ops.cast(x, dtype=self.compute_dtype), states
         )
         self._maybe_reset_dropout_masks(self.cell)
 
@@ -413,8 +425,22 @@ class RNN(Layer):
             return output, *states
         return output
 
+    def _maybe_config_dropout_masks(self, cell, input_sequence, input_state):
+        step_input = input_sequence[:, 0, :]
+        state = (
+            input_state[0]
+            if isinstance(input_state, (list, tuple))
+            else input_state
+        )
+        if isinstance(cell, DropoutRNNCell):
+            cell.get_dropout_mask(step_input)
+            cell.get_recurrent_dropout_mask(state)
+        if isinstance(cell, StackedRNNCells):
+            for c, s in zip(cell.cells, input_state):
+                self._maybe_config_dropout_masks(c, input_sequence, s)
+
     def _maybe_reset_dropout_masks(self, cell):
-        if isinstance(cell, DropoutRNNCellMixin):
+        if isinstance(cell, DropoutRNNCell):
             cell.reset_dropout_mask()
             cell.reset_recurrent_dropout_mask()
         if isinstance(cell, StackedRNNCells):

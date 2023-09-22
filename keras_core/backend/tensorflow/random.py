@@ -1,4 +1,5 @@
 import tensorflow as tf
+from tensorflow.experimental import numpy as tfnp
 
 from keras_core.backend.common import standardize_dtype
 from keras_core.backend.config import floatx
@@ -25,8 +26,8 @@ def uniform(shape, minval=0.0, maxval=1.0, dtype=None, seed=None):
     seed = tf_draw_seed(seed)
     return tf.random.stateless_uniform(
         shape=shape,
-        minval=minval,
-        maxval=maxval,
+        minval=tf.cast(minval, dtype),
+        maxval=tf.cast(maxval, dtype),
         dtype=dtype,
         seed=seed,
     )
@@ -83,3 +84,13 @@ def dropout(inputs, rate, noise_shape=None, seed=None):
         noise_shape=noise_shape,
         seed=seed,
     )
+
+
+def shuffle(x, axis=0, seed=None):
+    seed = tf_draw_seed(seed)
+    if axis == 0:
+        return tf.random.experimental.stateless_shuffle(x, seed=seed)
+    x = tfnp.swapaxes(x, axis1=0, axis2=axis)
+    x = tf.random.experimental.stateless_shuffle(x, seed=seed)
+    x = tfnp.swapaxes(x, axis1=0, axis2=axis)
+    return x
