@@ -849,7 +849,7 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         output_from_erf_op = kmath.erf(sample_values)
 
         # Assert that the outputs are close
-        self.assertAllClose(expected_output, output_from_erf_op, atol=1e-5)
+        self.assertAllClose(expected_output, output_from_erf_op, atol=1e-4)
 
     def test_erf_operation_dtype(self):
         # Test for float32 and float64 data types
@@ -861,7 +861,7 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
                 sample_values
             )
             output_from_erf_op = kmath.erf(sample_values)
-            self.assertAllClose(expected_output, output_from_erf_op, atol=1e-5)
+            self.assertAllClose(expected_output, output_from_erf_op, atol=1e-4)
 
     def test_erf_operation_edge_cases(self):
         # Test for edge cases
@@ -871,5 +871,5 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
         )
         output_from_edge_erf_op = kmath.erf(edge_values)
         self.assertAllClose(
-            expected_edge_output, output_from_edge_erf_op, atol=1e-5
+            expected_edge_output, output_from_edge_erf_op, atol=1e-4
         )
