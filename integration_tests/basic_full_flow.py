@@ -1,5 +1,6 @@
 import numpy as np
-
+import os
+import pytest
 import keras_core as keras
 
 from keras_core import Model
@@ -7,6 +8,7 @@ from keras_core import layers
 from keras_core import losses
 from keras_core import metrics
 from keras_core import optimizers
+from keras_core import testing
 
 
 class MyModel(Model):
@@ -24,23 +26,28 @@ class MyModel(Model):
         return self.dense3(x)
 
 
-model = MyModel(hidden_dim=256, output_dim=16)
+@pytest.mark.requires_trainable_backend
+class BasicFlowTest(testing.TestCase):
+    def test_basic_fit(self):
+        model = MyModel(hidden_dim=256, output_dim=16)
 
-x = np.random.random((50000, 128))
-y = np.random.random((50000, 16))
-batch_size = 32
-epochs = 3
+        x = np.random.random((50000, 128))
+        y = np.random.random((50000, 16))
+        batch_size = 32
+        epochs = 3
 
-model.compile(
-    optimizer=optimizers.SGD(learning_rate=0.001),
-    loss=losses.MeanSquaredError(),
-    metrics=[metrics.MeanSquaredError()],
-)
-history = model.fit(
-    x, y, batch_size=batch_size, epochs=epochs, validation_split=0.2
-)
+        model.compile(
+            optimizer=optimizers.SGD(learning_rate=0.001),
+            loss=losses.MeanSquaredError(),
+            metrics=[metrics.MeanSquaredError()],
+        )
+        output_before_fit = model(x)
+        history = model.fit(
+            x, y, batch_size=batch_size, epochs=epochs, validation_split=0.2
+        )
+        output_after_fit = model(x)
 
-print("History:")
-print(history.history)
+        print("History:")
+        print(history.history)
 
-model.summary()
+        self.assertNotAllClose(output_before_fit, output_after_fit)
