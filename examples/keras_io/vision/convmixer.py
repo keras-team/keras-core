@@ -78,14 +78,15 @@ dataset, which is fine for the purpose of the example.
 image_size = 32
 auto = tf_data.AUTOTUNE
 
-data_augmentation = keras.Sequential(
-    [
+data_augmentation = [
         layers.RandomCrop(image_size, image_size),
         layers.RandomFlip("horizontal"),
-    ],
-    name="data_augmentation",
-)
+    ]
 
+def apply_augmentation(x):
+    for aug in data_augmentation:
+        x = aug(x)
+    return x
 
 def make_datasets(images, labels, is_train=False):
     dataset = tf_data.Dataset.from_tensor_slices((images, labels))
@@ -94,7 +95,7 @@ def make_datasets(images, labels, is_train=False):
     dataset = dataset.batch(batch_size)
     if is_train:
         dataset = dataset.map(
-            lambda x, y: (data_augmentation(x), y), num_parallel_calls=auto
+            lambda x, y: (apply_augmentation(x), y), num_parallel_calls=auto
         )
     return dataset.prefetch(auto)
 
@@ -189,7 +190,7 @@ def run_experiment(model):
         metrics=["accuracy"],
     )
 
-    checkpoint_filepath = "/tmp/checkpoint"
+    checkpoint_filepath = "/tmp/checkpoint.weights.h5"
     checkpoint_callback = keras.callbacks.ModelCheckpoint(
         checkpoint_filepath,
         monitor="val_accuracy",
