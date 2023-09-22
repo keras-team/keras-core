@@ -1,5 +1,5 @@
 ---
-name: Redirect to keras-team/keras
+name: Keras Core has moved! Open your issue in keras-team/keras instead.
 about: Redirect to keras-team/keras
 title: ''
 labels: ''
