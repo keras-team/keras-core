@@ -9,7 +9,7 @@ is gearing up to become Keras 3, to be released under the `keras` name. As such,
 back to [keras-team/keras](https://github.com/keras-team/keras).
 
 Meanwhile, the legacy `tf.keras` codebase is now available at
-[keras-team/tf-keras](https://github.com/keras-team/keras).
+[keras-team/tf-keras](https://github.com/keras-team/tf-keras).
 
 If you were a contributor to Keras Core -- thank you! Your commits have been reapplied in
 `keras-team/keras` under your own authorship, so that your contribution record is fully preserved.
