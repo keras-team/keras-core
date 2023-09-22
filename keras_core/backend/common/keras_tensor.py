@@ -166,24 +166,48 @@ class KerasTensor:
         return ops.Matmul().symbolic_call(other, self)
 
     def __div__(self, other):
+        print("Inside __div__ method!")
         from keras_core import ops
 
         return ops.Divide().symbolic_call(self, other)
 
     def __rdiv__(self, other):
+        print("Inside __rdiv__ method!")
         from keras_core import ops
 
         return ops.Divide().symbolic_call(other, self)
 
     def __truediv__(self, other):
+        print("Inside __truediv__ method!")
         from keras_core import ops
 
         return ops.TrueDivide().symbolic_call(self, other)
 
     def __rtruediv__(self, other):
+        print("Inside __rtruediv__ method!")
         from keras_core import ops
 
         return ops.TrueDivide().symbolic_call(other, self)
+
+    # def __div__(self, other):
+    #     from keras_core import ops
+
+    #     return ops.Divide().symbolic_call(self, other)
+
+    # def __rdiv__(self, other):
+    #     from keras_core import ops
+
+    #     return ops.Divide().symbolic_call(other, self)
+
+    # def __truediv__(self, other):
+    #     from keras_core import ops
+
+    #     return ops.TrueDivide().symbolic_call(self, other)
+
+    # def __rtruediv__(self, other):
+    #     from keras_core import ops
+
+    #     return ops.TrueDivide().symbolic_call(other, self)
 
     def __neg__(self):
         from keras_core import ops
@@ -208,12 +232,12 @@ class KerasTensor:
     def __floordiv__(self, other):
         from keras_core import ops
 
-        return ops.FloorDiv().symbolic_call(self, other)
+        return ops.FloorDivide().symbolic_call(self, other)
 
     def __rfloordiv__(self, other):
         from keras_core import ops
 
-        return ops.FloorDiv().symbolic_call(other, self)
+        return ops.FloorDivide().symbolic_call(other, self)
 
     def __mod__(self, other):
         from keras_core import ops
@@ -270,10 +294,10 @@ class KerasTensor:
 
         return ops.LogicalOr().symbolic_call(other, self)
 
-    def __invert__(self, other):
+    def __invert__(self):
         from keras_core import ops
 
-        return ops.LogicalNot().symbolic_call(other, self)
+        return ops.LogicalNot().symbolic_call(self)
 
     def __xor__(self, other):
         from keras_core import ops
