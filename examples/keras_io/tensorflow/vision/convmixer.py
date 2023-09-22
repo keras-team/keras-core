@@ -80,7 +80,7 @@ auto = tf_data.AUTOTUNE
 
 data_augmentation = keras.Sequential(
     [
-        layers.RandomBrightness(factor=0.5),
+        layers.RandomCrop(image_size, image_size),
         layers.RandomFlip("horizontal"),
     ],
     name="data_augmentation",
