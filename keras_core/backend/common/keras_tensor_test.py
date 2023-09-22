@@ -362,7 +362,7 @@ class KerasTensorTest(testing.TestCase):
         mock_symbolic_call.assert_called_once_with(y, x)
         self.assertEqual(result, mock_tensor)
 
-    # TODO: FAILED Expected 'symbolic_call' to be called once but wasn't.
+    # TODO: FAILED Expected 'symbolic_call' to be called once but wasn't
     # @patch("keras_core.ops.Divide.symbolic_call")
     # def test_div_method(self, mock_symbolic_call):
     #     mock_tensor = Mock()
@@ -373,7 +373,7 @@ class KerasTensorTest(testing.TestCase):
     #     mock_symbolic_call.assert_called_once_with(x, y)
     #     self.assertEqual(result, mock_tensor)
 
-    # TODO: FAILED Expected 'symbolic_call' to be called once but wasn't.
+    # TODO: FAILED Expected 'symbolic_call' to be called once but wasn't
     # @patch("keras_core.ops.Divide.symbolic_call")
     # def test_rdiv_method(self, mock_symbolic_call):
     #     mock_tensor = Mock()
