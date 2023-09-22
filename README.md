@@ -10,3 +10,9 @@ back to [keras-team/keras](https://github.com/keras-team/keras).
 
 Meanwhile, the legacy `tf.keras` codebase is now available at
 [keras-team/tf-keras](https://github.com/keras-team/keras).
+
+If you were a contributor to Keras Core -- thank you! Your commits have been reapplied in
+`keras-team/keras` under your own authorship, so that your contribution record is fully preserved.
+
+Likewise, if you were a contributor to `keras-team/keras` before the swap, your contribution
+history has been fully preserved: the new commits have been reapplied on top of the old git tree.
