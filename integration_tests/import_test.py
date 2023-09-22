@@ -11,7 +11,7 @@ BACKEND_REQ = {
 
 
 def setup_package():
-    subprocess.run("pip install tensorflow torch torchvision jax jaxlib", shell=True)
+    #subprocess.run("pip install tensorflow torch torchvision jax jaxlib", shell=True)
     subprocess.run("rm -rf tmp_build_dir", shell=True)
     build_process = subprocess.run(
         "python3 pip_build.py",
@@ -34,9 +34,10 @@ def create_virtualenv():
     env_setup = [
         # Create and activate virtual environment
         "python3 -m venv test_env",
-        "source ./test_env/bin/activate",
+        #"source ./test_env/bin/activate",
     ]
-    run_commands(env_setup)
+    os.environ['PATH'] = '/test_env/bin/' +  os.pathsep + os.environ.get('PATH', '')
+    run_commands_local(env_setup)
 
 def manage_venv_installs(whl_path):
     other_backends = list(set(BACKEND_REQ.keys())-{backend.backend()})
@@ -44,21 +45,22 @@ def manage_venv_installs(whl_path):
         # Installs the backend's package and common requirements
         "pip install "+ BACKEND_REQ[backend.backend()],
         "pip install -r requirements-common.txt",
+        "pip install pytest",
 
         # Ensure other backends are uninstalled
         "pip uninstall -y "+ BACKEND_REQ[other_backends[0]] +" "+ BACKEND_REQ[other_backends[1]],
 
         # Install `.whl` package
-        "pip3 install "+whl_path+" --force-reinstall --no-dependencies",
+        "pip install "+whl_path+" --force-reinstall --no-dependencies",
     ]
-    run_commands(install_setup)
+    run_commands_venv(install_setup)
 
 def run_keras_core_flow():
     test_script = [
         # Runs the example script
-        "pytest integration_tests/basic_full_flow.py",
+        "python -m pytest integration_tests/basic_full_flow.py",
     ]
-    run_commands(test_script)
+    run_commands_venv(test_script)
 
 def cleanup():
     cleanup_script = [
@@ -69,11 +71,18 @@ def cleanup():
         "rm -rf tmp_build_dir",
         "rm -f *+cpu",
     ]
-    run_commands(cleanup_script)
+    run_commands_local(cleanup_script)
 
-def run_commands(commands):
+def run_commands_local(commands):
     for command in commands:
         subprocess.run(command, shell=True)
+
+def run_commands_venv(commands):
+    for command in commands:
+        cmd_with_args = command.split(" ")
+        cmd_with_args[0] = "test_env/bin/"+cmd_with_args[0]
+        p = subprocess.Popen(cmd_with_args)
+        p.wait()
 
 def test_keras_core_imports():
     # Ensures packages from all backends are installed.
