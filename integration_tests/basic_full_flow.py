@@ -1,9 +1,7 @@
 import numpy as np
-import os
 import pytest
-import keras_core as keras
 
-from keras_core import Model
+import keras_core as keras
 from keras_core import layers
 from keras_core import losses
 from keras_core import metrics
@@ -11,7 +9,7 @@ from keras_core import optimizers
 from keras_core import testing
 
 
-class MyModel(Model):
+class MyModel(keras.Model):
     def __init__(self, hidden_dim, output_dim, **kwargs):
         super().__init__(**kwargs)
         self.hidden_dim = hidden_dim
