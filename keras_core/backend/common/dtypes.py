@@ -52,14 +52,26 @@ def dtype(x, *, canonicalize=False):
     dtype = None
     if x is None:
         raise ValueError(f"Invalid argument to dtype: {x}.")
-    elif isinstance(x, type) and x in PYTHON_SCALAR_DTYPES:
-        dtype = PYTHON_SCALAR_DTYPES[x]
+    # when inputing python scalar or tensor
     elif type(x) in PYTHON_SCALAR_DTYPES:
         dtype = PYTHON_SCALAR_DTYPES[type(x)]
     elif backend.is_tensor(x):
-        dtype = backend.standardize_dtype(x.shape)
+        dtype = backend.standardize_dtype(x.dtype)
+    # when inputing python dtype or tensor dtype
+    elif isinstance(x, type) and x in PYTHON_SCALAR_DTYPES:
+        dtype = PYTHON_SCALAR_DTYPES[x]
+    elif hasattr(x, "name"):
+        dtype = x.name
+    elif hasattr(x, "__str__") and "torch" in str(dtype):
+        dtype = str(x).split(".")[-1]
+    # when inputing dtype string
     elif x in ALLOWED_DTYPES:
         dtype = x
+    elif x in ["int", "float"]:
+        if x == "int":
+            dtype = "int64"
+        else:
+            dtype = "float64"
 
     if dtype is None or dtype not in ALLOWED_DTYPES:
         raise ValueError(f"Invalid dtype: {x}")
@@ -83,6 +95,30 @@ _float_types = ["bfloat16", "float16", "float32", "float64"]
 _complex_types = ["complex64", "complex128"]
 _weak_types = ["int", "float", "complex"]
 _weak_types_python = [int, float, complex]
+
+
+def _default_types(dtype):
+    if not isinstance(dtype, str):
+        raise TypeError(f"Invalid type: {type(dtype)}. Must be a str.")
+    if dtype == "bfloat16":  # special case for bfloat16
+        dtype_indicator = "f"
+    else:
+        dtype_indicator = dtype[:1]
+
+    # get backend.floatx precision (16, 32, 64)
+    precision = backend.floatx()[-2:]
+
+    if dtype_indicator == "b":
+        return "bool"
+    elif dtype_indicator == "i":
+        return "int" + precision
+    elif dtype_indicator == "u":
+        return "uint" + precision
+    elif dtype_indicator == "f":
+        return "float" + precision
+    # TODO: support complex types
+    else:
+        raise ValueError(f"Invalid dtype: {dtype} that is failed to be parsed")
 
 
 def _keras_core_type(dtype, weak_type):
@@ -268,7 +304,7 @@ def result_dtype(*args, return_weak_type_flag=False):
         *(backend.floatx() if arg is None else arg for arg in args)
     )
     if weak_type:
-        raise ValueError(f"{weak_type}, {dtype}")
+        dtype = _default_types(dtype)
     else:
         dtype = canonicalize_dtype(backend.floatx(), dtype)
     return (dtype, weak_type) if return_weak_type_flag else dtype

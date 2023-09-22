@@ -1,4 +1,5 @@
 from keras_core.backend.common import backend_utils
+from keras_core.backend.common.dtypes import result_dtype
 from keras_core.backend.common.variables import AutocastScope
 from keras_core.backend.common.variables import KerasVariable
 from keras_core.backend.common.variables import get_autocast_scope
