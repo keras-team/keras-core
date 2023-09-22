@@ -362,24 +362,26 @@ class KerasTensorTest(testing.TestCase):
         mock_symbolic_call.assert_called_once_with(y, x)
         self.assertEqual(result, mock_tensor)
 
-    # TODO: FAILED Expected 'symbolic_call' to be called once but wasn't
-    # @patch("keras_core.ops.Divide.symbolic_call")
-    # def test_div_method(self, mock_symbolic_call):
-    #     mock_tensor = Mock()
-    #     mock_symbolic_call.return_value = mock_tensor
-    #     x = keras_tensor.KerasTensor(shape=(3, 4), dtype="float32")
-    #     y = keras_tensor.KerasTensor(shape=(3, 4), dtype="float32")
-    #     result = x / y
-    #     mock_symbolic_call.assert_called_once_with(x, y)
-    #     self.assertEqual(result, mock_tensor)
+    @patch("keras_core.ops.Divide.symbolic_call")
+    def test_div_method(self, mock_symbolic_call):
+        """Test __div__ method"""
+        mock_tensor = Mock()
+        mock_symbolic_call.return_value = mock_tensor
+        x = keras_tensor.KerasTensor(shape=(3, 4), dtype="float32")
+        y = keras_tensor.KerasTensor(shape=(3, 4), dtype="float32")
+        # to ensure compatibility across Python versions
+        result = x.__div__(y)
+        mock_symbolic_call.assert_called_once_with(x, y)
+        self.assertEqual(result, mock_tensor)
 
-    # TODO: FAILED Expected 'symbolic_call' to be called once but wasn't
-    # @patch("keras_core.ops.Divide.symbolic_call")
-    # def test_rdiv_method(self, mock_symbolic_call):
-    #     mock_tensor = Mock()
-    #     mock_symbolic_call.return_value = mock_tensor
-    #     x = keras_tensor.KerasTensor(shape=(3, 4), dtype="float32")
-    #     y = keras_tensor.KerasTensor(shape=(3, 4), dtype="float32")
-    #     result = y / x
-    #     mock_symbolic_call.assert_called_once_with(y, x)
-    #     self.assertEqual(result, mock_tensor)
+    @patch("keras_core.ops.Divide.symbolic_call")
+    def test_rdiv_method(self, mock_symbolic_call):
+        """Test __rdiv__ method"""
+        mock_tensor = Mock()
+        mock_symbolic_call.return_value = mock_tensor
+        x = keras_tensor.KerasTensor(shape=(3, 4), dtype="float32")
+        y = keras_tensor.KerasTensor(shape=(3, 4), dtype="float32")
+        # to ensure compatibility across Python versions
+        result = x.__rdiv__(y)
+        mock_symbolic_call.assert_called_once_with(y, x)
+        self.assertEqual(result, mock_tensor)
