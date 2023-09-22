@@ -166,48 +166,24 @@ class KerasTensor:
         return ops.Matmul().symbolic_call(other, self)
 
     def __div__(self, other):
-        print("Inside __div__ method!")
         from keras_core import ops
 
         return ops.Divide().symbolic_call(self, other)
 
     def __rdiv__(self, other):
-        print("Inside __rdiv__ method!")
         from keras_core import ops
 
         return ops.Divide().symbolic_call(other, self)
 
     def __truediv__(self, other):
-        print("Inside __truediv__ method!")
         from keras_core import ops
 
         return ops.TrueDivide().symbolic_call(self, other)
 
     def __rtruediv__(self, other):
-        print("Inside __rtruediv__ method!")
         from keras_core import ops
 
         return ops.TrueDivide().symbolic_call(other, self)
-
-    # def __div__(self, other):
-    #     from keras_core import ops
-
-    #     return ops.Divide().symbolic_call(self, other)
-
-    # def __rdiv__(self, other):
-    #     from keras_core import ops
-
-    #     return ops.Divide().symbolic_call(other, self)
-
-    # def __truediv__(self, other):
-    #     from keras_core import ops
-
-    #     return ops.TrueDivide().symbolic_call(self, other)
-
-    # def __rtruediv__(self, other):
-    #     from keras_core import ops
-
-    #     return ops.TrueDivide().symbolic_call(other, self)
 
     def __neg__(self):
         from keras_core import ops
