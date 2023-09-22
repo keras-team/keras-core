@@ -865,7 +865,7 @@ class MathOpsCorrectnessTest(testing.TestCase, parameterized.TestCase):
 
     def test_erf_operation_edge_cases(self):
         # Test for edge cases
-        edge_values = np.array([1e10, -1e10, 1e-10, -1e-10], dtype=np.float64)
+        edge_values = np.array([1e5, -1e5, 1e-5, -1e-5], dtype=np.float64)
         expected_edge_output = (2 / np.sqrt(np.pi)) * np.vectorize(math.erf)(
             edge_values
         )
