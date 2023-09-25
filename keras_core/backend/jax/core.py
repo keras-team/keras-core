@@ -2,10 +2,8 @@ import types
 
 import jax
 import jax.numpy as jnp
-import numpy as np
 import tree
 from jax.tree_util import Partial
-
 from keras_core.backend.common import KerasVariable
 from keras_core.backend.common import global_state
 from keras_core.backend.common import standardize_dtype
@@ -13,6 +11,8 @@ from keras_core.backend.common.keras_tensor import KerasTensor
 from keras_core.backend.common.stateless_scope import StatelessScope
 from keras_core.backend.jax import distribution_lib
 from keras_core.utils.nest import pack_sequence_as
+
+import numpy as np
 
 SUPPORTS_SPARSE_TENSORS = False
 
@@ -128,7 +128,6 @@ def compute_output_spec(fn, *args, **kwargs):
                 jax_tensor = jax.ShapeDtypeStruct(shape, dtype=x.dtype)
                 return jax_tensor
             if isinstance(x, types.FunctionType):
-
                 def _fn(*args, **kwargs):
                     out = x(*args, **kwargs)
                     out = convert_keras_tensor_to_jax(
@@ -263,11 +262,20 @@ def slice_update(inputs, start_indices, updates):
     return jax.lax.dynamic_update_slice(inputs, updates, start_indices)
 
 
+def scan(f,
+         init,
+         xs,
+         length=None,
+         reverse=False,
+         unroll=1):
+    return jax.lax.scan(f, init, xs, length, reverse, unroll)
+
+
 def while_loop(
-    cond,
-    body,
-    loop_vars,
-    maximum_iterations=None,
+        cond,
+        body,
+        loop_vars,
+        maximum_iterations=None,
 ):
     loop_vars = tuple(loop_vars)
     if maximum_iterations is not None:

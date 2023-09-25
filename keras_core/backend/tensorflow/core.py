@@ -121,6 +121,17 @@ def shape(x):
     static = x.shape.as_list()
     return tuple(dynamic[i] if s is None else s for i, s in enumerate(static))
 
+def scan(f,
+         init,
+         xs,
+         length=None,
+         reverse=False,
+         unroll=1):
+    return tf.scan(
+    f,
+    xs,
+    initializer=init,
+    reverse=reverse)
 
 def cast(x, dtype):
     dtype = standardize_dtype(dtype)

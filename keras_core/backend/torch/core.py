@@ -177,6 +177,25 @@ def shape(x):
     return x.shape
 
 
+def scan(f,
+         init,
+         xs,
+         length=None,
+         reverse=False,
+         unroll=1):
+    if xs is None:
+        xs = [None] * length
+    carry = init
+    ys = []
+    if reverse:
+        xs.reverse()
+    for x in xs:
+        carry, y = f(carry, x)
+        ys.append(y)
+    if reverse:
+        ys.reverse()
+    return carry, np.stack(ys)
+
 def cast(x, dtype):
     dtype = to_torch_dtype(dtype)
     if isinstance(x, KerasVariable):

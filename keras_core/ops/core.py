@@ -159,6 +159,15 @@ def slice(inputs, start_indices, shape):
         return Slice().symbolic_call(inputs, start_indices, shape)
     return backend.core.slice(inputs, start_indices, shape)
 
+@keras_core_export("keras_core.ops.scan")
+def scan(f,
+         init,
+         xs,
+         length=None,
+         reverse=False,
+         unroll=1):
+    return backend.core.scan(f,init,xs,length,reverse,unroll)
+
 
 class SliceUpdate(Operation):
     def call(self, inputs, start_indices, updates):

@@ -57,6 +57,17 @@ class CoreOpsStaticShapeTest(testing.TestCase):
         result = core.fori_loop(0, 10, body_fun, initial_value)
         self.assertEqual(result.shape, (3, 5, 7))
 
+
+    def test_scan(self):
+        x = [0,1,2,3,4,5,6]
+        x_target = [1, 2, 3, 4, 5, 6, 7]
+        def f(carry,x):
+            x +=carry
+            return carry,x
+        carr , y = core.scan(f,1,x)
+        self.assertEqual(x_target, y)
+
+
     def test_unstack(self):
         x = KerasTensor((2, 3, 4))
         axis = 1
