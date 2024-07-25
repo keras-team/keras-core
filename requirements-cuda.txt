@@ -6,7 +6,7 @@ tf-nightly[and-cuda]==2.14.0.dev20230712
 # Torch.
 # Pin the version used in colab currently (works with tf cuda version).
 --extra-index-url https://download.pytorch.org/whl/cu118
-torch==2.0.1+cu118 
+torch==2.2.0 
 torchvision==0.15.2+cu118
 
 # Jax.
